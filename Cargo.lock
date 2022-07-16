@@ -1274,7 +1274,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-common"
 version = "0.1.0"
-source = "git+https://gitlab+deploy-token-1203426:yEvfooDrnL3d4na83Yix@gitlab.com/sentclose/sentc/sdk.git#cf17bd185b4307f229d30f9d6411878c16351730"
+source = "git+https://gitlab+deploy-token-1203426:yEvfooDrnL3d4na83Yix@gitlab.com/sentclose/sentc/sdk.git#5116aceeeca569820aff282cb1993c68541c5d4b"
 dependencies = [
  "serde",
  "serde_json",
