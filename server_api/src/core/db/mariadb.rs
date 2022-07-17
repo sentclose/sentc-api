@@ -68,36 +68,36 @@ pub async fn get_conn() -> Result<mysql_async::Conn, HttpErr>
 /**
 # call mysql-async exec function
 
-handles the err and return a `GramHttpErr` instead of the db err
+handles the err and return a `HttpErr` instead of the db err
 
 so we can just use it like:
-```rust_sample
-	//language=SQL
-	let sql = "SELECT tag_id, belongs_to, type FROM tags_belongs_to WHERE tag_id = ?";
+```ignore
+//language=SQL
+let sql = "SELECT tag_id, belongs_to, type FROM tags_belongs_to WHERE tag_id = ?";
 
-	// the , in ("lol",) is important!
-	let result = exec::<TagsBelongsTo, _>(sql, ("lol",)).await?;
+// the , in ("lol",) is important!
+let result = exec::<TagsBelongsTo, _>(sql, ("lol",)).await?;
 
-	match to_string(&result) {
-		Ok(o) => Ok(o),
-		Err(e) => Err(HttpErr::new(422, 10, format!("db error"), Some(format!("db fetch err, {:?}", e)))),
-	}
+match to_string(&result) {
+	Ok(o) => Ok(o),
+	Err(e) => Err(HttpErr::new(422, 10, format!("db error"), Some(format!("db fetch err, {:?}", e)))),
+}
 ```
 
 instead of this (don't do this, no err handling here):
-```rust_sample
-	//language=SQL
-	let sql = "SELECT tag_id, belongs_to, type FROM tags_belongs_to WHERE tag_id = ?";
+```ignore
+//language=SQL
+let sql = "SELECT tag_id, belongs_to, type FROM tags_belongs_to WHERE tag_id = ?";
 
-	let mut conn = get_conn().await?;
+let mut conn = get_conn().await?;
 
-	// the , in ("lol",) is important!
-	let result = conn
-		.exec::<TagsBelongsTo, _, _>(sql, ("lol",))
-		.await
-		.unwrap();
+// the , in ("lol",) is important!
+let result = conn
+	.exec::<TagsBelongsTo, _, _>(sql, ("lol",))
+	.await
+	.unwrap();
 
-	Ok(to_string(&result).unwrap())
+Ok(to_string(&result).unwrap())
 ```
  */
 pub async fn exec<T, P>(sql: &str, params: P) -> Result<Vec<T>, HttpErr>
