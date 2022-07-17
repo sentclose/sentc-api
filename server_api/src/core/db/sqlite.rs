@@ -134,7 +134,7 @@ async fn lol()
 
 ````
 */
-pub async fn query<T, P>(sql: &'static str, params: P) -> Result<Vec<T>, HttpErr>
+pub async fn query<T, P>(sql: String, params: P) -> Result<Vec<T>, HttpErr>
 where
 	T: FromSqliteRow + Send + 'static,
 	P: IntoIterator + Send + 'static,
@@ -143,7 +143,7 @@ where
 	let conn = get_conn().await?;
 
 	let result = conn
-		.interact(move |conn| query_sync::<T, P>(conn, sql, params))
+		.interact(move |conn| query_sync::<T, P>(conn, sql.as_str(), params))
 		.await
 		.map_err(|e| db_query_err(&e))??;
 

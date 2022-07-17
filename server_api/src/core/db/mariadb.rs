@@ -101,7 +101,7 @@ let result = conn
 Ok(to_string(&result).unwrap())
 ```
  */
-pub async fn query<T, P>(sql: &str, params: P) -> Result<Vec<T>, HttpErr>
+pub async fn query<T, P>(sql: String, params: P) -> Result<Vec<T>, HttpErr>
 where
 	T: FromRow + Send + 'static,
 	P: Into<Params> + Send,
