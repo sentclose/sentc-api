@@ -113,6 +113,18 @@ where
 		.map_err(|e| db_query_err(&e))
 }
 
+pub async fn query_first<T, P>(sql: String, params: P) -> Result<Option<T>, HttpErr>
+where
+	T: FromRow + Send + 'static,
+	P: Into<Params> + Send,
+{
+	let mut conn = get_conn().await?;
+
+	conn.exec_first::<T, _, P>(sql, params)
+		.await
+		.map_err(|e| db_query_err(&e))
+}
+
 pub async fn exec<P>(sql: &str, params: P) -> Result<(), HttpErr>
 where
 	P: Into<Params> + Send,

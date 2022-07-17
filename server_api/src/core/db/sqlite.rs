@@ -150,6 +150,40 @@ where
 	Ok(result)
 }
 
+fn query_first_sync<T, P>(conn: &mut Connection, sql: &str, params: P) -> Result<Option<T>, HttpErr>
+where
+	T: FromSqliteRow,
+	P: IntoIterator,
+	P::Item: ToSql,
+{
+	let mut stmt = conn.prepare(sql).map_err(|e| db_query_err(&e))?;
+
+	let mut rows = stmt
+		.query(params_from_iter(params))
+		.map_err(|e| db_query_err(&e))?;
+
+	match rows.next().map_err(|e| db_query_err(&e))? {
+		Some(row) => Ok(Some(FromSqliteRow::from_row_opt(row).map_err(|e| db_query_err(&e))?)),
+		None => Ok(None),
+	}
+}
+
+pub async fn query_first<T, P>(sql: String, params: P) -> Result<Option<T>, HttpErr>
+where
+	T: FromSqliteRow + Send + 'static,
+	P: IntoIterator + Send + 'static,
+	P::Item: ToSql,
+{
+	let conn = get_conn().await?;
+
+	let result = conn
+		.interact(move |conn| query_first_sync::<T, P>(conn, sql.as_str(), params))
+		.await
+		.map_err(|e| db_query_err(&e))??;
+
+	Ok(result)
+}
+
 fn exec_sync<P>(conn: &mut Connection, sql: &str, params: P) -> Result<usize, HttpErr>
 where
 	P: IntoIterator,

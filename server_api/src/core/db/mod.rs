@@ -10,9 +10,9 @@ mod mariadb;
 mod sqlite;
 
 #[cfg(feature = "mysql")]
-pub use self::mariadb::{exec, query};
+pub use self::mariadb::{exec, query, query_first};
 #[cfg(feature = "sqlite")]
-pub use self::sqlite::{exec, query, FormSqliteRowError, FromSqliteRow};
+pub use self::sqlite::{exec, query, query_first, FormSqliteRowError, FromSqliteRow};
 
 #[cfg(feature = "sqlite")]
 static SQLITE_DB_CONN: OnceCell<deadpool_sqlite::Pool> = OnceCell::const_new();
