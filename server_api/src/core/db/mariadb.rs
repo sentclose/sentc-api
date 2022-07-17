@@ -4,7 +4,7 @@ use mysql_async::prelude::{FromRow, Queryable};
 use mysql_async::{from_value, Params, Pool, Row};
 
 use crate::core::api_err::{ApiErrorCodes, HttpErr};
-use crate::core::db::MARIA_DB_COMM;
+use crate::core::db::{db_exec_err, MARIA_DB_COMM};
 
 pub async fn create_db() -> Pool
 {
@@ -107,15 +107,7 @@ where
 {
 	let mut conn = get_conn().await?;
 
-	match conn.exec::<T, _, P>(sql, params).await {
-		Ok(result) => Ok(result),
-		Err(e) => {
-			Err(HttpErr::new(
-				422,
-				ApiErrorCodes::DbExecute,
-				"db error",
-				Some(format!("db fetch err, {:?}", e)),
-			))
-		},
-	}
+	conn.exec::<T, _, P>(sql, params)
+		.await
+		.map_err(|e| db_exec_err(&e))
 }
