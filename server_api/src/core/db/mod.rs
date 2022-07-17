@@ -109,8 +109,8 @@ mod test
 	pub struct TestData
 	{
 		id: String,
-		name: String,
-		time: u128,
+		_name: String,
+		_time: u128,
 	}
 
 	#[cfg(feature = "mysql")]
@@ -122,8 +122,8 @@ mod test
 		{
 			Ok(TestData {
 				id: take_or_err!(row, 0, String),
-				name: take_or_err!(row, 1, String),
-				time: take_or_err!(row, 2, u128),
+				_name: take_or_err!(row, 1, String),
+				_time: take_or_err!(row, 2, u128),
 			})
 		}
 	}
@@ -145,8 +145,8 @@ mod test
 
 			Ok(TestData {
 				id: take_or_err!(row, 0),
-				name: take_or_err!(row, 1),
-				time,
+				_name: take_or_err!(row, 1),
+				_time: time,
 			})
 		}
 	}
@@ -154,15 +154,9 @@ mod test
 	/**
 		# Test the db
 		This test should run for both sqlite and mysql
-
 	*/
-	#[tokio::test]
 	async fn test_db_insert_and_fetch()
 	{
-		dotenv::dotenv().ok();
-
-		init_db().await;
-
 		//language=SQL
 		let sql = "INSERT INTO test (id, name, time) VALUES (?,?,?)";
 
@@ -178,7 +172,7 @@ mod test
 		//language=SQL
 		let sql = "SELECT * FROM test WHERE id = ?";
 
-		let test_data = query::<TestData, _>(sql, set_params!(id.clone()))
+		let test_data = query::<TestData, _>(sql.to_string(), set_params!(id.clone()))
 			.await
 			.unwrap();
 
@@ -186,5 +180,58 @@ mod test
 
 		assert_eq!(test_data.len(), 1);
 		assert_eq!(test_data[0].id, id);
+	}
+
+	async fn test_db_insert_and_fetch_with_get_ins()
+	{
+		//two inserts
+		//language=SQL
+		let sql = "INSERT INTO test (id, name, time) VALUES (?,?,?)";
+
+		let id1 = Uuid::new_v4().to_string();
+		let name1 = "hello".to_string();
+		let time1 = get_time().unwrap();
+
+		exec(sql, set_params!(id1.clone(), name1, time1.to_string()))
+			.await
+			.unwrap();
+
+		//language=SQL
+		let sql = "INSERT INTO test (id, name, time) VALUES (?,?,?)";
+
+		let id2 = Uuid::new_v4().to_string();
+		let name2 = "hello".to_string();
+		let time2 = get_time().unwrap();
+
+		exec(sql, set_params!(id2.clone(), name2, time2.to_string()))
+			.await
+			.unwrap();
+
+		let params = vec![id1.clone(), id2.clone()];
+
+		let ins = get_in(&params);
+
+		//language=SQLx
+		let sql = format!("SELECT * FROM test WHERE id IN ({}) ORDER BY time", ins);
+
+		let test_data = query::<TestData, _>(sql, params).await.unwrap();
+
+		println!("out: {:?}", test_data);
+
+		assert_eq!(test_data.len(), 2);
+		assert_eq!(test_data[0].id, id1);
+		assert_eq!(test_data[1].id, id2);
+	}
+
+	#[tokio::test]
+	async fn test_start()
+	{
+		//in one test here because rust still don't support before all tests functions
+		dotenv::dotenv().ok();
+
+		init_db().await;
+
+		test_db_insert_and_fetch().await;
+		test_db_insert_and_fetch_with_get_ins().await;
 	}
 }
