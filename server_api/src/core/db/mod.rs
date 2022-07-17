@@ -1,9 +1,18 @@
+use std::error::Error;
+
 use tokio::sync::OnceCell;
+
+use crate::core::api_err::{ApiErrorCodes, HttpErr};
 
 #[cfg(feature = "mysql")]
 mod mariadb;
 #[cfg(feature = "sqlite")]
 mod sqlite;
+
+#[cfg(feature = "mysql")]
+pub use self::mariadb::exec;
+#[cfg(feature = "sqlite")]
+pub use self::sqlite::{exec, FromSqliteRow};
 
 #[cfg(feature = "sqlite")]
 static SQLITE_DB_CONN: OnceCell<deadpool_sqlite::Pool> = OnceCell::const_new();
@@ -43,6 +52,43 @@ pub fn get_in<T>(objects: &Vec<T>) -> String
 			.collect::<Vec<_>>()
 			.join(",")
 	)
+}
+
+fn db_exec_err<E: Error>(e: &E) -> HttpErr
+{
+	HttpErr::new(422, ApiErrorCodes::DbExecute, "db error", Some(format!("db fetch err, {:?}", e)))
+}
+
+/**
+# Tuple for async-mysql params
+
+returns a tuple of the input values.
+
+ */
+#[cfg(feature = "mysql")]
+#[macro_export]
+macro_rules! set_params {
+	($( $param:expr ),+ $(,)?) => {{
+		($($param),+ ,)
+	}};
+}
+
+/**
+# The sql params for sqlite
+
+ */
+#[cfg(feature = "sqlite")]
+#[macro_export]
+macro_rules! set_params {
+	($( $param:expr ),+ $(,)?) => {{
+		let mut tmp = Vec::new();
+
+		$(
+			tmp.push(rusqlite::types::Value::from($param));
+		)*
+
+		tmp
+	}};
 }
 
 /*
