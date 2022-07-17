@@ -172,7 +172,7 @@ mod test
 		//language=SQL
 		let sql = "SELECT * FROM test WHERE id = ?";
 
-		let test_data = query::<TestData, _>(sql.to_string(), set_params!(id.clone()))
+		let test_data: Vec<TestData> = query(sql.to_string(), set_params!(id.clone()))
 			.await
 			.unwrap();
 
@@ -214,7 +214,7 @@ mod test
 		//language=SQLx
 		let sql = format!("SELECT * FROM test WHERE id IN ({}) ORDER BY time", ins);
 
-		let test_data = query::<TestData, _>(sql, params).await.unwrap();
+		let test_data: Vec<TestData> = query(sql, params).await.unwrap();
 
 		println!("out: {:?}", test_data);
 
