@@ -21,6 +21,9 @@ mysql_async = { version = "0.30.0", optional = true }
 deadpool-sqlite = { version= "0.4.0", optional = true }
 rusqlite = { version = "0.27.0", features = ["bundled"], optional = true }
 
+# id
+uuid = {version="1.1.2", features= ["v4", "fast-rng"]}
+
 # dotenv vars
 dotenv = "0.15.0"
 
