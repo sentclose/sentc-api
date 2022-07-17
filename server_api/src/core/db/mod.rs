@@ -180,6 +180,25 @@ mod test
 
 		assert_eq!(test_data.len(), 1);
 		assert_eq!(test_data[0].id, id);
+
+		//test query first
+		let test_datum: Option<TestData> = query_first(sql.to_string(), set_params!(id.clone()))
+			.await
+			.unwrap();
+
+		assert_eq!(test_datum.unwrap().id, id);
+
+		//test without result
+		let test_datum: Option<TestData> = query_first(sql.to_string(), set_params!(id.clone() + "123"))
+			.await
+			.unwrap();
+
+		let not_found_datum = match test_datum {
+			None => true,
+			Some(_) => false,
+		};
+
+		assert_eq!(not_found_datum, true);
 	}
 
 	async fn test_db_insert_and_fetch_with_get_ins()
