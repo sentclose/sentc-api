@@ -1,10 +1,16 @@
 #[derive(Debug)]
 pub enum ApiErrorCodes
 {
+	JsonToString = 1,
+	JsonParse = 2,
+
 	UnexpectedTimeError = 9,
+
 	NoDbConnection = 10,
 	DbQuery = 11,
 	DbExecute = 12,
+
+	UserNotFound = 100,
 }
 
 #[derive(Debug)]
