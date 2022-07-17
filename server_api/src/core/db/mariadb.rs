@@ -4,7 +4,7 @@ use mysql_async::prelude::{FromRow, Queryable};
 use mysql_async::{from_value, Params, Pool, Row};
 
 use crate::core::api_err::{ApiErrorCodes, HttpErr};
-use crate::core::db::{db_exec_err, MARIA_DB_COMM};
+use crate::core::db::{db_exec_err, db_query_err, MARIA_DB_COMM};
 
 pub async fn create_db() -> Pool
 {
@@ -76,6 +76,7 @@ so we can just use it like:
 let sql = "SELECT tag_id, belongs_to, type FROM tags_belongs_to WHERE tag_id = ?";
 
 // the , in ("lol",) is important!
+//exec is from mysql_async
 let result = exec::<TagsBelongsTo, _>(sql, ("lol",)).await?;
 
 match to_string(&result) {
@@ -93,14 +94,14 @@ let mut conn = get_conn().await?;
 
 // the , in ("lol",) is important!
 let result = conn
-	.exec::<TagsBelongsTo, _, _>(sql, ("lol",))
+	.query::<TagsBelongsTo, _, _>(sql, ("lol",))
 	.await
 	.unwrap();
 
 Ok(to_string(&result).unwrap())
 ```
  */
-pub async fn exec<T, P>(sql: &str, params: P) -> Result<Vec<T>, HttpErr>
+pub async fn query<T, P>(sql: &str, params: P) -> Result<Vec<T>, HttpErr>
 where
 	T: FromRow + Send + 'static,
 	P: Into<Params> + Send,
@@ -109,5 +110,22 @@ where
 
 	conn.exec::<T, _, P>(sql, params)
 		.await
-		.map_err(|e| db_exec_err(&e))
+		.map_err(|e| db_query_err(&e))
+}
+
+pub async fn exec<P>(sql: &str, params: P) -> Result<usize, HttpErr>
+where
+	P: Into<Params> + Send,
+{
+	let mut conn = get_conn().await?;
+
+	let res = conn
+		.exec_first(sql, params)
+		.await
+		.map_err(|e| db_exec_err(&e))?;
+
+	match res {
+		Some(r) => Ok(r),
+		None => Ok(0),
+	}
 }

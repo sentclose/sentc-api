@@ -10,9 +10,9 @@ mod mariadb;
 mod sqlite;
 
 #[cfg(feature = "mysql")]
-pub use self::mariadb::exec;
+pub use self::mariadb::{exec, query};
 #[cfg(feature = "sqlite")]
-pub use self::sqlite::{exec, FromSqliteRow};
+pub use self::sqlite::{exec, query, FromSqliteRow};
 
 #[cfg(feature = "sqlite")]
 static SQLITE_DB_CONN: OnceCell<deadpool_sqlite::Pool> = OnceCell::const_new();
@@ -54,9 +54,14 @@ pub fn get_in<T>(objects: &Vec<T>) -> String
 	)
 }
 
+fn db_query_err<E: Error>(e: &E) -> HttpErr
+{
+	HttpErr::new(422, ApiErrorCodes::DbQuery, "db error", Some(format!("db fetch err, {:?}", e)))
+}
+
 fn db_exec_err<E: Error>(e: &E) -> HttpErr
 {
-	HttpErr::new(422, ApiErrorCodes::DbExecute, "db error", Some(format!("db fetch err, {:?}", e)))
+	HttpErr::new(422, ApiErrorCodes::DbExecute, "db error", Some(format!("db execute err, {:?}", e)))
 }
 
 /**
@@ -90,10 +95,3 @@ macro_rules! set_params {
 		tmp
 	}};
 }
-
-/*
-TODO
-	- create global exec and query fn: pass a T value of the fetched obj, if insert use exec drop
-	- create entities with FromRow for mariadb and a new trait where we get values from sqlite
-	- check pass sqlite row obj from sync to async fn (via deadpool)
- */

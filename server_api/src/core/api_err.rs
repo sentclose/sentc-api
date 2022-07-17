@@ -2,7 +2,8 @@
 pub enum ApiErrorCodes
 {
 	NoDbConnection = 10,
-	DbExecute = 11,
+	DbQuery = 11,
+	DbExecute = 12,
 }
 
 #[derive(Debug)]
