@@ -1,9 +1,11 @@
+#[derive(Debug)]
 pub enum ApiErrorCodes
 {
 	NoDbConnection = 10,
 	DbExecute = 11,
 }
 
+#[derive(Debug)]
 pub struct HttpErr
 {
 	http_status_code: u16,
