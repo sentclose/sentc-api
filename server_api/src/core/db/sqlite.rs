@@ -1,19 +1,38 @@
+use std::error::Error;
+use std::fmt::{Debug, Display, Formatter};
+
 use deadpool_sqlite::{Config, Pool, Runtime};
 use rusqlite::{params_from_iter, Connection, Row, ToSql};
 
 use crate::core::api_err::{ApiErrorCodes, HttpErr};
 use crate::core::db::{db_exec_err, db_query_err, SQLITE_DB_CONN};
 
+#[derive(Debug)]
+pub struct FormSqliteRowError
+{
+	pub msg: String,
+}
+
+impl Error for FormSqliteRowError {}
+
+impl Display for FormSqliteRowError
+{
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result
+	{
+		write!(f, "Err in db fetch: {}", self.msg)
+	}
+}
+
 pub trait FromSqliteRow
 {
-	fn from_row_opt(row: &Row) -> Result<Self, HttpErr>
+	fn from_row_opt(row: &Row) -> Result<Self, FormSqliteRowError>
 	where
 		Self: Sized;
 }
 
 pub async fn create_db() -> Pool
 {
-	let cfg = Config::new("db/sqlite/db.sqlite3");
+	let cfg = Config::new(std::env::var("DB_PATH").unwrap());
 	let pool = cfg.create_pool(Runtime::Tokio1).unwrap();
 	let conn = pool.get().await.unwrap();
 
@@ -66,7 +85,7 @@ where
 	let mut init: Vec<T> = Vec::new();
 
 	while let Some(row) = rows.next().map_err(|e| db_query_err(&e))? {
-		init.push(FromSqliteRow::from_row_opt(row)?)
+		init.push(FromSqliteRow::from_row_opt(row).map_err(|e| db_query_err(&e))?)
 	}
 
 	Ok(init)
@@ -86,13 +105,13 @@ pub struct Lol
 
 impl FromSqliteRow for Lol
 {
-	fn from_row_opt(row: &Row) -> Result<Self, HttpErr>
+	fn from_row_opt(row: &Row) -> Result<Self, FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		Ok(Lol {
-			lol: row.get(0).map_err(|e| db_exec_err(&e))?,
-			lol_count: row.get(1).map_err(|e| db_exec_err(&e))?,
+			lol: take_or_err(row, 0),
+			lol_count: take_or_err(row, 1,
 		})
 	}
 }
@@ -174,4 +193,18 @@ where
 		.map_err(|e| db_exec_err(&e))??;
 
 	Ok(result)
+}
+
+#[macro_export]
+macro_rules! take_or_err {
+	($row:expr, $index:expr) => {
+		match $row.get($index) {
+			Ok(v) => v,
+			Err(e) => {
+				return Err(crate::core::db::FormSqliteRowError {
+					msg: format!("{:?}", e),
+				})
+			},
+		}
+	};
 }
