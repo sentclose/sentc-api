@@ -1,6 +1,7 @@
 #[derive(Debug)]
 pub enum ApiErrorCodes
 {
+	UnexpectedTimeError = 9,
 	NoDbConnection = 10,
 	DbQuery = 11,
 	DbExecute = 12,
