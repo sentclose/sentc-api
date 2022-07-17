@@ -113,19 +113,30 @@ where
 		.map_err(|e| db_query_err(&e))
 }
 
-pub async fn exec<P>(sql: &str, params: P) -> Result<usize, HttpErr>
+pub async fn exec<P>(sql: &str, params: P) -> Result<(), HttpErr>
 where
 	P: Into<Params> + Send,
 {
 	let mut conn = get_conn().await?;
 
-	let res = conn
-		.exec_first(sql, params)
+	conn.exec_drop(sql, params)
 		.await
-		.map_err(|e| db_exec_err(&e))?;
+		.map_err(|e| db_exec_err(&e))
+}
 
-	match res {
-		Some(r) => Ok(r),
-		None => Ok(0),
-	}
+#[macro_export]
+macro_rules! take_or_err {
+	($row:expr, $index:expr, $t:ident) => {
+		match $row.take_opt::<$t, _>($index) {
+			Some(value) => {
+				match value {
+					Ok(ir) => ir,
+					Err(mysql_async::FromValueError(_value)) => {
+						return Err(mysql_async::FromRowError($row));
+					},
+				}
+			},
+			None => return Err(mysql_async::FromRowError($row)),
+		}
+	};
 }
