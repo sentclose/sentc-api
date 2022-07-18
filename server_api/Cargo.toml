@@ -2,6 +2,7 @@
 name = "server_api"
 version = "0.1.0"
 edition = "2021"
+default-run = "server_api"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -13,6 +14,9 @@ sentc-crypto-common = {version = "0.1.0", git = "https://gitlab+deploy-token-120
 hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
 tokio-util = "0.7.2"
+
+# to stream the input body
+futures = { version = "0.3.6", default-features = false, features = ["async-await"] }
 
 # mysql db
 mysql_async = { version = "0.30.0", optional = true }

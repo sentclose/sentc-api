@@ -1,4 +1,5 @@
 [workspace]
 members = [
-    "server_api"
+    "server_api",
+    "server_api_route_builder"
 ]
