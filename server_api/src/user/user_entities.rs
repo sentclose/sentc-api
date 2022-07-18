@@ -54,7 +54,7 @@ impl mysql_async::prelude::FromRow for UserExistsEntity
 	where
 		Self: Sized,
 	{
-		Ok(UserExistsEntity(take_or_err!(row, 2, i64)))
+		Ok(UserExistsEntity(take_or_err!(row, 0, i64)))
 	}
 }
 
