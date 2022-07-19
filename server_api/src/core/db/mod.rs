@@ -10,9 +10,9 @@ mod mariadb;
 mod sqlite;
 
 #[cfg(feature = "mysql")]
-pub use self::mariadb::{exec, query, query_first};
+pub use self::mariadb::{bulk_insert, exec, query, query_first};
 #[cfg(feature = "sqlite")]
-pub use self::sqlite::{exec, query, query_first, FormSqliteRowError, FromSqliteRow};
+pub use self::sqlite::{bulk_insert, exec, query, query_first, FormSqliteRowError, FromSqliteRow};
 
 #[cfg(feature = "sqlite")]
 static SQLITE_DB_CONN: OnceCell<deadpool_sqlite::Pool> = OnceCell::const_new();
@@ -62,6 +62,11 @@ fn db_query_err<E: Error>(e: &E) -> HttpErr
 fn db_exec_err<E: Error>(e: &E) -> HttpErr
 {
 	HttpErr::new(422, ApiErrorCodes::DbExecute, "db error", Some(format!("db execute err, {:?}", e)))
+}
+
+fn db_bulk_insert_err<E: Error>(e: &E) -> HttpErr
+{
+	HttpErr::new(422, ApiErrorCodes::DbBulkInsert, "db error", Some(format!("db bulk insert err, {:?}", e)))
 }
 
 /**
@@ -208,7 +213,7 @@ mod test
 		let sql = "INSERT INTO test (id, name, time) VALUES (?,?,?)";
 
 		let id1 = Uuid::new_v4().to_string();
-		let name1 = "hello".to_string();
+		let name1 = "hello1".to_string();
 		let time1 = get_time().unwrap();
 
 		exec(sql, set_params!(id1.clone(), name1, time1.to_string()))
@@ -219,7 +224,7 @@ mod test
 		let sql = "INSERT INTO test (id, name, time) VALUES (?,?,?)";
 
 		let id2 = Uuid::new_v4().to_string();
-		let name2 = "hello".to_string();
+		let name2 = "hello2".to_string();
 		let time2 = get_time().unwrap();
 
 		exec(sql, set_params!(id2.clone(), name2, time2.to_string()))
@@ -231,15 +236,68 @@ mod test
 		let ins = get_in(&params);
 
 		//language=SQLx
-		let sql = format!("SELECT * FROM test WHERE id IN ({}) ORDER BY time", ins);
+		let sql = format!("SELECT * FROM test WHERE id IN ({}) ORDER BY name", ins);
 
 		let test_data: Vec<TestData> = query(sql, params).await.unwrap();
 
-		println!("out: {:?}", test_data);
+		println!("out get in: {:?}", test_data);
 
 		assert_eq!(test_data.len(), 2);
 		assert_eq!(test_data[0].id, id1);
 		assert_eq!(test_data[1].id, id2);
+	}
+
+	async fn test_db_bulk_insert()
+	{
+		//do this extra because we need the ids later to check if this values are in the db
+		let id1 = Uuid::new_v4().to_string();
+		let id2 = Uuid::new_v4().to_string();
+		let id3 = Uuid::new_v4().to_string();
+
+		let t1 = TestData {
+			id: id1.to_string(),
+			_name: "hello".to_string(),
+			_time: get_time().unwrap(),
+		};
+
+		let t2 = TestData {
+			id: id2.to_string(),
+			_name: "hello2".to_string(),
+			_time: get_time().unwrap(),
+		};
+
+		let t3 = TestData {
+			id: id3.to_string(),
+			_name: "hello3".to_string(),
+			_time: get_time().unwrap(),
+		};
+
+		bulk_insert(
+			false,
+			"test".to_string(),
+			vec!["id".to_string(), "name".to_string(), "time".to_string()],
+			vec![t1, t2, t3],
+			|ob| set_params!(ob.id.to_string(), ob._name.to_string(), ob._time.to_string()),
+		)
+		.await
+		.unwrap();
+
+		//check if the values are in the db
+		let params = vec![id1.clone(), id2.clone(), id3.clone()];
+
+		let ins = get_in(&params);
+
+		//language=SQLx
+		let sql = format!("SELECT * FROM test WHERE id IN ({}) ORDER BY name", ins);
+
+		let test_data: Vec<TestData> = query(sql, params).await.unwrap();
+
+		println!("out bulk insert: {:?}", test_data);
+
+		assert_eq!(test_data.len(), 3);
+		assert_eq!(test_data[0].id, id1);
+		assert_eq!(test_data[1].id, id2);
+		assert_eq!(test_data[2].id, id3);
 	}
 
 	#[tokio::test]
@@ -252,5 +310,6 @@ mod test
 
 		test_db_insert_and_fetch().await;
 		test_db_insert_and_fetch_with_get_ins().await;
+		test_db_bulk_insert().await;
 	}
 }

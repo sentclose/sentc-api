@@ -9,6 +9,7 @@ pub enum ApiErrorCodes
 	NoDbConnection = 10,
 	DbQuery = 11,
 	DbExecute = 12,
+	DbBulkInsert = 13,
 
 	UserNotFound = 100,
 }

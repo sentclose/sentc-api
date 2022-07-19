@@ -5,7 +5,7 @@ use deadpool_sqlite::{Config, Pool, Runtime};
 use rusqlite::{params_from_iter, Connection, Row, ToSql};
 
 use crate::core::api_err::{ApiErrorCodes, HttpErr};
-use crate::core::db::{db_exec_err, db_query_err, SQLITE_DB_CONN};
+use crate::core::db::{db_bulk_insert_err, db_exec_err, db_query_err, SQLITE_DB_CONN};
 
 #[macro_export]
 macro_rules! take_or_err {
@@ -241,4 +241,73 @@ where
 		.map_err(|e| db_exec_err(&e))??;
 
 	Ok(result)
+}
+
+fn bulk_insert_sync<F, T>(conn: &mut Connection, ignore: bool, table: String, cols: Vec<String>, objects: &Vec<T>, fun: F) -> Result<usize, HttpErr>
+where
+	F: Fn(&T) -> Vec<rusqlite::types::Value>,
+{
+	//prepare the sql
+	let ignore_string = if ignore { " OR IGNORE" } else { "" };
+
+	let mut stmt = format!("INSERT {} INTO {} ({}) VALUES ", ignore_string, table, cols.join(","));
+	// each (?,..,?) tuple for values
+	let row = format!(
+		"({}),",
+		cols.iter()
+			.map(|_| "?".to_string())
+			.collect::<Vec<_>>()
+			.join(",")
+	);
+
+	stmt.reserve(objects.len() * (cols.len() * 2 + 2));
+
+	// add the row tuples in the query
+	for _ in 0..objects.len() {
+		stmt.push_str(&row);
+	}
+
+	// remove the trailing comma
+	stmt.pop();
+
+	let mut params = Vec::new();
+
+	//using rustsqlite value https://stackoverflow.com/questions/69230495/how-to-pass-vecvalue-in-rusqlite-as-query-param
+	for o in objects.iter() {
+		for val in fun(o) {
+			params.push(val);
+		}
+	}
+
+	//transaction from here: https://github.com/avinassh/fast-sqlite3-inserts/blob/master/src/bin/basic.rs
+	//but not necessary for inserting in one table
+	let tx = conn.transaction().map_err(|e| db_bulk_insert_err(&e))?;
+
+	let result = tx
+		.execute(stmt.as_str(), params_from_iter(params))
+		.map_err(|e| db_bulk_insert_err(&e))?;
+
+	tx.commit().map_err(|e| db_bulk_insert_err(&e))?;
+
+	Ok(result)
+}
+
+pub async fn bulk_insert<F: 'static + Send + Sync, T: 'static + Send + Sync>(
+	ignore: bool,
+	table: String,
+	cols: Vec<String>,
+	objects: Vec<T>, //must be pass by value because we need static lifetime here for the deadpool interact
+	fun: F,
+) -> Result<usize, HttpErr>
+where
+	F: Fn(&T) -> Vec<rusqlite::types::Value>,
+{
+	let conn = get_conn().await?;
+
+	let res = conn
+		.interact(move |conn| bulk_insert_sync(conn, ignore, table, cols, &objects, fun))
+		.await
+		.map_err(|e| db_bulk_insert_err(&e))??;
+
+	Ok(res)
 }

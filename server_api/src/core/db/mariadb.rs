@@ -4,7 +4,7 @@ use mysql_async::prelude::{FromRow, Queryable};
 use mysql_async::{from_value, Params, Pool, Row};
 
 use crate::core::api_err::{ApiErrorCodes, HttpErr};
-use crate::core::db::{db_exec_err, db_query_err, MARIA_DB_COMM};
+use crate::core::db::{db_bulk_insert_err, db_exec_err, db_query_err, MARIA_DB_COMM};
 
 #[macro_export]
 macro_rules! take_or_err {
@@ -151,4 +151,67 @@ where
 	conn.exec_drop(sql, params)
 		.await
 		.map_err(|e| db_exec_err(&e))
+}
+
+/**
+# let insert multiple objets into the db
+
+got it form here: https://github.com/blackbeam/rust-mysql-simple/issues/59#issuecomment-245918807
+
+`T` is the object type
+
+`fn` transformed the obj values to params
+
+`ignore` do an insert ignore
+
+creates a query like this:
+```SQL
+INSERT INTO table (fields...) VALUES (?, ?, ?), (?, ?, ?), (?, ?, ?), ...
+```
+ */
+pub async fn bulk_insert<F, P, T>(ignore: bool, table: String, cols: Vec<String>, objects: Vec<T>, fun: F) -> Result<(), HttpErr>
+where
+	F: Fn(&T) -> P,
+	P: Into<Params>,
+{
+	let ignore_string = if ignore { "IGNORE" } else { "" };
+
+	let mut stmt = format!("INSERT {} INTO {} ({}) VALUES ", ignore_string, table, cols.join(","));
+
+	// each (?,..,?) tuple for values
+	let row = format!(
+		"({}),",
+		cols.iter()
+			.map(|_| "?".to_string())
+			.collect::<Vec<_>>()
+			.join(",")
+	);
+
+	stmt.reserve(objects.len() * (cols.len() * 2 + 2));
+
+	// add the row tuples in the query
+	for _ in 0..objects.len() {
+		stmt.push_str(&row);
+	}
+
+	// remove the trailing comma
+	stmt.pop();
+
+	let mut params = Vec::new();
+
+	for o in objects.iter() {
+		let new_params: Params = fun(o).into();
+
+		if let Params::Positional(new_params) = new_params {
+			for param in new_params {
+				params.push(param);
+			}
+		}
+	}
+
+	let mut conn = get_conn().await?;
+
+	conn.exec_drop(stmt, params)
+		.await
+		.map_err(|e| db_bulk_insert_err(&e))
 }
