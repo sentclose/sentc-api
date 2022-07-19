@@ -292,6 +292,22 @@ where
 	Ok(result)
 }
 
+/**
+# let insert multiple objets into the db
+
+got it form here: https://github.com/blackbeam/rust-mysql-simple/issues/59#issuecomment-245918807
+
+`T` is the object type
+
+`fn` transformed the obj values to params
+
+`ignore` do an insert ignore
+
+creates a query like this:
+```SQL
+INSERT INTO table (fields...) VALUES (?, ?, ?), (?, ?, ?), (?, ?, ?), ...
+```
+ */
 pub async fn bulk_insert<F: 'static + Send + Sync, T: 'static + Send + Sync>(
 	ignore: bool,
 	table: String,
