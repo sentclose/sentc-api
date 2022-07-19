@@ -6,6 +6,23 @@ use mysql_async::{from_value, Params, Pool, Row};
 use crate::core::api_err::{ApiErrorCodes, HttpErr};
 use crate::core::db::{db_exec_err, db_query_err, MARIA_DB_COMM};
 
+#[macro_export]
+macro_rules! take_or_err {
+	($row:expr, $index:expr, $t:ident) => {
+		match $row.take_opt::<$t, _>($index) {
+			Some(value) => {
+				match value {
+					Ok(ir) => ir,
+					Err(mysql_async::FromValueError(_value)) => {
+						return Err(mysql_async::FromRowError($row));
+					},
+				}
+			},
+			None => return Err(mysql_async::FromRowError($row)),
+		}
+	};
+}
+
 pub async fn create_db() -> Pool
 {
 	let user = env::var("DB_USER").unwrap();
@@ -134,21 +151,4 @@ where
 	conn.exec_drop(sql, params)
 		.await
 		.map_err(|e| db_exec_err(&e))
-}
-
-#[macro_export]
-macro_rules! take_or_err {
-	($row:expr, $index:expr, $t:ident) => {
-		match $row.take_opt::<$t, _>($index) {
-			Some(value) => {
-				match value {
-					Ok(ir) => ir,
-					Err(mysql_async::FromValueError(_value)) => {
-						return Err(mysql_async::FromRowError($row));
-					},
-				}
-			},
-			None => return Err(mysql_async::FromRowError($row)),
-		}
-	};
 }

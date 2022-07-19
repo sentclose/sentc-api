@@ -7,6 +7,20 @@ use rusqlite::{params_from_iter, Connection, Row, ToSql};
 use crate::core::api_err::{ApiErrorCodes, HttpErr};
 use crate::core::db::{db_exec_err, db_query_err, SQLITE_DB_CONN};
 
+#[macro_export]
+macro_rules! take_or_err {
+	($row:expr, $index:expr) => {
+		match $row.get($index) {
+			Ok(v) => v,
+			Err(e) => {
+				return Err(crate::core::db::FormSqliteRowError {
+					msg: format!("{:?}", e),
+				})
+			},
+		}
+	};
+}
+
 #[derive(Debug)]
 pub struct FormSqliteRowError
 {
@@ -227,18 +241,4 @@ where
 		.map_err(|e| db_exec_err(&e))??;
 
 	Ok(result)
-}
-
-#[macro_export]
-macro_rules! take_or_err {
-	($row:expr, $index:expr) => {
-		match $row.get($index) {
-			Ok(v) => v,
-			Err(e) => {
-				return Err(crate::core::db::FormSqliteRowError {
-					msg: format!("{:?}", e),
-				})
-			},
-		}
-	};
 }
