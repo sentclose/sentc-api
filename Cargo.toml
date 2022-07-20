@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "sdk-common",
     "server_api",
     "server_api_route_builder"
 ]

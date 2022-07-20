@@ -8,7 +8,7 @@ default-run = "server_api"
 
 [dependencies]
 # the server outputs for the frontend to handle
-sentc-crypto-common = {version = "0.1.0", git = "https://gitlab+deploy-token-1203426:yEvfooDrnL3d4na83Yix@gitlab.com/sentclose/sentc/sdk.git"}
+sentc-crypto-common = {version = "0.1.0", path = "../sdk-common"}
 
 # server impl
 hyper = { version = "0.14", features = ["full"] }
