@@ -2,5 +2,7 @@
 members = [
     "sdk-common",
     "server_crates/server_api",
-    "server_crates/server_api_route_builder"
+    "server_crates/server_api_route_builder",
+    "server_crates/server_migration",
+    "server_crates/server_rest_api"
 ]
