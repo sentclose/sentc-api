@@ -1,0 +1,19 @@
+[package]
+name = "server_rest_api"
+version = "0.1.0"
+edition = "2021"
+default-run = "server_rest_api"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+server_api = {version = "0.1.0", path = "../server_api", default-features = false}
+
+rustgram = "0.1.2"
+
+tokio = { version = "1", features = ["full"] }
+
+[features]
+default = ["mysql"]
+mysql = ["server_api/mysql"]
+sqlite = ["server_api/sqlite"]

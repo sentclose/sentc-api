@@ -1,5 +1,3 @@
-use std::env;
-
 use hyper::StatusCode;
 use rustgram::{r, Request, Response, Router};
 
@@ -42,18 +40,4 @@ pub async fn start() -> Router
 	router.get("/", r(index_handler));
 
 	router
-}
-
-/**
-To start the Rest Api when running in standalone mode
-*/
-pub async fn start_app()
-{
-	let router = start().await;
-
-	let addr = format!("{}:{}", env::var("SERVER_HOST").unwrap(), env::var("SERVER_PORT").unwrap())
-		.parse()
-		.unwrap();
-
-	rustgram::start(router, addr).await;
 }
