@@ -1,4 +1,4 @@
-mod core;
+pub mod core;
 mod user;
 
 pub async fn start()
