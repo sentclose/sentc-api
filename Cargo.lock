@@ -1470,6 +1470,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "server_all"
+version = "0.1.0"
+dependencies = [
+ "rustgram",
+ "server_api",
+ "server_dashboard",
+ "tokio",
+]
+
+[[package]]
 name = "server_api"
 version = "0.1.0"
 dependencies = [
@@ -1497,19 +1507,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "server_migration"
+name = "server_dashboard"
 version = "0.1.0"
 dependencies = [
  "dotenv",
- "server_api",
+ "rustgram",
  "tokio",
+ "tokio-util",
 ]
 
 [[package]]
-name = "server_rest_api"
+name = "server_migration"
 version = "0.1.0"
 dependencies = [
- "rustgram",
  "server_api",
  "tokio",
 ]
