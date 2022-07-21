@@ -1,0 +1,115 @@
+base_handler: test_handler
+base_mw: test_mw
+handler_404: crate::not_found_handler
+prefix: "/"
+routes:
+  # tests for the router framework
+  - get:
+      p: ""
+      s: test_handler::test_handler
+
+  - get:
+      p: "api"
+      s: test_handler::test_handler
+
+  - group:
+      p: admin
+      mw:
+        - lol_transform
+        - lol1_transform
+      gr:
+        - get:
+            p: ""
+            s: test_handler_db::test_handler_db_to_json
+        - get:
+            p: "/user/:id"
+            s: test_handler::test_handler
+
+        - group:
+            p: "/management"
+            mw:
+              - lol2_transform
+              - lol3_transform
+            gr:
+              - get:
+                  p: "/"
+                  s: test_handler::test_handler
+                  mw:
+                    - lol4_transform
+                    - lol5_transform
+              - delete:
+                  p: "/user"
+                  s: test_handler::test_handler
+  # normal group tests with the test handler
+  - group:
+      p: api/gram_tests
+      gr:
+        - get:
+            p: "/a"
+            s: test_handler::test_handler
+        - post:
+            p: "/file_upload"
+            s: test_handler_file::test_handler_file_upload
+        - get:
+            p: "/file_download"
+            s: test_handler_file::test_handler_file_download
+        - get:
+            p: "/json"
+            s: test_handler_input::test_handler_json
+        - get:
+            p: "/c/:id"
+            s: test_handler::test_handler_url_params
+        - get:
+            p: "/d/:input"
+            s: test_handler::test_handler_url_params_from_helper
+        - get:
+            p: "/your_info/:name/:address"
+            s: test_handler::test_handler_multiple_url_params
+        - get:
+            p: "/your_name"
+            s: test_handler::test_handler_err
+        - get:
+            p: "/your_name/:name"
+            s: test_handler::test_handler_err
+        # blocking thread tests
+        - group:
+            p: "/blocking_test"
+            gr:
+              - get:
+                  p: "/block"
+                  s: test_handler::test_handler_blocking
+              - get:
+                  p: "/non_block"
+                  s: test_handler::test_handler_non_blocking
+              - get:
+                  p: "/non_blocking_other"
+                  s: test_handler::test_handler_blocking_spawn
+        # db tests
+        - group:
+            p: "/db"
+            gr:
+              - get:
+                  p: "/stream_query"
+                  s: test_handler_db::test_handler_db_query_stream
+              - get:
+                  p: "/json"
+                  s: test_handler_db::test_handler_db_to_json
+              - get:
+                  p: "/json_multiple"
+                  s: test_handler_db::test_handler_db_select_multiple
+              - get:
+                  p: "/json_insert"
+                  s: test_handler_db::test_handler_db_insert_from_json
+              - get:
+                  p: "/bulk_insert"
+                  s: test_handler_db::test_handler_db_bulk_insert
+              - get:
+                  p: "/json_bulk_insert"
+                  s: test_handler_db::test_handler_db_bulk_insert_from_json
+
+        - get:
+            p: "/email"
+            s: test_handler_email::test_handler_send_mail
+        - get:
+            p: "/time"
+            s: test_handler::test_handler_time
