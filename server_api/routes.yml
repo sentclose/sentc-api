@@ -1,4 +1,3 @@
-base_handler: "user"
 base_mw: "middleware"
 handler_404: crate::not_found_handler
 prefix: "/api"
@@ -17,3 +16,6 @@ routes:
               - post:
                   p: "/exists"
                   s: crate::user::user_controller::exists
+              - post:
+                  p: "/register"
+                  s: crate::user::user_controller::register

@@ -1355,9 +1355,9 @@ checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "rustgram"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aeac83a0bfda9085a9ca320febe2b2513a96c5f1a763a904e5d5f38d29da81f2"
+checksum = "78c3c61e56e1164eb347fa918b4474616d1dfe2103643672c92d3ebe6a632ad4"
 dependencies = [
  "async-trait",
  "hyper",
@@ -1473,6 +1473,7 @@ dependencies = [
 name = "server_api"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "deadpool-sqlite",
  "dotenv",
  "futures",
