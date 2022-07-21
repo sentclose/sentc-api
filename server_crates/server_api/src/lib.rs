@@ -21,20 +21,23 @@ async fn index_handler(_req: Request) -> &'static str
 	"Hello there"
 }
 
+pub async fn start()
+{
+	//load the env
+	dotenv::dotenv().ok();
+
+	core::db::init_db().await;
+}
+
 /**
 Entrypoint for every app
 
 Use everytime, in standalone and other modes to get the router.
 
 The other crates can use this router
-*/
-pub async fn start() -> Router
+ */
+pub fn rest_routes() -> Router
 {
-	//load the env
-	dotenv::dotenv().ok();
-
-	core::db::init_db().await;
-
 	let mut router = routes();
 
 	router.get("/", r(index_handler));
