@@ -10,9 +10,6 @@ server_api = {version = "0.1.0", path = "../server_api", default-features = fals
 
 tokio = { version = "1", features = ["full"] }
 
-# dotenv vars
-dotenv = "0.15.0"
-
 [features]
 default = ["mysql"]
 mysql = ["server_api/mysql"]

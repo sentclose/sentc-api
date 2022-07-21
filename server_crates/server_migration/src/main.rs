@@ -3,10 +3,7 @@ use std::env;
 #[tokio::main]
 async fn main()
 {
-	//load the env
-	dotenv::dotenv().ok();
-
-	server_api::core::db::init_db().await;
+	server_api::start().await;
 
 	let args: Vec<String> = env::args().collect();
 
