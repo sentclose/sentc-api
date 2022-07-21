@@ -2,6 +2,7 @@
 name = "server_all"
 version = "0.1.0"
 edition = "2021"
+default-run = "server_all"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -9,5 +10,10 @@ edition = "2021"
 rustgram = "0.1.2"
 tokio = { version = "1", features = ["full"] }
 
-server_api = {version = "0.1.0", path = "../server_api"}
+server_api = {version = "0.1.0", path = "../server_api", default-features = false}
 server_dashboard = {version = "0.1.0", path = "../server_dashboard"}
+
+[features]
+default = ["mysql"]
+mysql = ["server_api/mysql"]
+sqlite = ["server_api/sqlite"]
