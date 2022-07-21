@@ -1,0 +1,17 @@
+{
+  "name": "@sentclose/sentc-api-dashboard",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@joernheinemann/eslint-config-typescript": "git+https://gitlab+gitlab+deploy-token-721488:57myipLxDruvdHLZQccB@gitlab.com/joern.heinemann/eslint-config-typescript.git",
+    "@typescript-eslint/eslint-plugin": "^4.22.1",
+    "@typescript-eslint/parser": "^4.22.1",
+    "eslint": "^7.32.0"
+  }
+}

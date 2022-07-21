@@ -1,0 +1,15 @@
+[package]
+name = "server_dashboard"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+tokio-util = "0.7.2"
+
+rustgram = "0.1.2"
+
+# dotenv vars
+dotenv = "0.15.0"
