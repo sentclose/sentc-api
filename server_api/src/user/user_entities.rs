@@ -1,10 +1,23 @@
+use serde::{Deserialize, Serialize};
+use serde_json::to_string;
+
+use crate::core::api_err::{json_to_string_err, HttpErr};
 use crate::take_or_err;
 
+#[derive(Serialize, Deserialize)]
 pub struct UserEntity
 {
 	id: String,
 	name: String,
 	time: u128,
+}
+
+impl UserEntity
+{
+	pub fn to_string(&self) -> Result<String, HttpErr>
+	{
+		to_string(self).map_err(|e| json_to_string_err(e))
+	}
 }
 
 #[cfg(feature = "mysql")]
@@ -45,6 +58,7 @@ impl crate::core::db::FromSqliteRow for UserEntity
 	}
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct UserExistsEntity(pub i64); //i64 for sqlite
 
 #[cfg(feature = "mysql")]

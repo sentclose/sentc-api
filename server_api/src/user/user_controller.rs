@@ -1,10 +1,10 @@
+use rustgram::Request;
 use sentc_crypto_common::user::UserIdentifierAvailableServerOutput;
 
 use crate::core::api_err::{ApiErrorCodes, HttpErr};
-use crate::user::user_entities::UserEntity;
 use crate::user::user_model;
 
-pub(crate) async fn exists() -> Result<String, HttpErr>
+pub(crate) async fn exists(_req: Request) -> Result<String, HttpErr>
 {
 	let user_id = "058ed2e6-3880-4a7c-ab3b-fd2f5755ea43"; //get this from the url param
 
@@ -25,12 +25,12 @@ pub(crate) async fn exists() -> Result<String, HttpErr>
 	})
 }
 
-pub(crate) async fn get() -> Result<UserEntity, HttpErr>
+pub(crate) async fn get(_req: Request) -> Result<String, HttpErr>
 {
 	let user_id = "abc"; //get this from the url param
 
 	//
 	let user = user_model::get_user(user_id).await?;
 
-	Ok(user)
+	user.to_string()
 }

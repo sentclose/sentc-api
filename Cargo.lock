@@ -1481,6 +1481,8 @@ dependencies = [
  "rusqlite",
  "rustgram",
  "sentc-crypto-common",
+ "serde",
+ "serde_json",
  "tokio",
  "tokio-util",
  "uuid",

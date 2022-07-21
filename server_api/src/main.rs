@@ -1,7 +1,7 @@
-use server_api::start;
+use server_api::start_app;
 
 #[tokio::main]
 pub async fn main()
 {
-	start().await;
+	start_app().await;
 }
