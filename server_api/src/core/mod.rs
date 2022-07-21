@@ -4,6 +4,7 @@ use crate::core::api_err::{ApiErrorCodes, HttpErr};
 
 pub mod api_err;
 pub mod db;
+pub mod input_helper;
 
 pub fn get_time() -> Result<u128, HttpErr>
 {

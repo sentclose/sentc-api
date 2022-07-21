@@ -9,6 +9,8 @@ pub enum ApiErrorCodes
 	JsonToString,
 	JsonParse,
 
+	InputTooBig,
+
 	UnexpectedTimeError,
 
 	NoDbConnection,
@@ -17,6 +19,24 @@ pub enum ApiErrorCodes
 	DbBulkInsert,
 
 	UserNotFound,
+}
+
+impl ApiErrorCodes
+{
+	pub fn get_int_code(&self) -> u32
+	{
+		match self {
+			ApiErrorCodes::JsonToString => 10,
+			ApiErrorCodes::JsonParse => 11,
+			ApiErrorCodes::InputTooBig => 12,
+			ApiErrorCodes::UnexpectedTimeError => 12,
+			ApiErrorCodes::NoDbConnection => 20,
+			ApiErrorCodes::DbQuery => 21,
+			ApiErrorCodes::DbExecute => 22,
+			ApiErrorCodes::DbBulkInsert => 23,
+			ApiErrorCodes::UserNotFound => 100,
+		}
+	}
 }
 
 #[derive(Debug)]
@@ -50,23 +70,17 @@ impl GramHttpErr<Response> for HttpErr
 			Err(_e) => StatusCode::BAD_REQUEST,
 		};
 
-		let err_code = match self.api_error_code {
-			ApiErrorCodes::JsonToString => 10,
-			ApiErrorCodes::JsonParse => 11,
-			ApiErrorCodes::UnexpectedTimeError => 12,
-			ApiErrorCodes::NoDbConnection => 20,
-			ApiErrorCodes::DbQuery => 21,
-			ApiErrorCodes::DbExecute => 22,
-			ApiErrorCodes::DbBulkInsert => 23,
-			ApiErrorCodes::UserNotFound => 100,
-		};
-
 		//the msg for the end user
-		let msg = format!("{{\"status\": {}, \"error_message\": \"{}\"}}", err_code, self.msg);
+		let msg = format!(
+			"{{\"status\": {}, \"error_message\": \"{}\"}}",
+			self.api_error_code.get_int_code(),
+			self.msg
+		);
 
 		//msg for the developer only
 		//this could later be logged
 		if self.debug_msg.is_some() {
+			//TODO handle debug msg
 			println!("Http Error: {:?}", self.debug_msg);
 		}
 

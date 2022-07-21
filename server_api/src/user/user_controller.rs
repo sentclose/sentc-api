@@ -1,7 +1,8 @@
 use rustgram::Request;
-use sentc_crypto_common::user::UserIdentifierAvailableServerOutput;
+use sentc_crypto_common::user::{RegisterData, UserIdentifierAvailableServerOutput};
 
-use crate::core::api_err::{ApiErrorCodes, HttpErr};
+use crate::core::api_err::HttpErr;
+use crate::core::input_helper::{bytes_to_json, get_raw_body, json_to_string};
 use crate::user::user_model;
 
 pub(crate) async fn exists(_req: Request) -> Result<String, HttpErr>
@@ -10,19 +11,22 @@ pub(crate) async fn exists(_req: Request) -> Result<String, HttpErr>
 
 	let exists = user_model::check_user_exists(user_id).await?;
 
-	UserIdentifierAvailableServerOutput {
+	let out = UserIdentifierAvailableServerOutput {
 		user_identifier: user_id.to_string(),
 		available: exists,
-	}
-	.to_string()
-	.map_err(|e| {
-		HttpErr::new(
-			400,
-			ApiErrorCodes::JsonToString,
-			"Json to string failed",
-			Some(format!("err json to string: {:?}", e)),
-		)
-	})
+	};
+
+	json_to_string(&out)
+}
+
+pub(crate) async fn register(req: Request) -> Result<String, HttpErr>
+{
+	//load the register input from the req body
+	let body = get_raw_body(req).await?;
+
+	let _register_input: RegisterData = bytes_to_json(&body)?;
+
+	Ok(format!("done"))
 }
 
 pub(crate) async fn get(_req: Request) -> Result<String, HttpErr>
@@ -32,5 +36,5 @@ pub(crate) async fn get(_req: Request) -> Result<String, HttpErr>
 	//
 	let user = user_model::get_user(user_id).await?;
 
-	user.to_string()
+	json_to_string(&user)
 }
