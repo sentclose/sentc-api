@@ -23,6 +23,13 @@ async fn index_handler(_req: Request) -> &'static str
 	"Hello there"
 }
 
+/**
+Entrypoint for every app
+
+Use everytime, in standalone and other modes to get the router.
+
+The other crates can use this router
+*/
 pub async fn start() -> Router
 {
 	//load the env
@@ -37,6 +44,9 @@ pub async fn start() -> Router
 	router
 }
 
+/**
+To start the Rest Api when running in standalone mode
+*/
 pub async fn start_app()
 {
 	let router = start().await;
