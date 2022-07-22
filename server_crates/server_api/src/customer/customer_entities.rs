@@ -1,3 +1,4 @@
+use sentc_crypto_common::user::RegisterData;
 use sentc_crypto_common::{AppId, CustomerId, CustomerPublicTokenId, CustomerSecretTokenId, SignKeyPairId};
 use serde::{Deserialize, Serialize};
 
@@ -41,4 +42,11 @@ pub struct CustomerAppJwt
 {
 	pub jwt_key_id: SignKeyPairId,
 	pub jwt_alg: String, //should be ES384 for now
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CustomerRegisterData
+{
+	pub email: String,
+	pub register_data: RegisterData,
 }
