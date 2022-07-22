@@ -1,6 +1,16 @@
+use sentc_crypto_common::UserId;
 use serde::{Deserialize, Serialize};
 
 use crate::take_or_err;
+
+#[derive(Serialize, Deserialize)]
+pub struct UserJwtEntity
+{
+	pub id: UserId,
+	pub identifier: String,
+	//aud if it is an app user or an customer
+	pub aud: String,
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct UserEntity

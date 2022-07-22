@@ -1,4 +1,4 @@
-mod user_entities;
+pub(crate) mod user_entities;
 mod user_model;
 
 use rustgram::Request;
