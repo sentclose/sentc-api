@@ -13,10 +13,10 @@ routes:
             gr:
               - post:
                   p: "/exists"
-                  s: crate::user::user_controller::exists
+                  s: crate::user::exists
               - post:
                   p: "/register"
-                  s: crate::user::user_controller::register
+                  s: crate::user::register
         #_______________________________________________________________________________________________________________
         # routes which needed jwt check with a valid jwt
         - group:
@@ -31,4 +31,10 @@ routes:
                   gr:
                     - get:
                         p: ""
-                        s: crate::user::user_controller::get
+                        s: crate::user::get
+              - group:
+                  p: "/group"
+                  gr:
+                    - get:
+                        p: "/:id"
+                        s: crate::group::get
