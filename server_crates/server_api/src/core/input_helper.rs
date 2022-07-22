@@ -19,7 +19,12 @@ pub async fn get_raw_body(req: Request) -> Result<BytesMut, HttpErr>
 		match bytes {
 			Ok(chunk) => {
 				if (body.len() + chunk.len()) > MAX_SIZE_JSON {
-					return Err(HttpErr::new(413, ApiErrorCodes::InputTooBig, "Input was too big to handle", None));
+					return Err(HttpErr::new(
+						413,
+						ApiErrorCodes::InputTooBig,
+						"Input was too big to handle",
+						None,
+					));
 				}
 
 				body.extend_from_slice(&chunk);

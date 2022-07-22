@@ -15,9 +15,13 @@ pub async fn main()
 	//the static files from the dash board
 	server_dashboard::routes(&mut router);
 
-	let addr = format!("{}:{}", env::var("SERVER_HOST").unwrap(), env::var("SERVER_PORT").unwrap())
-		.parse()
-		.unwrap();
+	let addr = format!(
+		"{}:{}",
+		env::var("SERVER_HOST").unwrap(),
+		env::var("SERVER_PORT").unwrap()
+	)
+	.parse()
+	.unwrap();
 
 	rustgram::start(router, addr).await;
 }

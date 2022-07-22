@@ -25,6 +25,13 @@ pub(crate) async fn get_user(user_id: &str) -> Result<UserEntity, HttpErr>
 
 	match user {
 		Some(u) => Ok(u),
-		None => Err(HttpErr::new(200, ApiErrorCodes::UserNotFound, "user not found", None)),
+		None => {
+			Err(HttpErr::new(
+				200,
+				ApiErrorCodes::UserNotFound,
+				"user not found",
+				None,
+			))
+		},
 	}
 }

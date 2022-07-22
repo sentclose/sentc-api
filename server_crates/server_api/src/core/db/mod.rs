@@ -56,17 +56,32 @@ pub fn get_in<T>(objects: &Vec<T>) -> String
 
 fn db_query_err<E: Error>(e: &E) -> HttpErr
 {
-	HttpErr::new(422, ApiErrorCodes::DbQuery, "db error", Some(format!("db fetch err, {:?}", e)))
+	HttpErr::new(
+		422,
+		ApiErrorCodes::DbQuery,
+		"db error",
+		Some(format!("db fetch err, {:?}", e)),
+	)
 }
 
 fn db_exec_err<E: Error>(e: &E) -> HttpErr
 {
-	HttpErr::new(422, ApiErrorCodes::DbExecute, "db error", Some(format!("db execute err, {:?}", e)))
+	HttpErr::new(
+		422,
+		ApiErrorCodes::DbExecute,
+		"db error",
+		Some(format!("db execute err, {:?}", e)),
+	)
 }
 
 fn db_bulk_insert_err<E: Error>(e: &E) -> HttpErr
 {
-	HttpErr::new(422, ApiErrorCodes::DbBulkInsert, "db error", Some(format!("db bulk insert err, {:?}", e)))
+	HttpErr::new(
+		422,
+		ApiErrorCodes::DbBulkInsert,
+		"db error",
+		Some(format!("db bulk insert err, {:?}", e)),
+	)
 }
 
 /**
@@ -236,7 +251,10 @@ mod test
 		let ins = get_in(&params);
 
 		//language=SQLx
-		let sql = format!("SELECT * FROM test WHERE id IN ({}) ORDER BY name", ins);
+		let sql = format!(
+			"SELECT * FROM test WHERE id IN ({}) ORDER BY name",
+			ins
+		);
 
 		let test_data: Vec<TestData> = query(sql, params).await.unwrap();
 
@@ -277,7 +295,13 @@ mod test
 			"test".to_string(),
 			vec!["id".to_string(), "name".to_string(), "time".to_string()],
 			vec![t1, t2, t3],
-			|ob| set_params!(ob.id.to_string(), ob._name.to_string(), ob._time.to_string()),
+			|ob| {
+				set_params!(
+					ob.id.to_string(),
+					ob._name.to_string(),
+					ob._time.to_string()
+				)
+			},
 		)
 		.await
 		.unwrap();
@@ -288,7 +312,10 @@ mod test
 		let ins = get_in(&params);
 
 		//language=SQLx
-		let sql = format!("SELECT * FROM test WHERE id IN ({}) ORDER BY name", ins);
+		let sql = format!(
+			"SELECT * FROM test WHERE id IN ({}) ORDER BY name",
+			ins
+		);
 
 		let test_data: Vec<TestData> = query(sql, params).await.unwrap();
 
