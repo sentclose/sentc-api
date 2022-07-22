@@ -11,14 +11,17 @@ pub enum ApiErrorCodes
 
 	InputTooBig,
 
-	UnexpectedTimeError,
+	UnexpectedTime,
 
 	NoDbConnection,
 	DbQuery,
 	DbExecute,
 	DbBulkInsert,
 
-	JwtValidationFailed,
+	JwtNotFound,
+	JwtWrongFormat,
+	JwtValidation,
+	JwtCreation,
 
 	UserNotFound,
 }
@@ -31,12 +34,15 @@ impl ApiErrorCodes
 			ApiErrorCodes::JsonToString => 10,
 			ApiErrorCodes::JsonParse => 11,
 			ApiErrorCodes::InputTooBig => 12,
-			ApiErrorCodes::UnexpectedTimeError => 12,
+			ApiErrorCodes::UnexpectedTime => 12,
 			ApiErrorCodes::NoDbConnection => 20,
 			ApiErrorCodes::DbQuery => 21,
 			ApiErrorCodes::DbExecute => 22,
 			ApiErrorCodes::DbBulkInsert => 23,
-			ApiErrorCodes::JwtValidationFailed => 30,
+			ApiErrorCodes::JwtValidation => 30,
+			ApiErrorCodes::JwtNotFound => 31,
+			ApiErrorCodes::JwtWrongFormat => 32,
+			ApiErrorCodes::JwtCreation => 33,
 			ApiErrorCodes::UserNotFound => 100,
 		}
 	}
