@@ -4,10 +4,11 @@ use rustgram::{r, Request, Response, Router};
 use crate::routes::routes;
 
 pub mod core;
+mod customer;
+mod group;
 mod middleware;
 mod routes;
 mod user;
-mod group;
 
 async fn not_found_handler(_req: Request) -> Response
 {
@@ -28,6 +29,7 @@ pub async fn start()
 	dotenv::dotenv().ok();
 
 	core::db::init_db().await;
+	core::cache::init_cache().await;
 }
 
 /**
