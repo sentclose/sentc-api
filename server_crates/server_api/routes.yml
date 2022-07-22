@@ -11,12 +11,10 @@ routes:
         - group:
             p: ""
             gr:
-              - post:
-                  p: "/exists"
-                  s: crate::user::exists
-              - post:
-                  p: "/register"
-                  s: crate::user::register
+              - post: {p: "/exists", s: crate::user::exists}
+              - post: {p: "/register", s: crate::user::register}
+              - post: {p: "/prepare_login", s: crate::user::prepare_login}
+              - post: {p: "/done_login", s: crate::user::done_login}
         #_______________________________________________________________________________________________________________
         # routes which needed jwt check with a valid jwt
         - group:
@@ -29,12 +27,10 @@ routes:
               - group:
                   p: "/user"
                   gr:
-                    - get:
-                        p: ""
-                        s: crate::user::get
+                    - get: {p: "", s: crate::user::get}
+              #_________________________________________________________________________________________________________
+              # group routes in the group mod
               - group:
                   p: "/group"
                   gr:
-                    - get:
-                        p: "/:id"
-                        s: crate::group::get
+                    - get: {p: "/:id", s: crate::group::get}
