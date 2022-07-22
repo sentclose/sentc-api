@@ -37,3 +37,5 @@ pub async fn add(key: String, value: String, ttl: usize)
 
 	cache.add(key, value, ttl).await
 }
+
+pub static JWT_CACHE: &'static str = "jwtcache";

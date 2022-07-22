@@ -10,6 +10,7 @@ use rustgram::{GramHttpErr, Request, Response};
 
 use crate::core::api_err::{ApiErrorCodes, HttpErr};
 use crate::core::cache;
+use crate::core::cache::JWT_CACHE;
 use crate::core::input_helper::{bytes_to_json, json_to_string};
 use crate::core::jwt::auth;
 use crate::user::user_entities::UserJwtEntity;
@@ -110,10 +111,11 @@ async fn validate(jwt: &str, check_exp: bool) -> Result<UserJwtEntity, HttpErr>
 	//no need for crypto hasher
 	let mut s = DefaultHasher::new();
 	jwt.hash(&mut s);
-	let hashed_jwt = s.finish();
-	let hashed_jwt = hashed_jwt.to_string();
+	let cache_key = s.finish();
+	let cache_key = cache_key.to_string();
+	let cache_key = JWT_CACHE.to_string() + cache_key.as_str();
 
-	let entity = match cache::get(hashed_jwt.as_str()).await {
+	let entity = match cache::get(cache_key.as_str()).await {
 		Some(j) => bytes_to_json(j.as_bytes())?,
 		None => {
 			//if not in the cache valid the jwt and cache it
@@ -122,7 +124,7 @@ async fn validate(jwt: &str, check_exp: bool) -> Result<UserJwtEntity, HttpErr>
 			if check_exp {
 				//only add the jwt to cache for exp able jwt's
 				//ttl should end for this cache -1 sec before the actual token exp
-				cache::add(hashed_jwt, json_to_string(&entity)?, exp - 1).await;
+				cache::add(cache_key, json_to_string(&entity)?, exp - 1).await;
 			}
 
 			entity
