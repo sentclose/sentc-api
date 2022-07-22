@@ -118,12 +118,11 @@ async fn validate(jwt: &str, check_exp: bool) -> Result<UserJwtEntity, HttpErr>
 		None => {
 			//if not in the cache valid the jwt and cache it
 			let (entity, exp) = auth(jwt, check_exp).await?;
-			let entity_string = json_to_string(&entity)?;
 
 			if check_exp {
 				//only add the jwt to cache for exp able jwt's
 				//ttl should end for this cache -1 sec before the actual token exp
-				cache::add(hashed_jwt, entity_string, exp - 1).await;
+				cache::add(hashed_jwt, json_to_string(&entity)?, exp - 1).await;
 			}
 
 			entity
