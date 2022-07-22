@@ -1,6 +1,9 @@
+use std::error::Error;
 use std::str::FromStr;
 
 use jsonwebtoken::{decode, decode_header, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use ring::rand;
+use ring::signature::{self, KeyPair};
 use sentc_crypto_common::UserId;
 use serde::{Deserialize, Serialize};
 
@@ -48,8 +51,10 @@ pub async fn create_jwt(
 
 	//TODO get it from the db (no cache for the sign key)
 	let sign_key = "abc";
+	//decode sign key
+	let sign_key = base64::decode(sign_key).map_err(|_e| HttpErr::new(401, ApiErrorCodes::JwtCreation, "Can't create jwt", None))?;
 
-	encode(&header, &claims, &EncodingKey::from_ec_der(sign_key.as_bytes())).map_err(|e| {
+	encode(&header, &claims, &EncodingKey::from_ec_der(&sign_key)).map_err(|e| {
 		HttpErr::new(
 			401,
 			ApiErrorCodes::JwtCreation,
@@ -70,11 +75,13 @@ pub async fn auth(jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), 
 
 	//TODO get the verify key from the db (no cache here because we would got extreme big cache for each app, and we may get the jwt from cache too)
 	let verify_key = "abc";
+	//decode the key
+	let verify_key = base64::decode(verify_key).map_err(|_e| HttpErr::new(401, ApiErrorCodes::JwtWrongFormat, "Can't decode the jwt", None))?;
 
 	let mut validation = Validation::new(alg);
 	validation.validate_exp = check_exp;
 
-	let decoded = decode::<Claims>(jwt, &DecodingKey::from_ec_der(verify_key.as_bytes()), &validation)
+	let decoded = decode::<Claims>(jwt, &DecodingKey::from_ec_der(&verify_key), &validation)
 		.map_err(|_e| HttpErr::new(401, ApiErrorCodes::JwtValidation, "Wrong jwt", None))?;
 
 	Ok((
@@ -85,4 +92,30 @@ pub async fn auth(jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), 
 		},
 		decoded.claims.exp,
 	))
+}
+
+pub fn create_jwt_keys() -> Result<(String, String), HttpErr>
+{
+	let rng = rand::SystemRandom::new();
+	let bytes = signature::EcdsaKeyPair::generate_pkcs8(&signature::ECDSA_P384_SHA384_FIXED_SIGNING, &rng).map_err(|e| map_create_key_err(e))?;
+
+	let keypair =
+		signature::EcdsaKeyPair::from_pkcs8(&signature::ECDSA_P384_SHA384_FIXED_SIGNING, bytes.as_ref()).map_err(|e| map_create_key_err(e))?;
+
+	let verify_key = keypair.public_key();
+
+	let verify_key = base64::encode(verify_key);
+	let keypair = base64::encode(bytes);
+
+	Ok((keypair, verify_key))
+}
+
+fn map_create_key_err<E: Error>(e: E) -> HttpErr
+{
+	HttpErr::new(
+		500,
+		ApiErrorCodes::JwtKeyCreation,
+		"Can't create keys",
+		Some(format!("Err in Jwt key creation: {}", e)),
+	)
 }
