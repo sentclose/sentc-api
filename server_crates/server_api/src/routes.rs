@@ -11,9 +11,9 @@ use crate::middleware::*;
 pub(crate) fn routes() -> Router
 {
 	let mut router = Router::new(crate::not_found_handler);
-	router.get("/api/v1/user", r(crate::user::user_controller::get));
-	router.post("/api/v1/user/exists", r(crate::user::user_controller::exists));
-	router.post("/api/v1/user/register", r(crate::user::user_controller::register));
+	router.post("/api/v1/exists", r(crate::user::user_controller::exists));
+	router.post("/api/v1/register", r(crate::user::user_controller::register));
+	router.get("/api/v1/user", r(crate::user::user_controller::get).add(jwt::jwt_transform));
 
 	router
 }

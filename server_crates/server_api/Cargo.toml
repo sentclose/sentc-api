@@ -35,6 +35,9 @@ rusqlite = { version = "0.27.0", features = ["bundled"], optional = true }
 # id
 uuid = {version="1.1.2", features= ["v4", "fast-rng"]}
 
+# jwt handling
+jsonwebtoken = { version = "8.1.1", default-features = false }
+
 # dotenv vars
 dotenv = "0.15.0"
 

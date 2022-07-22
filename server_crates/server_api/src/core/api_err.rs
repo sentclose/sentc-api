@@ -18,6 +18,8 @@ pub enum ApiErrorCodes
 	DbExecute,
 	DbBulkInsert,
 
+	JwtValidationFailed,
+
 	UserNotFound,
 }
 
@@ -34,6 +36,7 @@ impl ApiErrorCodes
 			ApiErrorCodes::DbQuery => 21,
 			ApiErrorCodes::DbExecute => 22,
 			ApiErrorCodes::DbBulkInsert => 23,
+			ApiErrorCodes::JwtValidationFailed => 30,
 			ApiErrorCodes::UserNotFound => 100,
 		}
 	}

@@ -2,20 +2,33 @@ base_mw: "middleware"
 handler_404: crate::not_found_handler
 prefix: "/api"
 routes:
-  # api routes
+  # api v1 routes
   - group:
       p: "/v1"
       gr:
-      # user routes in the user mod
+        #_______________________________________________________________________________________________________________
+        # routes don't need jwt check
         - group:
-            p: "/user"
+            p: ""
             gr:
-              - get:
-                  p: ""
-                  s: crate::user::user_controller::get
               - post:
                   p: "/exists"
                   s: crate::user::user_controller::exists
               - post:
                   p: "/register"
                   s: crate::user::user_controller::register
+        #_______________________________________________________________________________________________________________
+        # routes which needed jwt check with a valid jwt
+        - group:
+            p: ""
+            mw:
+              - jwt::jwt_transform
+            gr:
+              #_________________________________________________________________________________________________________
+              # user routes in the user mod
+              - group:
+                  p: "/user"
+                  gr:
+                    - get:
+                        p: ""
+                        s: crate::user::user_controller::get
