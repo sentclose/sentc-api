@@ -18,6 +18,9 @@ rustgram = "0.1.2"
 
 bytes = "1.1.0"
 
+# for caching trait
+async-trait = "0.1.56"
+
 # json handling
 serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
