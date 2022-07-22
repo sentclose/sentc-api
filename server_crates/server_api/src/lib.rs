@@ -7,6 +7,7 @@ pub mod core;
 mod middleware;
 mod routes;
 mod user;
+mod group;
 
 async fn not_found_handler(_req: Request) -> Response
 {
