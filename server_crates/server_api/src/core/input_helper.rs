@@ -44,12 +44,13 @@ where
 	match to_string(value) {
 		Ok(o) => Ok(o),
 		Err(e) => {
-			Err(HttpErr::new(
-				422,
-				ApiErrorCodes::JsonParse,
-				"json parse error",
-				Some(format!("json parse err: {:?}", e)),
-			))
+			#[cfg(debug_assertions)]
+			let debug = Some(format!("json parse err: {:?}", e));
+
+			#[cfg(not(debug_assertions))]
+			let debug = None;
+
+			Err(HttpErr::new(422, ApiErrorCodes::JsonParse, "json parse error", debug))
 		},
 	}
 }
@@ -61,12 +62,13 @@ where
 	match from_slice::<T>(v) {
 		Ok(o) => Ok(o),
 		Err(e) => {
-			Err(HttpErr::new(
-				422,
-				ApiErrorCodes::JsonToString,
-				"wrong input",
-				Some(format!("wrong json format: {:?}", e)),
-			))
+			#[cfg(debug_assertions)]
+			let debug = Some(format!("wrong json format: {:?}", e));
+
+			#[cfg(not(debug_assertions))]
+			let debug = None;
+
+			Err(HttpErr::new(422, ApiErrorCodes::JsonToString, "wrong input", debug))
 		},
 	}
 }
