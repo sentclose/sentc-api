@@ -12,10 +12,11 @@ use sentc_crypto_common::user::{
 	UserIdentifierAvailableServerOutput,
 };
 
-use crate::core::api_res::HttpErr;
-use crate::core::input_helper::{bytes_to_json, get_raw_body, json_to_string};
+use crate::core::api_res::{echo, HttpErr, JRes};
+use crate::core::input_helper::{bytes_to_json, get_raw_body};
+use crate::user::user_entities::UserEntity;
 
-pub(crate) async fn exists(_req: Request) -> Result<String, HttpErr>
+pub(crate) async fn exists(_req: Request) -> JRes<UserIdentifierAvailableServerOutput>
 {
 	let user_id = "058ed2e6-3880-4a7c-ab3b-fd2f5755ea43"; //get this from the url param
 
@@ -26,7 +27,7 @@ pub(crate) async fn exists(_req: Request) -> Result<String, HttpErr>
 		available: exists,
 	};
 
-	json_to_string(&out)
+	echo(out)
 }
 
 pub(crate) async fn register(req: Request) -> Result<String, HttpErr>
@@ -39,7 +40,7 @@ pub(crate) async fn register(req: Request) -> Result<String, HttpErr>
 	Ok(format!("done"))
 }
 
-pub(crate) async fn prepare_login(req: Request) -> Result<String, HttpErr>
+pub(crate) async fn prepare_login(req: Request) -> JRes<PrepareLoginSaltServerOutput>
 {
 	let body = get_raw_body(req).await?;
 
@@ -49,13 +50,15 @@ pub(crate) async fn prepare_login(req: Request) -> Result<String, HttpErr>
 
 	//create the salt
 
-	json_to_string(&PrepareLoginSaltServerOutput {
+	let out = PrepareLoginSaltServerOutput {
 		salt_string: "".to_string(),
 		derived_encryption_key_alg: "".to_string(),
-	})
+	};
+
+	echo(out)
 }
 
-pub(crate) async fn done_login(req: Request) -> Result<String, HttpErr>
+pub(crate) async fn done_login(req: Request) -> JRes<DoneLoginServerKeysOutput>
 {
 	let body = get_raw_body(req).await?;
 
@@ -70,7 +73,7 @@ pub(crate) async fn done_login(req: Request) -> Result<String, HttpErr>
 	//if correct -> fetch and return the user data
 	// and create the jwt
 
-	json_to_string(&DoneLoginServerKeysOutput {
+	let out = DoneLoginServerKeysOutput {
 		encrypted_master_key: "".to_string(),
 		encrypted_private_key: "".to_string(),
 		public_key_string: "".to_string(),
@@ -81,15 +84,17 @@ pub(crate) async fn done_login(req: Request) -> Result<String, HttpErr>
 		keypair_encrypt_id: "".to_string(),
 		keypair_sign_id: "".to_string(),
 		jwt: "".to_string(),
-	})
+	};
+
+	echo(out)
 }
 
-pub(crate) async fn get(_req: Request) -> Result<String, HttpErr>
+pub(crate) async fn get(_req: Request) -> JRes<UserEntity>
 {
 	let user_id = "abc"; //get this from the url param
 
 	//
 	let user = user_model::get_user(user_id).await?;
 
-	json_to_string(&user)
+	echo(user)
 }

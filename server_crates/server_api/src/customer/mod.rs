@@ -1,6 +1,6 @@
 use rustgram::Request;
 
-use crate::core::api_res::HttpErr;
+use crate::core::api_res::{echo, HttpErr, JRes};
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
 use crate::customer::customer_entities::{CustomerAppJwtRegisterOutput, CustomerAppRegisterOutput, CustomerRegisterData};
 use crate::user::jwt::create_jwt_keys;
@@ -26,7 +26,7 @@ pub(crate) async fn done_create(_req: Request) -> Result<String, HttpErr>
 	Ok(format!("done"))
 }
 
-pub(crate) async fn create_app(_req: Request) -> Result<String, HttpErr>
+pub(crate) async fn create_app(_req: Request) -> JRes<CustomerAppRegisterOutput>
 {
 	//1. create the first jwt keys
 	let (jwt_sign_key, jwt_verify_key, alg) = create_jwt_keys()?;
@@ -36,7 +36,7 @@ pub(crate) async fn create_app(_req: Request) -> Result<String, HttpErr>
 	let customer_id = "abc".to_string();
 	let app_id = "dfg".to_string();
 
-	let _customer_app_data = CustomerAppRegisterOutput {
+	let customer_app_data = CustomerAppRegisterOutput {
 		customer_id: customer_id.to_string(),
 		app_id: app_id.to_string(),
 		secret_token: "".to_string(),
@@ -50,5 +50,5 @@ pub(crate) async fn create_app(_req: Request) -> Result<String, HttpErr>
 		},
 	};
 
-	Ok(format!("done"))
+	echo(customer_app_data)
 }

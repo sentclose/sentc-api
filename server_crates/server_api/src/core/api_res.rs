@@ -119,11 +119,16 @@ pub fn json_to_string_err<E: Error>(e: E) -> HttpErr
 	)
 }
 
-pub type JRes<T> = Result<JsonResult<T>, HttpErr>;
+pub type JRes<T> = Result<JsonRes<T>, HttpErr>;
 
-pub struct JsonResult<T: ?Sized + Serialize>(pub T);
+/**
+Creates a json response with the json header
 
-impl<T: ?Sized + Serialize> HttpResult<Response> for JsonResult<T>
+Creates a string from the obj
+*/
+pub struct JsonRes<T: ?Sized + Serialize>(pub T);
+
+impl<T: ?Sized + Serialize> HttpResult<Response> for JsonRes<T>
 {
 	fn get_res(&self) -> Response
 	{
@@ -137,4 +142,9 @@ impl<T: ?Sized + Serialize> HttpResult<Response> for JsonResult<T>
 			.body(string.into())
 			.unwrap()
 	}
+}
+
+pub fn echo<T: Serialize>(obj: T) -> JRes<T>
+{
+	Ok(JsonRes(obj))
 }
