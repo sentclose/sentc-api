@@ -52,14 +52,7 @@ pub async fn create_jwt(
 	//TODO get it from the db (no cache for the sign key)
 	let sign_key = "abc";
 	//decode sign key
-	let sign_key = base64::decode(sign_key).map_err(|_e| {
-		HttpErr::new(
-			401,
-			ApiErrorCodes::JwtCreation,
-			"Can't create jwt",
-			None,
-		)
-	})?;
+	let sign_key = base64::decode(sign_key).map_err(|_e| HttpErr::new(401, ApiErrorCodes::JwtCreation, "Can't create jwt", None))?;
 
 	encode(&header, &claims, &EncodingKey::from_ec_der(&sign_key)).map_err(|e| {
 		HttpErr::new(
@@ -110,12 +103,8 @@ pub async fn auth(jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), 
 	let mut validation = Validation::new(alg);
 	validation.validate_exp = check_exp;
 
-	let decoded = decode::<Claims>(
-		jwt,
-		&DecodingKey::from_ec_der(&verify_key),
-		&validation,
-	)
-	.map_err(|_e| HttpErr::new(401, ApiErrorCodes::JwtValidation, "Wrong jwt", None))?;
+	let decoded = decode::<Claims>(jwt, &DecodingKey::from_ec_der(&verify_key), &validation)
+		.map_err(|_e| HttpErr::new(401, ApiErrorCodes::JwtValidation, "Wrong jwt", None))?;
 
 	Ok((
 		UserJwtEntity {
@@ -132,11 +121,8 @@ pub fn create_jwt_keys() -> Result<(String, String), HttpErr>
 	let rng = rand::SystemRandom::new();
 	let bytes = signature::EcdsaKeyPair::generate_pkcs8(&signature::ECDSA_P384_SHA384_FIXED_SIGNING, &rng).map_err(|e| map_create_key_err(e))?;
 
-	let keypair = signature::EcdsaKeyPair::from_pkcs8(
-		&signature::ECDSA_P384_SHA384_FIXED_SIGNING,
-		bytes.as_ref(),
-	)
-	.map_err(|e| map_create_key_err(e))?;
+	let keypair =
+		signature::EcdsaKeyPair::from_pkcs8(&signature::ECDSA_P384_SHA384_FIXED_SIGNING, bytes.as_ref()).map_err(|e| map_create_key_err(e))?;
 
 	let verify_key = keypair.public_key();
 

@@ -102,14 +102,7 @@ fn get_jwt_from_req(req: &Request) -> Result<String, HttpErr>
 		},
 	};
 
-	let auth_header = std::str::from_utf8(header.as_bytes()).map_err(|_e| {
-		HttpErr::new(
-			401,
-			ApiErrorCodes::JwtWrongFormat,
-			"Wrong format",
-			None,
-		)
-	})?;
+	let auth_header = std::str::from_utf8(header.as_bytes()).map_err(|_e| HttpErr::new(401, ApiErrorCodes::JwtWrongFormat, "Wrong format", None))?;
 
 	if !auth_header.starts_with(BEARER) {
 		return Err(HttpErr::new(

@@ -251,10 +251,7 @@ mod test
 		let ins = get_in(&params);
 
 		//language=SQLx
-		let sql = format!(
-			"SELECT * FROM test WHERE id IN ({}) ORDER BY name",
-			ins
-		);
+		let sql = format!("SELECT * FROM test WHERE id IN ({}) ORDER BY name", ins);
 
 		let test_data: Vec<TestData> = query(sql, params).await.unwrap();
 
@@ -312,10 +309,7 @@ mod test
 		let ins = get_in(&params);
 
 		//language=SQLx
-		let sql = format!(
-			"SELECT * FROM test WHERE id IN ({}) ORDER BY name",
-			ins
-		);
+		let sql = format!("SELECT * FROM test WHERE id IN ({}) ORDER BY name", ins);
 
 		let test_data: Vec<TestData> = query(sql, params).await.unwrap();
 
