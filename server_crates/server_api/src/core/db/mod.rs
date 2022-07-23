@@ -292,13 +292,7 @@ mod test
 			"test".to_string(),
 			vec!["id".to_string(), "name".to_string(), "time".to_string()],
 			vec![t1, t2, t3],
-			|ob| {
-				set_params!(
-					ob.id.to_string(),
-					ob._name.to_string(),
-					ob._time.to_string()
-				)
-			},
+			|ob| set_params!(ob.id.to_string(), ob._name.to_string(), ob._time.to_string()),
 		)
 		.await
 		.unwrap();

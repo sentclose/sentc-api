@@ -69,14 +69,7 @@ pub async fn create_jwt(
 
 pub async fn auth(jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), HttpErr>
 {
-	let header = decode_header(jwt).map_err(|_e| {
-		HttpErr::new(
-			401,
-			ApiErrorCodes::JwtWrongFormat,
-			"Can't decode the jwt",
-			None,
-		)
-	})?;
+	let header = decode_header(jwt).map_err(|_e| HttpErr::new(401, ApiErrorCodes::JwtWrongFormat, "Can't decode the jwt", None))?;
 
 	let key_id = match header.kid {
 		Some(k) => k,
@@ -130,14 +123,7 @@ pub fn create_jwt_keys() -> Result<(String, String, &'static str), HttpErr>
 
 fn decode_jwt_key(key: String) -> Result<Vec<u8>, HttpErr>
 {
-	base64::decode(key).map_err(|_e| {
-		HttpErr::new(
-			401,
-			ApiErrorCodes::JwtWrongFormat,
-			"Can't decode the jwt",
-			None,
-		)
-	})
+	base64::decode(key).map_err(|_e| HttpErr::new(401, ApiErrorCodes::JwtWrongFormat, "Can't decode the jwt", None))
 }
 
 fn map_create_key_err<E: Error>(e: E) -> HttpErr

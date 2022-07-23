@@ -176,12 +176,7 @@ where
 {
 	let ignore_string = if ignore { "IGNORE" } else { "" };
 
-	let mut stmt = format!(
-		"INSERT {} INTO {} ({}) VALUES ",
-		ignore_string,
-		table,
-		cols.join(",")
-	);
+	let mut stmt = format!("INSERT {} INTO {} ({}) VALUES ", ignore_string, table, cols.join(","));
 
 	// each (?,..,?) tuple for values
 	let row = format!(
