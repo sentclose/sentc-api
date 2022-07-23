@@ -141,3 +141,59 @@ fn map_create_key_err<E: Error>(e: E) -> HttpErr
 		Some(format!("Err in Jwt key creation: {}", e)),
 	)
 }
+
+#[cfg(test)]
+mod test
+{
+	use super::*;
+
+	#[test]
+	fn test_jwt_key_creation_and_validation()
+	{
+		let (keypair, verify_key) = create_jwt_keys().unwrap();
+
+		//create a jwt, but raw not with the functions
+		let iat = get_time_in_sec().unwrap();
+		let expiration = iat + 60 * 5; //exp in 5 min
+
+		let claims = Claims {
+			iat: iat as usize,
+			aud: "jo".to_string(),
+			sub: "12345".to_string(),
+			exp: expiration as usize,
+			internal_user_id: "12345".to_string(),
+			user_identifier: "username".to_string(),
+		};
+
+		let key_id_str = "abc".to_string();
+
+		let mut header = Header::new(Algorithm::from_str("ES384").unwrap());
+		header.kid = Some(key_id_str.to_string());
+
+		let sign_key = base64::decode(keypair).unwrap();
+
+		let jwt = encode(&header, &claims, &EncodingKey::from_ec_der(&sign_key)).unwrap();
+
+		//auth the jwt
+		let header = decode_header(&jwt).unwrap();
+
+		let key_id = match header.kid {
+			Some(k) => k,
+			None => {
+				panic!("kid should be there")
+			},
+		};
+		let alg = header.alg;
+
+		//decode the key
+		let verify_key = base64::decode(verify_key).unwrap();
+
+		let mut validation = Validation::new(alg);
+		validation.validate_exp = true;
+
+		let decoded = decode::<Claims>(&jwt, &DecodingKey::from_ec_der(&verify_key), &validation).unwrap();
+
+		assert_eq!(decoded.claims.user_identifier, claims.user_identifier);
+		assert_eq!(key_id, key_id_str);
+	}
+}
