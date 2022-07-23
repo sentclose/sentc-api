@@ -1,7 +1,11 @@
 use std::error::Error;
 
 use hyper::StatusCode;
+use rustgram::service::HttpResult;
 use rustgram::{GramHttpErr, Response};
+use serde::Serialize;
+
+use crate::core::input_helper::json_to_string;
 
 #[derive(Debug)]
 pub enum ApiErrorCodes
@@ -113,4 +117,24 @@ pub fn json_to_string_err<E: Error>(e: E) -> HttpErr
 		"Err in json",
 		Some(format!("err in json to string: {:?}", e)),
 	)
+}
+
+pub type JRes<T> = Result<JsonResult<T>, HttpErr>;
+
+pub struct JsonResult<T: ?Sized + Serialize>(pub T);
+
+impl<T: ?Sized + Serialize> HttpResult<Response> for JsonResult<T>
+{
+	fn get_res(&self) -> Response
+	{
+		let string = match json_to_string(&self.0) {
+			Ok(s) => s,
+			Err(e) => return e.get_res(),
+		};
+
+		hyper::Response::builder()
+			.header("Content-Type", "application/json")
+			.body(string.into())
+			.unwrap()
+	}
 }

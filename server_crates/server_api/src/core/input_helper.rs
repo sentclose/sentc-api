@@ -4,7 +4,7 @@ use rustgram::Request;
 use serde::{de, Serialize};
 use serde_json::{from_slice, to_string};
 
-use crate::core::api_err::{ApiErrorCodes, HttpErr};
+use crate::core::api_res::{ApiErrorCodes, HttpErr};
 
 const MAX_SIZE_JSON: usize = 262_144; // max payload size is 256k
 

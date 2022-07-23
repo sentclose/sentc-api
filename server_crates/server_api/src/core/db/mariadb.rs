@@ -3,7 +3,7 @@ use std::env;
 use mysql_async::prelude::{FromRow, Queryable};
 use mysql_async::{from_value, Params, Pool, Row};
 
-use crate::core::api_err::{ApiErrorCodes, HttpErr};
+use crate::core::api_res::{ApiErrorCodes, HttpErr};
 use crate::core::db::{db_bulk_insert_err, db_exec_err, db_query_err, MARIA_DB_COMM};
 
 #[macro_export]

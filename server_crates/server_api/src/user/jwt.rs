@@ -7,7 +7,7 @@ use ring::signature::{self, KeyPair};
 use sentc_crypto_common::UserId;
 use serde::{Deserialize, Serialize};
 
-use crate::core::api_err::{ApiErrorCodes, HttpErr};
+use crate::core::api_res::{ApiErrorCodes, HttpErr};
 use crate::core::get_time_in_sec;
 use crate::customer::customer_entities::CustomerAppJwt;
 use crate::user::user_entities::UserJwtEntity;

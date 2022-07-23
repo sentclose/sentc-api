@@ -4,7 +4,7 @@ use std::fmt::{Debug, Display, Formatter};
 use deadpool_sqlite::{Config, Pool, Runtime};
 use rusqlite::{params_from_iter, Connection, Row, ToSql};
 
-use crate::core::api_err::{ApiErrorCodes, HttpErr};
+use crate::core::api_res::{ApiErrorCodes, HttpErr};
 use crate::core::db::{db_bulk_insert_err, db_exec_err, db_query_err, SQLITE_DB_CONN};
 
 #[macro_export]

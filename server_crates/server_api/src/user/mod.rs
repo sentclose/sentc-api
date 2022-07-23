@@ -12,7 +12,7 @@ use sentc_crypto_common::user::{
 	UserIdentifierAvailableServerOutput,
 };
 
-use crate::core::api_err::HttpErr;
+use crate::core::api_res::HttpErr;
 use crate::core::input_helper::{bytes_to_json, get_raw_body, json_to_string};
 
 pub(crate) async fn exists(_req: Request) -> Result<String, HttpErr>

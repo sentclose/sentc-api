@@ -1,4 +1,4 @@
-use crate::core::api_err::{ApiErrorCodes, HttpErr};
+use crate::core::api_res::{ApiErrorCodes, HttpErr};
 use crate::core::db::query_first;
 use crate::set_params;
 use crate::user::user_entities::{JwtSignKey, JwtVerifyKey, UserEntity, UserExistsEntity};

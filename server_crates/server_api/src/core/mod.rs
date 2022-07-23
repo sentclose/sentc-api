@@ -1,8 +1,8 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::core::api_err::{ApiErrorCodes, HttpErr};
+use crate::core::api_res::{ApiErrorCodes, HttpErr};
 
-pub mod api_err;
+pub mod api_res;
 pub mod cache;
 pub mod db;
 pub mod input_helper;

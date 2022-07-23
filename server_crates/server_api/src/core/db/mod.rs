@@ -2,7 +2,7 @@ use std::error::Error;
 
 use tokio::sync::OnceCell;
 
-use crate::core::api_err::{ApiErrorCodes, HttpErr};
+use crate::core::api_res::{ApiErrorCodes, HttpErr};
 
 #[cfg(feature = "mysql")]
 mod mariadb;

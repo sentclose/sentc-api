@@ -1,6 +1,6 @@
 use rustgram::Request;
 
-use crate::core::api_err::HttpErr;
+use crate::core::api_res::HttpErr;
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
 use crate::customer::customer_entities::{CustomerAppJwtRegisterOutput, CustomerAppRegisterOutput, CustomerRegisterData};
 use crate::user::jwt::create_jwt_keys;
