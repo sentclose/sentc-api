@@ -29,6 +29,8 @@ pub enum ApiErrorCodes
 	JwtKeyCreation,
 	JwtKeyNotFound,
 
+	NoParameter,
+
 	UserNotFound,
 }
 
@@ -51,6 +53,7 @@ impl ApiErrorCodes
 			ApiErrorCodes::JwtCreation => 33,
 			ApiErrorCodes::JwtKeyCreation => 34,
 			ApiErrorCodes::JwtKeyNotFound => 35,
+			ApiErrorCodes::NoParameter => 40,
 			ApiErrorCodes::UserNotFound => 100,
 		}
 	}
