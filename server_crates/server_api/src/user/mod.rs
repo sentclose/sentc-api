@@ -30,19 +30,19 @@ pub(crate) async fn exists(_req: Request) -> JRes<UserIdentifierAvailableServerO
 	echo(out)
 }
 
-pub(crate) async fn register(req: Request) -> Result<String, HttpErr>
+pub(crate) async fn register(mut req: Request) -> Result<String, HttpErr>
 {
 	//load the register input from the req body
-	let body = get_raw_body(req).await?;
+	let body = get_raw_body(&mut req).await?;
 
 	let _register_input: RegisterData = bytes_to_json(&body)?;
 
 	Ok(format!("done"))
 }
 
-pub(crate) async fn prepare_login(req: Request) -> JRes<PrepareLoginSaltServerOutput>
+pub(crate) async fn prepare_login(mut req: Request) -> JRes<PrepareLoginSaltServerOutput>
 {
-	let body = get_raw_body(req).await?;
+	let body = get_raw_body(&mut req).await?;
 
 	let _user_identifier: PrepareLoginServerInput = bytes_to_json(&body)?;
 
@@ -58,9 +58,9 @@ pub(crate) async fn prepare_login(req: Request) -> JRes<PrepareLoginSaltServerOu
 	echo(out)
 }
 
-pub(crate) async fn done_login(req: Request) -> JRes<DoneLoginServerKeysOutput>
+pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerKeysOutput>
 {
-	let body = get_raw_body(req).await?;
+	let body = get_raw_body(&mut req).await?;
 
 	let _done_login: DoneLoginServerInput = bytes_to_json(&body)?;
 

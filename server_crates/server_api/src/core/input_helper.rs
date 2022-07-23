@@ -8,11 +8,10 @@ use crate::core::api_res::{ApiErrorCodes, HttpErr};
 
 const MAX_SIZE_JSON: usize = 262_144; // max payload size is 256k
 
-pub async fn get_raw_body(req: Request) -> Result<BytesMut, HttpErr>
+pub async fn get_raw_body(req: &mut Request) -> Result<BytesMut, HttpErr>
 {
 	//read the json to memory
-
-	let mut req_body = req.into_body();
+	let req_body = req.body_mut();
 	let mut body = BytesMut::new();
 
 	while let Some(bytes) = req_body.next().await {
