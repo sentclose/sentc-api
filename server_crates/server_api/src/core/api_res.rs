@@ -112,16 +112,6 @@ impl GramHttpErr<Response> for HttpErr
 	}
 }
 
-pub fn json_to_string_err<E: Error>(e: E) -> HttpErr
-{
-	HttpErr::new(
-		422,
-		ApiErrorCodes::JsonToString,
-		"Err in json",
-		Some(format!("err in json to string: {:?}", e)),
-	)
-}
-
 pub type JRes<T> = Result<JsonRes<T>, HttpErr>;
 
 /**
