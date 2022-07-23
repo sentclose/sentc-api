@@ -11,6 +11,7 @@ use crate::core::api_err::{ApiErrorCodes, HttpErr};
 use crate::core::get_time_in_sec;
 use crate::customer::customer_entities::CustomerAppJwt;
 use crate::user::user_entities::UserJwtEntity;
+use crate::user::user_model;
 
 pub static JWT_ALG: &'static str = "ES384";
 
@@ -51,10 +52,10 @@ pub async fn create_jwt(
 	let mut header = Header::new(Algorithm::from_str(customer_jwt_data.jwt_alg.as_str()).unwrap());
 	header.kid = Some(customer_jwt_data.jwt_key_id.to_string());
 
-	//TODO get it from the db (no cache for the sign key)
-	let sign_key = "abc";
+	//get it from the db (no cache for the sign key)
+	let sign_key = user_model::get_jwt_sign_key(customer_jwt_data.jwt_key_id.as_str()).await?;
 	//decode sign key
-	let sign_key = base64::decode(sign_key).map_err(|_e| HttpErr::new(401, ApiErrorCodes::JwtCreation, "Can't create jwt", None))?;
+	let sign_key = decode_jwt_key(sign_key)?;
 
 	encode(&header, &claims, &EncodingKey::from_ec_der(&sign_key)).map_err(|e| {
 		HttpErr::new(
@@ -90,17 +91,10 @@ pub async fn auth(jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), 
 	};
 	let alg = header.alg;
 
-	//TODO get the verify key from the db (no cache here because we would got extreme big cache for each app, and we may get the jwt from cache too)
-	let verify_key = "abc";
+	//get the verify key from the db (no cache here because we would got extreme big cache for each app, and we may get the jwt from cache too)
+	let verify_key = user_model::get_jwt_verify_key(key_id.as_str()).await?;
 	//decode the key
-	let verify_key = base64::decode(verify_key).map_err(|_e| {
-		HttpErr::new(
-			401,
-			ApiErrorCodes::JwtWrongFormat,
-			"Can't decode the jwt",
-			None,
-		)
-	})?;
+	let verify_key = decode_jwt_key(verify_key)?;
 
 	let mut validation = Validation::new(alg);
 	validation.validate_exp = check_exp;
@@ -132,6 +126,18 @@ pub fn create_jwt_keys() -> Result<(String, String, &'static str), HttpErr>
 	let keypair = base64::encode(bytes);
 
 	Ok((keypair, verify_key, JWT_ALG))
+}
+
+fn decode_jwt_key(key: String) -> Result<Vec<u8>, HttpErr>
+{
+	base64::decode(key).map_err(|_e| {
+		HttpErr::new(
+			401,
+			ApiErrorCodes::JwtWrongFormat,
+			"Can't decode the jwt",
+			None,
+		)
+	})
 }
 
 fn map_create_key_err<E: Error>(e: E) -> HttpErr

@@ -3,6 +3,57 @@ use serde::{Deserialize, Serialize};
 
 use crate::take_or_err;
 
+//__________________________________________________________________________________________________
+//Jwt
+
+pub struct JwtSignKey(pub String);
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for JwtSignKey
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(JwtSignKey(take_or_err!(row, 0, String)))
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl crate::core::db::FromSqliteRow for JwtSignKey
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(JwtSignKey(take_or_err!(row, 0)))
+	}
+}
+
+pub struct JwtVerifyKey(pub String);
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for JwtVerifyKey
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(JwtVerifyKey(take_or_err!(row, 0, String)))
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl crate::core::db::FromSqliteRow for JwtVerifyKey
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(JwtVerifyKey(take_or_err!(row, 0)))
+	}
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct UserJwtEntity
 {
@@ -11,6 +62,9 @@ pub struct UserJwtEntity
 	//aud if it is an app user or an customer
 	pub aud: String,
 }
+
+//__________________________________________________________________________________________________
+//User info
 
 #[derive(Serialize, Deserialize)]
 pub struct UserEntity
@@ -58,6 +112,9 @@ impl crate::core::db::FromSqliteRow for UserEntity
 	}
 }
 
+//__________________________________________________________________________________________________
+//User exists
+
 #[derive(Serialize, Deserialize)]
 pub struct UserExistsEntity(pub i64); //i64 for sqlite
 
@@ -82,3 +139,5 @@ impl crate::core::db::FromSqliteRow for UserExistsEntity
 		Ok(UserExistsEntity(take_or_err!(row, 0)))
 	}
 }
+
+//__________________________________________________________________________________________________
