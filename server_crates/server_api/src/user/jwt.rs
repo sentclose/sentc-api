@@ -12,6 +12,8 @@ use crate::core::get_time_in_sec;
 use crate::customer::customer_entities::CustomerAppJwt;
 use crate::user::user_entities::UserJwtEntity;
 
+pub static JWT_ALG: &'static str = "ES384";
+
 #[derive(Debug, Serialize, Deserialize)]
 struct Claims
 {
@@ -116,7 +118,7 @@ pub async fn auth(jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), 
 	))
 }
 
-pub fn create_jwt_keys() -> Result<(String, String), HttpErr>
+pub fn create_jwt_keys() -> Result<(String, String, &'static str), HttpErr>
 {
 	let rng = rand::SystemRandom::new();
 	let bytes = signature::EcdsaKeyPair::generate_pkcs8(&signature::ECDSA_P384_SHA384_FIXED_SIGNING, &rng).map_err(|e| map_create_key_err(e))?;
@@ -129,7 +131,7 @@ pub fn create_jwt_keys() -> Result<(String, String), HttpErr>
 	let verify_key = base64::encode(verify_key);
 	let keypair = base64::encode(bytes);
 
-	Ok((keypair, verify_key))
+	Ok((keypair, verify_key, JWT_ALG))
 }
 
 fn map_create_key_err<E: Error>(e: E) -> HttpErr
@@ -150,7 +152,7 @@ mod test
 	#[test]
 	fn test_jwt_key_creation_and_validation()
 	{
-		let (keypair, verify_key) = create_jwt_keys().unwrap();
+		let (keypair, verify_key, alg) = create_jwt_keys().unwrap();
 
 		//create a jwt, but raw not with the functions
 		let iat = get_time_in_sec().unwrap();
@@ -167,7 +169,7 @@ mod test
 
 		let key_id_str = "abc".to_string();
 
-		let mut header = Header::new(Algorithm::from_str("ES384").unwrap());
+		let mut header = Header::new(Algorithm::from_str(alg).unwrap());
 		header.kid = Some(key_id_str.to_string());
 
 		let sign_key = base64::decode(keypair).unwrap();

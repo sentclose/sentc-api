@@ -6,7 +6,6 @@ pub mod api_err;
 pub mod cache;
 pub mod db;
 pub mod input_helper;
-pub mod jwt;
 
 pub fn get_time() -> Result<u128, HttpErr>
 {

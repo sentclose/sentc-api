@@ -12,7 +12,7 @@ use crate::core::api_err::{ApiErrorCodes, HttpErr};
 use crate::core::cache;
 use crate::core::cache::JWT_CACHE;
 use crate::core::input_helper::{bytes_to_json, json_to_string};
-use crate::core::jwt::auth;
+use crate::user::jwt::auth;
 use crate::user::user_entities::UserJwtEntity;
 
 const BEARER: &str = "Bearer ";
