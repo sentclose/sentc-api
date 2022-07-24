@@ -24,7 +24,7 @@ pub fn get_name_param_from_req<'a>(req: &'a Request, name: &str) -> Result<&'a s
 	match params.get(name) {
 		None => {
 			return Err(HttpErr::new(
-				401,
+				400,
 				ApiErrorCodes::NoParameter,
 				"Parameter not found",
 				None,
@@ -40,7 +40,7 @@ pub fn get_name_param_from_params<'a>(params: &'a RouteParams, name: &str) -> Re
 	match params.get(name) {
 		None => {
 			return Err(HttpErr::new(
-				401,
+				400,
 				ApiErrorCodes::NoParameter,
 				"Parameter not found",
 				None,
