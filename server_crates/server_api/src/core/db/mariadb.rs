@@ -1,10 +1,10 @@
 use std::env;
 
 use mysql_async::prelude::{FromRow, Queryable};
-use mysql_async::{from_value, Params, Pool, Row};
+use mysql_async::{from_value, Params, Pool, Row, TxOpts};
 
 use crate::core::api_res::{ApiErrorCodes, HttpErr};
-use crate::core::db::{db_bulk_insert_err, db_exec_err, db_query_err, MARIA_DB_COMM};
+use crate::core::db::{db_bulk_insert_err, db_exec_err, db_query_err, db_tx_err, MARIA_DB_COMM};
 
 #[macro_export]
 macro_rules! take_or_err {
@@ -21,6 +21,14 @@ macro_rules! take_or_err {
 			None => return Err(mysql_async::FromRowError($row)),
 		}
 	};
+}
+
+pub struct TransactionData<'a, P>
+where
+	P: Into<Params> + Send,
+{
+	pub sql: &'a str,
+	pub params: P,
 }
 
 pub async fn create_db() -> Pool
@@ -130,6 +138,11 @@ where
 		.map_err(|e| db_query_err(&e))
 }
 
+/**
+# Query and get the first result
+
+No vec gets returned, but an options enum
+*/
 pub async fn query_first<T, P>(sql: String, params: P) -> Result<Option<T>, HttpErr>
 where
 	T: FromRow + Send + 'static,
@@ -142,6 +155,11 @@ where
 		.map_err(|e| db_query_err(&e))
 }
 
+/**
+# Execute a sql stmt
+
+drop the result just execute
+*/
 pub async fn exec<P>(sql: &str, params: P) -> Result<(), HttpErr>
 where
 	P: Into<Params> + Send,
@@ -151,6 +169,30 @@ where
 	conn.exec_drop(sql, params)
 		.await
 		.map_err(|e| db_exec_err(&e))
+}
+
+/**
+# Execute in transaction
+
+can be multiple stmt with params in one transition
+*/
+pub async fn exec_transaction<P>(data: Vec<TransactionData<'_, P>>) -> Result<(), HttpErr>
+where
+	P: Into<Params> + Send,
+{
+	let mut conn = get_conn().await?;
+	let mut tx = conn
+		.start_transaction(TxOpts::default())
+		.await
+		.map_err(|e| db_tx_err(&e))?;
+
+	for datum in data {
+		tx.exec_drop(datum.sql, datum.params)
+			.await
+			.map_err(|e| db_tx_err(&e))?;
+	}
+
+	tx.commit().await.map_err(|e| db_tx_err(&e))
 }
 
 /**

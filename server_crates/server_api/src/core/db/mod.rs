@@ -10,9 +10,9 @@ mod mariadb;
 mod sqlite;
 
 #[cfg(feature = "mysql")]
-pub use self::mariadb::{bulk_insert, exec, query, query_first};
+pub use self::mariadb::{bulk_insert, exec, exec_transaction, query, query_first, TransactionData};
 #[cfg(feature = "sqlite")]
-pub use self::sqlite::{bulk_insert, exec, query, query_first, FormSqliteRowError, FromSqliteRow};
+pub use self::sqlite::{bulk_insert, exec, exec_transaction, query, query_first, FormSqliteRowError, FromSqliteRow, TransactionData};
 
 #[cfg(feature = "sqlite")]
 static SQLITE_DB_CONN: OnceCell<deadpool_sqlite::Pool> = OnceCell::const_new();
@@ -81,6 +81,16 @@ fn db_bulk_insert_err<E: Error>(e: &E) -> HttpErr
 		ApiErrorCodes::DbBulkInsert,
 		"db error",
 		Some(format!("db bulk insert err, {:?}", e)),
+	)
+}
+
+fn db_tx_err<E: Error>(e: &E) -> HttpErr
+{
+	HttpErr::new(
+		422,
+		ApiErrorCodes::DbTx,
+		"Db error",
+		Some(format!("Db transaction error: {:?}", e)),
 	)
 }
 

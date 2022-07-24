@@ -5,7 +5,7 @@ use deadpool_sqlite::{Config, Pool, Runtime};
 use rusqlite::{params_from_iter, Connection, Row, ToSql};
 
 use crate::core::api_res::{ApiErrorCodes, HttpErr};
-use crate::core::db::{db_bulk_insert_err, db_exec_err, db_query_err, SQLITE_DB_CONN};
+use crate::core::db::{db_bulk_insert_err, db_exec_err, db_query_err, db_tx_err, SQLITE_DB_CONN};
 
 #[macro_export]
 macro_rules! take_or_err {
@@ -67,6 +67,15 @@ pub async fn create_db() -> Pool
 	println!("init sqlite");
 
 	pool
+}
+
+pub struct TransactionData<P>
+where
+	P: IntoIterator,
+	P::Item: ToSql,
+{
+	pub sql: &'static str,
+	pub params: P,
 }
 
 pub async fn get_conn() -> Result<deadpool_sqlite::Object, HttpErr>
@@ -241,6 +250,38 @@ where
 		.map_err(|e| db_exec_err(&e))??;
 
 	Ok(result)
+}
+
+fn exec_transaction_sync<P>(conn: &mut Connection, data: Vec<TransactionData<P>>) -> Result<(), HttpErr>
+where
+	P: IntoIterator,
+	P::Item: ToSql,
+{
+	let tx = conn.transaction().map_err(|e| db_tx_err(&e))?;
+
+	for datum in data {
+		tx.execute(datum.sql, params_from_iter(datum.params))
+			.map_err(|e| db_tx_err(&e))?;
+	}
+
+	tx.commit().map_err(|e| db_tx_err(&e))
+}
+
+/**
+# Execute in transaction
+
+can be multiple stmt with params in one transition
+ */
+pub async fn exec_transaction<P>(data: Vec<TransactionData<P>>) -> Result<(), HttpErr>
+where
+	P: IntoIterator + Send + 'static,
+	P::Item: ToSql,
+{
+	let conn = get_conn().await?;
+
+	conn.interact(move |conn| exec_transaction_sync(conn, data))
+		.await
+		.map_err(|e| db_exec_err(&e))?
 }
 
 fn bulk_insert_sync<F, T>(conn: &mut Connection, ignore: bool, table: String, cols: Vec<String>, objects: &Vec<T>, fun: F) -> Result<usize, HttpErr>

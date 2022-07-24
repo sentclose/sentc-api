@@ -19,6 +19,7 @@ pub enum ApiErrorCodes
 	DbQuery,
 	DbExecute,
 	DbBulkInsert,
+	DbTx,
 
 	JwtNotFound,
 	JwtWrongFormat,
@@ -45,6 +46,7 @@ impl ApiErrorCodes
 			ApiErrorCodes::DbQuery => 21,
 			ApiErrorCodes::DbExecute => 22,
 			ApiErrorCodes::DbBulkInsert => 23,
+			ApiErrorCodes::DbTx => 24,
 			ApiErrorCodes::JwtValidation => 30,
 			ApiErrorCodes::JwtNotFound => 31,
 			ApiErrorCodes::JwtWrongFormat => 32,
