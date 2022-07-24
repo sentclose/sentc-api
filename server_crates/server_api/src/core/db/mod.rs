@@ -87,14 +87,16 @@ fn db_bulk_insert_err<E: Error>(e: &E) -> HttpErr
 /**
 # Tuple for async-mysql params
 
-returns a tuple of the input values.
+transform the values like into_params_impl from mysql_common::params
 
  */
 #[cfg(feature = "mysql")]
 #[macro_export]
 macro_rules! set_params {
 	($( $param:expr ),+ $(,)?) => {{
-		($($param),+ ,)
+		 mysql_common::params::Params::Positional(vec![
+			 $($param.into(),)*
+         ])
 	}};
 }
 
