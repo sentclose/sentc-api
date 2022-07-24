@@ -7,7 +7,7 @@ use crate::core::get_time;
 use crate::set_params;
 use crate::user::user_entities::{JwtSignKey, JwtVerifyKey, UserEntity, UserExistsEntity};
 
-pub(crate) async fn get_jwt_sign_key(kid: &str) -> Result<String, HttpErr>
+pub(super) async fn get_jwt_sign_key(kid: &str) -> Result<String, HttpErr>
 {
 	//language=SQL
 	let sql = "SELECT sign_key FROM app_jwt_keys WHERE id = ?";
@@ -27,7 +27,7 @@ pub(crate) async fn get_jwt_sign_key(kid: &str) -> Result<String, HttpErr>
 	}
 }
 
-pub(crate) async fn get_jwt_verify_key(kid: &str) -> Result<String, HttpErr>
+pub(super) async fn get_jwt_verify_key(kid: &str) -> Result<String, HttpErr>
 {
 	//language=SQL
 	let sql = "SELECT verify_key FROM app_jwt_keys WHERE id = ?";
@@ -50,7 +50,7 @@ pub(crate) async fn get_jwt_verify_key(kid: &str) -> Result<String, HttpErr>
 //__________________________________________________________________________________________________
 //user
 
-pub(crate) async fn check_user_exists(user_identifier: &str) -> Result<bool, HttpErr>
+pub(super) async fn check_user_exists(user_identifier: &str) -> Result<bool, HttpErr>
 {
 	//language=SQL
 	let sql = "SELECT 1 FROM user WHERE identifier = ? LIMIT 1";
@@ -63,7 +63,7 @@ pub(crate) async fn check_user_exists(user_identifier: &str) -> Result<bool, Htt
 	}
 }
 
-pub(crate) async fn register(app_id: &str, register_data: RegisterData) -> Result<String, HttpErr>
+pub(super) async fn register(app_id: &str, register_data: RegisterData) -> Result<String, HttpErr>
 {
 	//data for the user table
 	//language=SQL
@@ -134,7 +134,7 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 	Ok(user_id)
 }
 
-pub(crate) async fn get_user(user_id: &str) -> Result<UserEntity, HttpErr>
+pub(super) async fn get_user(user_id: &str) -> Result<UserEntity, HttpErr>
 {
 	//language=SQL
 	let sql = "SELECT * FROM test WHERE id = ?";
