@@ -205,10 +205,10 @@ async fn test_4_user_register_failed_username_exists()
 	assert_eq!(res.status(), StatusCode::BAD_REQUEST);
 
 	let body = res.text().await.unwrap();
-	let error = ServerOutput::<String>::from_string(body.as_str()).unwrap();
+	let error = ServerOutput::<RegisterServerOutput>::from_string(body.as_str()).unwrap();
 
 	assert_eq!(error.status, false);
-	assert_eq!(error.result, None);
+	assert_eq!(error.result.is_none(), true);
 	assert_eq!(error.err_code.unwrap(), ApiErrorCodes::UserExists.get_int_code());
 }
 
