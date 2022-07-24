@@ -15,6 +15,7 @@ routes:
               - post: {p: "/register", s: crate::user::register}
               - post: {p: "/prepare_login", s: crate::user::prepare_login}
               - post: {p: "/done_login", s: crate::user::done_login}
+              - delete: {p: "/user/:id", s: crate::user::delete}  # TODO in user group with the jwt!
         #_______________________________________________________________________________________________________________
         # routes which needed jwt check with a valid jwt
         - group:
