@@ -1,5 +1,3 @@
-use std::error::Error;
-
 use hyper::StatusCode;
 use rustgram::service::HttpResult;
 use rustgram::{GramHttpErr, Response};
