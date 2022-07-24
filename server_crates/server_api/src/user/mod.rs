@@ -9,35 +9,47 @@ use sentc_crypto_common::user::{
 	PrepareLoginSaltServerOutput,
 	PrepareLoginServerInput,
 	RegisterData,
+	RegisterServerOutput,
+	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
 };
 
-use crate::core::api_res::{echo, HttpErr, JRes};
+use crate::core::api_res::{echo, JRes};
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
 use crate::user::user_entities::UserEntity;
 
-pub(crate) async fn exists(_req: Request) -> JRes<UserIdentifierAvailableServerOutput>
+pub(crate) async fn exists(mut req: Request) -> JRes<UserIdentifierAvailableServerOutput>
 {
-	let user_id = "058ed2e6-3880-4a7c-ab3b-fd2f5755ea43"; //get this from the url param
+	let body = get_raw_body(&mut req).await?;
+	let data: UserIdentifierAvailableServerInput = bytes_to_json(&body)?;
 
-	let exists = user_model::check_user_exists(user_id).await?;
+	let exists = user_model::check_user_exists(data.user_identifier.as_str()).await?;
 
 	let out = UserIdentifierAvailableServerOutput {
-		user_identifier: user_id.to_string(),
+		user_identifier: data.user_identifier,
 		available: exists,
 	};
 
 	echo(out)
 }
 
-pub(crate) async fn register(mut req: Request) -> Result<String, HttpErr>
+pub(crate) async fn register(mut req: Request) -> JRes<RegisterServerOutput>
 {
 	//load the register input from the req body
 	let body = get_raw_body(&mut req).await?;
 
-	let _register_input: RegisterData = bytes_to_json(&body)?;
+	let register_input: RegisterData = bytes_to_json(&body)?;
+	let user_identifier = register_input.user_identifier.to_string(); //save this value before because of dropping
 
-	Ok(format!("done"))
+	//save the data
+	let user_id = user_model::register("123", register_input).await?;
+
+	let out = RegisterServerOutput {
+		user_id,
+		user_identifier,
+	};
+
+	echo(out)
 }
 
 pub(crate) async fn prepare_login(mut req: Request) -> JRes<PrepareLoginSaltServerOutput>
