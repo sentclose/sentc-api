@@ -327,6 +327,63 @@ mod test
 		assert_eq!(test_data[2].id, id3);
 	}
 
+	async fn test_tx_exec()
+	{
+		//language=SQL
+		let sql = "INSERT INTO test (id, name, time) VALUES (?,?,?)";
+
+		let id1 = Uuid::new_v4().to_string();
+		let name1 = "hello1".to_string();
+		let time1 = get_time().unwrap();
+
+		//language=SQL
+		let sql2 = "INSERT INTO test (id, name, time) VALUES (?,?,?)";
+
+		let id2 = Uuid::new_v4().to_string();
+		let name2 = "hello2".to_string();
+		let time2 = get_time().unwrap();
+
+		//language=SQL
+		let sql3 = "INSERT INTO test (id, name, time) VALUES (?,?,?)";
+
+		let id3 = Uuid::new_v4().to_string();
+		let name3 = "hello3".to_string();
+		let time3 = get_time().unwrap();
+
+		exec_transaction(vec![
+			TransactionData {
+				sql,
+				params: set_params!(id1.clone(), name1, time1.to_string()),
+			},
+			TransactionData {
+				sql: sql2,
+				params: set_params!(id2.clone(), name2, time2.to_string()),
+			},
+			TransactionData {
+				sql: sql3,
+				params: set_params!(id3.clone(), name3, time3.to_string()),
+			},
+		])
+		.await
+		.unwrap();
+
+		let params = vec![id1.clone(), id2.clone(), id3.clone()];
+
+		let ins = get_in(&params);
+
+		//language=SQLx
+		let sql = format!("SELECT * FROM test WHERE id IN ({}) ORDER BY name", ins);
+
+		let test_data: Vec<TestData> = query(sql, params).await.unwrap();
+
+		println!("out get in: {:?}", test_data);
+
+		assert_eq!(test_data.len(), 3);
+		assert_eq!(test_data[0].id, id1);
+		assert_eq!(test_data[1].id, id2);
+		assert_eq!(test_data[2].id, id3);
+	}
+
 	#[tokio::test]
 	async fn test_start()
 	{
@@ -338,5 +395,6 @@ mod test
 		test_db_insert_and_fetch().await;
 		test_db_insert_and_fetch_with_get_ins().await;
 		test_db_bulk_insert().await;
+		test_tx_exec().await;
 	}
 }
