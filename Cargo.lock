@@ -1534,6 +1534,7 @@ dependencies = [
  "hyper",
  "jsonwebtoken",
  "mysql_async",
+ "mysql_common",
  "ring",
  "rusqlite",
  "rustgram",
