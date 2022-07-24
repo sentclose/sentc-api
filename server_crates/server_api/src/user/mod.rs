@@ -10,12 +10,14 @@ use sentc_crypto_common::user::{
 	PrepareLoginServerInput,
 	RegisterData,
 	RegisterServerOutput,
+	UserDeleteServerOutput,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
 };
 
 use crate::core::api_res::{echo, JRes};
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
+use crate::core::url_helper::get_name_param_from_req;
 use crate::user::user_entities::UserEntity;
 
 pub(crate) async fn exists(mut req: Request) -> JRes<UserIdentifierAvailableServerOutput>
@@ -99,6 +101,18 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerKeysOutp
 	};
 
 	echo(out)
+}
+
+pub(crate) async fn delete(req: Request) -> JRes<UserDeleteServerOutput>
+{
+	let user_id = get_name_param_from_req(&req, "id")?;
+
+	user_model::delete(user_id).await?;
+
+	echo(UserDeleteServerOutput {
+		msg: "User deleted".to_owned(),
+		user_id: user_id.to_owned(),
+	})
 }
 
 pub(crate) async fn get(_req: Request) -> JRes<UserEntity>

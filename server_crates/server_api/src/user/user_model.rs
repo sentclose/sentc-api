@@ -2,7 +2,7 @@ use sentc_crypto_common::user::RegisterData;
 use uuid::Uuid;
 
 use crate::core::api_res::{ApiErrorCodes, HttpErr};
-use crate::core::db::{exec_transaction, query_first, TransactionData};
+use crate::core::db::{exec, exec_transaction, query_first, TransactionData};
 use crate::core::get_time;
 use crate::set_params;
 use crate::user::user_entities::{JwtSignKey, JwtVerifyKey, UserEntity, UserExistsEntity};
@@ -65,6 +65,19 @@ pub(super) async fn check_user_exists(user_identifier: &str) -> Result<bool, Htt
 
 pub(super) async fn register(app_id: &str, register_data: RegisterData) -> Result<String, HttpErr>
 {
+	//check first if the user identifier is available
+	let check = check_user_exists(register_data.user_identifier.as_str()).await?;
+
+	if check {
+		//check true == user exists
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::UserExists,
+			"User already exists",
+			None,
+		));
+	}
+
 	//data for the user table
 	//language=SQL
 	let sql_user = "INSERT INTO user (id, app_id, identifier, time) VALUES (?,?,?,?)";
@@ -132,6 +145,16 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 	.await?;
 
 	Ok(user_id)
+}
+
+pub(super) async fn delete(user_id: &str) -> Result<(), HttpErr>
+{
+	//language=SQL
+	let sql = "DELETE FROM user WHERE id = ?";
+
+	exec(sql, set_params!(user_id.to_owned())).await?;
+
+	Ok(())
 }
 
 pub(super) async fn get_user(user_id: &str) -> Result<UserEntity, HttpErr>
