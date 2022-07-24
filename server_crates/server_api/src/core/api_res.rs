@@ -1,6 +1,7 @@
 use hyper::StatusCode;
 use rustgram::service::HttpResult;
 use rustgram::{GramHttpErr, Response};
+use sentc_crypto_common::ServerOutput;
 use serde::Serialize;
 
 use crate::core::input_helper::json_to_string;
@@ -31,6 +32,7 @@ pub enum ApiErrorCodes
 	NoParameter,
 
 	UserNotFound,
+	UserExists,
 }
 
 impl ApiErrorCodes
@@ -55,6 +57,7 @@ impl ApiErrorCodes
 			ApiErrorCodes::JwtKeyNotFound => 35,
 			ApiErrorCodes::NoParameter => 40,
 			ApiErrorCodes::UserNotFound => 100,
+			ApiErrorCodes::UserExists => 101,
 		}
 	}
 }
@@ -90,13 +93,6 @@ impl GramHttpErr<Response> for HttpErr
 			Err(_e) => StatusCode::BAD_REQUEST,
 		};
 
-		//the msg for the end user
-		let msg = format!(
-			"{{\"status\": {}, \"error_message\": \"{}\"}}",
-			self.api_error_code.get_int_code(),
-			self.msg
-		);
-
 		//msg for the developer only
 		//this could later be logged
 		if self.debug_msg.is_some() {
@@ -104,10 +100,19 @@ impl GramHttpErr<Response> for HttpErr
 			println!("Http Error: {:?}", self.debug_msg);
 		}
 
+		let body = ServerOutput::<String> {
+			status: false,
+			result: None,
+			err_msg: Some(self.msg.to_string()),
+			err_code: Some(self.api_error_code.get_int_code()),
+		};
+		//this should be right everytime
+		let body = json_to_string(&body).unwrap();
+
 		hyper::Response::builder()
 			.status(status)
 			.header("Content-Type", "application/json")
-			.body(hyper::Body::from(msg))
+			.body(hyper::Body::from(body))
 			.unwrap()
 	}
 }
@@ -119,13 +124,20 @@ Creates a json response with the json header
 
 Creates a string from the obj
 */
-pub struct JsonRes<T: ?Sized + Serialize>(pub T);
+pub struct JsonRes<T: Serialize>(pub T);
 
-impl<T: ?Sized + Serialize> HttpResult<Response> for JsonRes<T>
+impl<T: Serialize> HttpResult<Response> for JsonRes<T>
 {
-	fn get_res(&self) -> Response
+	fn get_res(self) -> Response
 	{
-		let string = match json_to_string(&self.0) {
+		let out = ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(self.0),
+		};
+
+		let string = match json_to_string(&out) {
 			Ok(s) => s,
 			Err(e) => return e.get_res(),
 		};
