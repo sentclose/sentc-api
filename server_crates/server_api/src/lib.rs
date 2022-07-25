@@ -1,5 +1,4 @@
-use hyper::StatusCode;
-use rustgram::{r, Request, Response, Router};
+use rustgram::{r, Request, Router};
 
 use crate::routes::routes;
 
@@ -10,12 +9,14 @@ mod middleware;
 mod routes;
 mod user;
 
-async fn not_found_handler(_req: Request) -> Response
+async fn not_found_handler(_req: Request) -> core::api_res::JRes<String>
 {
-	return hyper::Response::builder()
-		.status(StatusCode::NOT_FOUND)
-		.body("Not found".into())
-		.unwrap();
+	Err(core::api_res::HttpErr::new(
+		404,
+		core::api_res::ApiErrorCodes::PageNotFound,
+		"Not found".into(),
+		None,
+	))
 }
 
 async fn index_handler(_req: Request) -> &'static str

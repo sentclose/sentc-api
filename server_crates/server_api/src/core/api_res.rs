@@ -9,6 +9,8 @@ use crate::core::input_helper::json_to_string;
 #[derive(Debug)]
 pub enum ApiErrorCodes
 {
+	PageNotFound,
+	
 	JsonToString,
 	JsonParse,
 
@@ -40,6 +42,7 @@ impl ApiErrorCodes
 	pub fn get_int_code(&self) -> u32
 	{
 		match self {
+			ApiErrorCodes::PageNotFound => 404,
 			ApiErrorCodes::JsonToString => 10,
 			ApiErrorCodes::JsonParse => 11,
 			ApiErrorCodes::InputTooBig => 12,
