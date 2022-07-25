@@ -1,4 +1,5 @@
 use reqwest::StatusCode;
+use sentc_crypto::KeyData;
 use sentc_crypto_common::user::{
 	MasterKey,
 	RegisterServerOutput,
@@ -21,6 +22,7 @@ pub struct UserState
 	pub username: String,
 	pub pw: String,
 	pub user_id: String,
+	pub key_data: Option<KeyData>,
 }
 
 static USER_TEST_STATE: OnceCell<RwLock<UserState>> = OnceCell::const_new();
@@ -36,6 +38,7 @@ async fn aaa_init_global_test()
 					username: "admin_test".to_string(),
 					pw: "12345".to_string(),
 					user_id: "".to_string(),
+					key_data: None,
 				})
 			}
 		})
@@ -195,7 +198,46 @@ async fn test_4_user_register_failed_username_exists()
 }
 
 #[tokio::test]
-async fn test_5_user_delete()
+async fn test_5_login()
+{
+	//make the pre req to the sever with the username
+	let url = get_url("api/v1/prepare_login".to_owned());
+
+	let mut user = USER_TEST_STATE.get().unwrap().write().await;
+	let username = &user.username;
+	let pw = &user.pw;
+
+	let prep_server_input = sentc_crypto::user::prepare_login_start(username.as_str()).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.body(prep_server_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let (auth_key, derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
+
+	// //done login
+	let url = get_url("api/v1/done_login".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client.post(url).body(auth_key).send().await.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let done_login = sentc_crypto::user::done_login(&derived_master_key, body.as_str()).unwrap();
+
+	user.key_data = Some(done_login);
+}
+
+//do user tests before this one!
+
+#[tokio::test]
+async fn test_6_user_delete()
 {
 	let user_id = &USER_TEST_STATE.get().unwrap().read().await.user_id;
 
@@ -238,7 +280,7 @@ impl WrongRegisterData
 }
 
 #[tokio::test]
-async fn test_6_not_register_user_with_wrong_input()
+async fn test_7_not_register_user_with_wrong_input()
 {
 	let url = get_url("api/v1/register".to_owned());
 
@@ -284,7 +326,7 @@ async fn test_6_not_register_user_with_wrong_input()
 }
 
 #[tokio::test]
-async fn test_7_register_user_via_test_fn()
+async fn test_8_register_user_via_test_fn()
 {
 	let id = register_user("hello", "12345").await;
 
