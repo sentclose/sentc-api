@@ -50,7 +50,12 @@ where
 			#[cfg(not(debug_assertions))]
 			let debug = None;
 
-			Err(HttpErr::new(422, ApiErrorCodes::JsonParse, "json parse error", debug))
+			Err(HttpErr::new(
+				422,
+				ApiErrorCodes::JsonToString,
+				"Cannot convert json to string",
+				debug,
+			))
 		},
 	}
 }
@@ -68,7 +73,7 @@ where
 			#[cfg(not(debug_assertions))]
 			let debug = None;
 
-			Err(HttpErr::new(422, ApiErrorCodes::JsonToString, "wrong input", debug))
+			Err(HttpErr::new(422, ApiErrorCodes::JsonParse, "wrong input", debug))
 		},
 	}
 }
