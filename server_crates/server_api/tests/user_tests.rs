@@ -1,6 +1,7 @@
 use reqwest::StatusCode;
 use sentc_crypto::KeyData;
 use sentc_crypto_common::user::{
+	DoneLoginServerKeysOutput,
 	MasterKey,
 	RegisterServerOutput,
 	UserDeleteServerOutput,
@@ -234,10 +235,65 @@ async fn test_5_login()
 	user.key_data = Some(done_login);
 }
 
+#[tokio::test]
+async fn test_6_login_with_wrong_password()
+{
+	//make the pre req to the sever with the username
+	let url = get_url("api/v1/prepare_login".to_owned());
+
+	let user = &USER_TEST_STATE.get().unwrap().read().await;
+	let username = &user.username;
+	let pw = "wrong_password"; //the wording pw
+
+	let prep_server_input = sentc_crypto::user::prepare_login_start(username.as_str()).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.body(prep_server_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let (auth_key, derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
+
+	// //done login
+	let url = get_url("api/v1/done_login".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client.post(url).body(auth_key).send().await.unwrap();
+
+	let body = res.text().await.unwrap();
+	let login_output = ServerOutput::<DoneLoginServerKeysOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(login_output.status, false);
+	assert_eq!(login_output.result.is_none(), true);
+	assert_eq!(login_output.err_code.unwrap(), ApiErrorCodes::Login.get_int_code());
+
+	match sentc_crypto::user::done_login(&derived_master_key, body.as_str()) {
+		Ok(_v) => {
+			panic!("this should not be Ok")
+		},
+		Err(e) => {
+			match e {
+				sentc_crypto::SdkError::ServerErr(s, m) => {
+					//this should be the right err
+					//this are the same err as the backend
+					assert_eq!(login_output.err_code.unwrap(), s);
+					assert_eq!(login_output.err_msg.unwrap(), m);
+				},
+				_ => panic!("this should not be the right error code"),
+			}
+		},
+	}
+}
+
 //do user tests before this one!
 
 #[tokio::test]
-async fn test_6_user_delete()
+async fn test_7_user_delete()
 {
 	let user_id = &USER_TEST_STATE.get().unwrap().read().await.user_id;
 
@@ -280,7 +336,7 @@ impl WrongRegisterData
 }
 
 #[tokio::test]
-async fn test_7_not_register_user_with_wrong_input()
+async fn test_8_not_register_user_with_wrong_input()
 {
 	let url = get_url("api/v1/register".to_owned());
 
@@ -326,7 +382,7 @@ async fn test_7_not_register_user_with_wrong_input()
 }
 
 #[tokio::test]
-async fn test_8_register_user_via_test_fn()
+async fn test_9_register_user_via_test_fn()
 {
 	let id = register_user("hello", "12345").await;
 
