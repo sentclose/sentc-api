@@ -10,7 +10,7 @@ use crate::core::input_helper::json_to_string;
 pub enum ApiErrorCodes
 {
 	PageNotFound,
-	
+
 	JsonToString,
 	JsonParse,
 
@@ -89,7 +89,7 @@ impl HttpErr
 
 impl GramHttpErr<Response> for HttpErr
 {
-	fn get_res(&self) -> Response
+	fn get_res(self) -> Response
 	{
 		let status = match StatusCode::from_u16(self.http_status_code) {
 			Ok(s) => s,
@@ -106,7 +106,7 @@ impl GramHttpErr<Response> for HttpErr
 		let body = ServerOutput::<String> {
 			status: false,
 			result: None,
-			err_msg: Some(self.msg.to_string()),
+			err_msg: Some(self.msg),
 			err_code: Some(self.api_error_code.get_int_code()),
 		};
 		//this should be right everytime
