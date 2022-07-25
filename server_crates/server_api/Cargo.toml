@@ -55,7 +55,11 @@ base64 = "0.13.0"
 [dev-dependencies]
 # for making req for integration tests
 reqwest = { version = "0.11.11", features = ["json"] }
-#sentc-crypto = {version = "0.1.0", git = "https://gitlab+deploy-token-1220223:MCXcFzqSW4oswjNFzUvr@gitlab.com/sentclose/sentc/sdk.git"}
+
+# to get it from ssh: write this in your ~/.cargo/config.toml:
+# [net]
+# git-fetch-with-cli = true
+sentc-crypto = {version = "0.1.0", git = "ssh://git@gitlab.com/sentclose/sentc/sdk.git", default-features = false, features = ["rust"]}
 
 [features]
 default = ["mysql"]

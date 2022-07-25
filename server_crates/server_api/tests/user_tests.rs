@@ -1,8 +1,5 @@
 use reqwest::StatusCode;
 use sentc_crypto_common::user::{
-	KeyDerivedData,
-	MasterKey,
-	RegisterData,
 	RegisterServerOutput,
 	UserDeleteServerOutput,
 	UserIdentifierAvailableServerInput,
@@ -19,6 +16,7 @@ mod test_fn;
 pub struct UserState
 {
 	pub username: String,
+	pub pw: String,
 	pub user_id: String,
 }
 
@@ -33,6 +31,7 @@ async fn aaa_init_global_test()
 			async {
 				RwLock::new(UserState {
 					username: "admin_test".to_string(),
+					pw: "12345".to_string(),
 					user_id: "".to_string(),
 				})
 			}
@@ -84,41 +83,20 @@ async fn test_2_user_register()
 	let mut user = USER_TEST_STATE.get().unwrap().write().await;
 
 	let username = &user.username;
+	let pw = &user.pw;
 
 	let url = get_url("api/v1/register".to_owned());
 
-	//TODO use here the real sdk when gitlab deploy tokens works again
-	let input = RegisterData {
-		master_key: MasterKey {
-			master_key_alg: "123".to_string(),
-			encrypted_master_key: "321".to_string(),
-			encrypted_master_key_alg: "11".to_string(),
-		},
-		derived: KeyDerivedData {
-			derived_alg: "1".to_string(),
-			client_random_value: "11".to_string(),
-			hashed_authentication_key: "1111".to_string(),
-			public_key: "111".to_string(),
-			encrypted_private_key: "111".to_string(),
-			keypair_encrypt_alg: "111".to_string(),
-			verify_key: "11".to_string(),
-			encrypted_sign_key: "11".to_string(),
-			keypair_sign_alg: "11".to_string(),
-		},
-		user_identifier: username.to_string(),
-	};
+	let input = sentc_crypto::user::register(username, pw).unwrap();
 
 	let client = reqwest::Client::new();
-	let res = client
-		.post(url)
-		.body(input.to_string().unwrap())
-		.send()
-		.await
-		.unwrap();
+	let res = client.post(url).body(input).send().await.unwrap();
 
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
+
+	//check it here (not like the client) to see if the server respond correctly
 	let register_out = ServerOutput::<RegisterServerOutput>::from_string(body.as_str()).unwrap();
 
 	assert_eq!(register_out.status, true);
@@ -127,8 +105,13 @@ async fn test_2_user_register()
 	let register_out = register_out.result.unwrap();
 	assert_eq!(register_out.user_identifier, username.to_string());
 
+	//get the user id like the client
+	let user_id = sentc_crypto::user::done_register(body.as_str()).unwrap();
+
+	assert_ne!(user_id, "".to_owned());
+
 	//save the user id
-	user.user_id = register_out.user_id;
+	user.user_id = user_id;
 }
 
 #[tokio::test]
@@ -169,38 +152,16 @@ async fn test_3_user_check_after_register()
 #[tokio::test]
 async fn test_4_user_register_failed_username_exists()
 {
-	let username = &USER_TEST_STATE.get().unwrap().read().await.username;
+	let user = &USER_TEST_STATE.get().unwrap().read().await;
+	let username = &user.username;
+	let pw = &user.pw;
 
 	let url = get_url("api/v1/register".to_owned());
 
-	//TODO use here the real sdk when gitlab deploy tokens works again
-	let input = RegisterData {
-		master_key: MasterKey {
-			master_key_alg: "123".to_string(),
-			encrypted_master_key: "321".to_string(),
-			encrypted_master_key_alg: "11".to_string(),
-		},
-		derived: KeyDerivedData {
-			derived_alg: "1".to_string(),
-			client_random_value: "11".to_string(),
-			hashed_authentication_key: "1111".to_string(),
-			public_key: "111".to_string(),
-			encrypted_private_key: "111".to_string(),
-			keypair_encrypt_alg: "111".to_string(),
-			verify_key: "11".to_string(),
-			encrypted_sign_key: "11".to_string(),
-			keypair_sign_alg: "11".to_string(),
-		},
-		user_identifier: username.to_string(),
-	};
+	let input = sentc_crypto::user::register(username, pw).unwrap();
 
 	let client = reqwest::Client::new();
-	let res = client
-		.post(url)
-		.body(input.to_string().unwrap())
-		.send()
-		.await
-		.unwrap();
+	let res = client.post(url).body(input).send().await.unwrap();
 
 	assert_eq!(res.status(), StatusCode::BAD_REQUEST);
 
