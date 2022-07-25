@@ -35,6 +35,11 @@ pub enum ApiErrorCodes
 
 	UserNotFound,
 	UserExists,
+	Login,
+
+	AuthKeyFormat,
+
+	SaltError,
 }
 
 impl ApiErrorCodes
@@ -61,6 +66,9 @@ impl ApiErrorCodes
 			ApiErrorCodes::NoParameter => 40,
 			ApiErrorCodes::UserNotFound => 100,
 			ApiErrorCodes::UserExists => 101,
+			ApiErrorCodes::SaltError => 110,
+			ApiErrorCodes::AuthKeyFormat => 111,
+			ApiErrorCodes::Login => 112,
 		}
 	}
 }

@@ -5,7 +5,7 @@ use crate::core::api_res::{ApiErrorCodes, HttpErr};
 use crate::core::db::{exec, exec_transaction, query_first, TransactionData};
 use crate::core::get_time;
 use crate::set_params;
-use crate::user::user_entities::{JwtSignKey, JwtVerifyKey, UserEntity, UserExistsEntity};
+use crate::user::user_entities::{DoneLoginServerKeysOutputEntity, JwtSignKey, JwtVerifyKey, UserEntity, UserExistsEntity, UserLoginDataEntity};
 
 pub(super) async fn get_jwt_sign_key(kid: &str) -> Result<String, HttpErr>
 {
@@ -61,6 +61,41 @@ pub(super) async fn check_user_exists(user_identifier: &str) -> Result<bool, Htt
 		Some(_) => Ok(true),
 		None => Ok(false),
 	}
+}
+
+pub(super) async fn get_user_login_data(user_identifier: &str) -> Result<Option<UserLoginDataEntity>, HttpErr>
+{
+	//language=SQL
+	let sql = r"
+SELECT client_random_value,hashed_auth_key, derived_alg 
+FROM user u,user_keys uk 
+WHERE u.identifier = ? AND user_id = u.id ORDER BY uk.time DESC";
+
+	let login_data: Option<UserLoginDataEntity> = query_first(sql.to_string(), set_params!(user_identifier.to_owned())).await?;
+
+	Ok(login_data)
+}
+
+pub(super) async fn get_done_login_data(user_identifier: &str) -> Result<Option<DoneLoginServerKeysOutputEntity>, HttpErr>
+{
+	//language=SQL
+	let sql = r"
+SELECT 
+    encrypted_master_key,
+    encrypted_private_key,
+    public_key,
+    keypair_encrypt_alg,
+    encrypted_sign_key,
+    verify_key,
+    keypair_sign_alg,
+    uk.id as k_id,
+    u.id
+FROM user u,user_keys uk
+WHERE user_id = u.id AND u.identifier = ? ORDER BY uk.time DESC";
+
+	let data: Option<DoneLoginServerKeysOutputEntity> = query_first(sql.to_owned(), set_params!(user_identifier.to_owned())).await?;
+
+	Ok(data)
 }
 
 pub(super) async fn register(app_id: &str, register_data: RegisterData) -> Result<String, HttpErr>
