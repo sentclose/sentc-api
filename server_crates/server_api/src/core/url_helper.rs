@@ -10,7 +10,7 @@ pub fn get_params(req: &Request) -> Result<&RouteParams, HttpErr>
 			Err(HttpErr::new(
 				400,
 				ApiErrorCodes::NoParameter,
-				"No parameter sent",
+				"No parameter sent".to_owned(),
 				None,
 			))
 		},
@@ -26,7 +26,7 @@ pub fn get_name_param_from_req<'a>(req: &'a Request, name: &str) -> Result<&'a s
 			return Err(HttpErr::new(
 				400,
 				ApiErrorCodes::NoParameter,
-				"Parameter not found",
+				"Parameter not found".to_owned(),
 				None,
 			))
 		},
@@ -42,7 +42,7 @@ pub fn get_name_param_from_params<'a>(params: &'a RouteParams, name: &str) -> Re
 			return Err(HttpErr::new(
 				400,
 				ApiErrorCodes::NoParameter,
-				"Parameter not found",
+				"Parameter not found".to_owned(),
 				None,
 			))
 		},

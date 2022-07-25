@@ -72,8 +72,8 @@ pub async fn get_conn() -> Result<mysql_async::Conn, HttpErr>
 			return Err(HttpErr::new(
 				500,
 				ApiErrorCodes::NoDbConnection,
-				"No db connection",
-				Some("No connection after 10 tries".to_string()),
+				"No db connection".to_owned(),
+				Some("No connection after 10 tries".to_owned()),
 			));
 		}
 

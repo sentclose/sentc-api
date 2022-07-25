@@ -21,7 +21,7 @@ pub async fn get_raw_body(req: &mut Request) -> Result<BytesMut, HttpErr>
 					return Err(HttpErr::new(
 						413,
 						ApiErrorCodes::InputTooBig,
-						"Input was too big to handle",
+						"Input was too big to handle".to_owned(),
 						None,
 					));
 				}
@@ -44,17 +44,11 @@ where
 	match to_string(value) {
 		Ok(o) => Ok(o),
 		Err(e) => {
-			#[cfg(debug_assertions)]
-			let debug = Some(format!("json parse err: {:?}", e));
-
-			#[cfg(not(debug_assertions))]
-			let debug = None;
-
 			Err(HttpErr::new(
 				422,
 				ApiErrorCodes::JsonToString,
-				"Cannot convert json to string",
-				debug,
+				format!("json parse err: {:?}", e),
+				None,
 			))
 		},
 	}
@@ -67,13 +61,12 @@ where
 	match from_slice::<T>(v) {
 		Ok(o) => Ok(o),
 		Err(e) => {
-			#[cfg(debug_assertions)]
-			let debug = Some(format!("wrong json format: {:?}", e));
-
-			#[cfg(not(debug_assertions))]
-			let debug = None;
-
-			Err(HttpErr::new(422, ApiErrorCodes::JsonParse, "wrong input", debug))
+			Err(HttpErr::new(
+				422,
+				ApiErrorCodes::JsonParse,
+				format!("Wrong input: {:?}", e),
+				None,
+			))
 		},
 	}
 }

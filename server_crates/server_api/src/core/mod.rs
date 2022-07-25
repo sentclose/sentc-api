@@ -20,7 +20,7 @@ pub fn get_time() -> Result<u128, HttpErr>
 			Err(HttpErr::new(
 				500,
 				ApiErrorCodes::UnexpectedTime,
-				"Time went backwards",
+				"Time went backwards".to_owned(),
 				None,
 			))
 		},
@@ -35,7 +35,7 @@ pub fn get_time_in_sec() -> Result<u64, HttpErr>
 			Err(HttpErr::new(
 				500,
 				ApiErrorCodes::UnexpectedTime,
-				"Time went backwards",
+				"Time went backwards".to_owned(),
 				None,
 			))
 		},

@@ -61,7 +61,7 @@ pub async fn create_jwt(
 		HttpErr::new(
 			401,
 			ApiErrorCodes::JwtCreation,
-			"Can't create jwt",
+			"Can't create jwt".to_owned(),
 			Some(format!("err in jwt creation: {}", e)),
 		)
 	})
@@ -69,7 +69,14 @@ pub async fn create_jwt(
 
 pub async fn auth(jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), HttpErr>
 {
-	let header = decode_header(jwt).map_err(|_e| HttpErr::new(401, ApiErrorCodes::JwtWrongFormat, "Can't decode the jwt", None))?;
+	let header = decode_header(jwt).map_err(|_e| {
+		HttpErr::new(
+			401,
+			ApiErrorCodes::JwtWrongFormat,
+			"Can't decode the jwt".to_owned(),
+			None,
+		)
+	})?;
 
 	let key_id = match header.kid {
 		Some(k) => k,
@@ -77,7 +84,7 @@ pub async fn auth(jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), 
 			return Err(HttpErr::new(
 				401,
 				ApiErrorCodes::JwtWrongFormat,
-				"Can't decode the jwt",
+				"Can't decode the jwt".to_owned(),
 				None,
 			))
 		},
@@ -93,7 +100,7 @@ pub async fn auth(jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), 
 	validation.validate_exp = check_exp;
 
 	let decoded = decode::<Claims>(jwt, &DecodingKey::from_ec_der(&verify_key), &validation)
-		.map_err(|_e| HttpErr::new(401, ApiErrorCodes::JwtValidation, "Wrong jwt", None))?;
+		.map_err(|_e| HttpErr::new(401, ApiErrorCodes::JwtValidation, "Wrong jwt".to_owned(), None))?;
 
 	Ok((
 		UserJwtEntity {
@@ -123,7 +130,14 @@ pub fn create_jwt_keys() -> Result<(String, String, &'static str), HttpErr>
 
 fn decode_jwt_key(key: String) -> Result<Vec<u8>, HttpErr>
 {
-	base64::decode(key).map_err(|_e| HttpErr::new(401, ApiErrorCodes::JwtWrongFormat, "Can't decode the jwt", None))
+	base64::decode(key).map_err(|_e| {
+		HttpErr::new(
+			401,
+			ApiErrorCodes::JwtWrongFormat,
+			"Can't decode the jwt".to_owned(),
+			None,
+		)
+	})
 }
 
 fn map_create_key_err<E: Error>(e: E) -> HttpErr
@@ -131,7 +145,7 @@ fn map_create_key_err<E: Error>(e: E) -> HttpErr
 	HttpErr::new(
 		500,
 		ApiErrorCodes::JwtKeyCreation,
-		"Can't create keys",
+		"Can't create keys".to_owned(),
 		Some(format!("Err in Jwt key creation: {}", e)),
 	)
 }

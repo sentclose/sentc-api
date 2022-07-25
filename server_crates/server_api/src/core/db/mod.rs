@@ -59,7 +59,7 @@ fn db_query_err<E: Error>(e: &E) -> HttpErr
 	HttpErr::new(
 		422,
 		ApiErrorCodes::DbQuery,
-		"db error",
+		"db error".to_owned(),
 		Some(format!("db fetch err, {:?}", e)),
 	)
 }
@@ -69,7 +69,7 @@ fn db_exec_err<E: Error>(e: &E) -> HttpErr
 	HttpErr::new(
 		422,
 		ApiErrorCodes::DbExecute,
-		"db error",
+		"db error".to_owned(),
 		Some(format!("db execute err, {:?}", e)),
 	)
 }
@@ -79,7 +79,7 @@ fn db_bulk_insert_err<E: Error>(e: &E) -> HttpErr
 	HttpErr::new(
 		422,
 		ApiErrorCodes::DbBulkInsert,
-		"db error",
+		"db error".to_owned(),
 		Some(format!("db bulk insert err, {:?}", e)),
 	)
 }
@@ -89,7 +89,7 @@ fn db_tx_err<E: Error>(e: &E) -> HttpErr
 	HttpErr::new(
 		422,
 		ApiErrorCodes::DbTx,
-		"Db error",
+		"Db error".to_owned(),
 		Some(format!("Db transaction error: {:?}", e)),
 	)
 }

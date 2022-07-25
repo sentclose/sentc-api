@@ -86,7 +86,7 @@ pub async fn get_conn() -> Result<deadpool_sqlite::Object, HttpErr>
 			Err(HttpErr::new(
 				500,
 				ApiErrorCodes::NoDbConnection,
-				"No db connection",
+				"No db connection".to_owned(),
 				Some(format!("db connection error for sqlite: {:?}", e)),
 			))
 		},

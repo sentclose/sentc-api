@@ -12,7 +12,7 @@ pub(super) async fn get_jwt_sign_key(kid: &str) -> Result<String, HttpErr>
 	//language=SQL
 	let sql = "SELECT sign_key FROM app_jwt_keys WHERE id = ?";
 
-	let sign_key: Option<JwtSignKey> = query_first(sql.to_string(), set_params!(kid.to_string())).await?;
+	let sign_key: Option<JwtSignKey> = query_first(sql.to_string(), set_params!(kid.to_owned())).await?;
 
 	match sign_key {
 		Some(k) => Ok(k.0),
@@ -20,7 +20,7 @@ pub(super) async fn get_jwt_sign_key(kid: &str) -> Result<String, HttpErr>
 			Err(HttpErr::new(
 				200,
 				ApiErrorCodes::JwtKeyNotFound,
-				"No matched key to this key id",
+				"No matched key to this key id".to_owned(),
 				None,
 			))
 		},
@@ -32,7 +32,7 @@ pub(super) async fn get_jwt_verify_key(kid: &str) -> Result<String, HttpErr>
 	//language=SQL
 	let sql = "SELECT verify_key FROM app_jwt_keys WHERE id = ?";
 
-	let sign_key: Option<JwtVerifyKey> = query_first(sql.to_string(), set_params!(kid.to_string())).await?;
+	let sign_key: Option<JwtVerifyKey> = query_first(sql.to_string(), set_params!(kid.to_owned())).await?;
 
 	match sign_key {
 		Some(k) => Ok(k.0),
@@ -40,7 +40,7 @@ pub(super) async fn get_jwt_verify_key(kid: &str) -> Result<String, HttpErr>
 			Err(HttpErr::new(
 				200,
 				ApiErrorCodes::JwtKeyNotFound,
-				"No matched key to this key id",
+				"No matched key to this key id".to_owned(),
 				None,
 			))
 		},
@@ -55,7 +55,7 @@ pub(super) async fn check_user_exists(user_identifier: &str) -> Result<bool, Htt
 	//language=SQL
 	let sql = "SELECT 1 FROM user WHERE identifier = ? LIMIT 1";
 
-	let exists: Option<UserExistsEntity> = query_first(sql.to_string(), set_params!(user_identifier.to_string())).await?;
+	let exists: Option<UserExistsEntity> = query_first(sql.to_owned(), set_params!(user_identifier.to_owned())).await?;
 
 	match exists {
 		Some(_) => Ok(true),
@@ -73,7 +73,7 @@ pub(super) async fn register(app_id: &str, register_data: RegisterData) -> Resul
 		return Err(HttpErr::new(
 			400,
 			ApiErrorCodes::UserExists,
-			"User already exists",
+			"User already exists".to_owned(),
 			None,
 		));
 	}
@@ -162,10 +162,17 @@ pub(super) async fn get_user(user_id: &str) -> Result<UserEntity, HttpErr>
 	//language=SQL
 	let sql = "SELECT * FROM test WHERE id = ?";
 
-	let user: Option<UserEntity> = query_first(sql.to_string(), set_params!(user_id.to_string())).await?;
+	let user: Option<UserEntity> = query_first(sql.to_string(), set_params!(user_id.to_owned())).await?;
 
 	match user {
 		Some(u) => Ok(u),
-		None => Err(HttpErr::new(200, ApiErrorCodes::UserNotFound, "user not found", None)),
+		None => {
+			Err(HttpErr::new(
+				200,
+				ApiErrorCodes::UserNotFound,
+				"user not found".to_owned(),
+				None,
+			))
+		},
 	}
 }

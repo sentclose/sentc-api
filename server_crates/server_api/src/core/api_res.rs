@@ -67,13 +67,13 @@ pub struct HttpErr
 {
 	http_status_code: u16,
 	api_error_code: ApiErrorCodes,
-	msg: &'static str,
+	msg: String,
 	debug_msg: Option<String>,
 }
 
 impl HttpErr
 {
-	pub fn new(http_status_code: u16, api_error_code: ApiErrorCodes, msg: &'static str, debug_msg: Option<String>) -> Self
+	pub fn new(http_status_code: u16, api_error_code: ApiErrorCodes, msg: String, debug_msg: Option<String>) -> Self
 	{
 		Self {
 			http_status_code,
