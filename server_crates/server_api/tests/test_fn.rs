@@ -1,4 +1,5 @@
 use reqwest::StatusCode;
+use sentc_crypto::KeyData;
 use sentc_crypto_common::user::UserDeleteServerOutput;
 use sentc_crypto_common::{ServerOutput, UserId};
 
@@ -46,4 +47,35 @@ pub async fn delete_user(user_id: &str)
 	let delete_output = delete_output.result.unwrap();
 	assert_eq!(delete_output.user_id, user_id.to_string());
 	assert_eq!(delete_output.msg, "User deleted");
+}
+
+pub async fn login_user(username: &str, pw: &str) -> KeyData
+{
+	let url = get_url("api/v1/prepare_login".to_owned());
+
+	let prep_server_input = sentc_crypto::user::prepare_login_start(username).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.body(prep_server_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let (auth_key, derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
+
+	// //done login
+	let url = get_url("api/v1/done_login".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client.post(url).body(auth_key).send().await.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let done_login = sentc_crypto::user::done_login(&derived_master_key, body.as_str()).unwrap();
+
+	done_login
 }

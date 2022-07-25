@@ -14,7 +14,7 @@ use serde_json::{from_str, to_string};
 use server_api::core::api_res::ApiErrorCodes;
 use tokio::sync::{OnceCell, RwLock};
 
-use crate::test_fn::{delete_user, get_url, register_user};
+use crate::test_fn::{delete_user, get_url, login_user, register_user};
 
 mod test_fn;
 
@@ -382,9 +382,13 @@ async fn test_8_not_register_user_with_wrong_input()
 }
 
 #[tokio::test]
-async fn test_9_register_user_via_test_fn()
+async fn test_9_register_and_login_user_via_test_fn()
 {
 	let id = register_user("hello", "12345").await;
+
+	let login = login_user("hello", "12345").await;
+
+	assert_eq!(id, login.user_id);
 
 	delete_user(&id).await;
 }
