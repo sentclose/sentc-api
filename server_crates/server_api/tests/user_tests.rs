@@ -9,7 +9,7 @@ use sentc_crypto_common::ServerOutput;
 use server_api::core::api_res::ApiErrorCodes;
 use tokio::sync::{OnceCell, RwLock};
 
-use crate::test_fn::get_url;
+use crate::test_fn::{delete_user, get_url, register_user};
 
 mod test_fn;
 
@@ -171,6 +171,24 @@ async fn test_4_user_register_failed_username_exists()
 	assert_eq!(error.status, false);
 	assert_eq!(error.result.is_none(), true);
 	assert_eq!(error.err_code.unwrap(), ApiErrorCodes::UserExists.get_int_code());
+
+	//check err in sdk
+	match sentc_crypto::user::done_register(body.as_str()) {
+		Ok(_v) => {
+			panic!("this should not be Ok")
+		},
+		Err(e) => {
+			match e {
+				sentc_crypto::SdkError::ServerErr(s, m) => {
+					//this should be the right err
+					//this are the same err as the backend
+					assert_eq!(error.err_code.unwrap(), s);
+					assert_eq!(error.err_msg.unwrap(), m);
+				},
+				_ => panic!("this should not be the right error code"),
+			}
+		},
+	}
 }
 
 #[tokio::test]
@@ -193,4 +211,12 @@ async fn test_5_user_delete()
 	let delete_output = delete_output.result.unwrap();
 	assert_eq!(delete_output.user_id, user_id.to_string());
 	assert_eq!(delete_output.msg, "User deleted");
+}
+
+#[tokio::test]
+async fn test_6_register_user_via_test_fn()
+{
+	let id = register_user("hello", "12345").await;
+
+	delete_user(&id).await;
 }
