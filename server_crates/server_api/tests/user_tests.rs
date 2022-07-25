@@ -1,11 +1,14 @@
 use reqwest::StatusCode;
 use sentc_crypto_common::user::{
+	MasterKey,
 	RegisterServerOutput,
 	UserDeleteServerOutput,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
 };
 use sentc_crypto_common::ServerOutput;
+use serde::{Deserialize, Serialize};
+use serde_json::{from_str, to_string};
 use server_api::core::api_res::ApiErrorCodes;
 use tokio::sync::{OnceCell, RwLock};
 
@@ -211,10 +214,77 @@ async fn test_5_user_delete()
 	let delete_output = delete_output.result.unwrap();
 	assert_eq!(delete_output.user_id, user_id.to_string());
 	assert_eq!(delete_output.msg, "User deleted");
+
+	//TODO validate it with the sdk done user delete
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct WrongRegisterData
+{
+	pub master_key: MasterKey,
+}
+
+impl WrongRegisterData
+{
+	pub fn from_string(v: &str) -> serde_json::Result<Self>
+	{
+		from_str::<Self>(v)
+	}
+
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
 }
 
 #[tokio::test]
-async fn test_6_register_user_via_test_fn()
+async fn test_6_not_register_user_with_wrong_input()
+{
+	let url = get_url("api/v1/register".to_owned());
+
+	let input = WrongRegisterData {
+		master_key: MasterKey {
+			master_key_alg: "123".to_string(),
+			encrypted_master_key: "321".to_string(),
+			encrypted_master_key_alg: "11".to_string(),
+		},
+	};
+
+	let str = input.to_string().unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client.post(url).body(str).send().await.unwrap();
+
+	assert_eq!(res.status(), StatusCode::UNPROCESSABLE_ENTITY);
+
+	let body = res.text().await.unwrap();
+	let error = ServerOutput::<RegisterServerOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(error.status, false);
+	assert_eq!(error.result.is_none(), true);
+	assert_eq!(error.err_code.unwrap(), ApiErrorCodes::JsonParse.get_int_code());
+
+	//check err in sdk
+	match sentc_crypto::user::done_register(body.as_str()) {
+		Ok(_v) => {
+			panic!("this should not be Ok")
+		},
+		Err(e) => {
+			match e {
+				sentc_crypto::SdkError::ServerErr(s, m) => {
+					//this should be the right err
+					//this are the same err as the backend
+					assert_eq!(error.err_code.unwrap(), s);
+					assert_eq!(error.err_msg.unwrap(), m);
+				},
+				_ => panic!("this should not be the right error code"),
+			}
+		},
+	}
+}
+
+#[tokio::test]
+async fn test_7_register_user_via_test_fn()
 {
 	let id = register_user("hello", "12345").await;
 
