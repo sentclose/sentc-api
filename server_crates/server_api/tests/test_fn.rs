@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::KeyData;
 use sentc_crypto_common::user::UserDeleteServerOutput;
@@ -9,6 +10,11 @@ use server_api::{AppRegisterInput, AppRegisterOutput};
 pub fn get_url(path: String) -> String
 {
 	format!("http://127.0.0.1:{}/{}", 3002, path)
+}
+
+pub fn auth_header(jwt: &str) -> String
+{
+	format!("Bearer {}", jwt)
 }
 
 pub async fn create_app() -> AppRegisterOutput
@@ -43,14 +49,20 @@ pub async fn create_app() -> AppRegisterOutput
 	}
 }
 
-pub async fn register_user(username: &str, password: &str) -> UserId
+pub async fn register_user(app_secret_token: &str, username: &str, password: &str) -> UserId
 {
 	let url = get_url("api/v1/register".to_owned());
 
 	let input = sentc_crypto::user::register(username, password).unwrap();
 
 	let client = reqwest::Client::new();
-	let res = client.post(url).body(input).send().await.unwrap();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", app_secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
 
 	assert_eq!(res.status(), StatusCode::OK);
 
@@ -63,11 +75,16 @@ pub async fn register_user(username: &str, password: &str) -> UserId
 	user_id
 }
 
-pub async fn delete_user(user_id: &str)
+pub async fn delete_user(jwt: &str, user_id: &str)
 {
-	let url = get_url("api/v1/user/".to_owned() + user_id);
+	let url = get_url("api/v1/user".to_owned());
 	let client = reqwest::Client::new();
-	let res = client.delete(url).send().await.unwrap();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.send()
+		.await
+		.unwrap();
 
 	assert_eq!(res.status(), StatusCode::OK);
 
@@ -84,7 +101,7 @@ pub async fn delete_user(user_id: &str)
 	assert_eq!(delete_output.msg, "User deleted");
 }
 
-pub async fn login_user(username: &str, pw: &str) -> KeyData
+pub async fn login_user(public_token: &str, username: &str, pw: &str) -> KeyData
 {
 	let url = get_url("api/v1/prepare_login".to_owned());
 
@@ -93,6 +110,7 @@ pub async fn login_user(username: &str, pw: &str) -> KeyData
 	let client = reqwest::Client::new();
 	let res = client
 		.post(url)
+		.header("x-sentc-app-token", public_token)
 		.body(prep_server_input)
 		.send()
 		.await
@@ -106,7 +124,13 @@ pub async fn login_user(username: &str, pw: &str) -> KeyData
 	let url = get_url("api/v1/done_login".to_owned());
 
 	let client = reqwest::Client::new();
-	let res = client.post(url).body(auth_key).send().await.unwrap();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(auth_key)
+		.send()
+		.await
+		.unwrap();
 
 	let body = res.text().await.unwrap();
 
