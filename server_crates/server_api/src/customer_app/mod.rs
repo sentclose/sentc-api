@@ -62,6 +62,8 @@ pub(crate) async fn create_app(mut req: Request) -> JRes<AppRegisterOutput>
 	echo(customer_app_data)
 }
 
+//TODO when creating new jwt keys -> delete the app cache!
+
 fn generate_tokens() -> Result<([u8; 50], [u8; 30]), HttpErr>
 {
 	let mut rng = rand::thread_rng();
