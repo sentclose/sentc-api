@@ -190,3 +190,12 @@ pub struct AppTokenRenewOutput
 	pub secret_token: String,
 	pub public_token: String,
 }
+
+//__________________________________________________________________________________________________
+
+#[derive(Serialize, Deserialize)]
+pub struct AppDeleteOutput
+{
+	pub old_app_id: AppId,
+	pub msg: String,
+}

@@ -19,7 +19,8 @@ routes:
               - group:
                   p: "/app/:app_id"
                   gr:
-                    - patch: { p: "/token_renew", s: crate::customer_app::renew_tokens }
+                    - delete: {p: "", s: crate::customer_app::delete}
+                    - patch: {p: "/token_renew", s: crate::customer_app::renew_tokens}
         #_______________________________________________________________________________________________________________
         # routes don't need jwt check, but an app token
         - group:

@@ -176,3 +176,15 @@ pub(super) async fn token_renew(
 
 	Ok(())
 }
+
+pub(super) async fn delete(customer_id: CustomerId, app_id: AppId) -> Result<(), HttpErr>
+{
+	//use the double check with the customer id to check if this app really belongs to the customer!
+
+	//language=SQL
+	let sql = "DELETE FROM app WHERE customer_id = ? AND id = ?";
+
+	exec(sql, set_params!(customer_id, app_id)).await?;
+
+	Ok(())
+}
