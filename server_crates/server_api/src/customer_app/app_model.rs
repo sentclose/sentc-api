@@ -1,11 +1,11 @@
-use sentc_crypto_common::{AppId, CustomerId, UserId};
+use sentc_crypto_common::{AppId, CustomerId, JwtId, UserId};
 use uuid::Uuid;
 
 use crate::core::api_res::{ApiErrorCodes, HttpErr};
 use crate::core::db::{exec, exec_transaction, query, query_first, TransactionData};
 use crate::core::get_time;
 use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppJwt, AuthWithToken};
-use crate::set_params;
+use crate::{set_params, AppExistsEntity};
 
 pub(crate) async fn get_app_data(hashed_token: &str) -> Result<AppData, HttpErr>
 {
@@ -90,7 +90,7 @@ pub(super) async fn create_app(
 	first_jwt_sign_key: &str,
 	first_jwt_verify_key: &str,
 	first_jwt_alg: &str,
-) -> Result<String, HttpErr>
+) -> Result<(AppId, JwtId), HttpErr>
 {
 	let app_id = Uuid::new_v4().to_string();
 	let time = get_time()?;
@@ -128,7 +128,7 @@ VALUES (?,?,?,?,?,?,?)";
 	//language=SQL
 	let sql_jwt = "INSERT INTO app_jwt_keys (id, app_id, sign_key, verify_key, alg, time) VALUES (?,?,?,?,?,?)";
 	let params_jwt = set_params!(
-		jwt_key_id,
+		jwt_key_id.to_string(),
 		app_id.to_string(),
 		first_jwt_sign_key.to_string(),
 		first_jwt_verify_key.to_string(),
@@ -148,7 +148,7 @@ VALUES (?,?,?,?,?,?,?)";
 	])
 	.await?;
 
-	Ok(app_id)
+	Ok((app_id, jwt_key_id))
 }
 
 pub(super) async fn token_renew(
@@ -177,6 +177,50 @@ pub(super) async fn token_renew(
 	Ok(())
 }
 
+pub(super) async fn add_jwt_keys(
+	customer_id: CustomerId,
+	app_id: AppId,
+	new_jwt_sign_key: &str,
+	new_jwt_verify_key: &str,
+	new_jwt_alg: &str,
+) -> Result<JwtId, HttpErr>
+{
+	check_app_exists(customer_id, app_id.to_string()).await?;
+
+	let time = get_time()?;
+	let jwt_key_id = Uuid::new_v4().to_string();
+
+	//language=SQL
+	let sql = "INSERT INTO app_jwt_keys (id, app_id, sign_key, verify_key, alg, time) VALUES (?,?,?,?,?,?)";
+
+	exec(
+		sql,
+		set_params!(
+			jwt_key_id.to_string(),
+			app_id.to_string(),
+			new_jwt_sign_key.to_string(),
+			new_jwt_verify_key.to_string(),
+			new_jwt_alg.to_string(),
+			time.to_string()
+		),
+	)
+	.await?;
+
+	Ok(jwt_key_id)
+}
+
+pub(super) async fn delete_jwt_keys(customer_id: CustomerId, app_id: AppId, jwt_key_id: JwtId) -> Result<(), HttpErr>
+{
+	check_app_exists(customer_id, app_id.to_string()).await?;
+
+	//language=SQL
+	let sql = "DELETE FROM app_jwt_keys WHERE id = ? AND app_id = ?";
+
+	exec(sql, set_params!(jwt_key_id, app_id)).await?;
+
+	Ok(())
+}
+
 pub(super) async fn update(customer_id: CustomerId, app_id: AppId, identifier: Option<String>) -> Result<(), HttpErr>
 {
 	//language=SQL
@@ -200,6 +244,28 @@ pub(super) async fn delete(customer_id: CustomerId, app_id: AppId) -> Result<(),
 	let sql = "DELETE FROM app WHERE customer_id = ? AND id = ?";
 
 	exec(sql, set_params!(customer_id, app_id)).await?;
+
+	Ok(())
+}
+
+async fn check_app_exists(customer_id: CustomerId, app_id: AppId) -> Result<(), HttpErr>
+{
+	//check if this app belongs to this customer
+	//language=SQL
+	let sql = "SELECT 1 FROM app WHERE id = ? AND customer_id = ?";
+	let app_exists: Option<AppExistsEntity> = query_first(sql.to_string(), set_params!(app_id, customer_id)).await?;
+
+	match app_exists {
+		Some(_) => {},
+		None => {
+			return Err(HttpErr::new(
+				400,
+				ApiErrorCodes::AppNotFound,
+				"App not found in this user space".to_string(),
+				None,
+			))
+		},
+	}
 
 	Ok(())
 }

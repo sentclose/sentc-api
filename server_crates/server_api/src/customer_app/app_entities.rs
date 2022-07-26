@@ -1,4 +1,4 @@
-use sentc_crypto_common::{AppId, CustomerId, SignKeyPairId};
+use sentc_crypto_common::{AppId, CustomerId, JwtId, SignKeyPairId};
 use serde::{Deserialize, Serialize};
 use serde_json::to_string;
 
@@ -14,7 +14,7 @@ Cache this data:
 Only internal values from the db
  */
 #[derive(Serialize, Deserialize)]
-pub struct AppData
+pub(crate) struct AppData
 {
 	pub app_data: AppDataGeneral,
 	pub jwt_data: Vec<AppJwt>, //use the newest jwt data to create a jwt, but use the old one to validate the old jwt.
@@ -25,7 +25,7 @@ pub struct AppData
 Describe what token was sent from the req, the public or private
 */
 #[derive(Serialize, Deserialize)]
-pub enum AuthWithToken
+pub(crate) enum AuthWithToken
 {
 	Public,
 	Secret,
@@ -39,7 +39,7 @@ This values can only be exists once
 Only internal values from the db
  */
 #[derive(Serialize, Deserialize)]
-pub struct AppDataGeneral
+pub(crate) struct AppDataGeneral
 {
 	pub customer_id: CustomerId,
 	pub app_id: AppId,
@@ -94,7 +94,7 @@ It is possible to have multiple valid jwt keys.
 Only internal values from the db
  */
 #[derive(Serialize, Deserialize)]
-pub struct AppJwt
+pub(crate) struct AppJwt
 {
 	pub jwt_key_id: SignKeyPairId,
 	pub jwt_alg: String, //should be ES384 for now
@@ -164,6 +164,7 @@ pub struct AppJwtRegisterOutput
 {
 	pub customer_id: CustomerId,
 	pub app_id: AppId,
+	pub jwt_id: JwtId,
 	pub jwt_verify_key: String,
 	pub jwt_sign_key: String,
 	pub jwt_alg: String, //should be ES384 for now
@@ -208,3 +209,41 @@ pub struct AppUpdateOutput
 	pub app_id: AppId,
 	pub msg: String,
 }
+
+//__________________________________________________________________________________________________
+
+#[derive(Serialize, Deserialize)]
+pub struct JwtKeyDeleteOutput
+{
+	pub old_jwt_id: AppId,
+	pub msg: String,
+}
+
+//__________________________________________________________________________________________________
+
+#[derive(Serialize, Deserialize)]
+pub(crate) struct AppExistsEntity(pub i64);
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for AppExistsEntity
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self(take_or_err!(row, 0, i64)))
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl crate::core::db::FromSqliteRow for AppExistsEntity
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self(take_or_err!(row, 0)))
+	}
+}
+
+//__________________________________________________________________________________________________

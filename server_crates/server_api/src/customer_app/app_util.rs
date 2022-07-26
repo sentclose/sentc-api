@@ -6,7 +6,7 @@ use crate::customer_app::app_entities::AppData;
 
 pub static HASH_ALG: &'static str = "SHA256";
 
-pub fn get_app_data_from_req(req: &Request) -> Result<&AppData, HttpErr>
+pub(crate) fn get_app_data_from_req(req: &Request) -> Result<&AppData, HttpErr>
 {
 	//this should always be there because it is checked in the app token mw
 	match req.extensions().get::<AppData>() {

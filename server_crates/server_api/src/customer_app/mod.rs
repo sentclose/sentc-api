@@ -9,7 +9,7 @@ use crate::core::api_res::{echo, ApiErrorCodes, HttpErr, JRes};
 use crate::core::cache;
 use crate::core::cache::APP_TOKEN_CACHE;
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
-use crate::core::url_helper::get_name_param_from_req;
+use crate::core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 use crate::customer_app::app_entities::{
 	AppDeleteOutput,
 	AppJwtRegisterOutput,
@@ -17,6 +17,7 @@ use crate::customer_app::app_entities::{
 	AppRegisterOutput,
 	AppTokenRenewOutput,
 	AppUpdateOutput,
+	JwtKeyDeleteOutput,
 };
 use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
 use crate::user::jwt::create_jwt_keys;
@@ -43,7 +44,7 @@ pub(crate) async fn create_app(mut req: Request) -> JRes<AppRegisterOutput>
 
 	//3. create an new app (with new secret_token and public_token)
 	//	the str values are used because the real values are exported to the user
-	let app_id = app_model::create_app(
+	let (app_id, jwt_id) = app_model::create_app(
 		customer_id,
 		input.identifier,
 		hashed_secret_token,
@@ -63,6 +64,7 @@ pub(crate) async fn create_app(mut req: Request) -> JRes<AppRegisterOutput>
 		jwt_data: AppJwtRegisterOutput {
 			customer_id: customer_id.to_string(),
 			app_id,
+			jwt_id,
 			jwt_verify_key,
 			jwt_sign_key,
 			jwt_alg: alg.to_string(),
@@ -111,6 +113,61 @@ pub(crate) async fn renew_tokens(req: Request) -> JRes<AppTokenRenewOutput>
 	let out = AppTokenRenewOutput {
 		secret_token: base64::encode(secret_token),
 		public_token: base64::encode(public_token),
+	};
+
+	echo(out)
+}
+
+pub(crate) async fn add_jwt_keys(req: Request) -> JRes<AppJwtRegisterOutput>
+{
+	//TODO activate it when customer mod is done
+	// let customer = get_jwt_data_from_param(&req)?;
+	// let customer_id = &customer.id;
+
+	let customer_id = &"abcdefg".to_string();
+
+	let app_id = get_name_param_from_req(&req, "app_id")?;
+
+	let (jwt_sign_key, jwt_verify_key, alg) = create_jwt_keys()?;
+
+	let jwt_id = app_model::add_jwt_keys(
+		customer_id.to_string(),
+		app_id.to_string(),
+		jwt_sign_key.as_str(),
+		jwt_verify_key.as_str(),
+		alg,
+	)
+	.await?;
+
+	let out = AppJwtRegisterOutput {
+		customer_id: customer_id.to_string(),
+		app_id: app_id.to_string(),
+		jwt_id,
+		jwt_verify_key,
+		jwt_sign_key,
+		jwt_alg: alg.to_string(),
+	};
+
+	echo(out)
+}
+
+pub(crate) async fn delete_jwt_keys(req: Request) -> JRes<JwtKeyDeleteOutput>
+{
+	//TODO activate it when customer mod is done
+	// let customer = get_jwt_data_from_param(&req)?;
+	// let customer_id = &customer.id;
+
+	let customer_id = &"abcdefg".to_string();
+
+	let req_params = get_params(&req)?;
+	let app_id = get_name_param_from_params(req_params, "app_id")?;
+	let jwt_id = get_name_param_from_params(req_params, "jwt_id")?;
+
+	app_model::delete_jwt_keys(customer_id.to_string(), app_id.to_string(), jwt_id.to_string()).await?;
+
+	let out = JwtKeyDeleteOutput {
+		old_jwt_id: jwt_id.to_string(),
+		msg: "Jwt keys deleted".to_string(),
 	};
 
 	echo(out)

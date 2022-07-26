@@ -23,6 +23,14 @@ pub(crate) fn routes() -> Router
 		"/api/v1/customer/app/:app_id/token_renew",
 		r(crate::customer_app::renew_tokens),
 	);
+	router.patch(
+		"/api/v1/customer/app/:app_id/new_jwt_keys",
+		r(crate::customer_app::add_jwt_keys),
+	);
+	router.delete(
+		"/api/v1/customer/app/:app_id/jwt/:jwt_id",
+		r(crate::customer_app::delete_jwt_keys),
+	);
 	router.post(
 		"/api/v1/exists",
 		r(crate::user::exists).add(app_token::app_token_transform),
