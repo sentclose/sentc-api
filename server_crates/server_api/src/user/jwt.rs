@@ -58,8 +58,13 @@ pub fn get_jwt_data_from_param(req: &Request) -> Result<&UserJwtEntity, HttpErr>
 	}
 }
 
-pub async fn create_jwt(internal_user_id: &str, user_identifier: &str, app_id: &str, customer_jwt_data: &AppJwt, aud: &str)
-	-> Result<String, HttpErr>
+pub(crate) async fn create_jwt(
+	internal_user_id: &str,
+	user_identifier: &str,
+	app_id: &str,
+	customer_jwt_data: &AppJwt,
+	aud: &str,
+) -> Result<String, HttpErr>
 {
 	let iat = get_time_in_sec()?;
 	let expiration = iat + 60 * 5; //exp in 5 min
