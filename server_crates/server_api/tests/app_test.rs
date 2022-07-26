@@ -1,9 +1,9 @@
 use reqwest::StatusCode;
 use sentc_crypto_common::ServerOutput;
-use server_api::{AppRegisterInput, AppRegisterOutput, AppTokenRenewOutput};
+use server_api::{AppDeleteOutput, AppRegisterInput, AppRegisterOutput, AppTokenRenewOutput};
 use tokio::sync::{OnceCell, RwLock};
 
-use crate::test_fn::{create_app, get_url};
+use crate::test_fn::{create_app, delete_app, get_url};
 
 mod test_fn;
 
@@ -81,28 +81,13 @@ async fn test_2_update_app()
 }
 
 #[tokio::test]
-#[ignore]
-async fn test_3_delete_app()
+async fn test_3_renew_tokens()
 {
-	//TODO
-}
-
-#[tokio::test]
-async fn test_4_create_app_test_fn()
-{
-	create_app().await;
-
-	//TODO delete app in test fn
-}
-
-#[tokio::test]
-async fn test_5_renew_tokens()
-{
-	let app_data = create_app().await;
+	let mut app = APP_TEST_STATE.get().unwrap().write().await;
 
 	//TODO add here the customer jwt when customer mod is done
 
-	let url = get_url("api/v1/customer/app/".to_owned() + app_data.app_id.as_str() + "/token_renew");
+	let url = get_url("api/v1/customer/app/".to_owned() + app.app_id.as_str() + "/token_renew");
 
 	let client = reqwest::Client::new();
 	let res = client.patch(url).send().await.unwrap();
@@ -122,6 +107,45 @@ async fn test_5_renew_tokens()
 	};
 
 	//must be new tokens
-	assert_ne!(out.secret_token, app_data.secret_token);
-	assert_ne!(out.public_token, app_data.public_token);
+	assert_ne!(out.secret_token, app.app_secret_token);
+	assert_ne!(out.public_token, app.app_public_token);
+
+	//set the new tokens
+	app.app_secret_token = out.secret_token;
+	app.app_public_token = out.public_token;
+}
+
+#[tokio::test]
+async fn test_4_delete_app()
+{
+	//TODO add here the customer jwt when customer mod is done
+
+	let app = APP_TEST_STATE.get().unwrap().read().await;
+
+	let app_id = &app.app_id;
+
+	let url = get_url("api/v1/customer/app/".to_owned() + app_id);
+	let client = reqwest::Client::new();
+	let res = client.delete(url).send().await.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<AppDeleteOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	let out = out.result.unwrap();
+	assert_eq!(out.old_app_id, app_id.to_string());
+	assert_eq!(out.msg, "App deleted");
+}
+
+#[tokio::test]
+async fn test_5_create_app_test_fn()
+{
+	let app_data = create_app().await;
+
+	delete_app(app_data.app_id.as_str()).await;
 }

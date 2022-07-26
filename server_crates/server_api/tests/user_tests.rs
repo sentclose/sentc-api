@@ -16,7 +16,7 @@ use server_api::core::api_res::ApiErrorCodes;
 use server_api::AppRegisterOutput;
 use tokio::sync::{OnceCell, RwLock};
 
-use crate::test_fn::{auth_header, create_app, delete_user, get_url, login_user, register_user};
+use crate::test_fn::{auth_header, create_app, delete_app, delete_user, get_url, login_user, register_user};
 
 mod test_fn;
 
@@ -447,4 +447,12 @@ async fn test_9_register_and_login_user_via_test_fn()
 	assert_eq!(id, login.user_id);
 
 	delete_user(login.jwt.as_str(), &id).await;
+}
+
+#[tokio::test]
+async fn zzz_clean_up()
+{
+	let user = &USER_TEST_STATE.get().unwrap().read().await;
+
+	delete_app(user.app_data.app_id.as_str()).await;
 }

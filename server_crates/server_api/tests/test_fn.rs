@@ -5,7 +5,7 @@ use reqwest::StatusCode;
 use sentc_crypto::KeyData;
 use sentc_crypto_common::user::UserDeleteServerOutput;
 use sentc_crypto_common::{ServerOutput, UserId};
-use server_api::{AppRegisterInput, AppRegisterOutput};
+use server_api::{AppDeleteOutput, AppRegisterInput, AppRegisterOutput};
 
 pub fn get_url(path: String) -> String
 {
@@ -47,6 +47,26 @@ pub async fn create_app() -> AppRegisterOutput
 		Some(v) => v,
 		None => panic!("out is not here"),
 	}
+}
+
+pub async fn delete_app(app_id: &str)
+{
+	//TODO add here the customer jwt when customer mod is done
+
+	let url = get_url("api/v1/customer/app/".to_owned() + app_id);
+	let client = reqwest::Client::new();
+	let res = client.delete(url).send().await.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<AppDeleteOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	let out = out.result.unwrap();
+	assert_eq!(out.old_app_id, app_id.to_string());
+	assert_eq!(out.msg, "App deleted");
 }
 
 pub async fn register_user(app_secret_token: &str, username: &str, password: &str) -> UserId
