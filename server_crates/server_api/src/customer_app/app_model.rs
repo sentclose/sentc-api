@@ -1,8 +1,8 @@
-use sentc_crypto_common::UserId;
+use sentc_crypto_common::{AppId, CustomerId, UserId};
 use uuid::Uuid;
 
 use crate::core::api_res::{ApiErrorCodes, HttpErr};
-use crate::core::db::{exec_transaction, query, query_first, TransactionData};
+use crate::core::db::{exec, exec_transaction, query, query_first, TransactionData};
 use crate::core::get_time;
 use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppJwt, AuthWithToken};
 use crate::set_params;
@@ -56,6 +56,29 @@ WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 		jwt_data,
 		auth_with_token,
 	})
+}
+
+pub(super) async fn get_app_general_data(customer_id: CustomerId, app_id: AppId) -> Result<AppDataGeneral, HttpErr>
+{
+	//language=SQL
+	let sql = r"
+SELECT id as app_id, customer_id, hashed_secret_token, hashed_public_token, hash_alg 
+FROM app 
+WHERE customer_id = ? AND id = ? LIMIT 1";
+
+	let app_data: Option<AppDataGeneral> = query_first(sql.to_string(), set_params!(customer_id, app_id)).await?;
+
+	match app_data {
+		Some(d) => Ok(d),
+		None => {
+			return Err(HttpErr::new(
+				401,
+				ApiErrorCodes::AppTokenNotFound,
+				"App token not found".to_string(),
+				None,
+			))
+		},
+	}
 }
 
 pub(super) async fn create_app(
@@ -126,4 +149,30 @@ VALUES (?,?,?,?,?,?,?)";
 	.await?;
 
 	Ok(app_id)
+}
+
+pub(super) async fn token_renew(
+	app_id: AppId,
+	customer_id: CustomerId,
+	hashed_secret_token: String,
+	hashed_public_token: String,
+	alg: &str,
+) -> Result<(), HttpErr>
+{
+	//language=SQL
+	let sql = "UPDATE app SET hashed_secret_token = ?, hashed_public_token = ?, hash_alg = ? WHERE id = ? AND customer_id = ?";
+
+	exec(
+		sql,
+		set_params!(
+			hashed_secret_token,
+			hashed_public_token,
+			alg.to_string(),
+			app_id,
+			customer_id
+		),
+	)
+	.await?;
+
+	Ok(())
 }

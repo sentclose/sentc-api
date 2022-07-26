@@ -181,3 +181,12 @@ pub struct AppRegisterOutput
 
 	pub jwt_data: AppJwtRegisterOutput,
 }
+
+//__________________________________________________________________________________________________
+
+#[derive(Serialize, Deserialize)]
+pub struct AppTokenRenewOutput
+{
+	pub secret_token: String,
+	pub public_token: String,
+}

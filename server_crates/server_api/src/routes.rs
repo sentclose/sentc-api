@@ -17,6 +17,10 @@ pub(crate) fn routes() -> Router
 		r(crate::customer::done_register),
 	);
 	router.post("/api/v1/customer/app", r(crate::customer_app::create_app));
+	router.patch(
+		"/api/v1/customer/app/:app_id/token_renew",
+		r(crate::customer_app::renew_tokens),
+	);
 	router.post(
 		"/api/v1/exists",
 		r(crate::user::exists).add(app_token::app_token_transform),

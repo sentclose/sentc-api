@@ -6,8 +6,11 @@ use rand::RngCore;
 use rustgram::Request;
 
 use crate::core::api_res::{echo, ApiErrorCodes, HttpErr, JRes};
+use crate::core::cache;
+use crate::core::cache::APP_TOKEN_CACHE;
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
-use crate::customer_app::app_entities::{AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput};
+use crate::core::url_helper::get_name_param_from_req;
+use crate::customer_app::app_entities::{AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, AppTokenRenewOutput};
 use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
 use crate::user::jwt::create_jwt_keys;
 
@@ -60,6 +63,50 @@ pub(crate) async fn create_app(mut req: Request) -> JRes<AppRegisterOutput>
 	};
 
 	echo(customer_app_data)
+}
+
+pub(crate) async fn renew_tokens(req: Request) -> JRes<AppTokenRenewOutput>
+{
+	//no support for the old tokens anymore (unlike jwt)
+	//get the actual tokens (to delete them from the cache)
+
+	//TODO activate it when customer mod is done
+	// let customer = get_jwt_data_from_param(&req)?;
+	// let customer_id = &customer.id;
+
+	let customer_id = &"abcdefg".to_string();
+
+	let app_id = get_name_param_from_req(&req, "app_id")?;
+
+	let app_general_data = app_model::get_app_general_data(customer_id.to_string(), app_id.to_string()).await?;
+
+	let (secret_token, public_token) = generate_tokens()?;
+
+	let hashed_secret_token = hash_token_to_string(&secret_token)?;
+	let hashed_public_token = hash_token_to_string(&public_token)?;
+
+	app_model::token_renew(
+		app_id.to_string(),
+		customer_id.to_string(),
+		hashed_secret_token,
+		hashed_public_token,
+		HASH_ALG,
+	)
+	.await?;
+
+	//delete the cache
+	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
+	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
+
+	cache::delete(old_hashed_secret.as_str()).await;
+	cache::delete(old_hashed_public_token.as_str()).await;
+
+	let out = AppTokenRenewOutput {
+		secret_token: base64::encode(secret_token),
+		public_token: base64::encode(public_token),
+	};
+
+	echo(out)
 }
 
 //TODO when creating new jwt keys -> delete the app cache!

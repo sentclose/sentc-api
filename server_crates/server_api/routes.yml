@@ -12,7 +12,14 @@ routes:
         - get: {p: "/customer/register/:email_key", s: crate::customer::done_register}
 
         # TODO app create in customer group!
-        - post: {p: "/customer/app", s: crate::customer_app::create_app}
+        - group:
+            p: "/customer"
+            gr:
+              - post: { p: "/app", s: crate::customer_app::create_app }
+              - group:
+                  p: "/app/:app_id"
+                  gr:
+                    - patch: { p: "/token_renew", s: crate::customer_app::renew_tokens }
         #_______________________________________________________________________________________________________________
         # routes don't need jwt check, but an app token
         - group:
