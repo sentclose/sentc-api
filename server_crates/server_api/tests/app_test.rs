@@ -1,6 +1,6 @@
 use reqwest::StatusCode;
 use sentc_crypto_common::ServerOutput;
-use server_api::{AppDeleteOutput, AppRegisterInput, AppRegisterOutput, AppTokenRenewOutput};
+use server_api::{AppDeleteOutput, AppRegisterInput, AppRegisterOutput, AppTokenRenewOutput, AppUpdateOutput};
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{create_app, delete_app, get_url};
@@ -74,10 +74,38 @@ async fn test_1_create_app()
 }
 
 #[tokio::test]
-#[ignore]
 async fn test_2_update_app()
 {
-	//TODO
+	//TODO add here the customer jwt when customer mod is done
+
+	let app = APP_TEST_STATE.get().unwrap().read().await;
+
+	let input = AppRegisterInput {
+		identifier: Some("My app updated".to_string()),
+	};
+
+	let url = get_url("api/v1/customer/app/".to_owned() + app.app_id.as_str());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.body(input.to_string().unwrap())
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<AppUpdateOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	let out = out.result.unwrap();
+	assert_eq!(out.app_id, app.app_id.to_string());
+	assert_eq!(out.msg, "App updated");
 }
 
 #[tokio::test]
