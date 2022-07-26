@@ -1,5 +1,6 @@
 use sentc_crypto_common::{AppId, CustomerId, SignKeyPairId};
 use serde::{Deserialize, Serialize};
+use serde_json::to_string;
 
 use crate::take_or_err;
 
@@ -143,6 +144,14 @@ impl crate::core::db::FromSqliteRow for AppJwt
 pub struct AppRegisterInput
 {
 	pub identifier: Option<String>,
+}
+
+impl AppRegisterInput
+{
+	pub fn to_string(&self) -> serde_json::Result<String>
+	{
+		to_string(self)
+	}
 }
 
 /**

@@ -10,6 +10,8 @@ mod middleware;
 mod routes;
 mod user;
 
+pub use customer_app::app_entities::{AppRegisterInput, AppRegisterOutput};
+
 async fn not_found_handler(_req: Request) -> core::api_res::JRes<String>
 {
 	Err(core::api_res::HttpErr::new(
