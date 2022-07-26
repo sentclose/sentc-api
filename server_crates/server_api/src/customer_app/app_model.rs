@@ -15,7 +15,11 @@ SELECT id as app_id, customer_id, hashed_secret_token, hashed_public_token, hash
 FROM app 
 WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 
-	let app_data: Option<AppDataGeneral> = query_first(sql.to_string(), set_params!(hashed_token.to_string())).await?;
+	let app_data: Option<AppDataGeneral> = query_first(
+		sql.to_string(),
+		set_params!(hashed_token.to_string(), hashed_token.to_string()),
+	)
+	.await?;
 
 	let app_data = match app_data {
 		Some(d) => d,
