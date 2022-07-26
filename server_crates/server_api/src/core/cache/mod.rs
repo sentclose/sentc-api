@@ -14,6 +14,8 @@ pub trait Cache<T: 'static + Clone>: Send + Sync
 	async fn get(&self, key: &str) -> Option<T>;
 
 	async fn add(&self, key: String, value: T, ttl: usize);
+
+	async fn delete(&self, key: &str);
 }
 
 pub async fn init_cache()
@@ -37,6 +39,13 @@ pub async fn add(key: String, value: String, ttl: usize)
 	let cache = CACHE.get().unwrap();
 
 	cache.add(key, value, ttl).await
+}
+
+pub async fn delete(key: &str)
+{
+	let cache = CACHE.get().unwrap();
+
+	cache.delete(key).await;
 }
 
 #[derive(Serialize, Deserialize)]

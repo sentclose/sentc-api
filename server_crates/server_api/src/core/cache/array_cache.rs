@@ -63,6 +63,11 @@ impl<T: 'static + Clone + Send + Sync> Cache<T> for ArrayCache<T>
 			},
 		);
 	}
+
+	async fn delete(&self, key: &str)
+	{
+		self.cache.write().await.remove(key);
+	}
 }
 
 /**
