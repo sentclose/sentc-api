@@ -113,7 +113,7 @@ WHERE user_id = u.id AND u.identifier = ? AND u.app_id = ? ORDER BY uk.time DESC
 pub(super) async fn register(app_id: &str, register_data: RegisterData) -> Result<String, HttpErr>
 {
 	//check first if the user identifier is available
-	let check = check_user_exists(app_id,register_data.user_identifier.as_str()).await?;
+	let check = check_user_exists(app_id, register_data.user_identifier.as_str()).await?;
 
 	if check {
 		//check true == user exists
