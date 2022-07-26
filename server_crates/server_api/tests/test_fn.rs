@@ -1,11 +1,46 @@
+#![allow(dead_code)]
+
 use reqwest::StatusCode;
 use sentc_crypto::KeyData;
 use sentc_crypto_common::user::UserDeleteServerOutput;
 use sentc_crypto_common::{ServerOutput, UserId};
+use server_api::{AppRegisterInput, AppRegisterOutput};
 
 pub fn get_url(path: String) -> String
 {
 	format!("http://127.0.0.1:{}/{}", 3002, path)
+}
+
+pub async fn create_app() -> AppRegisterOutput
+{
+	//TODO add here the customer jwt when customer mod is done
+	let url = get_url("api/v1/customer/app".to_owned());
+
+	let input = AppRegisterInput {
+		identifier: None,
+	};
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.body(input.to_string().unwrap())
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<AppRegisterOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	match out.result {
+		Some(v) => v,
+		None => panic!("out is not here"),
+	}
 }
 
 pub async fn register_user(username: &str, password: &str) -> UserId
