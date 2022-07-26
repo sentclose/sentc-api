@@ -105,7 +105,8 @@ VALUES (?,?,?,?,?,?,?)";
 		app_id.to_string(),
 		first_jwt_sign_key.to_string(),
 		first_jwt_verify_key.to_string(),
-		first_jwt_alg.to_string()
+		first_jwt_alg.to_string(),
+		time.to_string()
 	);
 
 	exec_transaction(vec![
