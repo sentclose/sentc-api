@@ -1,4 +1,4 @@
-use sentc_crypto_common::{AppId, CustomerId, JwtId, UserId};
+use sentc_crypto_common::{AppId, CustomerId, JwtKeyId, UserId};
 use uuid::Uuid;
 
 use crate::core::api_res::{ApiErrorCodes, HttpErr};
@@ -90,7 +90,7 @@ pub(super) async fn create_app(
 	first_jwt_sign_key: &str,
 	first_jwt_verify_key: &str,
 	first_jwt_alg: &str,
-) -> Result<(AppId, JwtId), HttpErr>
+) -> Result<(AppId, JwtKeyId), HttpErr>
 {
 	let app_id = Uuid::new_v4().to_string();
 	let time = get_time()?;
@@ -183,7 +183,7 @@ pub(super) async fn add_jwt_keys(
 	new_jwt_sign_key: &str,
 	new_jwt_verify_key: &str,
 	new_jwt_alg: &str,
-) -> Result<JwtId, HttpErr>
+) -> Result<JwtKeyId, HttpErr>
 {
 	check_app_exists(customer_id, app_id.to_string()).await?;
 
@@ -209,7 +209,7 @@ pub(super) async fn add_jwt_keys(
 	Ok(jwt_key_id)
 }
 
-pub(super) async fn delete_jwt_keys(customer_id: CustomerId, app_id: AppId, jwt_key_id: JwtId) -> Result<(), HttpErr>
+pub(super) async fn delete_jwt_keys(customer_id: CustomerId, app_id: AppId, jwt_key_id: JwtKeyId) -> Result<(), HttpErr>
 {
 	check_app_exists(customer_id, app_id.to_string()).await?;
 

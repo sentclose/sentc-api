@@ -1,4 +1,4 @@
-use sentc_crypto_common::{AppId, CustomerId, JwtId, SignKeyPairId};
+use sentc_crypto_common::{AppId, CustomerId, JwtKeyId, SignKeyPairId};
 use serde::{Deserialize, Serialize};
 use serde_json::to_string;
 
@@ -164,7 +164,7 @@ pub struct AppJwtRegisterOutput
 {
 	pub customer_id: CustomerId,
 	pub app_id: AppId,
-	pub jwt_id: JwtId,
+	pub jwt_id: JwtKeyId,
 	pub jwt_verify_key: String,
 	pub jwt_sign_key: String,
 	pub jwt_alg: String, //should be ES384 for now
