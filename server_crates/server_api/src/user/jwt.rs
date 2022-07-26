@@ -4,6 +4,7 @@ use std::str::FromStr;
 use jsonwebtoken::{decode, decode_header, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use ring::rand;
 use ring::signature::{self, KeyPair};
+use rustgram::Request;
 use sentc_crypto_common::UserId;
 use serde::{Deserialize, Serialize};
 
@@ -27,6 +28,34 @@ struct Claims
 	//sentc
 	internal_user_id: UserId,
 	user_identifier: String,
+}
+
+pub fn get_jwt_data_from_param(req: &Request) -> Result<&UserJwtEntity, HttpErr>
+{
+	match req.extensions().get::<Option<UserJwtEntity>>() {
+		Some(p) => {
+			//p should always be some for non optional jwt
+			match p {
+				Some(p1) => Ok(p1),
+				None => {
+					Err(HttpErr::new(
+						400,
+						ApiErrorCodes::JwtNotFound,
+						"No valid jwt".to_owned(),
+						None,
+					))
+				},
+			}
+		},
+		None => {
+			Err(HttpErr::new(
+				400,
+				ApiErrorCodes::JwtNotFound,
+				"No valid jwt".to_owned(),
+				None,
+			))
+		},
+	}
 }
 
 pub async fn create_jwt(internal_user_id: &str, user_identifier: &str, app_id: &str, customer_jwt_data: &AppJwt, aud: &str)
