@@ -82,6 +82,7 @@ async fn jwt_check(req: &mut Request, optional: bool, check_exp: bool) -> Result
 		},
 	};
 
+	//for non optional this is always Some
 	req.extensions_mut().insert(user);
 
 	Ok(())
