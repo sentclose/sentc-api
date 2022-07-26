@@ -11,12 +11,30 @@ use crate::middleware::*;
 pub(crate) fn routes() -> Router
 {
 	let mut router = Router::new(crate::not_found_handler);
-	router.post("/api/v1/exists", r(crate::user::exists));
-	router.post("/api/v1/register", r(crate::user::register));
-	router.post("/api/v1/prepare_login", r(crate::user::prepare_login));
-	router.post("/api/v1/done_login", r(crate::user::done_login));
-	router.delete("/api/v1/user/:id", r(crate::user::delete));
+	router.post("/api/v1/customer/register", r(crate::customer::register));
+	router.get(
+		"/api/v1/customer/register/:email_key",
+		r(crate::customer::done_register),
+	);
+	router.post("/api/v1/customer/app", r(crate::customer_app::create_app));
+	router.post(
+		"/api/v1/exists",
+		r(crate::user::exists).add(app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/register",
+		r(crate::user::register).add(app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/prepare_login",
+		r(crate::user::prepare_login).add(app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/done_login",
+		r(crate::user::done_login).add(app_token::app_token_transform),
+	);
 	router.get("/api/v1/user", r(crate::user::get).add(jwt::jwt_transform));
+	router.delete("/api/v1/user", r(crate::user::delete).add(jwt::jwt_transform));
 	router.get("/api/v1/group/:id", r(crate::group::get).add(jwt::jwt_transform));
 
 	router
