@@ -199,3 +199,12 @@ pub struct AppDeleteOutput
 	pub old_app_id: AppId,
 	pub msg: String,
 }
+
+//__________________________________________________________________________________________________
+
+#[derive(Serialize, Deserialize)]
+pub struct AppUpdateOutput
+{
+	pub app_id: AppId,
+	pub msg: String,
+}

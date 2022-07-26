@@ -10,7 +10,14 @@ use crate::core::cache;
 use crate::core::cache::APP_TOKEN_CACHE;
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
 use crate::core::url_helper::get_name_param_from_req;
-use crate::customer_app::app_entities::{AppDeleteOutput, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, AppTokenRenewOutput};
+use crate::customer_app::app_entities::{
+	AppDeleteOutput,
+	AppJwtRegisterOutput,
+	AppRegisterInput,
+	AppRegisterOutput,
+	AppTokenRenewOutput,
+	AppUpdateOutput,
+};
 use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
 use crate::user::jwt::create_jwt_keys;
 
@@ -124,6 +131,29 @@ pub(crate) async fn delete(req: Request) -> JRes<AppDeleteOutput>
 	let out = AppDeleteOutput {
 		old_app_id: app_id.to_string(),
 		msg: "App deleted".to_string(),
+	};
+
+	echo(out)
+}
+
+pub(crate) async fn update(mut req: Request) -> JRes<AppUpdateOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+	let input: AppRegisterInput = bytes_to_json(&body)?;
+
+	//TODO activate it when customer mod is done
+	// let customer = get_jwt_data_from_param(&req)?;
+	// let customer_id = &customer.id;
+
+	let customer_id = &"abcdefg".to_string();
+
+	let app_id = get_name_param_from_req(&req, "app_id")?;
+
+	app_model::update(customer_id.to_string(), app_id.to_string(), input.identifier).await?;
+
+	let out = AppUpdateOutput {
+		app_id: app_id.to_string(),
+		msg: "App updated".to_string(),
 	};
 
 	echo(out)

@@ -19,6 +19,7 @@ routes:
               - group:
                   p: "/app/:app_id"
                   gr:
+                    - put: {p: "", s: crate::customer_app::update}
                     - delete: {p: "", s: crate::customer_app::delete}
                     - patch: {p: "/token_renew", s: crate::customer_app::renew_tokens}
         #_______________________________________________________________________________________________________________

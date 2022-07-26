@@ -177,6 +177,21 @@ pub(super) async fn token_renew(
 	Ok(())
 }
 
+pub(super) async fn update(customer_id: CustomerId, app_id: AppId, identifier: Option<String>) -> Result<(), HttpErr>
+{
+	//language=SQL
+	let sql = "UPDATE app SET identifier = ? WHERE customer_id = ? AND id = ?";
+
+	let identifier = match identifier {
+		Some(i) => i,
+		None => "".to_string(),
+	};
+
+	exec(sql, set_params!(identifier, customer_id, app_id)).await?;
+
+	Ok(())
+}
+
 pub(super) async fn delete(customer_id: CustomerId, app_id: AppId) -> Result<(), HttpErr>
 {
 	//use the double check with the customer id to check if this app really belongs to the customer!
