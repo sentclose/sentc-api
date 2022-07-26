@@ -4,6 +4,7 @@ use crate::routes::routes;
 
 pub mod core;
 mod customer;
+mod customer_app;
 mod group;
 mod middleware;
 mod routes;

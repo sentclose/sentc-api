@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::api_res::{ApiErrorCodes, HttpErr};
 use crate::core::get_time_in_sec;
-use crate::customer::customer_entities::CustomerAppJwt;
+use crate::customer_app::app_entities::AppJwt;
 use crate::user::user_entities::UserJwtEntity;
 use crate::user::user_model;
 
@@ -29,13 +29,8 @@ struct Claims
 	user_identifier: String,
 }
 
-pub async fn create_jwt(
-	internal_user_id: &str,
-	user_identifier: &str,
-	app_id: &str,
-	customer_jwt_data: &CustomerAppJwt,
-	aud: &str,
-) -> Result<String, HttpErr>
+pub async fn create_jwt(internal_user_id: &str, user_identifier: &str, app_id: &str, customer_jwt_data: &AppJwt, aud: &str)
+	-> Result<String, HttpErr>
 {
 	let iat = get_time_in_sec()?;
 	let expiration = iat + 60 * 5; //exp in 5 min
