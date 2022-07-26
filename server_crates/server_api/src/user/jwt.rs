@@ -21,7 +21,7 @@ struct Claims
 {
 	//jwt defaults
 	aud: String,
-	sub: String,
+	sub: String, //the app id
 	exp: usize,
 	iat: usize,
 
