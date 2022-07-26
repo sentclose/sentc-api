@@ -1860,6 +1860,7 @@ dependencies = [
  "jsonwebtoken",
  "mysql_async",
  "mysql_common",
+ "rand",
  "reqwest",
  "ring",
  "rusqlite",

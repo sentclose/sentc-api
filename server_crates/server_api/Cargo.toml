@@ -52,6 +52,8 @@ ring = { version = "0.16.5", features = ["std"] }
 # base64 to encode and decode the jwt key
 base64 = "0.13.0"
 
+rand = "0.8.5"
+
 #_______________________________________________________________________________________________________________________
 # salt creation on server
 # to get it from ssh: write this in your ~/.cargo/config.toml:
