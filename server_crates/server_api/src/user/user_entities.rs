@@ -66,6 +66,7 @@ pub struct UserJwtEntity
 	//aud if it is an app user or an customer
 	pub aud: String,
 	pub sub: String, //the app id
+	pub fresh: bool,
 }
 
 //__________________________________________________________________________________________________

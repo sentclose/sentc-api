@@ -175,6 +175,17 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerKeysOutp
 pub(crate) async fn delete(req: Request) -> JRes<UserDeleteServerOutput>
 {
 	let user = get_jwt_data_from_param(&req)?;
+
+	//the user needs a jwt which was created from login and no refreshed jwt
+	if user.fresh == false {
+		return Err(HttpErr::new(
+			401,
+			ApiErrorCodes::WrongJwtAction,
+			"The jwt is not valid for this action".to_string(),
+			None,
+		));
+	}
+
 	let user_id = &user.id;
 	let app_id = &user.sub.to_string();
 

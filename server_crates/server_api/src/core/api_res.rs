@@ -36,6 +36,7 @@ pub enum ApiErrorCodes
 	UserNotFound,
 	UserExists,
 	Login,
+	WrongJwtAction,
 
 	AuthKeyFormat,
 
@@ -73,6 +74,7 @@ impl ApiErrorCodes
 			ApiErrorCodes::SaltError => 110,
 			ApiErrorCodes::AuthKeyFormat => 111,
 			ApiErrorCodes::Login => 112,
+			ApiErrorCodes::WrongJwtAction => 113,
 			ApiErrorCodes::AppTokenNotFound => 200,
 			ApiErrorCodes::AppTokenWrongFormat => 201,
 			ApiErrorCodes::AppNotFound => 202,
