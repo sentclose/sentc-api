@@ -136,6 +136,7 @@ pub async fn auth(jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), 
 			id: decoded.claims.internal_user_id,
 			identifier: decoded.claims.user_identifier,
 			aud: decoded.claims.aud,
+			sub: decoded.claims.sub,
 		},
 		decoded.claims.exp,
 	))
