@@ -16,6 +16,8 @@ use sentc_crypto_common::user::{
 	UserDeleteServerOutput,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
+	UserUpdateServerInput,
+	UserUpdateServerOut,
 };
 
 use crate::core::api_res::{echo, ApiErrorCodes, HttpErr, JRes};
@@ -140,13 +142,13 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerKeysOutp
 	};
 
 	// and create the jwt
-
 	let jwt = create_jwt(
 		user_data.user_id.as_str(),
 		done_login.user_identifier.as_str(),
 		app_data.app_data.app_id.as_str(),
 		&app_data.jwt_data[0], //use always the latest created jwt data
 		"user",
+		true,
 	)
 	.await?;
 
@@ -174,14 +176,57 @@ pub(crate) async fn delete(req: Request) -> JRes<UserDeleteServerOutput>
 {
 	let user = get_jwt_data_from_param(&req)?;
 
-	let user_id = &user.id;
+	//the user needs a jwt which was created from login and no refreshed jwt
+	if user.fresh == false {
+		return Err(HttpErr::new(
+			401,
+			ApiErrorCodes::WrongJwtAction,
+			"The jwt is not valid for this action".to_string(),
+			None,
+		));
+	}
 
-	user_model::delete(user_id).await?;
+	let user_id = &user.id;
+	let app_id = &user.sub.to_string();
+
+	user_model::delete(user_id, app_id.to_string()).await?;
 
 	echo(UserDeleteServerOutput {
 		msg: "User deleted".to_owned(),
 		user_id: user_id.to_owned(),
 	})
+}
+
+pub(crate) async fn update(mut req: Request) -> JRes<UserUpdateServerOut>
+{
+	let body = get_raw_body(&mut req).await?;
+	let update_input: UserUpdateServerInput = bytes_to_json(&body)?;
+
+	let user = get_jwt_data_from_param(&req)?;
+	let user_id = &user.id;
+	let app_id = &user.sub;
+
+	//check if the new ident exists
+	let exists = user_model::check_user_exists(app_id, update_input.user_identifier.as_str()).await?;
+
+	if exists {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::UserExists,
+			"User identifier already exists".to_string(),
+			None,
+		));
+	}
+
+	user_model::update(user_id, app_id.to_string(), update_input.user_identifier.as_str()).await?;
+
+	let out = UserUpdateServerOut {
+		user_identifier: update_input.user_identifier,
+		user_id: user_id.to_string(),
+		msg: "User updated".to_string(),
+	};
+
+	echo(out)
 }
 
 pub(crate) async fn get(_req: Request) -> JRes<UserEntity>

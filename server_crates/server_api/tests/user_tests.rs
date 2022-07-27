@@ -8,6 +8,8 @@ use sentc_crypto_common::user::{
 	UserDeleteServerOutput,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
+	UserUpdateServerInput,
+	UserUpdateServerOut,
 };
 use sentc_crypto_common::ServerOutput;
 use serde::{Deserialize, Serialize};
@@ -370,10 +372,81 @@ async fn test_16_user_delete_with_wrong_jwt()
 	user.key_data = Some(login);
 }
 
+#[tokio::test]
+async fn test_17_user_update()
+{
+	let mut user = USER_TEST_STATE.get().unwrap().write().await;
+	let old_username = &user.username;
+	let jwt = &user.key_data.as_ref().unwrap().jwt;
+
+	let new_username = "bla".to_string();
+
+	let input = UserUpdateServerInput {
+		user_identifier: new_username.to_string(),
+	};
+
+	let url = get_url("api/v1/user".to_owned());
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.body(input.to_string().unwrap())
+		.header(AUTHORIZATION, auth_header(jwt))
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<UserUpdateServerOut>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	let out = out.result.unwrap();
+
+	assert_ne!(out.user_identifier, old_username.to_string());
+
+	user.username = new_username;
+}
+
+#[tokio::test]
+async fn test_18_user_not_update_when_identifier_exists()
+{
+	let user = USER_TEST_STATE.get().unwrap().read().await;
+	let jwt = &user.key_data.as_ref().unwrap().jwt;
+
+	let new_username = "bla".to_string();
+
+	let input = UserUpdateServerInput {
+		user_identifier: new_username.to_string(),
+	};
+
+	let url = get_url("api/v1/user".to_owned());
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.body(input.to_string().unwrap())
+		.header(AUTHORIZATION, auth_header(jwt))
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<UserUpdateServerOut>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, false);
+	assert_eq!(out.err_code.unwrap(), 101);
+}
+
 //do user tests before this one!
 
 #[tokio::test]
-async fn test_17_user_delete()
+async fn test_19_user_delete()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let user_id = &user.user_id;
@@ -423,7 +496,7 @@ impl WrongRegisterData
 }
 
 #[tokio::test]
-async fn test_18_not_register_user_with_wrong_input()
+async fn test_20_not_register_user_with_wrong_input()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 
@@ -477,7 +550,7 @@ async fn test_18_not_register_user_with_wrong_input()
 }
 
 #[tokio::test]
-async fn test_19_register_and_login_user_via_test_fn()
+async fn test_21_register_and_login_user_via_test_fn()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let secret_token = &user.app_data.secret_token;

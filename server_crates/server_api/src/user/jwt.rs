@@ -28,6 +28,7 @@ struct Claims
 	//sentc
 	internal_user_id: UserId,
 	user_identifier: String,
+	fresh: bool, //was this token from refresh jwt or from login
 }
 
 pub fn get_jwt_data_from_param(req: &Request) -> Result<&UserJwtEntity, HttpErr>
@@ -64,6 +65,7 @@ pub(crate) async fn create_jwt(
 	app_id: &str,
 	customer_jwt_data: &AppJwt,
 	aud: &str,
+	fresh: bool,
 ) -> Result<String, HttpErr>
 {
 	let iat = get_time_in_sec()?;
@@ -76,6 +78,7 @@ pub(crate) async fn create_jwt(
 		exp: expiration as usize,
 		internal_user_id: internal_user_id.to_string(),
 		user_identifier: user_identifier.to_string(),
+		fresh,
 	};
 
 	let mut header = Header::new(Algorithm::from_str(customer_jwt_data.jwt_alg.as_str()).unwrap());
@@ -136,6 +139,8 @@ pub async fn auth(jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), 
 			id: decoded.claims.internal_user_id,
 			identifier: decoded.claims.user_identifier,
 			aud: decoded.claims.aud,
+			sub: decoded.claims.sub,
+			fresh: decoded.claims.fresh,
 		},
 		decoded.claims.exp,
 	))
@@ -200,6 +205,7 @@ mod test
 			exp: expiration as usize,
 			internal_user_id: "12345".to_string(),
 			user_identifier: "username".to_string(),
+			fresh: false,
 		};
 
 		let key_id_str = "abc".to_string();
@@ -232,5 +238,6 @@ mod test
 
 		assert_eq!(decoded.claims.user_identifier, claims.user_identifier);
 		assert_eq!(key_id, key_id_str);
+		assert_eq!(decoded.claims.fresh, false);
 	}
 }

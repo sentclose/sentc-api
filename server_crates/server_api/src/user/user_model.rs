@@ -1,4 +1,5 @@
 use sentc_crypto_common::user::RegisterData;
+use sentc_crypto_common::AppId;
 use uuid::Uuid;
 
 use crate::core::api_res::{ApiErrorCodes, HttpErr};
@@ -194,12 +195,26 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 	Ok(user_id)
 }
 
-pub(super) async fn delete(user_id: &str) -> Result<(), HttpErr>
+pub(super) async fn delete(user_id: &str, app_id: AppId) -> Result<(), HttpErr>
 {
 	//language=SQL
-	let sql = "DELETE FROM user WHERE id = ?";
+	let sql = "DELETE FROM user WHERE id = ? AND app_id = ?";
 
-	exec(sql, set_params!(user_id.to_owned())).await?;
+	exec(sql, set_params!(user_id.to_owned(), app_id)).await?;
+
+	Ok(())
+}
+
+pub(super) async fn update(user_id: &str, app_id: AppId, user_identifier: &str) -> Result<(), HttpErr>
+{
+	//language=SQL
+	let sql = "UPDATE user SET identifier = ? WHERE id = ? AND app_id = ?";
+
+	exec(
+		sql,
+		set_params!(user_identifier.to_string(), user_id.to_string(), app_id),
+	)
+	.await?;
 
 	Ok(())
 }
