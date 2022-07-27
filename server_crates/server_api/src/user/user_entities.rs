@@ -257,3 +257,29 @@ impl crate::core::db::FromSqliteRow for DoneLoginServerKeysOutputEntity
 }
 
 //__________________________________________________________________________________________________
+
+pub struct UserKeyFistRow(pub String);
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for UserKeyFistRow
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self(take_or_err!(row, 0, String)))
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl crate::core::db::FromSqliteRow for UserKeyFistRow
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self(take_or_err!(row, 0)))
+	}
+}
+
+//__________________________________________________________________________________________________

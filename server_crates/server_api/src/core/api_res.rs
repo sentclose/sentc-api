@@ -137,6 +137,8 @@ impl GramHttpErr<Response> for HttpErr
 	}
 }
 
+pub type AppRes<T> = Result<T, HttpErr>;
+
 pub type JRes<T> = Result<JsonRes<T>, HttpErr>;
 
 /**
