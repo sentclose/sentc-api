@@ -4,12 +4,13 @@ use std::str::FromStr;
 use jsonwebtoken::{decode, decode_header, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use ring::rand;
 use ring::signature::{self, KeyPair};
+use rustgram::Request;
 use sentc_crypto_common::UserId;
 use serde::{Deserialize, Serialize};
 
 use crate::core::api_res::{ApiErrorCodes, HttpErr};
 use crate::core::get_time_in_sec;
-use crate::customer::customer_entities::CustomerAppJwt;
+use crate::customer_app::app_entities::AppJwt;
 use crate::user::user_entities::UserJwtEntity;
 use crate::user::user_model;
 
@@ -20,7 +21,7 @@ struct Claims
 {
 	//jwt defaults
 	aud: String,
-	sub: String,
+	sub: String, //the app id
 	exp: usize,
 	iat: usize,
 
@@ -29,11 +30,39 @@ struct Claims
 	user_identifier: String,
 }
 
-pub async fn create_jwt(
+pub fn get_jwt_data_from_param(req: &Request) -> Result<&UserJwtEntity, HttpErr>
+{
+	match req.extensions().get::<Option<UserJwtEntity>>() {
+		Some(p) => {
+			//p should always be some for non optional jwt
+			match p {
+				Some(p1) => Ok(p1),
+				None => {
+					Err(HttpErr::new(
+						400,
+						ApiErrorCodes::JwtNotFound,
+						"No valid jwt".to_owned(),
+						None,
+					))
+				},
+			}
+		},
+		None => {
+			Err(HttpErr::new(
+				400,
+				ApiErrorCodes::JwtNotFound,
+				"No valid jwt".to_owned(),
+				None,
+			))
+		},
+	}
+}
+
+pub(crate) async fn create_jwt(
 	internal_user_id: &str,
 	user_identifier: &str,
 	app_id: &str,
-	customer_jwt_data: &CustomerAppJwt,
+	customer_jwt_data: &AppJwt,
 	aud: &str,
 ) -> Result<String, HttpErr>
 {

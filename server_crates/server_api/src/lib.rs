@@ -4,10 +4,13 @@ use crate::routes::routes;
 
 pub mod core;
 mod customer;
+mod customer_app;
 mod group;
 mod middleware;
 mod routes;
 mod user;
+
+pub use customer_app::app_entities::*;
 
 async fn not_found_handler(_req: Request) -> core::api_res::JRes<String>
 {

@@ -7,15 +7,38 @@ routes:
       p: "/v1"
       gr:
         #_______________________________________________________________________________________________________________
-        # routes don't need jwt check
+        # customer register routes, don't need any mw
+        - post: {p: "/customer/register", s: crate::customer::register}
+        - get: {p: "/customer/register/:email_key", s: crate::customer::done_register}
+
+        #_______________________________________________________________________________________________________________
+        # customer routes are called form the dashboard
+        # TODO check customer jwt, with extra mw (to check the aud and the app id, app id must be the internal sentc id)
+        - group:
+            p: "/customer"
+            gr:
+              - post: { p: "/app", s: crate::customer_app::create_app }
+              - group:
+                  p: "/app/:app_id"
+                  gr:
+                    - put: {p: "", s: crate::customer_app::update}
+                    - delete: {p: "", s: crate::customer_app::delete}
+                    - patch: {p: "/token_renew", s: crate::customer_app::renew_tokens}
+                    # jwt keys
+                    - patch: {p: "/new_jwt_keys", s: crate::customer_app::add_jwt_keys}
+                    - get: {p: "/jwt", s: crate::customer_app::get_jwt_details}
+                    - delete: {p: "/jwt/:jwt_id", s: crate::customer_app::delete_jwt_keys}
+        #_______________________________________________________________________________________________________________
+        # routes don't need jwt check, but an app token
         - group:
             p: ""
+            mw:
+              - app_token::app_token_transform
             gr:
               - post: {p: "/exists", s: crate::user::exists}
               - post: {p: "/register", s: crate::user::register}
               - post: {p: "/prepare_login", s: crate::user::prepare_login}
               - post: {p: "/done_login", s: crate::user::done_login}
-              - delete: {p: "/user/:id", s: crate::user::delete}  # TODO in user group with the jwt!
         #_______________________________________________________________________________________________________________
         # routes which needed jwt check with a valid jwt
         - group:
@@ -29,6 +52,7 @@ routes:
                   p: "/user"
                   gr:
                     - get: {p: "", s: crate::user::get}
+                    - delete: {p: "", s: crate::user::delete}
               #_________________________________________________________________________________________________________
               # group routes in the group mod
               - group:

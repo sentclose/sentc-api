@@ -10,7 +10,7 @@ use rustgram::{GramHttpErr, Request, Response};
 
 use crate::core::api_res::{ApiErrorCodes, HttpErr};
 use crate::core::cache;
-use crate::core::cache::JWT_CACHE;
+use crate::core::cache::{CacheVariant, DEFAULT_TTL, JWT_CACHE};
 use crate::core::input_helper::{bytes_to_json, json_to_string};
 use crate::user::jwt::auth;
 use crate::user::user_entities::UserJwtEntity;
@@ -82,6 +82,7 @@ async fn jwt_check(req: &mut Request, optional: bool, check_exp: bool) -> Result
 		},
 	};
 
+	//for non optional this is always Some
 	req.extensions_mut().insert(user);
 
 	Ok(())
@@ -132,7 +133,22 @@ async fn validate(jwt: &str, check_exp: bool) -> Result<UserJwtEntity, HttpErr>
 		Some(j) => bytes_to_json(j.as_bytes())?,
 		None => {
 			//if not in the cache valid the jwt and cache it
-			let (entity, exp) = auth(jwt, check_exp).await?;
+			let (entity, exp) = match auth(jwt, check_exp).await {
+				Ok(v) => v,
+				Err(e) => {
+					//save the wrong jwt in cache
+					cache::add(
+						cache_key,
+						json_to_string(&CacheVariant::<UserJwtEntity>::None)?,
+						DEFAULT_TTL,
+					)
+					.await;
+
+					return Err(e);
+				},
+			};
+
+			let entity = CacheVariant::Some(entity);
 
 			if check_exp {
 				//only add the jwt to cache for exp able jwt's
@@ -141,6 +157,18 @@ async fn validate(jwt: &str, check_exp: bool) -> Result<UserJwtEntity, HttpErr>
 			}
 
 			entity
+		},
+	};
+
+	let entity = match entity {
+		CacheVariant::Some(d) => d,
+		CacheVariant::None => {
+			return Err(HttpErr::new(
+				401,
+				ApiErrorCodes::JwtNotFound,
+				"No valid jwt".to_owned(),
+				None,
+			))
 		},
 	};
 

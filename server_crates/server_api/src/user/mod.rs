@@ -20,7 +20,8 @@ use sentc_crypto_common::user::{
 
 use crate::core::api_res::{echo, ApiErrorCodes, HttpErr, JRes};
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
-use crate::core::url_helper::get_name_param_from_req;
+use crate::customer_app::app_util::get_app_data_from_req;
+use crate::user::jwt::{create_jwt, get_jwt_data_from_param};
 use crate::user::user_entities::{UserEntity, SERVER_RANDOM_VALUE};
 
 pub(crate) async fn exists(mut req: Request) -> JRes<UserIdentifierAvailableServerOutput>
@@ -28,7 +29,9 @@ pub(crate) async fn exists(mut req: Request) -> JRes<UserIdentifierAvailableServ
 	let body = get_raw_body(&mut req).await?;
 	let data: UserIdentifierAvailableServerInput = bytes_to_json(&body)?;
 
-	let exists = user_model::check_user_exists(data.user_identifier.as_str()).await?;
+	let app_data = get_app_data_from_req(&req)?;
+
+	let exists = user_model::check_user_exists(&app_data.app_data.app_id, data.user_identifier.as_str()).await?;
 
 	let out = UserIdentifierAvailableServerOutput {
 		user_identifier: data.user_identifier,
@@ -46,8 +49,10 @@ pub(crate) async fn register(mut req: Request) -> JRes<RegisterServerOutput>
 	let register_input: RegisterData = bytes_to_json(&body)?;
 	let user_identifier = register_input.user_identifier.to_string(); //save this value before because of dropping
 
+	let app_data = get_app_data_from_req(&req)?;
+
 	//save the data
-	let user_id = user_model::register("123", register_input).await?;
+	let user_id = user_model::register(&app_data.app_data.app_id, register_input).await?;
 
 	let out = RegisterServerOutput {
 		user_id,
@@ -60,10 +65,11 @@ pub(crate) async fn register(mut req: Request) -> JRes<RegisterServerOutput>
 pub(crate) async fn prepare_login(mut req: Request) -> JRes<PrepareLoginSaltServerOutput>
 {
 	let body = get_raw_body(&mut req).await?;
-
 	let user_identifier: PrepareLoginServerInput = bytes_to_json(&body)?;
 
-	let out = create_salt(user_identifier.user_identifier.as_str()).await?;
+	let app_data = get_app_data_from_req(&req)?;
+
+	let out = create_salt(&app_data.app_data.app_id, user_identifier.user_identifier.as_str()).await?;
 
 	echo(out)
 }
@@ -71,11 +77,12 @@ pub(crate) async fn prepare_login(mut req: Request) -> JRes<PrepareLoginSaltServ
 pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerKeysOutput>
 {
 	let body = get_raw_body(&mut req).await?;
-
 	let done_login: DoneLoginServerInput = bytes_to_json(&body)?;
 
+	let app_data = get_app_data_from_req(&req)?;
+
 	//get the login data
-	let login_data = user_model::get_user_login_data(done_login.user_identifier.as_str()).await?;
+	let login_data = user_model::get_user_login_data(&app_data.app_data.app_id, done_login.user_identifier.as_str()).await?;
 
 	let (hashed_user_auth_key, alg) = match login_data {
 		Some(d) => (d.hashed_authentication_key, d.derived_alg),
@@ -118,7 +125,7 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerKeysOutp
 	}
 
 	//if correct -> fetch and return the user data
-	let user_data = user_model::get_done_login_data(done_login.user_identifier.as_str()).await?;
+	let user_data = user_model::get_done_login_data(&app_data.app_data.app_id, done_login.user_identifier.as_str()).await?;
 
 	let user_data = match user_data {
 		Some(d) => d,
@@ -132,7 +139,16 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerKeysOutp
 		},
 	};
 
-	// and create the jwt TODO
+	// and create the jwt
+
+	let jwt = create_jwt(
+		user_data.user_id.as_str(),
+		done_login.user_identifier.as_str(),
+		app_data.app_data.app_id.as_str(),
+		&app_data.jwt_data[0], //use always the latest created jwt data
+		"user",
+	)
+	.await?;
 
 	let out = DoneLoginServerKeysOutput {
 		encrypted_master_key: user_data.encrypted_master_key,
@@ -144,16 +160,21 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerKeysOutp
 		keypair_sign_alg: user_data.keypair_sign_alg,
 		keypair_encrypt_id: user_data.keypair_encrypt_id,
 		keypair_sign_id: user_data.keypair_sign_id,
-		jwt: "".to_string(),
+		jwt,
 		user_id: user_data.user_id,
 	};
 
 	echo(out)
 }
 
+//__________________________________________________________________________________________________
+// user fn with jwt
+
 pub(crate) async fn delete(req: Request) -> JRes<UserDeleteServerOutput>
 {
-	let user_id = get_name_param_from_req(&req, "id")?;
+	let user = get_jwt_data_from_param(&req)?;
+
+	let user_id = &user.id;
 
 	user_model::delete(user_id).await?;
 
@@ -173,10 +194,13 @@ pub(crate) async fn get(_req: Request) -> JRes<UserEntity>
 	echo(user)
 }
 
-async fn create_salt(user_identifier: &str) -> Result<PrepareLoginSaltServerOutput, HttpErr>
+//__________________________________________________________________________________________________
+//internal fn
+
+async fn create_salt(app_id: &str, user_identifier: &str) -> Result<PrepareLoginSaltServerOutput, HttpErr>
 {
 	//check the user id in the db
-	let login_data = user_model::get_user_login_data(user_identifier).await?;
+	let login_data = user_model::get_user_login_data(app_id, user_identifier).await?;
 
 	//create the salt
 	let (client_random_value, alg, add_str) = match login_data {

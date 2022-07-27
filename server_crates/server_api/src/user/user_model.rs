@@ -50,12 +50,16 @@ pub(super) async fn get_jwt_verify_key(kid: &str) -> Result<String, HttpErr>
 //__________________________________________________________________________________________________
 //user
 
-pub(super) async fn check_user_exists(user_identifier: &str) -> Result<bool, HttpErr>
+pub(super) async fn check_user_exists(app_id: &str, user_identifier: &str) -> Result<bool, HttpErr>
 {
 	//language=SQL
-	let sql = "SELECT 1 FROM user WHERE identifier = ? LIMIT 1";
+	let sql = "SELECT 1 FROM user WHERE identifier = ? AND app_id = ? LIMIT 1";
 
-	let exists: Option<UserExistsEntity> = query_first(sql.to_owned(), set_params!(user_identifier.to_owned())).await?;
+	let exists: Option<UserExistsEntity> = query_first(
+		sql.to_owned(),
+		set_params!(user_identifier.to_owned(), app_id.to_string()),
+	)
+	.await?;
 
 	match exists {
 		Some(_) => Ok(true),
@@ -63,20 +67,24 @@ pub(super) async fn check_user_exists(user_identifier: &str) -> Result<bool, Htt
 	}
 }
 
-pub(super) async fn get_user_login_data(user_identifier: &str) -> Result<Option<UserLoginDataEntity>, HttpErr>
+pub(super) async fn get_user_login_data(app_id: &str, user_identifier: &str) -> Result<Option<UserLoginDataEntity>, HttpErr>
 {
 	//language=SQL
 	let sql = r"
 SELECT client_random_value,hashed_auth_key, derived_alg 
 FROM user u,user_keys uk 
-WHERE u.identifier = ? AND user_id = u.id ORDER BY uk.time DESC";
+WHERE u.identifier = ? AND user_id = u.id AND u.app_id = ? ORDER BY uk.time DESC";
 
-	let login_data: Option<UserLoginDataEntity> = query_first(sql.to_string(), set_params!(user_identifier.to_owned())).await?;
+	let login_data: Option<UserLoginDataEntity> = query_first(
+		sql.to_string(),
+		set_params!(user_identifier.to_owned(), app_id.to_string()),
+	)
+	.await?;
 
 	Ok(login_data)
 }
 
-pub(super) async fn get_done_login_data(user_identifier: &str) -> Result<Option<DoneLoginServerKeysOutputEntity>, HttpErr>
+pub(super) async fn get_done_login_data(app_id: &str, user_identifier: &str) -> Result<Option<DoneLoginServerKeysOutputEntity>, HttpErr>
 {
 	//language=SQL
 	let sql = r"
@@ -91,9 +99,13 @@ SELECT
     uk.id as k_id,
     u.id
 FROM user u,user_keys uk
-WHERE user_id = u.id AND u.identifier = ? ORDER BY uk.time DESC";
+WHERE user_id = u.id AND u.identifier = ? AND u.app_id = ? ORDER BY uk.time DESC";
 
-	let data: Option<DoneLoginServerKeysOutputEntity> = query_first(sql.to_owned(), set_params!(user_identifier.to_owned())).await?;
+	let data: Option<DoneLoginServerKeysOutputEntity> = query_first(
+		sql.to_owned(),
+		set_params!(user_identifier.to_owned(), app_id.to_string()),
+	)
+	.await?;
 
 	Ok(data)
 }
@@ -101,7 +113,7 @@ WHERE user_id = u.id AND u.identifier = ? ORDER BY uk.time DESC";
 pub(super) async fn register(app_id: &str, register_data: RegisterData) -> Result<String, HttpErr>
 {
 	//check first if the user identifier is available
-	let check = check_user_exists(register_data.user_identifier.as_str()).await?;
+	let check = check_user_exists(app_id, register_data.user_identifier.as_str()).await?;
 
 	if check {
 		//check true == user exists

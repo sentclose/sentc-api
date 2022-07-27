@@ -40,6 +40,10 @@ pub enum ApiErrorCodes
 	AuthKeyFormat,
 
 	SaltError,
+
+	AppTokenNotFound,
+	AppTokenWrongFormat,
+	AppNotFound,
 }
 
 impl ApiErrorCodes
@@ -69,6 +73,9 @@ impl ApiErrorCodes
 			ApiErrorCodes::SaltError => 110,
 			ApiErrorCodes::AuthKeyFormat => 111,
 			ApiErrorCodes::Login => 112,
+			ApiErrorCodes::AppTokenNotFound => 200,
+			ApiErrorCodes::AppTokenWrongFormat => 201,
+			ApiErrorCodes::AppNotFound => 202,
 		}
 	}
 }
