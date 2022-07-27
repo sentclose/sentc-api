@@ -377,7 +377,6 @@ async fn test_16_user_delete_with_wrong_jwt()
 async fn test_17_change_user_pw()
 {
 	let mut user = USER_TEST_STATE.get().unwrap().write().await;
-	let jwt = &user.key_data.as_ref().unwrap().jwt;
 	let username = &user.username;
 	let pw = &user.pw;
 	let new_pw = "54321";
@@ -385,6 +384,8 @@ async fn test_17_change_user_pw()
 	let public_token = &user.app_data.public_token;
 
 	//______________________________________________________________________________________________
+	//1. do prep login to get the auth key
+
 	let prep_server_input = sentc_crypto::user::prepare_login_start(username).unwrap();
 
 	let url = get_url("api/v1/prepare_login".to_owned());
@@ -400,7 +401,7 @@ async fn test_17_change_user_pw()
 	let body = res.text().await.unwrap();
 
 	//to still prep login from sdk to get the auth key for done login
-	let (auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
+	let (auth_key, derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
 
 	let url = get_url("api/v1/done_login".to_owned());
 
@@ -415,6 +416,11 @@ async fn test_17_change_user_pw()
 
 	let done_body = res.text().await.unwrap();
 
+	//2. login again to get a fresh jwt
+	let done_login_out = sentc_crypto::user::done_login(&derived_master_key, done_body.as_str()).unwrap();
+
+	let jwt = done_login_out.jwt;
+
 	//______________________________________________________________________________________________
 	//use a fresh jwt here
 
@@ -424,7 +430,7 @@ async fn test_17_change_user_pw()
 	let client = reqwest::Client::new();
 	let res = client
 		.put(url)
-		.header(AUTHORIZATION, auth_header(jwt))
+		.header(AUTHORIZATION, auth_header(jwt.as_str()))
 		.body(input)
 		.send()
 		.await
