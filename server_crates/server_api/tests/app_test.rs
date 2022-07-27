@@ -11,7 +11,7 @@ use server_api::{
 };
 use tokio::sync::{OnceCell, RwLock};
 
-use crate::test_fn::{create_app, delete_app, get_url};
+use crate::test_fn::{add_app_jwt_keys, create_app, delete_app, delete_app_jwt_key, get_url};
 
 mod test_fn;
 
@@ -250,6 +250,10 @@ async fn test_6_delete_app()
 async fn test_7_create_app_test_fn()
 {
 	let app_data = create_app().await;
+
+	add_app_jwt_keys(app_data.app_id.as_str()).await;
+
+	delete_app_jwt_key(app_data.app_id.as_str(), app_data.jwt_data.jwt_id.as_str()).await;
 
 	delete_app(app_data.app_id.as_str()).await;
 }

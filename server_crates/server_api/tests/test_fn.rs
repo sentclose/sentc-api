@@ -5,7 +5,7 @@ use reqwest::StatusCode;
 use sentc_crypto::KeyData;
 use sentc_crypto_common::user::UserDeleteServerOutput;
 use sentc_crypto_common::{ServerOutput, UserId};
-use server_api::{AppDeleteOutput, AppRegisterInput, AppRegisterOutput};
+use server_api::{AppDeleteOutput, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, JwtKeyDeleteOutput};
 
 pub fn get_url(path: String) -> String
 {
@@ -47,6 +47,44 @@ pub async fn create_app() -> AppRegisterOutput
 		Some(v) => v,
 		None => panic!("out is not here"),
 	}
+}
+
+pub async fn add_app_jwt_keys(app_id: &str) -> AppJwtRegisterOutput
+{
+	let url = get_url("api/v1/customer/app/".to_owned() + app_id + "/new_jwt_keys");
+
+	let client = reqwest::Client::new();
+	let res = client.patch(url).send().await.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<AppJwtRegisterOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	out.result.unwrap()
+}
+
+pub async fn delete_app_jwt_key(app_id: &str, jwt_id: &str) -> JwtKeyDeleteOutput
+{
+	let url = get_url("api/v1/customer/app/".to_owned() + app_id + "/jwt/" + jwt_id);
+
+	let client = reqwest::Client::new();
+	let res = client.delete(url).send().await.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<JwtKeyDeleteOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	out.result.unwrap()
 }
 
 pub async fn delete_app(app_id: &str)
