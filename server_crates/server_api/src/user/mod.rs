@@ -15,6 +15,8 @@ use sentc_crypto_common::user::{
 	PrepareLoginServerInput,
 	RegisterData,
 	RegisterServerOutput,
+	ResetPasswordData,
+	ResetPasswordServerOutput,
 	UserDeleteServerOutput,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
@@ -226,6 +228,27 @@ pub(crate) async fn change_password(mut req: Request) -> JRes<ChangePasswordServ
 	let out = ChangePasswordServerOut {
 		user_id: user_id.to_string(),
 		msg: "Password changed".to_string(),
+	};
+
+	echo(out)
+}
+
+pub(crate) async fn reset_password(mut req: Request) -> JRes<ResetPasswordServerOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+
+	let user = get_jwt_data_from_param(&req)?;
+
+	//no fresh jwt here because the user can't login and get a fresh jwt without the password
+	//but still needs a valid jwt. jwt refresh is possible without a password!
+
+	let input: ResetPasswordData = bytes_to_json(&body)?;
+
+	user_model::reset_password(user.id.as_str(), input).await?;
+
+	let out = ResetPasswordServerOutput {
+		user_id: user.id.to_string(),
+		msg: "Password reset".to_string(),
 	};
 
 	echo(out)

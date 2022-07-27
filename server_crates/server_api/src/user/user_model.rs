@@ -1,4 +1,4 @@
-use sentc_crypto_common::user::{ChangePasswordData, RegisterData};
+use sentc_crypto_common::user::{ChangePasswordData, RegisterData, ResetPasswordData};
 use sentc_crypto_common::{AppId, UserId};
 use uuid::Uuid;
 
@@ -6,7 +6,15 @@ use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::core::db::{exec, exec_transaction, query_first, TransactionData};
 use crate::core::get_time;
 use crate::set_params;
-use crate::user::user_entities::{DoneLoginServerKeysOutputEntity, JwtSignKey, JwtVerifyKey, UserEntity, UserExistsEntity, UserLoginDataEntity};
+use crate::user::user_entities::{
+	DoneLoginServerKeysOutputEntity,
+	JwtSignKey,
+	JwtVerifyKey,
+	UserEntity,
+	UserExistsEntity,
+	UserKeyFistRow,
+	UserLoginDataEntity,
+};
 
 pub(super) async fn get_jwt_sign_key(kid: &str) -> AppRes<String>
 {
@@ -166,10 +174,11 @@ INSERT INTO user_keys
      derived_alg, 
      encrypted_master_key, 
      master_key_alg, 
+     encrypted_master_key_alg, 
      hashed_auth_key, 
      time
      ) 
-VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let master_key_info = register_data.master_key;
 	let derived_data = register_data.derived;
@@ -188,6 +197,7 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 		derived_data.derived_alg,
 		master_key_info.encrypted_master_key,
 		master_key_info.master_key_alg,
+		master_key_info.encrypted_master_key_alg,
 		derived_data.hashed_authentication_key,
 		time.to_string()
 	);
@@ -234,6 +244,7 @@ pub(super) async fn update(user_id: &str, app_id: AppId, user_identifier: &str) 
 pub(super) async fn change_password(user_id: &str, data: ChangePasswordData, old_hashed_auth_key: String) -> AppRes<()>
 {
 	//for change password: update only the newest keys. key update is not possible for change password!
+	//the master key is still the same, only new encrypt by the new password
 
 	//language=SQL
 	let sql = r"
@@ -241,7 +252,7 @@ UPDATE user_keys
 SET client_random_value = ?,
     hashed_auth_key = ?, 
     encrypted_master_key = ?, 
-    master_key_alg = ?, 
+    encrypted_master_key_alg = ?, 
     derived_alg = ? 
 WHERE user_id = ? AND 
       hashed_auth_key = ?";
@@ -256,6 +267,65 @@ WHERE user_id = ? AND
 			data.new_derived_alg,
 			user_id.to_string(),
 			old_hashed_auth_key
+		),
+	)
+	.await?;
+
+	Ok(())
+}
+
+pub(super) async fn reset_password(user_id: &str, data: ResetPasswordData) -> AppRes<()>
+{
+	//reset only the newest keys! key update is not possible for reset password, like change password.
+	//create a new master key from the new password. the key pairs are still the same
+
+	//get the first row (the key id) which we are updating
+
+	//language=SQL
+	let sql = "SELECT id FROM user_keys WHERE user_id = ? ORDER BY time DESC LIMIT 1";
+
+	let row: Option<UserKeyFistRow> = query_first(sql.to_string(), set_params!(user_id.to_string())).await?;
+
+	let row = match row {
+		Some(r) => r,
+		None => {
+			return Err(HttpErr::new(
+				400,
+				ApiErrorCodes::UserNotFound,
+				"No keys to update".to_string(),
+				None,
+			))
+		},
+	};
+
+	//language=SQL
+	let sql = r"
+UPDATE user_keys
+SET client_random_value = ?,
+    hashed_auth_key = ?,
+    encrypted_master_key = ?,
+    master_key_alg = ?,
+    encrypted_master_key_alg = ?,
+    derived_alg = ?, 
+    encrypted_private_key = ?, 
+    encrypted_sign_key = ? 
+WHERE 
+    user_id = ? AND 
+    id = ?";
+
+	exec(
+		sql,
+		set_params!(
+			data.client_random_value,
+			data.hashed_authentication_key,
+			data.master_key.encrypted_master_key,
+			data.master_key.master_key_alg,
+			data.master_key.encrypted_master_key_alg,
+			data.derived_alg,
+			data.encrypted_private_key,
+			data.encrypted_sign_key,
+			user_id.to_string(),
+			row.0
 		),
 	)
 	.await?;
