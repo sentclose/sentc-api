@@ -53,6 +53,7 @@ routes:
                   gr:
                     - get: {p: "", s: crate::user::get}
                     - put: {p: "", s: crate::user::update}
+                    - put: {p: "/update_pw", s: crate::user::change_password}
                     - delete: {p: "", s: crate::user::delete}
               #_________________________________________________________________________________________________________
               # group routes in the group mod
