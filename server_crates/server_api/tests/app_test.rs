@@ -186,8 +186,6 @@ async fn test_4_add_new_jwt_keys()
 	);
 
 	app.jwt_data.as_mut().unwrap().push(out);
-
-	//TODO test login with old jwt keys (must be), in user tests
 }
 
 #[tokio::test]

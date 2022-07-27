@@ -16,7 +16,7 @@ use server_api::core::api_res::ApiErrorCodes;
 use server_api::AppRegisterOutput;
 use tokio::sync::{OnceCell, RwLock};
 
-use crate::test_fn::{auth_header, create_app, delete_app, delete_user, get_url, login_user, register_user};
+use crate::test_fn::{add_app_jwt_keys, auth_header, create_app, delete_app, delete_app_jwt_key, delete_user, get_url, login_user, register_user};
 
 mod test_fn;
 
@@ -54,7 +54,7 @@ async fn aaa_init_global_test()
 }
 
 #[tokio::test]
-async fn test_1_user_exists()
+async fn test_10_user_exists()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let username = &user.username;
@@ -94,7 +94,7 @@ async fn test_1_user_exists()
 }
 
 #[tokio::test]
-async fn test_2_user_register()
+async fn test_11_user_register()
 {
 	let mut user = USER_TEST_STATE.get().unwrap().write().await;
 
@@ -137,7 +137,7 @@ async fn test_2_user_register()
 }
 
 #[tokio::test]
-async fn test_3_user_check_after_register()
+async fn test_12_user_check_after_register()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let username = &user.username;
@@ -174,7 +174,7 @@ async fn test_3_user_check_after_register()
 }
 
 #[tokio::test]
-async fn test_4_user_register_failed_username_exists()
+async fn test_13_user_register_failed_username_exists()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let username = &user.username;
@@ -222,7 +222,7 @@ async fn test_4_user_register_failed_username_exists()
 }
 
 #[tokio::test]
-async fn test_5_login()
+async fn test_14_login()
 {
 	//make the pre req to the sever with the username
 	let url = get_url("api/v1/prepare_login".to_owned());
@@ -266,7 +266,7 @@ async fn test_5_login()
 }
 
 #[tokio::test]
-async fn test_6_login_with_wrong_password()
+async fn test_15_login_with_wrong_password()
 {
 	//make the pre req to the sever with the username
 	let url = get_url("api/v1/prepare_login".to_owned());
@@ -327,10 +327,53 @@ async fn test_6_login_with_wrong_password()
 	}
 }
 
+#[tokio::test]
+async fn test_16_user_delete_with_wrong_jwt()
+{
+	//test user action with old jwt (when the jwt keys was deleted)
+
+	//create new jwt keys for the app
+	let mut user = USER_TEST_STATE.get().unwrap().write().await;
+
+	let old_jwt = &user.key_data.as_ref().unwrap().jwt;
+	let old_jwt_data = &user.app_data.jwt_data;
+
+	let new_keys = add_app_jwt_keys(user.app_data.app_id.as_str()).await;
+
+	//delete the old jwt
+	delete_app_jwt_key(old_jwt_data.app_id.as_str(), old_jwt_data.jwt_id.as_str()).await;
+
+	let url = get_url("api/v1/user".to_owned());
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(old_jwt))
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let delete_output = ServerOutput::<UserDeleteServerOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(delete_output.status, false);
+
+	//login new in to get the new jwt with the new keys
+	let username = &user.username;
+	let pw = &user.pw;
+
+	let public_token = &user.app_data.public_token;
+
+	let login = login_user(public_token, username, pw).await;
+
+	user.app_data.jwt_data = new_keys; //save the new jwt for other tests
+	user.key_data = Some(login);
+}
+
 //do user tests before this one!
 
 #[tokio::test]
-async fn test_7_user_delete()
+async fn test_17_user_delete()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let user_id = &user.user_id;
@@ -380,7 +423,7 @@ impl WrongRegisterData
 }
 
 #[tokio::test]
-async fn test_8_not_register_user_with_wrong_input()
+async fn test_18_not_register_user_with_wrong_input()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 
@@ -434,7 +477,7 @@ async fn test_8_not_register_user_with_wrong_input()
 }
 
 #[tokio::test]
-async fn test_9_register_and_login_user_via_test_fn()
+async fn test_19_register_and_login_user_via_test_fn()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let secret_token = &user.app_data.secret_token;

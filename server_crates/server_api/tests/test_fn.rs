@@ -51,6 +51,8 @@ pub async fn create_app() -> AppRegisterOutput
 
 pub async fn add_app_jwt_keys(app_id: &str) -> AppJwtRegisterOutput
 {
+	//TODO add here the customer jwt when customer mod is done
+
 	let url = get_url("api/v1/customer/app/".to_owned() + app_id + "/new_jwt_keys");
 
 	let client = reqwest::Client::new();
@@ -70,6 +72,8 @@ pub async fn add_app_jwt_keys(app_id: &str) -> AppJwtRegisterOutput
 
 pub async fn delete_app_jwt_key(app_id: &str, jwt_id: &str) -> JwtKeyDeleteOutput
 {
+	//TODO add here the customer jwt when customer mod is done
+
 	let url = get_url("api/v1/customer/app/".to_owned() + app_id + "/jwt/" + jwt_id);
 
 	let client = reqwest::Client::new();
