@@ -53,6 +53,10 @@ pub(crate) fn routes() -> Router
 	);
 	router.get("/api/v1/user", r(crate::user::get).add(jwt::jwt_transform));
 	router.put("/api/v1/user", r(crate::user::update).add(jwt::jwt_transform));
+	router.put(
+		"/api/v1/user/update_pw",
+		r(crate::user::change_password).add(jwt::jwt_transform),
+	);
 	router.delete("/api/v1/user", r(crate::user::delete).add(jwt::jwt_transform));
 	router.get("/api/v1/group/:id", r(crate::group::get).add(jwt::jwt_transform));
 

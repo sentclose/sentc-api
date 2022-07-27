@@ -7,6 +7,8 @@ use std::ptr;
 use rustgram::Request;
 use sentc_crypto::util_pub::HashedAuthenticationKey;
 use sentc_crypto_common::user::{
+	ChangePasswordData,
+	ChangePasswordServerOut,
 	DoneLoginServerInput,
 	DoneLoginServerKeysOutput,
 	PrepareLoginSaltServerOutput,
@@ -19,6 +21,7 @@ use sentc_crypto_common::user::{
 	UserUpdateServerInput,
 	UserUpdateServerOut,
 };
+use sentc_crypto_common::AppId;
 
 use crate::core::api_res::{echo, ApiErrorCodes, HttpErr, JRes};
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
@@ -83,48 +86,12 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerKeysOutp
 
 	let app_data = get_app_data_from_req(&req)?;
 
-	//get the login data
-	let login_data = user_model::get_user_login_data(&app_data.app_data.app_id, done_login.user_identifier.as_str()).await?;
-
-	let (hashed_user_auth_key, alg) = match login_data {
-		Some(d) => (d.hashed_authentication_key, d.derived_alg),
-		None => {
-			return Err(HttpErr::new(
-				401,
-				ApiErrorCodes::UserNotFound,
-				"No user found with this identifier".to_string(),
-				None,
-			))
-		},
-	};
-
-	//hash the auth key and use the first 16 bytes
-	let (server_hashed_auth_key, hashed_client_key) = sentc_crypto::util_pub::get_auth_keys_from_base64(
-		done_login.auth_key.as_str(),
-		hashed_user_auth_key.as_str(),
-		alg.as_str(),
+	auth_user(
+		app_data.app_data.app_id.to_string(),
+		done_login.user_identifier.as_str(),
+		done_login.auth_key,
 	)
-	.map_err(|_e| {
-		HttpErr::new(
-			401,
-			ApiErrorCodes::AuthKeyFormat,
-			"The authentication key has a wrong format".to_owned(),
-			None,
-		)
-	})?;
-
-	//check the keys
-	let check = compare_auth_keys(server_hashed_auth_key, hashed_client_key);
-
-	//if not correct -> err msg
-	if !check {
-		return Err(HttpErr::new(
-			401,
-			ApiErrorCodes::Login,
-			"Wrong username or password".to_owned(),
-			None,
-		));
-	}
+	.await?;
 
 	//if correct -> fetch and return the user data
 	let user_data = user_model::get_done_login_data(&app_data.app_data.app_id, done_login.user_identifier.as_str()).await?;
@@ -229,6 +196,41 @@ pub(crate) async fn update(mut req: Request) -> JRes<UserUpdateServerOut>
 	echo(out)
 }
 
+pub(crate) async fn change_password(mut req: Request) -> JRes<ChangePasswordServerOut>
+{
+	let body = get_raw_body(&mut req).await?;
+
+	let user = get_jwt_data_from_param(&req)?;
+
+	//the user needs a jwt which was created from login and no refreshed jwt
+	if user.fresh == false {
+		return Err(HttpErr::new(
+			401,
+			ApiErrorCodes::WrongJwtAction,
+			"The jwt is not valid for this action".to_string(),
+			None,
+		));
+	}
+
+	let input: ChangePasswordData = bytes_to_json(&body)?;
+
+	let user_id = &user.id;
+	let user_identifier = &user.identifier;
+	let app_id = &user.sub;
+
+	//check if the user knows the old pw (via the old auth key)
+	let old_hashed_auth_key = auth_user(app_id.to_string(), user_identifier, input.old_auth_key.to_string()).await?;
+
+	user_model::change_password(user_id, input, old_hashed_auth_key).await?;
+
+	let out = ChangePasswordServerOut {
+		user_id: user_id.to_string(),
+		msg: "Password changed".to_string(),
+	};
+
+	echo(out)
+}
+
 pub(crate) async fn get(_req: Request) -> JRes<UserEntity>
 {
 	let user_id = "abc"; //get this from the url param
@@ -245,7 +247,7 @@ pub(crate) async fn get(_req: Request) -> JRes<UserEntity>
 async fn create_salt(app_id: &str, user_identifier: &str) -> Result<PrepareLoginSaltServerOutput, HttpErr>
 {
 	//check the user id in the db
-	let login_data = user_model::get_user_login_data(app_id, user_identifier).await?;
+	let login_data = user_model::get_user_login_data(app_id.to_string(), user_identifier).await?;
 
 	//create the salt
 	let (client_random_value, alg, add_str) = match login_data {
@@ -270,6 +272,51 @@ async fn create_salt(app_id: &str, user_identifier: &str) -> Result<PrepareLogin
 	};
 
 	Ok(out)
+}
+
+async fn auth_user(app_id: AppId, user_identifier: &str, auth_key: String) -> Result<String, HttpErr>
+{
+	//get the login data
+	let login_data = user_model::get_user_login_data(app_id, user_identifier).await?;
+
+	let (hashed_user_auth_key, alg) = match login_data {
+		Some(d) => (d.hashed_authentication_key, d.derived_alg),
+		None => {
+			return Err(HttpErr::new(
+				401,
+				ApiErrorCodes::UserNotFound,
+				"No user found with this identifier".to_string(),
+				None,
+			))
+		},
+	};
+
+	//hash the auth key and use the first 16 bytes
+	let (server_hashed_auth_key, hashed_client_key) =
+		sentc_crypto::util_pub::get_auth_keys_from_base64(auth_key.as_str(), hashed_user_auth_key.as_str(), alg.as_str()).map_err(|_e| {
+			HttpErr::new(
+				401,
+				ApiErrorCodes::AuthKeyFormat,
+				"The authentication key has a wrong format".to_owned(),
+				None,
+			)
+		})?;
+
+	//check the keys
+	let check = compare_auth_keys(server_hashed_auth_key, hashed_client_key);
+
+	//if not correct -> err msg
+	if !check {
+		return Err(HttpErr::new(
+			401,
+			ApiErrorCodes::Login,
+			"Wrong username or password".to_owned(),
+			None,
+		));
+	}
+
+	//return this here for the update user pw functions
+	Ok(hashed_user_auth_key)
 }
 
 /// Secure `memeq`.
