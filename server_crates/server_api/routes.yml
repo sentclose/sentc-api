@@ -24,7 +24,9 @@ routes:
                     - put: {p: "", s: crate::customer_app::update}
                     - delete: {p: "", s: crate::customer_app::delete}
                     - patch: {p: "/token_renew", s: crate::customer_app::renew_tokens}
+                    # jwt keys
                     - patch: {p: "/new_jwt_keys", s: crate::customer_app::add_jwt_keys}
+                    - get: {p: "/jwt", s: crate::customer_app::get_jwt_details}
                     - delete: {p: "/jwt/:jwt_id", s: crate::customer_app::delete_jwt_keys}
         #_______________________________________________________________________________________________________________
         # routes don't need jwt check, but an app token

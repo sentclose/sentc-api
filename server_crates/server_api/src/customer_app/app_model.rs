@@ -4,9 +4,14 @@ use uuid::Uuid;
 use crate::core::api_res::{ApiErrorCodes, HttpErr};
 use crate::core::db::{exec, exec_transaction, query, query_first, TransactionData};
 use crate::core::get_time;
-use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppJwt, AuthWithToken};
-use crate::{set_params, AppExistsEntity};
+use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppExistsEntity, AppJwt, AppJwtData, AuthWithToken};
+use crate::set_params;
 
+/**
+# Internal app data
+
+cached in the app token middleware
+*/
 pub(crate) async fn get_app_data(hashed_token: &str) -> Result<AppData, HttpErr>
 {
 	//language=SQL
@@ -58,6 +63,13 @@ WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 	})
 }
 
+/**
+Get general app data like internal get app data
+
+but this time with check on app id und customer id
+
+only used internally
+*/
 pub(super) async fn get_app_general_data(customer_id: CustomerId, app_id: AppId) -> Result<AppDataGeneral, HttpErr>
 {
 	//language=SQL
@@ -79,6 +91,28 @@ WHERE customer_id = ? AND id = ? LIMIT 1";
 			))
 		},
 	}
+}
+
+/**
+Get jwt data like internal get app data
+
+but this time check with customer and app id and not limited
+*/
+pub(super) async fn get_jwt_data(customer_id: CustomerId, app_id: AppId) -> Result<Vec<AppJwtData>, HttpErr>
+{
+	//language=SQL
+	let sql = r"
+SELECT ak.id, alg, ak.time, sign_key, verify_key 
+FROM app a, app_jwt_keys ak 
+WHERE 
+    app_id = ? AND 
+    customer_id = ? AND 
+    app_id = a.id 
+ORDER BY ak.time DESC";
+
+	let jwt_data: Vec<AppJwtData> = query(sql.to_string(), set_params!(app_id, customer_id)).await?;
+
+	Ok(jwt_data)
 }
 
 pub(super) async fn create_app(

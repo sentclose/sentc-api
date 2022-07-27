@@ -12,6 +12,7 @@ use crate::core::input_helper::{bytes_to_json, get_raw_body};
 use crate::core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 use crate::customer_app::app_entities::{
 	AppDeleteOutput,
+	AppJwtData,
 	AppJwtRegisterOutput,
 	AppRegisterInput,
 	AppRegisterOutput,
@@ -21,6 +22,21 @@ use crate::customer_app::app_entities::{
 };
 use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
 use crate::user::jwt::create_jwt_keys;
+
+pub(crate) async fn get_jwt_details(req: Request) -> JRes<Vec<AppJwtData>>
+{
+	//TODO activate it when customer mod is done
+	// let customer = get_jwt_data_from_param(&req)?;
+	// let customer_id = &customer.id;
+
+	let customer_id = &"abcdefg".to_string();
+
+	let app_id = get_name_param_from_req(&req, "app_id")?;
+
+	let jwt_data = app_model::get_jwt_data(customer_id.to_string(), app_id.to_string()).await?;
+
+	echo(jwt_data)
+}
 
 pub(crate) async fn create_app(mut req: Request) -> JRes<AppRegisterOutput>
 {
@@ -215,8 +231,6 @@ pub(crate) async fn update(mut req: Request) -> JRes<AppUpdateOutput>
 
 	echo(out)
 }
-
-//TODO when creating new jwt keys -> delete the app cache!
 
 fn generate_tokens() -> Result<([u8; 50], [u8; 30]), HttpErr>
 {

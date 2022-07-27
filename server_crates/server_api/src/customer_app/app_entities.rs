@@ -247,3 +247,56 @@ impl crate::core::db::FromSqliteRow for AppExistsEntity
 }
 
 //__________________________________________________________________________________________________
+
+#[derive(Serialize, Deserialize)]
+pub struct AppJwtData
+{
+	pub jwt_key_id: SignKeyPairId,
+	pub jwt_alg: String, //should be ES384 for now
+	pub time: u128,
+	pub sign_key: String,
+	pub verify_key: String,
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for AppJwtData
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			jwt_key_id: take_or_err!(row, 0, String),
+			jwt_alg: take_or_err!(row, 1, String),
+			time: take_or_err!(row, 2, u128),
+			sign_key: take_or_err!(row, 3, String),
+			verify_key: take_or_err!(row, 4, String),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl crate::core::db::FromSqliteRow for AppJwtData
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		let time: String = take_or_err!(row, 2);
+		let time: u128 = time.parse().map_err(|e| {
+			crate::core::db::FormSqliteRowError {
+				msg: format!("err in db fetch: {:?}", e),
+			}
+		})?;
+
+		Ok(Self {
+			jwt_key_id: take_or_err!(row, 0),
+			jwt_alg: take_or_err!(row, 1),
+			time,
+			sign_key: take_or_err!(row, 3),
+			verify_key: take_or_err!(row, 4),
+		})
+	}
+}
+
+//__________________________________________________________________________________________________
