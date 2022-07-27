@@ -1,4 +1,4 @@
-use sentc_crypto_common::user::RegisterData;
+use sentc_crypto_common::user::{ChangePasswordData, RegisterData};
 use sentc_crypto_common::AppId;
 use uuid::Uuid;
 
@@ -68,7 +68,18 @@ pub(super) async fn check_user_exists(app_id: &str, user_identifier: &str) -> Re
 	}
 }
 
-pub(super) async fn get_user_login_data(app_id: &str, user_identifier: &str) -> Result<Option<UserLoginDataEntity>, HttpErr>
+/**
+Internal login data
+
+used for salt creation and auth user.
+
+<br>
+
+## Important
+always use the newest user keys
+the old are only for key update
+*/
+pub(super) async fn get_user_login_data(app_id: AppId, user_identifier: &str) -> Result<Option<UserLoginDataEntity>, HttpErr>
 {
 	//language=SQL
 	let sql = r"
@@ -76,15 +87,16 @@ SELECT client_random_value,hashed_auth_key, derived_alg
 FROM user u,user_keys uk 
 WHERE u.identifier = ? AND user_id = u.id AND u.app_id = ? ORDER BY uk.time DESC";
 
-	let login_data: Option<UserLoginDataEntity> = query_first(
-		sql.to_string(),
-		set_params!(user_identifier.to_owned(), app_id.to_string()),
-	)
-	.await?;
+	let login_data: Option<UserLoginDataEntity> = query_first(sql.to_string(), set_params!(user_identifier.to_owned(), app_id)).await?;
 
 	Ok(login_data)
 }
 
+/**
+The user data which are needed to get the user keys
+
+Always use the newest user keys
+*/
 pub(super) async fn get_done_login_data(app_id: &str, user_identifier: &str) -> Result<Option<DoneLoginServerKeysOutputEntity>, HttpErr>
 {
 	//language=SQL
@@ -213,6 +225,38 @@ pub(super) async fn update(user_id: &str, app_id: AppId, user_identifier: &str) 
 	exec(
 		sql,
 		set_params!(user_identifier.to_string(), user_id.to_string(), app_id),
+	)
+	.await?;
+
+	Ok(())
+}
+
+pub(super) async fn change_password(user_id: &str, data: ChangePasswordData, old_hashed_auth_key: String) -> Result<(), HttpErr>
+{
+	//for change password: update only the newest keys. key update is not possible for change password!
+
+	//language=SQL
+	let sql = r"
+UPDATE user_keys 
+SET client_random_value = ?,
+    hashed_auth_key = ?, 
+    encrypted_master_key = ?, 
+    master_key_alg = ?, 
+    derived_alg = ? 
+WHERE user_id = ? AND 
+      hashed_auth_key = ?";
+
+	exec(
+		sql,
+		set_params!(
+			data.new_client_random_value,
+			data.new_hashed_authentication_key,
+			data.new_encrypted_master_key,
+			data.new_encrypted_master_key_alg,
+			data.new_derived_alg,
+			user_id.to_string(),
+			old_hashed_auth_key
+		),
 	)
 	.await?;
 
