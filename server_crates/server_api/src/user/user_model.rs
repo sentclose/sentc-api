@@ -1,14 +1,14 @@
 use sentc_crypto_common::user::{ChangePasswordData, RegisterData};
-use sentc_crypto_common::AppId;
+use sentc_crypto_common::{AppId, UserId};
 use uuid::Uuid;
 
-use crate::core::api_res::{ApiErrorCodes, HttpErr};
+use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::core::db::{exec, exec_transaction, query_first, TransactionData};
 use crate::core::get_time;
 use crate::set_params;
 use crate::user::user_entities::{DoneLoginServerKeysOutputEntity, JwtSignKey, JwtVerifyKey, UserEntity, UserExistsEntity, UserLoginDataEntity};
 
-pub(super) async fn get_jwt_sign_key(kid: &str) -> Result<String, HttpErr>
+pub(super) async fn get_jwt_sign_key(kid: &str) -> AppRes<String>
 {
 	//language=SQL
 	let sql = "SELECT sign_key FROM app_jwt_keys WHERE id = ?";
@@ -28,7 +28,7 @@ pub(super) async fn get_jwt_sign_key(kid: &str) -> Result<String, HttpErr>
 	}
 }
 
-pub(super) async fn get_jwt_verify_key(kid: &str) -> Result<String, HttpErr>
+pub(super) async fn get_jwt_verify_key(kid: &str) -> AppRes<String>
 {
 	//language=SQL
 	let sql = "SELECT verify_key FROM app_jwt_keys WHERE id = ?";
@@ -51,7 +51,7 @@ pub(super) async fn get_jwt_verify_key(kid: &str) -> Result<String, HttpErr>
 //__________________________________________________________________________________________________
 //user
 
-pub(super) async fn check_user_exists(app_id: &str, user_identifier: &str) -> Result<bool, HttpErr>
+pub(super) async fn check_user_exists(app_id: &str, user_identifier: &str) -> AppRes<bool>
 {
 	//language=SQL
 	let sql = "SELECT 1 FROM user WHERE identifier = ? AND app_id = ? LIMIT 1";
@@ -79,7 +79,7 @@ used for salt creation and auth user.
 always use the newest user keys
 the old are only for key update
 */
-pub(super) async fn get_user_login_data(app_id: AppId, user_identifier: &str) -> Result<Option<UserLoginDataEntity>, HttpErr>
+pub(super) async fn get_user_login_data(app_id: AppId, user_identifier: &str) -> AppRes<Option<UserLoginDataEntity>>
 {
 	//language=SQL
 	let sql = r"
@@ -97,7 +97,7 @@ The user data which are needed to get the user keys
 
 Always use the newest user keys
 */
-pub(super) async fn get_done_login_data(app_id: &str, user_identifier: &str) -> Result<Option<DoneLoginServerKeysOutputEntity>, HttpErr>
+pub(super) async fn get_done_login_data(app_id: &str, user_identifier: &str) -> AppRes<Option<DoneLoginServerKeysOutputEntity>>
 {
 	//language=SQL
 	let sql = r"
@@ -123,7 +123,7 @@ WHERE user_id = u.id AND u.identifier = ? AND u.app_id = ? ORDER BY uk.time DESC
 	Ok(data)
 }
 
-pub(super) async fn register(app_id: &str, register_data: RegisterData) -> Result<String, HttpErr>
+pub(super) async fn register(app_id: &str, register_data: RegisterData) -> AppRes<UserId>
 {
 	//check first if the user identifier is available
 	let check = check_user_exists(app_id, register_data.user_identifier.as_str()).await?;
@@ -207,7 +207,7 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 	Ok(user_id)
 }
 
-pub(super) async fn delete(user_id: &str, app_id: AppId) -> Result<(), HttpErr>
+pub(super) async fn delete(user_id: &str, app_id: AppId) -> AppRes<()>
 {
 	//language=SQL
 	let sql = "DELETE FROM user WHERE id = ? AND app_id = ?";
@@ -217,7 +217,7 @@ pub(super) async fn delete(user_id: &str, app_id: AppId) -> Result<(), HttpErr>
 	Ok(())
 }
 
-pub(super) async fn update(user_id: &str, app_id: AppId, user_identifier: &str) -> Result<(), HttpErr>
+pub(super) async fn update(user_id: &str, app_id: AppId, user_identifier: &str) -> AppRes<()>
 {
 	//language=SQL
 	let sql = "UPDATE user SET identifier = ? WHERE id = ? AND app_id = ?";
@@ -231,7 +231,7 @@ pub(super) async fn update(user_id: &str, app_id: AppId, user_identifier: &str) 
 	Ok(())
 }
 
-pub(super) async fn change_password(user_id: &str, data: ChangePasswordData, old_hashed_auth_key: String) -> Result<(), HttpErr>
+pub(super) async fn change_password(user_id: &str, data: ChangePasswordData, old_hashed_auth_key: String) -> AppRes<()>
 {
 	//for change password: update only the newest keys. key update is not possible for change password!
 
@@ -263,7 +263,7 @@ WHERE user_id = ? AND
 	Ok(())
 }
 
-pub(super) async fn get_user(user_id: &str) -> Result<UserEntity, HttpErr>
+pub(super) async fn get_user(user_id: &str) -> AppRes<UserEntity>
 {
 	//language=SQL
 	let sql = "SELECT * FROM test WHERE id = ?";
