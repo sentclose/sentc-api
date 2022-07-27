@@ -2,6 +2,7 @@ use reqwest::StatusCode;
 use sentc_crypto_common::ServerOutput;
 use server_api::{
 	AppDeleteOutput,
+	AppJwtData,
 	AppJwtRegisterOutput,
 	AppRegisterInput,
 	AppRegisterOutput,
@@ -189,7 +190,34 @@ async fn test_4_add_new_jwt_keys()
 }
 
 #[tokio::test]
-async fn test_5_delete_jwt_keys()
+async fn test_5_get_app_jwt_keys()
+{
+	//TODO add here the customer jwt when customer mod is done
+	let app = APP_TEST_STATE.get().unwrap().read().await;
+
+	let url = get_url("api/v1/customer/app/".to_owned() + app.app_id.as_str() + "/jwt");
+
+	let client = reqwest::Client::new();
+	let res = client.get(url).send().await.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<Vec<AppJwtData>>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	let out = out.result.unwrap();
+
+	assert_eq!(out.len(), 2);
+	assert_eq!(out[1].jwt_key_id, app.jwt_data.as_ref().unwrap()[0].jwt_id); //oder by time DESC
+	assert_eq!(out[0].jwt_key_id, app.jwt_data.as_ref().unwrap()[1].jwt_id); //oder by time DESC
+}
+
+#[tokio::test]
+async fn test_6_delete_jwt_keys()
 {
 	//TODO add here the customer jwt when customer mod is done
 	let mut app = APP_TEST_STATE.get().unwrap().write().await;
@@ -218,7 +246,7 @@ async fn test_5_delete_jwt_keys()
 }
 
 #[tokio::test]
-async fn test_6_delete_app()
+async fn test_7_delete_app()
 {
 	//TODO add here the customer jwt when customer mod is done
 
@@ -245,7 +273,7 @@ async fn test_6_delete_app()
 }
 
 #[tokio::test]
-async fn test_7_create_app_test_fn()
+async fn test_8_create_app_test_fn()
 {
 	let app_data = create_app().await;
 
