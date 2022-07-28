@@ -74,7 +74,7 @@ pub fn hash_token_from_string_to_string(token: &str) -> AppRes<String>
 	hash_token_to_string(&token)
 }
 
-pub fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endpoint) -> AppRes<()>
+pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endpoint) -> AppRes<()>
 {
 	todo!()
 }
