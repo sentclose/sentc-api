@@ -4,7 +4,7 @@ use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::{KeyData, PublicKeyFormat};
 use sentc_crypto_common::group::GroupCreateOutput;
-use sentc_crypto_common::user::UserDeleteServerOutput;
+use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::{GroupId, ServerOutput, UserId};
 use server_api::{AppDeleteOutput, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, JwtKeyDeleteOutput};
 
@@ -138,7 +138,7 @@ pub async fn register_user(app_secret_token: &str, username: &str, password: &st
 	user_id
 }
 
-pub async fn delete_user(app_secret_token: &str, jwt: &str, user_id: &str)
+pub async fn delete_user(app_secret_token: &str, jwt: &str)
 {
 	let url = get_url("api/v1/user".to_owned());
 	let client = reqwest::Client::new();
@@ -155,14 +155,10 @@ pub async fn delete_user(app_secret_token: &str, jwt: &str, user_id: &str)
 	let body = res.text().await.unwrap();
 
 	//TODO change this to sdk done delete
-	let delete_output = ServerOutput::<UserDeleteServerOutput>::from_string(body.as_str()).unwrap();
+	let delete_output = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
 	assert_eq!(delete_output.status, true);
 	assert_eq!(delete_output.err_code, None);
-
-	let delete_output = delete_output.result.unwrap();
-	assert_eq!(delete_output.user_id, user_id.to_string());
-	assert_eq!(delete_output.msg, "User deleted");
 }
 
 pub async fn login_user(public_token: &str, username: &str, pw: &str) -> KeyData
