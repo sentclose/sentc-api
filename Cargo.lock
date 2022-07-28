@@ -1892,14 +1892,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "server_migration"
-version = "0.1.0"
-dependencies = [
- "server_api",
- "tokio",
-]
-
-[[package]]
 name = "sha-1"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
