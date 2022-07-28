@@ -6,7 +6,7 @@ use sentc_crypto_common::{GroupId, ServerOutput, UserId};
 use server_api::AppRegisterOutput;
 use tokio::sync::{OnceCell, RwLock};
 
-use crate::test_fn::{auth_header, create_app, create_test_user, delete_app, delete_user, get_url};
+use crate::test_fn::{auth_header, create_app, create_group, create_test_user, delete_app, delete_user, get_url};
 
 mod test_fn;
 
@@ -85,6 +85,7 @@ async fn aaa_init_global_test()
 #[tokio::test]
 async fn test_10_create_group()
 {
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let mut group = GROUP_TEST_STATE.get().unwrap().write().await;
 
 	let creator = USERS_TEST_STATE.get().unwrap().read().await;
@@ -97,6 +98,7 @@ async fn test_10_create_group()
 	let res = client
 		.post(url)
 		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
 		.body(group_input)
 		.send()
 		.await
@@ -116,18 +118,42 @@ async fn test_10_create_group()
 }
 
 #[tokio::test]
+async fn test_11_create_child_group()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let creator = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &creator[0];
+
+	let _child_id = create_group(
+		secret_token,
+		&creator.key_data.public_key,
+		Some(group.group_id.to_string()),
+		creator.key_data.jwt.as_str(),
+	)
+	.await;
+
+	//TODO get group data
+
+	//don't delete the child group to test if parent group delete deletes all. delete the child
+}
+
+#[tokio::test]
 async fn test_30_delete_group()
 {
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
 
 	let creator = USERS_TEST_STATE.get().unwrap().read().await;
 	let creator = &creator[0];
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str());
 	let client = reqwest::Client::new();
 	let res = client
 		.delete(url)
 		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
 		.unwrap();
@@ -155,8 +181,10 @@ async fn zzz_clean_up()
 
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+
 	for user in users.iter() {
-		delete_user(user.key_data.jwt.as_str(), user.user_id.as_str()).await;
+		delete_user(secret_token, user.key_data.jwt.as_str(), user.user_id.as_str()).await;
 	}
 
 	delete_app(app.app_id.as_str()).await;

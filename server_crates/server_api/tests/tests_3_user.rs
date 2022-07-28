@@ -352,6 +352,7 @@ async fn test_16_user_delete_with_wrong_jwt()
 	let res = client
 		.delete(url)
 		.header(AUTHORIZATION, auth_header(old_jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
 		.send()
 		.await
 		.unwrap();
@@ -664,6 +665,7 @@ async fn test_21_user_delete()
 	let res = client
 		.delete(url)
 		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
 		.send()
 		.await
 		.unwrap();
@@ -769,7 +771,7 @@ async fn test_23_register_and_login_user_via_test_fn()
 
 	assert_eq!(id, login.user_id);
 
-	delete_user(login.jwt.as_str(), &id).await;
+	delete_user(&user.app_data.secret_token, login.jwt.as_str(), &id).await;
 }
 
 #[tokio::test]
