@@ -1,7 +1,8 @@
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
-use sentc_crypto::KeyData;
-use sentc_crypto_common::group::{GroupCreateOutput, GroupDeleteServerOutput};
+use sentc_crypto::{KeyData, SymKeyFormat};
+use sentc_crypto_common::group::{GroupCreateOutput, GroupDeleteServerOutput, GroupServerData};
+use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::{GroupId, ServerOutput, UserId};
 use server_api::AppRegisterOutput;
 use tokio::sync::{OnceCell, RwLock};
@@ -22,6 +23,8 @@ pub struct GroupState
 {
 	pub group_id: GroupId,
 	pub group_member: Vec<UserId>,
+	pub group_server_data: Vec<GroupServerData>,
+	pub decrypted_group_keys: Vec<SymKeyFormat>,
 }
 
 static APP_TEST_STATE: OnceCell<RwLock<AppRegisterOutput>> = OnceCell::const_new();
@@ -73,6 +76,8 @@ async fn aaa_init_global_test()
 				RwLock::new(GroupState {
 					group_id: "".to_string(),
 					group_member: vec![],
+					group_server_data: vec![],
+					decrypted_group_keys: vec![],
 				})
 			}
 		})
@@ -137,6 +142,46 @@ async fn test_11_create_child_group()
 	//TODO get group data
 
 	//don't delete the child group to test if parent group delete deletes all. delete the child
+}
+
+#[ignore]
+#[tokio::test]
+async fn test_12_invite_user()
+{
+	//TODO did this test when get data is implemented, so we can get the decrypted group keys
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+
+	let user_to_invite = &users[1];
+
+	let mut group_keys_ref = vec![];
+
+	for decrypted_group_key in &group.decrypted_group_keys {
+		group_keys_ref.push(decrypted_group_key);
+	}
+
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(&user_to_invite.key_data.exported_public_key, &group_keys_ref).unwrap();
+
+	let url = get_url("api/v1/group".to_owned() + group.group_id.as_str() + "/invite/" + user_to_invite.user_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(invite)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
 }
 
 #[tokio::test]
