@@ -61,11 +61,23 @@ pub(crate) fn routes() -> Router
 		"/api/v1/user/reset_pw",
 		r(crate::user::reset_password).add(jwt::jwt_transform),
 	);
-	router.delete("/api/v1/user", r(crate::user::delete).add(jwt::jwt_transform));
-	router.post("/api/v1/group", r(crate::group::create).add(jwt::jwt_transform));
+	router.delete(
+		"/api/v1/user",
+		r(crate::user::delete)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
+	router.post(
+		"/api/v1/group",
+		r(crate::group::create)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
 	router.delete(
 		"/api/v1/group/:group_id",
-		r(crate::group::delete).add(jwt::jwt_transform),
+		r(crate::group::delete)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
 	);
 	router.get(
 		"/api/v1/group/:group_id",

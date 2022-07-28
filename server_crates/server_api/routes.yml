@@ -55,15 +55,33 @@ routes:
                     - put: {p: "", s: crate::user::update}
                     - put: {p: "/update_pw", s: crate::user::change_password}
                     - put: {p: "/reset_pw", s: crate::user::reset_password}
-                    - delete: {p: "", s: crate::user::delete}
+                    # check the api token for delete action, maybe the app creator only wants to trigger delete from the own backend
+                    - delete:
+                        p: ""
+                        s: crate::user::delete
+                        mw:
+                          - app_token::app_token_transform
               #_________________________________________________________________________________________________________
               # group routes in the group mod
               - group:
                   p: "/group"
                   gr:
-                    - post: {p: "", s: crate::group::create}
+                    - post:
+                        p: ""
+                        s: crate::group::create
+                        mw:
+                          - app_token::app_token_transform
+                    #___________________________________________________________________________________________________
+                    # need the app token
+                    - group:
+                        p: "/:group_id"
+                        mw:
+                          - app_token::app_token_transform
+                        gr:
+                          - delete: {p: "", s: crate::group::delete}
+                    #___________________________________________________________________________________________________
+                    # don't need the app token
                     - group:
                         p: "/:group_id"
                         gr:
-                          - delete: {p: "", s: crate::group::delete}
                           - get: {p: "", s: crate::group::get}
