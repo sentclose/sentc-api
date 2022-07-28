@@ -81,9 +81,7 @@ pub(crate) fn routes() -> Router
 	);
 	router.get(
 		"/api/v1/group/:group_id",
-		r(crate::group::get)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+		r(crate::group::get).add(jwt::jwt_transform),
 	);
 
 	router
