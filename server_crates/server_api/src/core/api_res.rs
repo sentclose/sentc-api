@@ -1,6 +1,7 @@
 use hyper::StatusCode;
 use rustgram::service::HttpResult;
 use rustgram::{GramHttpErr, Response};
+use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::ServerOutput;
 use serde::Serialize;
 
@@ -48,6 +49,7 @@ pub enum ApiErrorCodes
 
 	GroupUserNotFound,
 	GroupUserRank,
+	GroupUserExists,
 }
 
 impl ApiErrorCodes
@@ -83,6 +85,7 @@ impl ApiErrorCodes
 			ApiErrorCodes::AppNotFound => 202,
 			ApiErrorCodes::GroupUserNotFound => 300,
 			ApiErrorCodes::GroupUserRank => 301,
+			ApiErrorCodes::GroupUserExists => 302,
 		}
 	}
 }
@@ -179,4 +182,9 @@ impl<T: Serialize> HttpResult<Response> for JsonRes<T>
 pub fn echo<T: Serialize>(obj: T) -> JRes<T>
 {
 	Ok(JsonRes(obj))
+}
+
+pub fn echo_success() -> JRes<ServerSuccessOutput>
+{
+	echo(ServerSuccessOutput("Success".to_string()))
 }
