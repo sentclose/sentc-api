@@ -45,6 +45,9 @@ pub enum ApiErrorCodes
 	AppTokenNotFound,
 	AppTokenWrongFormat,
 	AppNotFound,
+
+	GroupUserNotFound,
+	GroupUserRank,
 }
 
 impl ApiErrorCodes
@@ -78,6 +81,8 @@ impl ApiErrorCodes
 			ApiErrorCodes::AppTokenNotFound => 200,
 			ApiErrorCodes::AppTokenWrongFormat => 201,
 			ApiErrorCodes::AppNotFound => 202,
+			ApiErrorCodes::GroupUserNotFound => 300,
+			ApiErrorCodes::GroupUserRank => 301,
 		}
 	}
 }

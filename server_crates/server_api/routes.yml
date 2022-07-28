@@ -61,4 +61,9 @@ routes:
               - group:
                   p: "/group"
                   gr:
-                    - get: {p: "/:id", s: crate::group::get}
+                    - post: {p: "", s: crate::group::create}
+                    - group:
+                        p: "/:group_id"
+                        gr:
+                          - delete: {p: "", s: crate::group::delete}
+                          - get: {p: "", s: crate::group::get}
