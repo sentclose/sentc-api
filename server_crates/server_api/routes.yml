@@ -73,6 +73,7 @@ routes:
                         p: "/:group_id"
                         gr:
                           - delete: {p: "", s: crate::group::delete}
+                          - put: {p: "/invite/:invited_user", s: crate::group::invite_request}
               #_________________________________________________________________________________________________________
               # group routes without the app token check
               - group:
