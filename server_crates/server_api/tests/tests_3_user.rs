@@ -525,6 +525,7 @@ async fn test_18_reset_password()
 
 	let body = res.text().await.unwrap();
 
+	//TODO let sdk handle this server output
 	let out = ServerOutput::<ResetPasswordServerOutput>::from_string(body.as_str()).unwrap();
 
 	assert_eq!(out.status, true);
