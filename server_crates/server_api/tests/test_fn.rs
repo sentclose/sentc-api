@@ -200,3 +200,12 @@ pub async fn login_user(public_token: &str, username: &str, pw: &str) -> KeyData
 
 	done_login
 }
+
+pub async fn create_test_user(secret_token: &str, public_token: &str, username: &str, pw: &str) -> (UserId, KeyData)
+{
+	//create test user
+	let user_id = register_user(secret_token, username, pw).await;
+	let key_data = login_user(public_token, username, pw).await;
+
+	(user_id, key_data)
+}
