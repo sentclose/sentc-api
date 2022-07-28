@@ -13,7 +13,7 @@ use sentc_crypto_common::user::{
 	UserUpdateServerInput,
 	UserUpdateServerOut,
 };
-use sentc_crypto_common::ServerOutput;
+use sentc_crypto_common::{ServerOutput, UserId};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 use server_api::core::api_res::ApiErrorCodes;
@@ -28,7 +28,7 @@ pub struct UserState
 {
 	pub username: String,
 	pub pw: String,
-	pub user_id: String,
+	pub user_id: UserId,
 	pub key_data: Option<KeyData>,
 	pub app_data: AppRegisterOutput,
 }
