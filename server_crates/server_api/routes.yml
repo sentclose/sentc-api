@@ -62,26 +62,15 @@ routes:
                         mw:
                           - app_token::app_token_transform
               #_________________________________________________________________________________________________________
-              # group routes in the group mod
+              # group routes in the group mod, check always the app token for group actions
               - group:
                   p: "/group"
+                  mw:
+                    - app_token::app_token_transform
                   gr:
-                    - post:
-                        p: ""
-                        s: crate::group::create
-                        mw:
-                          - app_token::app_token_transform
-                    #___________________________________________________________________________________________________
-                    # need the app token
+                    - post: {p: "", s: crate::group::create}
                     - group:
                         p: "/:group_id"
-                        mw:
-                          - app_token::app_token_transform
                         gr:
                           - delete: {p: "", s: crate::group::delete}
-                    #___________________________________________________________________________________________________
-                    # don't need the app token
-                    - group:
-                        p: "/:group_id"
-                        gr:
                           - get: {p: "", s: crate::group::get}
