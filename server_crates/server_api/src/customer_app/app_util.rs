@@ -6,17 +6,17 @@ use crate::customer_app::app_entities::AppData;
 
 pub static HASH_ALG: &'static str = "SHA256";
 
-pub enum Endpoint
-{
-	UserExistsCheck,
-	UserRegister,
-	UserDelete,
-	UserPrepLogin,
-	UserDoneLogin,
-
-	GroupCreate,
-	GroupDelete,
-}
+// pub enum Endpoint
+// {
+// 	UserExistsCheck,
+// 	UserRegister,
+// 	UserDelete,
+// 	UserPrepLogin,
+// 	UserDoneLogin,
+//
+// 	GroupCreate,
+// 	GroupDelete,
+// }
 
 pub(crate) fn get_app_data_from_req(req: &Request) -> AppRes<&AppData>
 {
@@ -74,19 +74,19 @@ pub fn hash_token_from_string_to_string(token: &str) -> AppRes<String>
 	hash_token_to_string(&token)
 }
 
-pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endpoint) -> AppRes<()>
-{
-	todo!()
-}
-
-/**
-Check the endpoint with the app options
-
-get the options from req
-*/
-pub fn check_endpoint_with_req(req: &Request, endpoint: Endpoint) -> AppRes<()>
-{
-	let data = get_app_data_from_req(req)?;
-
-	check_endpoint_with_app_options(data, endpoint)
-}
+// pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endpoint) -> AppRes<()>
+// {
+// 	todo!()
+// }
+//
+// /**
+// Check the endpoint with the app options
+//
+// get the options from req
+// */
+// pub fn check_endpoint_with_req(req: &Request, endpoint: Endpoint) -> AppRes<()>
+// {
+// 	let data = get_app_data_from_req(req)?;
+//
+// 	check_endpoint_with_app_options(data, endpoint)
+// }
