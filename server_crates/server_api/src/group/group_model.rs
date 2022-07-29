@@ -5,8 +5,46 @@ use uuid::Uuid;
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::core::db::{bulk_insert, exec, exec_transaction, query_first, TransactionData};
 use crate::core::get_time;
-use crate::group::group_entities::{UserGroupRankCheck, UserInGroupCheck, GROUP_INVITE_TYPE_INVITE_REQ};
+use crate::group::group_entities::{InternalGroupData, InternalUserGroupData, UserInGroupCheck, GROUP_INVITE_TYPE_INVITE_REQ};
 use crate::set_params;
+
+pub(crate) async fn get_group_data(app_id: AppId, group_id: GroupId) -> AppRes<InternalGroupData>
+{
+	//language=SQL
+	let sql = "SELECT id, app_id, parent, time FROM sentc_group WHERE app_id = ? AND id = ?";
+	let group_data: Option<InternalGroupData> = query_first(sql.to_string(), set_params!(app_id, group_id)).await?;
+
+	match group_data {
+		Some(d) => Ok(d),
+		None => {
+			Err(HttpErr::new(
+				400,
+				ApiErrorCodes::GroupAccess,
+				"No access to this group".to_string(),
+				None,
+			))
+		},
+	}
+}
+
+pub(crate) async fn get_group_user_data(group_id: GroupId, user_id: UserId) -> AppRes<InternalUserGroupData>
+{
+	//language=SQL
+	let sql = "SELECT user_id, time, `rank` FROM sentc_group_user WHERE group_id = ? AND user_id = ?";
+	let group_data: Option<InternalUserGroupData> = query_first(sql.to_string(), set_params!(group_id, user_id)).await?;
+
+	match group_data {
+		Some(d) => Ok(d),
+		None => {
+			Err(HttpErr::new(
+				400,
+				ApiErrorCodes::GroupAccess,
+				"No access to this group".to_string(),
+				None,
+			))
+		},
+	}
+}
 
 pub(super) async fn create(app_id: AppId, user_id: UserId, data: CreateData) -> AppRes<GroupId>
 {
@@ -108,9 +146,9 @@ VALUES (?,?,?,?,?,?)";
 	Ok(group_id)
 }
 
-pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_id: UserId) -> AppRes<()>
+pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_rank: i32) -> AppRes<()>
 {
-	check_group_rank(group_id.to_string(), user_id, 1).await?;
+	check_group_rank(user_rank, 2)?;
 
 	//delete with app id to make sure the user is in the right group
 	//language=SQL
@@ -139,13 +177,13 @@ pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_id: UserId) ->
 
 pub(super) async fn invite_request(
 	group_id: GroupId,
-	starter_user_id: UserId,
+	user_rank: i32,
 	invited_user: UserId,
 	keys_for_new_user: Vec<GroupKeysForNewMember>,
 ) -> AppRes<()>
 {
 	//1. check the rights of the starter
-	check_group_rank(group_id.to_string(), starter_user_id.to_string(), 2).await?;
+	check_group_rank(user_rank, 2)?;
 
 	//2. check if the user is already in the group
 	let check = check_user_in_group(group_id.to_string(), invited_user.to_string()).await?;
@@ -201,26 +239,9 @@ pub(super) async fn invite_request(
 	Ok(())
 }
 
-async fn check_group_rank(group_id: GroupId, user_id: UserId, req_rank: i32) -> AppRes<()>
+fn check_group_rank(user_rank: i32, req_rank: i32) -> AppRes<()>
 {
-	//language=SQL
-	let sql = "SELECT `rank` FROM sentc_group_user WHERE group_id = ? AND user_id = ?";
-
-	let rank: Option<UserGroupRankCheck> = query_first(sql.to_string(), set_params!(group_id, user_id)).await?;
-
-	let rank = match rank {
-		Some(r) => r,
-		None => {
-			return Err(HttpErr::new(
-				400,
-				ApiErrorCodes::GroupUserNotFound,
-				"Group user not found".to_string(),
-				None,
-			))
-		},
-	};
-
-	if rank.0 > req_rank {
+	if user_rank > req_rank {
 		return Err(HttpErr::new(
 			400,
 			ApiErrorCodes::GroupUserRank,

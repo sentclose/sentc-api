@@ -50,6 +50,7 @@ pub enum ApiErrorCodes
 	GroupUserNotFound,
 	GroupUserRank,
 	GroupUserExists,
+	GroupAccess,
 }
 
 impl ApiErrorCodes
@@ -86,6 +87,7 @@ impl ApiErrorCodes
 			ApiErrorCodes::GroupUserNotFound => 300,
 			ApiErrorCodes::GroupUserRank => 301,
 			ApiErrorCodes::GroupUserExists => 302,
+			ApiErrorCodes::GroupAccess => 303,
 		}
 	}
 }
