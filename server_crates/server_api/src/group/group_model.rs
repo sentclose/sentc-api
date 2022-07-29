@@ -216,7 +216,7 @@ VALUES (?,?,?,?,?,?,?,?,?,?)";
 	let previous_group_key_id: Option<String> = None;
 
 	let group_data_params = set_params!(
-		group_key_id,
+		group_key_id.to_string(),
 		group_id.to_string(),
 		data.keypair_encrypt_alg,
 		data.encrypted_private_group_key,
@@ -233,8 +233,6 @@ VALUES (?,?,?,?,?,?,?,?,?,?)";
 	let sql_group_user = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`) VALUES (?,?,?,?)";
 	let group_user_params = set_params!(user_id.to_string(), group_id.to_string(), time.to_string(), 0);
 
-	let group_user_key_id = Uuid::new_v4().to_string();
-
 	//language=SQL
 	let sql_group_user_keys = r"
 INSERT INTO sentc_group_user_keys 
@@ -249,7 +247,7 @@ INSERT INTO sentc_group_user_keys
 VALUES (?,?,?,?,?,?)";
 
 	let group_user_keys_params = set_params!(
-		group_user_key_id,
+		group_key_id,
 		user_id,
 		data.encrypted_group_key,
 		data.encrypted_group_key_alg,
