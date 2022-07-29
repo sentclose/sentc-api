@@ -76,6 +76,7 @@ routes:
                           - get: {p: "/keys/:last_fetched_time", s: crate::group::get_user_group_keys}
                           - delete: {p: "", s: crate::group::delete}
                           - put: {p: "/invite/:invited_user", s: crate::group::invite_request}
+                          - patch: {p: "/invite", s: crate::group::accept_invite}
               #_________________________________________________________________________________________________________
               # group routes without the app token check
               - group:

@@ -1,19 +1,11 @@
-use sentc_crypto_common::group::{CreateData, GroupKeysForNewMember};
+use sentc_crypto_common::group::CreateData;
 use sentc_crypto_common::{AppId, GroupId, UserId};
 use uuid::Uuid;
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
-use crate::core::db::{bulk_insert, exec, exec_transaction, query, query_first, TransactionData};
+use crate::core::db::{exec, exec_transaction, query, query_first, TransactionData};
 use crate::core::get_time;
-use crate::group::group_entities::{
-	GroupKeyUpdate,
-	GroupKeyUpdateReady,
-	GroupUserData,
-	GroupUserKeys,
-	UserGroupRankCheck,
-	UserInGroupCheck,
-	GROUP_INVITE_TYPE_INVITE_REQ,
-};
+use crate::group::group_entities::{GroupKeyUpdate, GroupKeyUpdateReady, GroupUserData, GroupUserKeys, UserGroupRankCheck, UserInGroupCheck};
 use crate::set_params;
 
 /**
@@ -70,7 +62,7 @@ FROM
     sentc_group_user_keys uk 
 WHERE 
     user_id = ? AND 
-    group_id = ? AND 
+    k.group_id = ? AND 
     id = k_id
 ORDER BY uk.time DESC LIMIT 50";
 
@@ -102,12 +94,12 @@ SELECT
 FROM 
     sentc_group_keys k, 
     sentc_group_user_keys uk, 
-    sentc_group g
+    sentc_group g -- group here for the app id
 WHERE 
     user_id = ? AND 
-    group_id = ? AND 
+    k.group_id = ? AND 
     k.id = k_id AND 
-    g.id = group_id AND 
+    g.id = k.group_id AND 
     app_id = ? AND 
     uk.time >= ?
 ORDER BY uk.time DESC LIMIT 50";
@@ -136,10 +128,9 @@ FROM
     sentc_group g
 WHERE
     user_id = ? AND
-    group_id = ? AND
     app_id = ? AND 
     key_id = gk.id AND
-    g.id = group_id
+    g.id = gk.group_id
 ORDER BY gk.time DESC LIMIT 1";
 
 	let key_update: Option<GroupKeyUpdateReady> = query_first(sql.to_string(), set_params!(user_id, group_id, app_id)).await?;
@@ -166,10 +157,9 @@ FROM
     sentc_group_user_key_rotation gkr,
     sentc_group g
 WHERE user_id = ? AND 
-      group_id = ? AND 
       app_id = ? AND 
       key_id = gk.id AND 
-      group_id = g.id 
+      gk.group_id = g.id 
 ORDER BY gk.time";
 
 	let out: Vec<GroupKeyUpdate> = query(sql.to_string(), set_params!(user_id, group_id, app_id)).await?;
@@ -247,16 +237,18 @@ INSERT INTO sentc_group_user_keys
     (
      k_id, 
      user_id, 
+     group_id, 
      encrypted_group_key, 
      encrypted_alg, 
      encrypted_group_key_key_id,
      time
      ) 
-VALUES (?,?,?,?,?,?)";
+VALUES (?,?,?,?,?,?,?)";
 
 	let group_user_keys_params = set_params!(
 		group_key_id,
 		user_id,
+		group_id.to_string(),
 		data.encrypted_group_key,
 		data.encrypted_group_key_alg,
 		data.creator_public_key_id,
@@ -298,7 +290,7 @@ pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_id: UserId) ->
 	//delete the children
 	//language=SQL
 	let sql_delete_child = "DELETE FROM sentc_group WHERE parent = ? AND app_id = ?";
-	let delete_children_params = set_params!(group_id, app_id);
+	let delete_children_params = set_params!(group_id.to_string(), app_id.to_string());
 
 	exec_transaction(vec![
 		TransactionData {
@@ -312,86 +304,32 @@ pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_id: UserId) ->
 	])
 	.await?;
 
-	Ok(())
-}
-
-pub(super) async fn invite_request(
-	app_id: AppId,
-	group_id: GroupId,
-	starter_user_id: UserId,
-	invited_user: UserId,
-	keys_for_new_user: Vec<GroupKeysForNewMember>,
-) -> AppRes<()>
-{
-	//1. check the rights of the starter
-	check_group_rank(app_id, group_id.to_string(), starter_user_id.to_string(), 2).await?;
-
-	//2. check if the user is already in the group
-	let check = check_user_in_group(group_id.to_string(), invited_user.to_string()).await?;
-
-	if check == true {
-		return Err(HttpErr::new(
-			400,
-			ApiErrorCodes::GroupUserExists,
-			"Invited user is already in the group".to_string(),
-			None,
-		));
-	}
-
-	let time = get_time()?;
+	//delete the rest of the user group keys, this is the rest from user invite but this wont get deleted when group user gets deleted
+	//important: do this after the delete!
 
 	//language=SQL
-	let sql = "INSERT INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time) VALUES (?,?,?,?)";
+	let sql = r"
+DELETE sentc_group_user_keys 
+FROM 
+    sentc_group_user_keys,
+    sentc_group 
+WHERE 
+    group_id = ? AND 
+    app_id = ? AND 
+    group_id = id";
 
-	exec(
-		sql,
-		set_params!(
-			invited_user.to_string(),
-			group_id,
-			GROUP_INVITE_TYPE_INVITE_REQ,
-			time.to_string()
-		),
-	)
-	.await?;
-
-	bulk_insert(
-		true,
-		"sentc_group_user_invites_keys".to_string(),
-		vec![
-			"user_id".to_string(),
-			"k_id".to_string(),
-			"encrypted_group_key".to_string(),
-			"encrypted_group_key_key_id".to_string(),
-			"encrypted_alg".to_string(),
-		],
-		keys_for_new_user,
-		move |ob| {
-			set_params!(
-				invited_user.to_string(),
-				ob.key_id.to_string(),
-				ob.encrypted_group_key.to_string(),
-				ob.user_public_key_id.to_string(),
-				ob.alg.to_string()
-			)
-		},
-	)
-	.await?;
+	exec(sql, set_params!(group_id, app_id)).await?;
 
 	Ok(())
 }
 
-pub(super) async fn accept_invite()
-{
-	//called from the invited user
-}
-
-async fn check_group_rank(app_id: AppId, group_id: GroupId, user_id: UserId, req_rank: i32) -> AppRes<()>
+pub(super) async fn check_group_rank(app_id: AppId, group_id: GroupId, user_id: UserId, req_rank: i32) -> AppRes<()>
 {
 	//language=SQL
 	let sql = r"
 SELECT `rank` 
 FROM 
-    sentc_group_user  gu,
+    sentc_group_user gu,
     sentc_group g
 WHERE 
     group_id = ? AND 
@@ -425,7 +363,7 @@ WHERE
 	Ok(())
 }
 
-async fn check_user_in_group(group_id: GroupId, user_id: UserId) -> AppRes<bool>
+pub(super) async fn check_user_in_group(group_id: GroupId, user_id: UserId) -> AppRes<bool>
 {
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group_user WHERE user_id = ? AND group_id = ? LIMIT 1";
