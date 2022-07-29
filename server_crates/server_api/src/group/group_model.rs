@@ -130,10 +130,11 @@ WHERE
     user_id = ? AND
     app_id = ? AND 
     key_id = gk.id AND
-    g.id = gk.group_id
+    g.id = gk.group_id AND
+    g.id = ?
 ORDER BY gk.time DESC LIMIT 1";
 
-	let key_update: Option<GroupKeyUpdateReady> = query_first(sql.to_string(), set_params!(user_id, group_id, app_id)).await?;
+	let key_update: Option<GroupKeyUpdateReady> = query_first(sql.to_string(), set_params!(user_id, app_id, group_id)).await?;
 
 	match key_update {
 		Some(_) => Ok(true),
@@ -157,6 +158,7 @@ FROM
     sentc_group_user_key_rotation gkr,
     sentc_group g
 WHERE user_id = ? AND 
+      g.id = ? AND 
       app_id = ? AND 
       key_id = gk.id AND 
       gk.group_id = g.id 
