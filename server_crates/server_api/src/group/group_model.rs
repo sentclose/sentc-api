@@ -282,9 +282,9 @@ VALUES (?,?,?,?,?,?,?)";
 
 pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_id: UserId) -> AppRes<()>
 {
+	//check with app id to make sure the user is in the right group
 	check_group_rank(app_id.to_string(), group_id.to_string(), user_id, 1).await?;
 
-	//delete with app id to make sure the user is in the right group
 	//language=SQL
 	let sql = "DELETE FROM sentc_group WHERE id = ? AND app_id = ?";
 	let delete_params = set_params!(group_id.to_string(), app_id.to_string());
@@ -292,7 +292,7 @@ pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_id: UserId) ->
 	//delete the children
 	//language=SQL
 	let sql_delete_child = "DELETE FROM sentc_group WHERE parent = ? AND app_id = ?";
-	let delete_children_params = set_params!(group_id.to_string(), app_id.to_string());
+	let delete_children_params = set_params!(group_id.to_string(), app_id);
 
 	exec_transaction(vec![
 		TransactionData {
@@ -310,17 +310,9 @@ pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_id: UserId) ->
 	//important: do this after the delete!
 
 	//language=SQL
-	let sql = r"
-DELETE sentc_group_user_keys 
-FROM 
-    sentc_group_user_keys,
-    sentc_group 
-WHERE 
-    group_id = ? AND 
-    app_id = ? AND 
-    group_id = id";
+	let sql = "DELETE FROM sentc_group_user_keys WHERE group_id = ?";
 
-	exec(sql, set_params!(group_id, app_id)).await?;
+	exec(sql, set_params!(group_id)).await?;
 
 	Ok(())
 }
