@@ -76,14 +76,12 @@ pub(crate) fn routes() -> Router
 	router.delete(
 		"/api/v1/group/:group_id",
 		r(crate::group::delete)
-			.add(group::group_transform)
 			.add(app_token::app_token_transform)
 			.add(jwt::jwt_transform),
 	);
 	router.put(
 		"/api/v1/group/:group_id/invite/:invited_user",
 		r(crate::group::invite_request)
-			.add(group::group_transform)
 			.add(app_token::app_token_transform)
 			.add(jwt::jwt_transform),
 	);

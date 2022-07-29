@@ -61,4 +61,3 @@ pub static LONG_TTL: usize = 60 * 60 * 24; //24 h
 pub static JWT_CACHE: &'static str = "jwtcache_";
 pub static APP_TOKEN_CACHE: &'static str = "apptokencache_";
 pub static GROUP_DATA_CACHE: &'static str = "groupdatacache_";
-pub static GROUP_USER_DATA_CACHE: &'static str = "groupuserdatacache_";

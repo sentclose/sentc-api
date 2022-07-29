@@ -71,8 +71,6 @@ routes:
                     - post: {p: "", s: crate::group::create}
                     - group:
                         p: "/:group_id"
-                        mw:
-                          - group::group_transform
                         gr:
                           - delete: {p: "", s: crate::group::delete}
                           - put: {p: "/invite/:invited_user", s: crate::group::invite_request}
