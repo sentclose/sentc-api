@@ -62,6 +62,15 @@ pub(crate) async fn invite_request(mut req: Request) -> JRes<ServerSuccessOutput
 
 	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
 
+	if input.0.len() == 0 {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::GroupNoKeys,
+			"No group keys for the user".to_string(),
+			None,
+		));
+	}
+
 	group_model::invite_request(
 		group_id.to_string(),
 		user.id.to_string(),
