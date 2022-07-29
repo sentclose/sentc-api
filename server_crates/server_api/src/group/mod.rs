@@ -72,6 +72,7 @@ pub(crate) async fn invite_request(mut req: Request) -> JRes<ServerSuccessOutput
 	}
 
 	group_model::invite_request(
+		user.sub.to_string(),
 		group_id.to_string(),
 		user.id.to_string(),
 		invited_user.to_string(),

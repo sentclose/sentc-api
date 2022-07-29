@@ -183,7 +183,7 @@ pub(super) async fn create(app_id: AppId, user_id: UserId, data: CreateData) -> 
 		None => {},
 		Some(p) => {
 			//test here if the user has access to create a child group in this group
-			check_group_rank(p.to_string(), user_id.to_string(), 1).await?;
+			check_group_rank(app_id.to_string(), p.to_string(), user_id.to_string(), 1).await?;
 		},
 	}
 
@@ -288,7 +288,7 @@ VALUES (?,?,?,?,?,?)";
 
 pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_id: UserId) -> AppRes<()>
 {
-	check_group_rank(group_id.to_string(), user_id, 1).await?;
+	check_group_rank(app_id.to_string(), group_id.to_string(), user_id, 1).await?;
 
 	//delete with app id to make sure the user is in the right group
 	//language=SQL
@@ -316,6 +316,7 @@ pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_id: UserId) ->
 }
 
 pub(super) async fn invite_request(
+	app_id: AppId,
 	group_id: GroupId,
 	starter_user_id: UserId,
 	invited_user: UserId,
@@ -323,7 +324,7 @@ pub(super) async fn invite_request(
 ) -> AppRes<()>
 {
 	//1. check the rights of the starter
-	check_group_rank(group_id.to_string(), starter_user_id.to_string(), 2).await?;
+	check_group_rank(app_id, group_id.to_string(), starter_user_id.to_string(), 2).await?;
 
 	//2. check if the user is already in the group
 	let check = check_user_in_group(group_id.to_string(), invited_user.to_string()).await?;
@@ -379,12 +380,26 @@ pub(super) async fn invite_request(
 	Ok(())
 }
 
-async fn check_group_rank(group_id: GroupId, user_id: UserId, req_rank: i32) -> AppRes<()>
+pub(super) async fn accept_invite()
+{
+	//called from the invited user
+}
+
+async fn check_group_rank(app_id: AppId, group_id: GroupId, user_id: UserId, req_rank: i32) -> AppRes<()>
 {
 	//language=SQL
-	let sql = "SELECT `rank` FROM sentc_group_user WHERE group_id = ? AND user_id = ?";
+	let sql = r"
+SELECT `rank` 
+FROM 
+    sentc_group_user  gu,
+    sentc_group g
+WHERE 
+    group_id = ? AND 
+    id = group_id AND 
+    app_id = ? AND
+    user_id = ?";
 
-	let rank: Option<UserGroupRankCheck> = query_first(sql.to_string(), set_params!(group_id, user_id)).await?;
+	let rank: Option<UserGroupRankCheck> = query_first(sql.to_string(), set_params!(group_id, app_id, user_id)).await?;
 
 	let rank = match rank {
 		Some(r) => r,
