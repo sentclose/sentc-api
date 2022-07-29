@@ -2,10 +2,17 @@ mod group_entities;
 mod group_model;
 
 use rustgram::Request;
-use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDeleteServerOutput, GroupKeysForNewMemberServerInput};
+use sentc_crypto_common::group::{
+	CreateData,
+	GroupCreateOutput,
+	GroupDeleteServerOutput,
+	GroupKeyServerOutput,
+	GroupKeysForNewMemberServerInput,
+	GroupServerData,
+};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 
-use crate::core::api_res::{echo, echo_success, HttpErr, JRes};
+use crate::core::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
 use crate::core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 use crate::user::jwt::get_jwt_data_from_param;
@@ -41,7 +48,7 @@ pub(crate) async fn delete(req: Request) -> JRes<GroupDeleteServerOutput>
 	echo(out)
 }
 
-pub async fn invite_request(mut req: Request) -> JRes<ServerSuccessOutput>
+pub(crate) async fn invite_request(mut req: Request) -> JRes<ServerSuccessOutput>
 {
 	//no the accept invite, but the keys are prepared for the invited user
 	//don't save this values in the group user keys table, but in the invite table
@@ -64,6 +71,66 @@ pub async fn invite_request(mut req: Request) -> JRes<ServerSuccessOutput>
 	.await?;
 
 	echo_success()
+}
+
+pub(crate) async fn get_user_group_data(req: Request) -> JRes<GroupServerData>
+{
+	let user = get_jwt_data_from_param(&req)?;
+	let group_id = get_name_param_from_req(&req, "group_id")?;
+
+	let (user_group_data, user_keys) = group_model::get_user_group_data(user.sub.to_string(), user.id.to_string(), group_id.to_string()).await?;
+
+	let mut keys: Vec<GroupKeyServerOutput> = Vec::with_capacity(user_keys.len());
+
+	for user_key in user_keys {
+		keys.push(user_key.into());
+	}
+
+	let key_update = group_model::check_for_key_update(user.sub.to_string(), user.sub.to_string(), group_id.to_string()).await?;
+
+	let out = GroupServerData {
+		group_id: user_group_data.id,
+		parent_group_id: user_group_data.parent_group_id,
+		keys,
+		key_update,
+		rank: user_group_data.rank,
+		created_time: user_group_data.created_time,
+		joined_time: user_group_data.joined_time,
+	};
+
+	echo(out)
+}
+
+pub(crate) async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupKeyServerOutput>>
+{
+	let user = get_jwt_data_from_param(&req)?;
+	let req_params = get_params(&req)?;
+	let group_id = get_name_param_from_params(req_params, "group_id")?;
+
+	let last_fetched_time = get_name_param_from_params(req_params, "last_fetched_time")?;
+	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
+		HttpErr::new(
+			400,
+			ApiErrorCodes::UnexpectedTime,
+			"last fetched time is wrong".to_string(),
+			None,
+		)
+	})?;
+
+	let user_keys = group_model::get_user_group_keys(
+		user.sub.to_string(),
+		group_id.to_string(),
+		user.id.to_string(),
+		last_fetched_time,
+	)
+	.await?;
+
+	let mut keys: Vec<GroupKeyServerOutput> = Vec::with_capacity(user_keys.len());
+	for user_key in user_keys {
+		keys.push(user_key.into());
+	}
+
+	echo(keys)
 }
 
 pub(crate) async fn get(_req: Request) -> Result<String, HttpErr>

@@ -73,6 +73,18 @@ pub(crate) fn routes() -> Router
 			.add(app_token::app_token_transform)
 			.add(jwt::jwt_transform),
 	);
+	router.get(
+		"/api/v1/group/:group_id",
+		r(crate::group::get_user_group_data)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
+	router.get(
+		"/api/v1/group/:group_id/keys/:last_fetched_time",
+		r(crate::group::get_user_group_keys)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
 	router.delete(
 		"/api/v1/group/:group_id",
 		r(crate::group::delete)
@@ -86,7 +98,7 @@ pub(crate) fn routes() -> Router
 			.add(jwt::jwt_transform),
 	);
 	router.get(
-		"/api/v1/group/:group_id",
+		"/api/v1/group/:group_id/123",
 		r(crate::group::get).add(jwt::jwt_transform),
 	);
 

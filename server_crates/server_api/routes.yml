@@ -72,6 +72,8 @@ routes:
                     - group:
                         p: "/:group_id"
                         gr:
+                          - get: {p: "", s: crate::group::get_user_group_data}
+                          - get: {p: "/keys/:last_fetched_time", s: crate::group::get_user_group_keys}
                           - delete: {p: "", s: crate::group::delete}
                           - put: {p: "/invite/:invited_user", s: crate::group::invite_request}
               #_________________________________________________________________________________________________________
@@ -82,4 +84,4 @@ routes:
                     - group:
                         p: "/:group_id"
                         gr:
-                          - get: { p: "", s: crate::group::get }
+                          - get: { p: "/123", s: crate::group::get }
