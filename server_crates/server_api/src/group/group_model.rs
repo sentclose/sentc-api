@@ -179,6 +179,14 @@ ORDER BY gk.time";
 
 pub(super) async fn create(app_id: AppId, user_id: UserId, data: CreateData) -> AppRes<GroupId>
 {
+	match &data.parent_group_id {
+		None => {},
+		Some(p) => {
+			//test here if the user has access to create a child group in this group
+			check_group_rank(p.to_string(), user_id.to_string(), 1).await?;
+		},
+	}
+
 	let group_id = Uuid::new_v4().to_string();
 	let time = get_time()?;
 
