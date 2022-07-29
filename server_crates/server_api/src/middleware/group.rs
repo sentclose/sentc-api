@@ -53,8 +53,8 @@ async fn get_group(req: &mut Request) -> AppRes<()>
 	let user = get_jwt_data_from_param(&req)?;
 	let group_id = get_name_param_from_req(&req, "group_id")?;
 
-	let key_group = GROUP_DATA_CACHE.to_string() + user.sub.as_str() + "_" + group_id;
-	let key_user = GROUP_USER_DATA_CACHE.to_string() + user.sub.as_str() + "_" + group_id + "_" + user.id.as_str();
+	let key_group = GROUP_DATA_CACHE.to_string() + group_id;
+	let key_user = GROUP_USER_DATA_CACHE.to_string() + group_id + "_" + user.id.as_str();
 
 	//use to different caches, one for the group, the other for the group user.
 	//this is used because if a group gets deleted -> the cache of the user wont.
