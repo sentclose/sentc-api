@@ -24,7 +24,7 @@ pub(crate) async fn create(mut req: Request) -> JRes<GroupCreateOutput>
 	let group_id = group_model::create(user.sub.to_string(), user.id.to_string(), input).await?;
 
 	//delete cache when a wrong cache was created before (for this id)
-	let key_group = GROUP_DATA_CACHE.to_string() + group_id.as_str();
+	let key_group = GROUP_DATA_CACHE.to_string() + user.sub.as_str() + "_" + group_id.as_str();
 	cache::delete(key_group.as_str()).await;
 
 	let out = GroupCreateOutput {
@@ -46,7 +46,7 @@ pub(crate) async fn delete(req: Request) -> JRes<GroupDeleteServerOutput>
 	.await?;
 
 	//don't delete cache for each group user, but for the group
-	let key_group = GROUP_DATA_CACHE.to_string() + group_data.group_data.group_id.as_str();
+	let key_group = GROUP_DATA_CACHE.to_string() + group_data.group_data.app_id.as_str() + "_" + group_data.group_data.group_id.as_str();
 	cache::delete(key_group.as_str()).await;
 
 	let out = GroupDeleteServerOutput {
