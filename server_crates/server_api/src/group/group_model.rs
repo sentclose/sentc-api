@@ -317,6 +317,11 @@ pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_id: UserId) ->
 	Ok(())
 }
 
+/**
+Check first if the user is in this group (from this app).
+
+Then check if the rank fits
+*/
 pub(super) async fn check_group_rank(app_id: AppId, group_id: GroupId, user_id: UserId, req_rank: i32) -> AppRes<()>
 {
 	let rank = get_user_rank(app_id, group_id, user_id).await?;
