@@ -1,7 +1,7 @@
 use sentc_crypto_common::{AppId, CustomerId, JwtKeyId, UserId};
 use uuid::Uuid;
 
-use crate::core::api_res::{ApiErrorCodes, HttpErr};
+use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::core::db::{exec, exec_transaction, query, query_first, TransactionData};
 use crate::core::get_time;
 use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppExistsEntity, AppJwt, AppJwtData, AuthWithToken};
@@ -12,7 +12,7 @@ use crate::set_params;
 
 cached in the app token middleware
 */
-pub(crate) async fn get_app_data(hashed_token: &str) -> Result<AppData, HttpErr>
+pub(crate) async fn get_app_data(hashed_token: &str) -> AppRes<AppData>
 {
 	//language=SQL
 	let sql = r"
@@ -70,7 +70,7 @@ but this time with check on app id und customer id
 
 only used internally
 */
-pub(super) async fn get_app_general_data(customer_id: CustomerId, app_id: AppId) -> Result<AppDataGeneral, HttpErr>
+pub(super) async fn get_app_general_data(customer_id: CustomerId, app_id: AppId) -> AppRes<AppDataGeneral>
 {
 	//language=SQL
 	let sql = r"
@@ -98,7 +98,7 @@ Get jwt data like internal get app data
 
 but this time check with customer and app id and not limited
 */
-pub(super) async fn get_jwt_data(customer_id: CustomerId, app_id: AppId) -> Result<Vec<AppJwtData>, HttpErr>
+pub(super) async fn get_jwt_data(customer_id: CustomerId, app_id: AppId) -> AppRes<Vec<AppJwtData>>
 {
 	//language=SQL
 	let sql = r"
@@ -124,7 +124,7 @@ pub(super) async fn create_app(
 	first_jwt_sign_key: &str,
 	first_jwt_verify_key: &str,
 	first_jwt_alg: &str,
-) -> Result<(AppId, JwtKeyId), HttpErr>
+) -> AppRes<(AppId, JwtKeyId)>
 {
 	let app_id = Uuid::new_v4().to_string();
 	let time = get_time()?;
@@ -191,7 +191,7 @@ pub(super) async fn token_renew(
 	hashed_secret_token: String,
 	hashed_public_token: String,
 	alg: &str,
-) -> Result<(), HttpErr>
+) -> AppRes<()>
 {
 	//language=SQL
 	let sql = "UPDATE app SET hashed_secret_token = ?, hashed_public_token = ?, hash_alg = ? WHERE id = ? AND customer_id = ?";
@@ -217,7 +217,7 @@ pub(super) async fn add_jwt_keys(
 	new_jwt_sign_key: &str,
 	new_jwt_verify_key: &str,
 	new_jwt_alg: &str,
-) -> Result<JwtKeyId, HttpErr>
+) -> AppRes<JwtKeyId>
 {
 	check_app_exists(customer_id, app_id.to_string()).await?;
 
@@ -243,7 +243,7 @@ pub(super) async fn add_jwt_keys(
 	Ok(jwt_key_id)
 }
 
-pub(super) async fn delete_jwt_keys(customer_id: CustomerId, app_id: AppId, jwt_key_id: JwtKeyId) -> Result<(), HttpErr>
+pub(super) async fn delete_jwt_keys(customer_id: CustomerId, app_id: AppId, jwt_key_id: JwtKeyId) -> AppRes<()>
 {
 	check_app_exists(customer_id, app_id.to_string()).await?;
 
@@ -255,7 +255,7 @@ pub(super) async fn delete_jwt_keys(customer_id: CustomerId, app_id: AppId, jwt_
 	Ok(())
 }
 
-pub(super) async fn update(customer_id: CustomerId, app_id: AppId, identifier: Option<String>) -> Result<(), HttpErr>
+pub(super) async fn update(customer_id: CustomerId, app_id: AppId, identifier: Option<String>) -> AppRes<()>
 {
 	//language=SQL
 	let sql = "UPDATE app SET identifier = ? WHERE customer_id = ? AND id = ?";
@@ -270,7 +270,7 @@ pub(super) async fn update(customer_id: CustomerId, app_id: AppId, identifier: O
 	Ok(())
 }
 
-pub(super) async fn delete(customer_id: CustomerId, app_id: AppId) -> Result<(), HttpErr>
+pub(super) async fn delete(customer_id: CustomerId, app_id: AppId) -> AppRes<()>
 {
 	//use the double check with the customer id to check if this app really belongs to the customer!
 
@@ -282,7 +282,7 @@ pub(super) async fn delete(customer_id: CustomerId, app_id: AppId) -> Result<(),
 	Ok(())
 }
 
-async fn check_app_exists(customer_id: CustomerId, app_id: AppId) -> Result<(), HttpErr>
+async fn check_app_exists(customer_id: CustomerId, app_id: AppId) -> AppRes<()>
 {
 	//check if this app belongs to this customer
 	//language=SQL

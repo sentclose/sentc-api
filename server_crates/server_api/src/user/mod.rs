@@ -6,9 +6,9 @@ use std::ptr;
 
 use rustgram::Request;
 use sentc_crypto::util_pub::HashedAuthenticationKey;
+use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
-	ChangePasswordServerOut,
 	DoneLoginServerInput,
 	DoneLoginServerKeysOutput,
 	PrepareLoginSaltServerOutput,
@@ -16,8 +16,6 @@ use sentc_crypto_common::user::{
 	RegisterData,
 	RegisterServerOutput,
 	ResetPasswordData,
-	ResetPasswordServerOutput,
-	UserDeleteServerOutput,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
 	UserUpdateServerInput,
@@ -25,7 +23,7 @@ use sentc_crypto_common::user::{
 };
 use sentc_crypto_common::AppId;
 
-use crate::core::api_res::{echo, ApiErrorCodes, HttpErr, JRes};
+use crate::core::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
 use crate::customer_app::app_util::get_app_data_from_req;
 use crate::user::jwt::{create_jwt, get_jwt_data_from_param};
@@ -141,7 +139,7 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerKeysOutp
 //__________________________________________________________________________________________________
 // user fn with jwt
 
-pub(crate) async fn delete(req: Request) -> JRes<UserDeleteServerOutput>
+pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 {
 	let user = get_jwt_data_from_param(&req)?;
 
@@ -160,10 +158,7 @@ pub(crate) async fn delete(req: Request) -> JRes<UserDeleteServerOutput>
 
 	user_model::delete(user_id, app_id.to_string()).await?;
 
-	echo(UserDeleteServerOutput {
-		msg: "User deleted".to_owned(),
-		user_id: user_id.to_owned(),
-	})
+	echo_success()
 }
 
 pub(crate) async fn update(mut req: Request) -> JRes<UserUpdateServerOut>
@@ -198,7 +193,7 @@ pub(crate) async fn update(mut req: Request) -> JRes<UserUpdateServerOut>
 	echo(out)
 }
 
-pub(crate) async fn change_password(mut req: Request) -> JRes<ChangePasswordServerOut>
+pub(crate) async fn change_password(mut req: Request) -> JRes<ServerSuccessOutput>
 {
 	let body = get_raw_body(&mut req).await?;
 
@@ -225,15 +220,10 @@ pub(crate) async fn change_password(mut req: Request) -> JRes<ChangePasswordServ
 
 	user_model::change_password(user_id, input, old_hashed_auth_key).await?;
 
-	let out = ChangePasswordServerOut {
-		user_id: user_id.to_string(),
-		msg: "Password changed".to_string(),
-	};
-
-	echo(out)
+	echo_success()
 }
 
-pub(crate) async fn reset_password(mut req: Request) -> JRes<ResetPasswordServerOutput>
+pub(crate) async fn reset_password(mut req: Request) -> JRes<ServerSuccessOutput>
 {
 	let body = get_raw_body(&mut req).await?;
 
@@ -246,12 +236,7 @@ pub(crate) async fn reset_password(mut req: Request) -> JRes<ResetPasswordServer
 
 	user_model::reset_password(user.id.as_str(), input).await?;
 
-	let out = ResetPasswordServerOutput {
-		user_id: user.id.to_string(),
-		msg: "Password reset".to_string(),
-	};
-
-	echo(out)
+	echo_success()
 }
 
 pub(crate) async fn get(_req: Request) -> JRes<UserEntity>

@@ -2,9 +2,11 @@
 
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
-use sentc_crypto::KeyData;
-use sentc_crypto_common::user::UserDeleteServerOutput;
-use sentc_crypto_common::{ServerOutput, UserId};
+use sentc_crypto::group::GroupOutData;
+use sentc_crypto::{KeyData, PrivateKeyFormat, PublicKeyFormat};
+use sentc_crypto_common::group::GroupCreateOutput;
+use sentc_crypto_common::server_default::ServerSuccessOutput;
+use sentc_crypto_common::{GroupId, ServerOutput, UserId};
 use server_api::{AppDeleteOutput, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, JwtKeyDeleteOutput};
 
 pub fn get_url(path: String) -> String
@@ -137,13 +139,14 @@ pub async fn register_user(app_secret_token: &str, username: &str, password: &st
 	user_id
 }
 
-pub async fn delete_user(jwt: &str, user_id: &str)
+pub async fn delete_user(app_secret_token: &str, jwt: &str)
 {
 	let url = get_url("api/v1/user".to_owned());
 	let client = reqwest::Client::new();
 	let res = client
 		.delete(url)
 		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", app_secret_token)
 		.send()
 		.await
 		.unwrap();
@@ -153,14 +156,10 @@ pub async fn delete_user(jwt: &str, user_id: &str)
 	let body = res.text().await.unwrap();
 
 	//TODO change this to sdk done delete
-	let delete_output = ServerOutput::<UserDeleteServerOutput>::from_string(body.as_str()).unwrap();
+	let delete_output = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
 	assert_eq!(delete_output.status, true);
 	assert_eq!(delete_output.err_code, None);
-
-	let delete_output = delete_output.result.unwrap();
-	assert_eq!(delete_output.user_id, user_id.to_string());
-	assert_eq!(delete_output.msg, "User deleted");
 }
 
 pub async fn login_user(public_token: &str, username: &str, pw: &str) -> KeyData
@@ -199,4 +198,60 @@ pub async fn login_user(public_token: &str, username: &str, pw: &str) -> KeyData
 	let done_login = sentc_crypto::user::done_login(&derived_master_key, body.as_str()).unwrap();
 
 	done_login
+}
+
+pub async fn create_test_user(secret_token: &str, public_token: &str, username: &str, pw: &str) -> (UserId, KeyData)
+{
+	//create test user
+	let user_id = register_user(secret_token, username, pw).await;
+	let key_data = login_user(public_token, username, pw).await;
+
+	(user_id, key_data)
+}
+
+pub async fn create_group(secret_token: &str, creator_public_key: &PublicKeyFormat, parent_group_id: Option<GroupId>, jwt: &str) -> GroupId
+{
+	let group_input = sentc_crypto::group::prepare_create(creator_public_key, parent_group_id).unwrap();
+
+	let url = get_url("api/v1/group".to_owned());
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", secret_token)
+		.body(group_input)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+	let out = ServerOutput::<GroupCreateOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	let out = out.result.unwrap();
+
+	out.group_id
+}
+
+pub async fn get_group(secret_token: &str, jwt: &str, group_id: &str, private_key: &PrivateKeyFormat) -> GroupOutData
+{
+	let url = get_url("api/v1/group/".to_owned() + group_id);
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let data = sentc_crypto::group::get_group_data(private_key, body.as_str()).unwrap();
+
+	data
 }

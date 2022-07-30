@@ -1,19 +1,17 @@
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::KeyData;
+use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{
-	ChangePasswordServerOut,
 	DoneLoginServerKeysOutput,
 	MasterKey,
 	RegisterServerOutput,
-	ResetPasswordServerOutput,
-	UserDeleteServerOutput,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
 	UserUpdateServerInput,
 	UserUpdateServerOut,
 };
-use sentc_crypto_common::ServerOutput;
+use sentc_crypto_common::{ServerOutput, UserId};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 use server_api::core::api_res::ApiErrorCodes;
@@ -28,7 +26,7 @@ pub struct UserState
 {
 	pub username: String,
 	pub pw: String,
-	pub user_id: String,
+	pub user_id: UserId,
 	pub key_data: Option<KeyData>,
 	pub app_data: AppRegisterOutput,
 }
@@ -352,13 +350,14 @@ async fn test_16_user_delete_with_wrong_jwt()
 	let res = client
 		.delete(url)
 		.header(AUTHORIZATION, auth_header(old_jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
 		.send()
 		.await
 		.unwrap();
 
 	let body = res.text().await.unwrap();
 
-	let delete_output = ServerOutput::<UserDeleteServerOutput>::from_string(body.as_str()).unwrap();
+	let delete_output = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
 	assert_eq!(delete_output.status, false);
 
@@ -440,14 +439,10 @@ async fn test_17_change_user_pw()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-	let out = ServerOutput::<ChangePasswordServerOut>::from_string(body.as_str()).unwrap();
+	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
 	assert_eq!(out.status, true);
 	assert_eq!(out.err_code, None);
-
-	let out = out.result.unwrap();
-
-	assert_eq!(out.user_id, user.user_id);
 
 	//______________________________________________________________________________________________
 	//try to login with old pw
@@ -525,7 +520,8 @@ async fn test_18_reset_password()
 
 	let body = res.text().await.unwrap();
 
-	let out = ServerOutput::<ResetPasswordServerOutput>::from_string(body.as_str()).unwrap();
+	//TODO let sdk handle this server output
+	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
 	assert_eq!(out.status, true);
 	assert_eq!(out.err_code, None);
@@ -655,7 +651,6 @@ async fn test_20_user_not_update_when_identifier_exists()
 async fn test_21_user_delete()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
-	let user_id = &user.user_id;
 	let jwt = &user.key_data.as_ref().unwrap().jwt;
 
 	let url = get_url("api/v1/user".to_owned());
@@ -663,6 +658,7 @@ async fn test_21_user_delete()
 	let res = client
 		.delete(url)
 		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
 		.send()
 		.await
 		.unwrap();
@@ -670,14 +666,10 @@ async fn test_21_user_delete()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-	let delete_output = ServerOutput::<UserDeleteServerOutput>::from_string(body.as_str()).unwrap();
+	let delete_output = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
 	assert_eq!(delete_output.status, true);
 	assert_eq!(delete_output.err_code, None);
-
-	let delete_output = delete_output.result.unwrap();
-	assert_eq!(delete_output.user_id, user_id.to_string());
-	assert_eq!(delete_output.msg, "User deleted");
 
 	//TODO validate it with the sdk done user delete
 }
@@ -768,7 +760,7 @@ async fn test_23_register_and_login_user_via_test_fn()
 
 	assert_eq!(id, login.user_id);
 
-	delete_user(login.jwt.as_str(), &id).await;
+	delete_user(&user.app_data.secret_token, login.jwt.as_str()).await;
 }
 
 #[tokio::test]

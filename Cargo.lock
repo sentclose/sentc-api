@@ -1740,7 +1740,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#0f590c22ae24b51a5466d5b43dd3d5e0556fad15"
+source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#23ab2210e7ccffc4bb43a16cc48b378d68868958"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -1760,7 +1760,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-common"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#0f590c22ae24b51a5466d5b43dd3d5e0556fad15"
+source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#23ab2210e7ccffc4bb43a16cc48b378d68868958"
 dependencies = [
  "serde",
  "serde_json",
@@ -1769,7 +1769,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-core"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#0f590c22ae24b51a5466d5b43dd3d5e0556fad15"
+source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#23ab2210e7ccffc4bb43a16cc48b378d68868958"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -1889,14 +1889,6 @@ dependencies = [
  "rustgram",
  "tokio",
  "tokio-util",
-]
-
-[[package]]
-name = "server_migration"
-version = "0.1.0"
-dependencies = [
- "server_api",
- "tokio",
 ]
 
 [[package]]

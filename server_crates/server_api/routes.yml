@@ -55,10 +55,48 @@ routes:
                     - put: {p: "", s: crate::user::update}
                     - put: {p: "/update_pw", s: crate::user::change_password}
                     - put: {p: "/reset_pw", s: crate::user::reset_password}
-                    - delete: {p: "", s: crate::user::delete}
+                    # check the api token for delete action, maybe the app creator only wants to trigger delete from the own backend
+                    - delete:
+                        p: ""
+                        s: crate::user::delete
+                        mw:
+                          - app_token::app_token_transform
               #_________________________________________________________________________________________________________
-              # group routes in the group mod
+              # group routes in the group mod, check always the app token for this actions
+              - group:
+                  p: "/group"
+                  mw:
+                    - app_token::app_token_transform
+                  gr:
+                    - post: {p: "", s: crate::group::create}
+                    - group:
+                        p: "/:group_id"
+                        gr:
+                          - get: {p: "", s: crate::group::get_user_group_data}
+                          - get: {p: "/keys/:last_fetched_time", s: crate::group::get_user_group_keys}
+                          - delete: {p: "", s: crate::group::delete}
+                          - delete: {p: "/leave", s: crate::group::leave_group}
+                          #_____________________________________________________________________________________________
+                          # groups for invite and join reqs
+                          - group:
+                              p: "/invite"
+                              gr:
+                                - put: {p: "/:invited_user", s: crate::group::invite_request}
+                                - patch: {p: "", s: crate::group::accept_invite}
+                                - delete: {p: "", s: crate::group::reject_invite}
+                          - group:
+                              p: "/join_req"
+                              gr:
+                                - get: {p: "/:last_fetched_time", s: crate::group::get_join_req}
+                                - patch: {p: "", s: crate::group::join_req}
+                                - put: {p: "/:join_user", s: crate::group::accept_join_req}
+                                - delete: {p: "/:join_user", s: crate::group::reject_join_req}
+              #_________________________________________________________________________________________________________
+              # group routes without the app token check
               - group:
                   p: "/group"
                   gr:
-                    - get: {p: "/:id", s: crate::group::get}
+                    - group:
+                        p: "/:group_id"
+                        gr:
+                          - get: { p: "/123", s: crate::group::get }
