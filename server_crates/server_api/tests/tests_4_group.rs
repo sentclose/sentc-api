@@ -417,7 +417,41 @@ async fn test_16_invite_user_an_reject_invite()
 	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::GroupUserNotFound.get_int_code());
 }
 
-//TODO user leave -> check if only the keys from this user are gone
+#[tokio::test]
+async fn test_17_not_leave_group_when_user_is_the_only_admin()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/leave");
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
+	assert_eq!(out.status, false);
+
+	//should get the data without error
+	let _data = get_group(
+		secret_token,
+		creator.key_data.jwt.as_str(),
+		group.group_id.as_str(),
+		&creator.key_data.private_key,
+	)
+	.await;
+}
 
 #[tokio::test]
 async fn test_30_delete_group()
