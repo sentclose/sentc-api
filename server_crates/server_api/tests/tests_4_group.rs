@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::group::GroupKeyData;
@@ -24,7 +26,7 @@ pub struct GroupState
 {
 	pub group_id: GroupId,
 	pub group_member: Vec<UserId>,
-	pub decrypted_group_keys: Vec<GroupKeyData>,
+	pub decrypted_group_keys: HashMap<UserId, Vec<GroupKeyData>>,
 }
 
 static APP_TEST_STATE: OnceCell<RwLock<AppRegisterOutput>> = OnceCell::const_new();
@@ -76,7 +78,7 @@ async fn aaa_init_global_test()
 				RwLock::new(GroupState {
 					group_id: "".to_string(),
 					group_member: vec![],
-					decrypted_group_keys: vec![],
+					decrypted_group_keys: HashMap::new(),
 				})
 			}
 		})
@@ -157,7 +159,9 @@ async fn test_11_get_group_data()
 	//user is the creator
 	assert_eq!(data.rank, 0);
 
-	group.decrypted_group_keys = data.keys;
+	group
+		.decrypted_group_keys
+		.insert(creator.user_id.to_string(), data.keys);
 }
 
 #[tokio::test]
@@ -213,7 +217,12 @@ async fn test_13_invite_user()
 
 	let mut group_keys_ref = vec![];
 
-	for decrypted_group_key in &group.decrypted_group_keys {
+	let user_keys = group
+		.decrypted_group_keys
+		.get(creator.user_id.as_str())
+		.unwrap();
+
+	for decrypted_group_key in user_keys {
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
@@ -251,7 +260,12 @@ async fn test_14_not_invite_user_without_keys()
 
 	let mut group_keys_ref = vec![];
 
-	for decrypted_group_key in &group.decrypted_group_keys {
+	let user_keys = group
+		.decrypted_group_keys
+		.get(creator.user_id.as_str())
+		.unwrap();
+
+	for decrypted_group_key in user_keys {
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
