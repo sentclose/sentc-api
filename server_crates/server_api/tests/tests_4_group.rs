@@ -454,6 +454,55 @@ async fn test_17_not_leave_group_when_user_is_the_only_admin()
 }
 
 #[tokio::test]
+async fn test_18_leave_group()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let user = &users[1];
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/leave");
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(user.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	//this user should not get the group data
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<GroupServerData>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, false);
+	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::GroupUserNotFound.get_int_code());
+}
+
+#[tokio::test]
 async fn test_30_delete_group()
 {
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
