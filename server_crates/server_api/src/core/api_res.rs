@@ -53,6 +53,7 @@ pub enum ApiErrorCodes
 	GroupNoKeys,
 	GroupInviteNotFound,
 	GroupOnlyOneAdmin,
+	GroupJoinReqNotFound,
 }
 
 impl ApiErrorCodes
@@ -92,6 +93,7 @@ impl ApiErrorCodes
 			ApiErrorCodes::GroupNoKeys => 303,
 			ApiErrorCodes::GroupInviteNotFound => 304,
 			ApiErrorCodes::GroupOnlyOneAdmin => 305,
+			ApiErrorCodes::GroupJoinReqNotFound => 306,
 		}
 	}
 }

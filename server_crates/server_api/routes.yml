@@ -76,9 +76,21 @@ routes:
                           - get: {p: "/keys/:last_fetched_time", s: crate::group::get_user_group_keys}
                           - delete: {p: "", s: crate::group::delete}
                           - delete: {p: "/leave", s: crate::group::leave_group}
-                          - put: {p: "/invite/:invited_user", s: crate::group::invite_request}
-                          - patch: {p: "/invite", s: crate::group::accept_invite}
-                          - delete: {p: "/invite", s: crate::group::reject_invite}
+                          #_____________________________________________________________________________________________
+                          # groups for invite and join reqs
+                          - group:
+                              p: "/invite"
+                              gr:
+                                - put: {p: "/:invited_user", s: crate::group::invite_request}
+                                - patch: {p: "", s: crate::group::accept_invite}
+                                - delete: {p: "", s: crate::group::reject_invite}
+                          - group:
+                              p: "/join_req"
+                              gr:
+                                - get: {p: "/:last_fetched_time", s: crate::group::get_join_req}
+                                - patch: {p: "", s: crate::group::join_req}
+                                - put: {p: "/:join_user", s: crate::group::accept_join_req}
+                                - delete: {p: "/:join_user", s: crate::group::reject_join_req}
               #_________________________________________________________________________________________________________
               # group routes without the app token check
               - group:

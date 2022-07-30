@@ -116,6 +116,30 @@ pub(crate) fn routes() -> Router
 			.add(jwt::jwt_transform),
 	);
 	router.get(
+		"/api/v1/group/:group_id/join_req/:last_fetched_time",
+		r(crate::group::get_join_req)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
+	router.patch(
+		"/api/v1/group/:group_id/join_req",
+		r(crate::group::join_req)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
+	router.put(
+		"/api/v1/group/:group_id/join_req/:join_user",
+		r(crate::group::accept_join_req)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
+	router.delete(
+		"/api/v1/group/:group_id/join_req/:join_user",
+		r(crate::group::reject_join_req)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
+	router.get(
 		"/api/v1/group/:group_id/123",
 		r(crate::group::get).add(jwt::jwt_transform),
 	);

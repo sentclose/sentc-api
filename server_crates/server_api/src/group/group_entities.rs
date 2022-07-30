@@ -1,5 +1,5 @@
-use sentc_crypto_common::group::GroupKeyServerOutput;
-use sentc_crypto_common::{GroupId, SymKeyId};
+use sentc_crypto_common::group::{GroupJoinReqList, GroupKeyServerOutput};
+use sentc_crypto_common::{GroupId, SymKeyId, UserId};
 
 use crate::take_or_err;
 
@@ -293,6 +293,60 @@ impl crate::core::db::FromSqliteRow for GroupUserKeys
 			private_key_pair_alg: take_or_err!(row, 5),
 			encrypted_group_key_key_id: take_or_err!(row, 6),
 			//time,
+		})
+	}
+}
+
+//__________________________________________________________________________________________________
+
+pub struct GroupJoinReq
+{
+	pub user_id: UserId,
+	pub time: u128,
+}
+
+impl Into<GroupJoinReqList> for GroupJoinReq
+{
+	fn into(self) -> GroupJoinReqList
+	{
+		GroupJoinReqList {
+			user_id: self.user_id,
+			time: self.time,
+		}
+	}
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for GroupJoinReq
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			user_id: take_or_err!(row, 0, String),
+			time: take_or_err!(row, 1, u128),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl crate::core::db::FromSqliteRow for GroupJoinReq
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		let time: String = take_or_err!(row, 1);
+		let time: u128 = time.parse().map_err(|e| {
+			crate::core::db::FormSqliteRowError {
+				msg: format!("err in db fetch: {:?}", e),
+			}
+		})?;
+
+		Ok(Self {
+			user_id: take_or_err!(row, 0),
+			time,
 		})
 	}
 }
