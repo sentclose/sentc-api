@@ -4,8 +4,8 @@ use sentc_crypto_common::{AppId, GroupId, UserId};
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::core::db::{bulk_insert, exec, exec_transaction, query_first, TransactionData};
 use crate::core::get_time;
-use crate::group::group_entities::{UserGroupRankCheck, GROUP_INVITE_TYPE_INVITE_REQ};
-use crate::group::group_model::{check_group_rank, check_user_in_group};
+use crate::group::group_entities::{UserGroupRankCheck, UserInGroupCheck, GROUP_INVITE_TYPE_INVITE_REQ};
+use crate::group::group_model::check_group_rank;
 use crate::set_params;
 
 pub(super) async fn invite_request(
@@ -158,6 +158,19 @@ WHERE
 	exec(sql, set_params!(group_id, user_id, app_id)).await?;
 
 	Ok(())
+}
+
+async fn check_user_in_group(group_id: GroupId, user_id: UserId) -> AppRes<bool>
+{
+	//language=SQL
+	let sql = "SELECT 1 FROM sentc_group_user WHERE user_id = ? AND group_id = ? LIMIT 1";
+
+	let exists: Option<UserInGroupCheck> = query_first(sql.to_string(), set_params!(user_id, group_id)).await?;
+
+	match exists {
+		Some(_) => Ok(true),
+		None => Ok(false),
+	}
 }
 
 async fn check_for_invite(user_id: UserId, group_id: GroupId) -> AppRes<()>

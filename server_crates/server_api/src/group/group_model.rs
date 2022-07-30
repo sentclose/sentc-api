@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::core::db::{exec, exec_transaction, query, query_first, TransactionData};
 use crate::core::get_time;
-use crate::group::group_entities::{GroupKeyUpdate, GroupKeyUpdateReady, GroupUserData, GroupUserKeys, UserGroupRankCheck, UserInGroupCheck};
+use crate::group::group_entities::{GroupKeyUpdate, GroupKeyUpdateReady, GroupUserData, GroupUserKeys, UserGroupRankCheck};
 use crate::set_params;
 
 /**
@@ -355,17 +355,4 @@ WHERE
 	}
 
 	Ok(())
-}
-
-pub(super) async fn check_user_in_group(group_id: GroupId, user_id: UserId) -> AppRes<bool>
-{
-	//language=SQL
-	let sql = "SELECT 1 FROM sentc_group_user WHERE user_id = ? AND group_id = ? LIMIT 1";
-
-	let exists: Option<UserInGroupCheck> = query_first(sql.to_string(), set_params!(user_id, group_id)).await?;
-
-	match exists {
-		Some(_) => Ok(true),
-		None => Ok(false),
-	}
 }
