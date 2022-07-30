@@ -52,6 +52,7 @@ pub enum ApiErrorCodes
 	GroupUserExists,
 	GroupNoKeys,
 	GroupInviteNotFound,
+	GroupOnlyOneAdmin,
 }
 
 impl ApiErrorCodes
@@ -90,6 +91,7 @@ impl ApiErrorCodes
 			ApiErrorCodes::GroupUserExists => 302,
 			ApiErrorCodes::GroupNoKeys => 303,
 			ApiErrorCodes::GroupInviteNotFound => 304,
+			ApiErrorCodes::GroupOnlyOneAdmin => 305,
 		}
 	}
 }

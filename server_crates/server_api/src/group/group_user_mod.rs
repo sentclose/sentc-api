@@ -62,3 +62,13 @@ pub(crate) async fn accept_invite(req: Request) -> JRes<ServerSuccessOutput>
 
 	echo_success()
 }
+
+pub(crate) async fn leave_group(req: Request) -> JRes<ServerSuccessOutput>
+{
+	let user = get_jwt_data_from_param(&req)?;
+	let group_id = get_name_param_from_req(&req, "group_id")?;
+
+	group_user_model::user_leave_group(user.sub.to_string(), group_id.to_string(), user.id.to_string()).await?;
+
+	echo_success()
+}

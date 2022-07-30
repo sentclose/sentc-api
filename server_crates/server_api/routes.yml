@@ -75,6 +75,7 @@ routes:
                           - get: {p: "", s: crate::group::get_user_group_data}
                           - get: {p: "/keys/:last_fetched_time", s: crate::group::get_user_group_keys}
                           - delete: {p: "", s: crate::group::delete}
+                          - delete: {p: "/leave", s: crate::group::leave_group}
                           - put: {p: "/invite/:invited_user", s: crate::group::invite_request}
                           - patch: {p: "/invite", s: crate::group::accept_invite}
                           - delete: {p: "/invite", s: crate::group::reject_invite}

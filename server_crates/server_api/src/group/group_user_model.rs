@@ -4,8 +4,8 @@ use sentc_crypto_common::{AppId, GroupId, UserId};
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::core::db::{bulk_insert, exec, exec_transaction, query_first, TransactionData};
 use crate::core::get_time;
-use crate::group::group_entities::{UserGroupRankCheck, UserInGroupCheck, GROUP_INVITE_TYPE_INVITE_REQ};
-use crate::group::group_model::check_group_rank;
+use crate::group::group_entities::{UserInGroupCheck, GROUP_INVITE_TYPE_INVITE_REQ};
+use crate::group::group_model::{check_group_rank, get_user_rank};
 use crate::set_params;
 
 pub(super) async fn invite_request(
@@ -140,22 +140,26 @@ pub(super) async fn accept_invite(group_id: GroupId, user_id: UserId) -> AppRes<
 
 pub(super) async fn user_leave_group(app_id: AppId, group_id: GroupId, user_id: UserId) -> AppRes<()>
 {
-	//TODO
-	//get the rank of the user -> check if there is only one admin
+	//get the rank of the user -> check if there is only one admin (check also here if the user is in the group)
+	let rank = get_user_rank(app_id, group_id.to_string(), user_id.to_string()).await?;
+
+	if rank <= 1 {
+		let only_admin = check_for_only_one_admin(group_id.to_string(), user_id.to_string()).await?;
+
+		if only_admin == true {
+			return Err(HttpErr::new(
+				400,
+				ApiErrorCodes::GroupOnlyOneAdmin,
+				"Can't leave the group, because no other admin found in the group. Please update the rank of another user to admin".to_string(),
+				None,
+			));
+		}
+	}
 
 	//language=SQL
-	let sql = r"
-DELETE sentc_group_user 
-FROM 
-    sentc_group_user,
-    sentc_group 
-WHERE 
-    group_id = ? AND 
-    user_id = ? AND 
-    app_id = ? AND 
-    id = group_id";
+	let sql = "DELETE FROM sentc_group_user WHERE group_id = ? AND user_id = ?";
 
-	exec(sql, set_params!(group_id, user_id, app_id)).await?;
+	exec(sql, set_params!(group_id, user_id)).await?;
 
 	Ok(())
 }
@@ -178,7 +182,7 @@ async fn check_for_invite(user_id: UserId, group_id: GroupId) -> AppRes<()>
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group_user_invites_and_join_req WHERE user_id = ? AND group_id = ?";
 
-	let check: Option<UserGroupRankCheck> = query_first(sql.to_string(), set_params!(user_id, group_id)).await?;
+	let check: Option<UserInGroupCheck> = query_first(sql.to_string(), set_params!(user_id, group_id)).await?;
 
 	match check {
 		Some(_) => Ok(()),
@@ -190,5 +194,23 @@ async fn check_for_invite(user_id: UserId, group_id: GroupId) -> AppRes<()>
 				None,
 			))
 		},
+	}
+}
+
+/**
+Used for leave group and change the own rank
+*/
+async fn check_for_only_one_admin(group_id: GroupId, user_id: UserId) -> AppRes<bool>
+{
+	//admin rank -> check if there is another admin. if not -> can't leave
+	//language=SQL
+	let sql = "SELECT 1 FROM sentc_group_user WHERE group_id = ? AND user_id NOT LIKE ? AND `rank` <= 1 LIMIT 1";
+
+	let admin_found: Option<UserInGroupCheck> = query_first(sql.to_string(), set_params!(group_id, user_id)).await?;
+
+	//if there are more admins -> then the user is not the only admin
+	match admin_found {
+		Some(_) => Ok(false),
+		None => Ok(true),
 	}
 }
