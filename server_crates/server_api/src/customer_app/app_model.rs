@@ -20,11 +20,7 @@ SELECT id as app_id, customer_id, hashed_secret_token, hashed_public_token, hash
 FROM app 
 WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 
-	let app_data: Option<AppDataGeneral> = query_first(
-		sql.to_string(),
-		set_params!(hashed_token.to_string(), hashed_token.to_string()),
-	)
-	.await?;
+	let app_data: Option<AppDataGeneral> = query_first(sql, set_params!(hashed_token.to_string(), hashed_token.to_string())).await?;
 
 	let app_data = match app_data {
 		Some(d) => d,
@@ -41,7 +37,7 @@ WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 	//language=SQL
 	let sql = "SELECT id, alg, time FROM app_jwt_keys WHERE app_id = ? ORDER BY time DESC LIMIT 10";
 
-	let jwt_data: Vec<AppJwt> = query(sql.to_string(), set_params!(app_data.app_id.to_string())).await?;
+	let jwt_data: Vec<AppJwt> = query(sql, set_params!(app_data.app_id.to_string())).await?;
 
 	let auth_with_token = if hashed_token == app_data.hashed_public_token {
 		AuthWithToken::Public
@@ -78,7 +74,7 @@ SELECT id as app_id, customer_id, hashed_secret_token, hashed_public_token, hash
 FROM app 
 WHERE customer_id = ? AND id = ? LIMIT 1";
 
-	let app_data: Option<AppDataGeneral> = query_first(sql.to_string(), set_params!(customer_id, app_id)).await?;
+	let app_data: Option<AppDataGeneral> = query_first(sql, set_params!(customer_id, app_id)).await?;
 
 	match app_data {
 		Some(d) => Ok(d),
@@ -110,7 +106,7 @@ WHERE
     app_id = a.id 
 ORDER BY ak.time DESC";
 
-	let jwt_data: Vec<AppJwtData> = query(sql.to_string(), set_params!(app_id, customer_id)).await?;
+	let jwt_data: Vec<AppJwtData> = query(sql, set_params!(app_id, customer_id)).await?;
 
 	Ok(jwt_data)
 }
@@ -287,7 +283,7 @@ async fn check_app_exists(customer_id: CustomerId, app_id: AppId) -> AppRes<()>
 	//check if this app belongs to this customer
 	//language=SQL
 	let sql = "SELECT 1 FROM app WHERE id = ? AND customer_id = ?";
-	let app_exists: Option<AppExistsEntity> = query_first(sql.to_string(), set_params!(app_id, customer_id)).await?;
+	let app_exists: Option<AppExistsEntity> = query_first(sql, set_params!(app_id, customer_id)).await?;
 
 	match app_exists {
 		Some(_) => {},

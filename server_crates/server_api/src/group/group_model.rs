@@ -27,11 +27,7 @@ WHERE
     user_id = ? AND
     group_id = id";
 
-	let user_group_data: Option<GroupUserData> = query_first(
-		sql.to_string(),
-		set_params!(app_id, group_id.to_string(), user_id.to_string()),
-	)
-	.await?;
+	let user_group_data: Option<GroupUserData> = query_first(sql, set_params!(app_id, group_id.to_string(), user_id.to_string())).await?;
 
 	let user_group_data = match user_group_data {
 		Some(d) => d,
@@ -66,7 +62,7 @@ WHERE
     id = k_id
 ORDER BY uk.time DESC LIMIT 50";
 
-	let user_keys: Vec<GroupUserKeys> = query(sql.to_string(), set_params!(user_id, group_id)).await?;
+	let user_keys: Vec<GroupUserKeys> = query(sql, set_params!(user_id, group_id)).await?;
 
 	Ok((user_group_data, user_keys))
 }
@@ -105,7 +101,7 @@ WHERE
 ORDER BY uk.time DESC LIMIT 50";
 
 	let user_keys: Vec<GroupUserKeys> = query(
-		sql.to_string(),
+		sql,
 		set_params!(user_id, group_id, app_id, last_fetched_time.to_string()),
 	)
 	.await?;
@@ -134,7 +130,7 @@ WHERE
     g.id = ?
 ORDER BY gk.time DESC LIMIT 1";
 
-	let key_update: Option<GroupKeyUpdateReady> = query_first(sql.to_string(), set_params!(user_id, app_id, group_id)).await?;
+	let key_update: Option<GroupKeyUpdateReady> = query_first(sql, set_params!(user_id, app_id, group_id)).await?;
 
 	match key_update {
 		Some(_) => Ok(true),
@@ -164,7 +160,7 @@ WHERE user_id = ? AND
       gk.group_id = g.id 
 ORDER BY gk.time";
 
-	let out: Vec<GroupKeyUpdate> = query(sql.to_string(), set_params!(user_id, group_id, app_id)).await?;
+	let out: Vec<GroupKeyUpdate> = query(sql, set_params!(user_id, group_id, app_id)).await?;
 
 	Ok(out)
 }
@@ -352,7 +348,7 @@ WHERE
     app_id = ? AND
     user_id = ?";
 
-	let rank: Option<UserGroupRankCheck> = query_first(sql.to_string(), set_params!(group_id, app_id, user_id)).await?;
+	let rank: Option<UserGroupRankCheck> = query_first(sql, set_params!(group_id, app_id, user_id)).await?;
 
 	let rank = match rank {
 		Some(r) => r,

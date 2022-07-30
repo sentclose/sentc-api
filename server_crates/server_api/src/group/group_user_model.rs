@@ -35,7 +35,7 @@ pub(super) async fn invite_request(
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ? AND type = ?";
 	let invite_exists: Option<UserInGroupCheck> = query_first(
-		sql.to_string(),
+		sql,
 		set_params!(
 			group_id.to_string(),
 			invited_user.to_string(),
@@ -238,7 +238,7 @@ pub(super) async fn accept_join_req(
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ? AND type = ?";
 	let check: Option<UserInGroupCheck> = query_first(
-		sql.to_string(),
+		sql,
 		set_params!(group_id.to_string(), user_id.to_string(), GROUP_INVITE_TYPE_JOIN_REQ),
 	)
 	.await?;
@@ -312,7 +312,7 @@ pub(super) async fn get_join_req(app_id: AppId, group_id: GroupId, admin_id: Use
 	//language=SQL
 	let sql = "SELECT user_id, time FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND time >= ? AND type = ? LIMIT 50";
 	let join_req: Vec<GroupJoinReq> = query(
-		sql.to_string(),
+		sql,
 		set_params!(group_id, last_fetched_time.to_string(), GROUP_INVITE_TYPE_JOIN_REQ),
 	)
 	.await?;
@@ -351,7 +351,7 @@ async fn check_user_in_group(group_id: GroupId, user_id: UserId) -> AppRes<bool>
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group_user WHERE user_id = ? AND group_id = ? LIMIT 1";
 
-	let exists: Option<UserInGroupCheck> = query_first(sql.to_string(), set_params!(user_id, group_id)).await?;
+	let exists: Option<UserInGroupCheck> = query_first(sql, set_params!(user_id, group_id)).await?;
 
 	match exists {
 		Some(_) => Ok(true),
@@ -364,11 +364,7 @@ async fn check_for_invite(user_id: UserId, group_id: GroupId) -> AppRes<()>
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group_user_invites_and_join_req WHERE user_id = ? AND group_id = ? AND type = ?";
 
-	let check: Option<UserInGroupCheck> = query_first(
-		sql.to_string(),
-		set_params!(user_id, group_id, GROUP_INVITE_TYPE_INVITE_REQ),
-	)
-	.await?;
+	let check: Option<UserInGroupCheck> = query_first(sql, set_params!(user_id, group_id, GROUP_INVITE_TYPE_INVITE_REQ)).await?;
 
 	match check {
 		Some(_) => Ok(()),
@@ -392,7 +388,7 @@ async fn check_for_only_one_admin(group_id: GroupId, user_id: UserId) -> AppRes<
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group_user WHERE group_id = ? AND user_id NOT LIKE ? AND `rank` <= 1 LIMIT 1";
 
-	let admin_found: Option<UserInGroupCheck> = query_first(sql.to_string(), set_params!(group_id, user_id)).await?;
+	let admin_found: Option<UserInGroupCheck> = query_first(sql, set_params!(group_id, user_id)).await?;
 
 	//if there are more admins -> then the user is not the only admin
 	match admin_found {
