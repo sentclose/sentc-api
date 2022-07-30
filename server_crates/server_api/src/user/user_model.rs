@@ -21,7 +21,7 @@ pub(super) async fn get_jwt_sign_key(kid: &str) -> AppRes<String>
 	//language=SQL
 	let sql = "SELECT sign_key FROM app_jwt_keys WHERE id = ?";
 
-	let sign_key: Option<JwtSignKey> = query_first(sql.to_string(), set_params!(kid.to_owned())).await?;
+	let sign_key: Option<JwtSignKey> = query_first(sql, set_params!(kid.to_string())).await?;
 
 	match sign_key {
 		Some(k) => Ok(k.0),
@@ -29,7 +29,7 @@ pub(super) async fn get_jwt_sign_key(kid: &str) -> AppRes<String>
 			Err(HttpErr::new(
 				200,
 				ApiErrorCodes::JwtKeyNotFound,
-				"No matched key to this key id".to_owned(),
+				"No matched key to this key id".to_string(),
 				None,
 			))
 		},
@@ -41,7 +41,7 @@ pub(super) async fn get_jwt_verify_key(kid: &str) -> AppRes<String>
 	//language=SQL
 	let sql = "SELECT verify_key FROM app_jwt_keys WHERE id = ?";
 
-	let sign_key: Option<JwtVerifyKey> = query_first(sql.to_string(), set_params!(kid.to_owned())).await?;
+	let sign_key: Option<JwtVerifyKey> = query_first(sql, set_params!(kid.to_string())).await?;
 
 	match sign_key {
 		Some(k) => Ok(k.0),
@@ -49,7 +49,7 @@ pub(super) async fn get_jwt_verify_key(kid: &str) -> AppRes<String>
 			Err(HttpErr::new(
 				200,
 				ApiErrorCodes::JwtKeyNotFound,
-				"No matched key to this key id".to_owned(),
+				"No matched key to this key id".to_string(),
 				None,
 			))
 		},
@@ -64,11 +64,7 @@ pub(super) async fn check_user_exists(app_id: &str, user_identifier: &str) -> Ap
 	//language=SQL
 	let sql = "SELECT 1 FROM user WHERE identifier = ? AND app_id = ? LIMIT 1";
 
-	let exists: Option<UserExistsEntity> = query_first(
-		sql.to_owned(),
-		set_params!(user_identifier.to_owned(), app_id.to_string()),
-	)
-	.await?;
+	let exists: Option<UserExistsEntity> = query_first(sql, set_params!(user_identifier.to_string(), app_id.to_string())).await?;
 
 	match exists {
 		Some(_) => Ok(true),
@@ -95,7 +91,7 @@ SELECT client_random_value,hashed_auth_key, derived_alg
 FROM user u,user_keys uk 
 WHERE u.identifier = ? AND user_id = u.id AND u.app_id = ? ORDER BY uk.time DESC";
 
-	let login_data: Option<UserLoginDataEntity> = query_first(sql.to_string(), set_params!(user_identifier.to_owned(), app_id)).await?;
+	let login_data: Option<UserLoginDataEntity> = query_first(sql, set_params!(user_identifier.to_string(), app_id)).await?;
 
 	Ok(login_data)
 }
@@ -122,11 +118,7 @@ SELECT
 FROM user u,user_keys uk
 WHERE user_id = u.id AND u.identifier = ? AND u.app_id = ? ORDER BY uk.time DESC";
 
-	let data: Option<DoneLoginServerKeysOutputEntity> = query_first(
-		sql.to_owned(),
-		set_params!(user_identifier.to_owned(), app_id.to_string()),
-	)
-	.await?;
+	let data: Option<DoneLoginServerKeysOutputEntity> = query_first(sql, set_params!(user_identifier.to_string(), app_id.to_string())).await?;
 
 	Ok(data)
 }
@@ -141,7 +133,7 @@ pub(super) async fn register(app_id: &str, register_data: RegisterData) -> AppRe
 		return Err(HttpErr::new(
 			400,
 			ApiErrorCodes::UserExists,
-			"User already exists".to_owned(),
+			"User already exists".to_string(),
 			None,
 		));
 	}
@@ -284,7 +276,7 @@ pub(super) async fn reset_password(user_id: &str, data: ResetPasswordData) -> Ap
 	//language=SQL
 	let sql = "SELECT id FROM user_keys WHERE user_id = ? ORDER BY time DESC LIMIT 1";
 
-	let row: Option<UserKeyFistRow> = query_first(sql.to_string(), set_params!(user_id.to_string())).await?;
+	let row: Option<UserKeyFistRow> = query_first(sql, set_params!(user_id.to_string())).await?;
 
 	let row = match row {
 		Some(r) => r,
@@ -338,7 +330,7 @@ pub(super) async fn get_user(user_id: &str) -> AppRes<UserEntity>
 	//language=SQL
 	let sql = "SELECT * FROM test WHERE id = ?";
 
-	let user: Option<UserEntity> = query_first(sql.to_string(), set_params!(user_id.to_owned())).await?;
+	let user: Option<UserEntity> = query_first(sql, set_params!(user_id.to_string())).await?;
 
 	match user {
 		Some(u) => Ok(u),
@@ -346,7 +338,7 @@ pub(super) async fn get_user(user_id: &str) -> AppRes<UserEntity>
 			Err(HttpErr::new(
 				200,
 				ApiErrorCodes::UserNotFound,
-				"user not found".to_owned(),
+				"user not found".to_string(),
 				None,
 			))
 		},
