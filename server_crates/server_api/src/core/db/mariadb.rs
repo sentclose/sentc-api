@@ -139,11 +139,45 @@ where
 }
 
 /**
+The same as query but sql with a string.
+
+This is used to get the sql string from the get in fn
+*/
+pub async fn query_string<T, P>(sql: String, params: P) -> Result<Vec<T>, HttpErr>
+where
+	T: FromRow + Send + 'static,
+	P: Into<Params> + Send,
+{
+	let mut conn = get_conn().await?;
+
+	conn.exec::<T, _, P>(sql, params)
+		.await
+		.map_err(|e| db_query_err(&e))
+}
+
+/**
 # Query and get the first result
 
 No vec gets returned, but an options enum
 */
 pub async fn query_first<T, P>(sql: &'static str, params: P) -> Result<Option<T>, HttpErr>
+where
+	T: FromRow + Send + 'static,
+	P: Into<Params> + Send,
+{
+	let mut conn = get_conn().await?;
+
+	conn.exec_first::<T, _, P>(sql, params)
+		.await
+		.map_err(|e| db_query_err(&e))
+}
+
+/**
+The same as query but sql with a string.
+
+This is used to get the sql string from the get in fn
+ */
+pub async fn query_first_string<T, P>(sql: String, params: P) -> Result<Option<T>, HttpErr>
 where
 	T: FromRow + Send + 'static,
 	P: Into<Params> + Send,

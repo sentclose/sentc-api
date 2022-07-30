@@ -10,9 +10,20 @@ mod mariadb;
 mod sqlite;
 
 #[cfg(feature = "mysql")]
-pub use self::mariadb::{bulk_insert, exec, exec_transaction, query, query_first, TransactionData};
+pub use self::mariadb::{bulk_insert, exec, exec_transaction, query, query_first, query_first_string, query_string, TransactionData};
 #[cfg(feature = "sqlite")]
-pub use self::sqlite::{bulk_insert, exec, exec_transaction, query, query_first, FormSqliteRowError, FromSqliteRow, TransactionData};
+pub use self::sqlite::{
+	bulk_insert,
+	exec,
+	exec_transaction,
+	query,
+	query_first,
+	query_first_string,
+	query_string,
+	FormSqliteRowError,
+	FromSqliteRow,
+	TransactionData,
+};
 
 #[cfg(feature = "sqlite")]
 static SQLITE_DB_CONN: OnceCell<deadpool_sqlite::Pool> = OnceCell::const_new();
@@ -204,9 +215,7 @@ mod test
 		//language=SQL
 		let sql = "SELECT * FROM test WHERE id = ?";
 
-		let test_data: Vec<TestData> = query(sql.to_string(), set_params!(id.clone()))
-			.await
-			.unwrap();
+		let test_data: Vec<TestData> = query(sql, set_params!(id.clone())).await.unwrap();
 
 		println!("out: {:?}", test_data);
 
@@ -214,14 +223,12 @@ mod test
 		assert_eq!(test_data[0].id, id);
 
 		//test query first
-		let test_datum: Option<TestData> = query_first(sql.to_string(), set_params!(id.clone()))
-			.await
-			.unwrap();
+		let test_datum: Option<TestData> = query_first(sql, set_params!(id.clone())).await.unwrap();
 
 		assert_eq!(test_datum.unwrap().id, id);
 
 		//test without result
-		let test_datum: Option<TestData> = query_first(sql.to_string(), set_params!(id.clone() + "123"))
+		let test_datum: Option<TestData> = query_first(sql, set_params!(id.clone() + "123"))
 			.await
 			.unwrap();
 
@@ -265,7 +272,7 @@ mod test
 		//language=SQLx
 		let sql = format!("SELECT * FROM test WHERE id IN ({}) ORDER BY name", ins);
 
-		let test_data: Vec<TestData> = query(sql, params).await.unwrap();
+		let test_data: Vec<TestData> = query_string(sql, params).await.unwrap();
 
 		println!("out get in: {:?}", test_data);
 
@@ -317,7 +324,7 @@ mod test
 		//language=SQLx
 		let sql = format!("SELECT * FROM test WHERE id IN ({}) ORDER BY name", ins);
 
-		let test_data: Vec<TestData> = query(sql, params).await.unwrap();
+		let test_data: Vec<TestData> = query_string(sql, params).await.unwrap();
 
 		println!("out bulk insert: {:?}", test_data);
 
@@ -374,7 +381,7 @@ mod test
 		//language=SQLx
 		let sql = format!("SELECT * FROM test WHERE id IN ({}) ORDER BY name", ins);
 
-		let test_data: Vec<TestData> = query(sql, params).await.unwrap();
+		let test_data: Vec<TestData> = query_string(sql, params).await.unwrap();
 
 		println!("out get in: {:?}", test_data);
 
