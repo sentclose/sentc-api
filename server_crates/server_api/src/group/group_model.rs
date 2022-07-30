@@ -319,6 +319,22 @@ pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_id: UserId) ->
 
 pub(super) async fn check_group_rank(app_id: AppId, group_id: GroupId, user_id: UserId, req_rank: i32) -> AppRes<()>
 {
+	let rank = get_user_rank(app_id, group_id, user_id).await?;
+
+	if rank > req_rank {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::GroupUserRank,
+			"Wrong group rank for this action".to_string(),
+			None,
+		));
+	}
+
+	Ok(())
+}
+
+pub(super) async fn get_user_rank(app_id: AppId, group_id: GroupId, user_id: UserId) -> AppRes<i32>
+{
 	//language=SQL
 	let sql = r"
 SELECT `rank` 
@@ -345,14 +361,5 @@ WHERE
 		},
 	};
 
-	if rank.0 > req_rank {
-		return Err(HttpErr::new(
-			400,
-			ApiErrorCodes::GroupUserRank,
-			"Wrong group rank for this action".to_string(),
-			None,
-		));
-	}
-
-	Ok(())
+	Ok(rank.0)
 }
