@@ -7,6 +7,7 @@ use sentc_crypto::KeyData;
 use sentc_crypto_common::group::{GroupCreateOutput, GroupDeleteServerOutput, GroupKeysForNewMemberServerInput, GroupServerData};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::{GroupId, ServerOutput, UserId};
+use server_api::core::api_res::ApiErrorCodes;
 use server_api::AppRegisterOutput;
 use tokio::sync::{OnceCell, RwLock};
 
@@ -328,6 +329,92 @@ async fn test_15_accept_invite()
 		.insert(user_to_invite.user_id.to_string(), data.keys);
 
 	group.group_member.push(user_to_invite.user_id.to_string());
+}
+
+#[tokio::test]
+async fn test_16_invite_user_an_reject_invite()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+
+	let user_to_invite = &users[2];
+
+	let mut group_keys_ref = vec![];
+
+	let user_keys = group
+		.decrypted_group_keys
+		.get(creator.user_id.as_str())
+		.unwrap();
+
+	for decrypted_group_key in user_keys {
+		group_keys_ref.push(&decrypted_group_key.group_key);
+	}
+
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(&user_to_invite.key_data.exported_public_key, &group_keys_ref).unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/invite/" + user_to_invite.user_id.as_str());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(invite)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	//______________________________________________________________________________________________
+	//no reject the invite
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/invite");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(user_to_invite.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	//______________________________________________________________________________________________
+	//the rejected user should not get the group data
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user_to_invite.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<GroupServerData>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, false);
+	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::GroupUserNotFound.get_int_code());
 }
 
 //TODO user leave -> check if only the keys from this user are gone
