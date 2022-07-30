@@ -10,7 +10,7 @@ use sentc_crypto_common::{GroupId, ServerOutput, UserId};
 use server_api::AppRegisterOutput;
 use tokio::sync::{OnceCell, RwLock};
 
-use crate::test_fn::{auth_header, create_app, create_group, create_test_user, delete_app, delete_user, get_url};
+use crate::test_fn::{auth_header, create_app, create_group, create_test_user, delete_app, delete_user, get_group, get_url};
 
 mod test_fn;
 
@@ -181,21 +181,13 @@ async fn test_12_create_child_group()
 	)
 	.await;
 
-	let url = get_url("api/v1/group/".to_owned() + child_id.as_str());
-	let client = reqwest::Client::new();
-	let res = client
-		.get(url)
-		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
-		.header("x-sentc-app-token", secret_token)
-		.send()
-		.await
-		.unwrap();
-
-	assert_eq!(res.status(), StatusCode::OK);
-
-	let body = res.text().await.unwrap();
-
-	let data = sentc_crypto::group::get_group_data(&creator.key_data.private_key, body.as_str()).unwrap();
+	let data = get_group(
+		secret_token,
+		creator.key_data.jwt.as_str(),
+		child_id.as_str(),
+		&creator.key_data.private_key,
+	)
+	.await;
 
 	assert_eq!(data.rank, 0);
 	assert_eq!(data.group_id, child_id);
@@ -320,6 +312,20 @@ async fn test_15_accept_invite()
 	assert_eq!(out.err_code, None);
 
 	//test get group as new user
+	let data = get_group(
+		secret_token,
+		user_to_invite.key_data.jwt.as_str(),
+		group.group_id.as_str(),
+		&user_to_invite.key_data.private_key,
+	)
+	.await;
+
+	//should be normal user rank
+	assert_eq!(data.rank, 4);
+
+	group
+		.decrypted_group_keys
+		.insert(user_to_invite.user_id.to_string(), data.keys);
 
 	group.group_member.push(user_to_invite.user_id.to_string());
 }

@@ -2,7 +2,8 @@
 
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
-use sentc_crypto::{KeyData, PublicKeyFormat};
+use sentc_crypto::group::GroupOutData;
+use sentc_crypto::{KeyData, PrivateKeyFormat, PublicKeyFormat};
 use sentc_crypto_common::group::GroupCreateOutput;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::{GroupId, ServerOutput, UserId};
@@ -234,4 +235,23 @@ pub async fn create_group(secret_token: &str, creator_public_key: &PublicKeyForm
 	let out = out.result.unwrap();
 
 	out.group_id
+}
+
+pub async fn get_group(secret_token: &str, jwt: &str, group_id: &str, private_key: &PrivateKeyFormat) -> GroupOutData
+{
+	let url = get_url("api/v1/group/".to_owned() + group_id);
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let data = sentc_crypto::group::get_group_data(private_key, body.as_str()).unwrap();
+
+	data
 }
