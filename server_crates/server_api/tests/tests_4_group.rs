@@ -4,7 +4,7 @@ use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::KeyData;
-use sentc_crypto_common::group::{GroupCreateOutput, GroupDeleteServerOutput, GroupKeysForNewMemberServerInput, GroupServerData};
+use sentc_crypto_common::group::{GroupCreateOutput, GroupDeleteServerOutput, GroupJoinReqList, GroupKeysForNewMemberServerInput, GroupServerData};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::{GroupId, ServerOutput, UserId};
 use server_api::core::api_res::ApiErrorCodes;
@@ -500,6 +500,268 @@ async fn test_18_leave_group()
 
 	assert_eq!(out.status, false);
 	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::GroupUserNotFound.get_int_code());
+}
+
+#[tokio::test]
+async fn test_19_join_req()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let user = &users[1];
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req");
+	let client = reqwest::Client::new();
+	let res = client
+		.patch(url)
+		.header(AUTHORIZATION, auth_header(user.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+}
+
+#[tokio::test]
+async fn test_20_get_join_req()
+{
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+
+	//get the first page
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req/" + "0");
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<Vec<GroupJoinReqList>>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	let out = out.result.unwrap();
+
+	assert_eq!(out.len(), 1);
+	assert_eq!(out[0].user_id.to_string(), users[1].user_id.to_string());
+}
+
+#[tokio::test]
+async fn test_21_send_join_req_aging()
+{
+	//this should not err because of insert ignore
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let user = &users[1];
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req");
+	let client = reqwest::Client::new();
+	let res = client
+		.patch(url)
+		.header(AUTHORIZATION, auth_header(user.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	//______________________________________________________________________________________________
+	let creator = &users[0];
+
+	//should still be this one join req
+	//get the first page
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req/" + "0");
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<Vec<GroupJoinReqList>>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	let out = out.result.unwrap();
+
+	assert_eq!(out.len(), 1);
+	assert_eq!(out[0].user_id.to_string(), users[1].user_id.to_string());
+}
+
+#[tokio::test]
+async fn test_22_reject_join_req()
+{
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+
+	//get the first page
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req/" + users[1].user_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+}
+
+#[tokio::test]
+async fn test_23_get_not_join_req_after_reject()
+{
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+
+	//get the first page
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req/" + "0");
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<Vec<GroupJoinReqList>>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	let out = out.result.unwrap();
+
+	assert_eq!(out.len(), 0);
+}
+
+#[tokio::test]
+async fn test_24_accept_join_req()
+{
+	//1. send the join req again, because we were rejecting the last one
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let user = &users[1];
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req");
+	let client = reqwest::Client::new();
+	let res = client
+		.patch(url)
+		.header(AUTHORIZATION, auth_header(user.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	//______________________________________________________________________________________________
+	//2. accept this join req
+	let creator = &users[0];
+
+	let user_to_accept = &users[1];
+
+	let mut group_keys_ref = vec![];
+
+	let user_keys = group
+		.decrypted_group_keys
+		.get(creator.user_id.as_str())
+		.unwrap();
+
+	for decrypted_group_key in user_keys {
+		group_keys_ref.push(&decrypted_group_key.group_key);
+	}
+
+	let join = sentc_crypto::group::prepare_group_keys_for_new_member(&user_to_accept.key_data.exported_public_key, &group_keys_ref).unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req/" + user_to_accept.user_id.as_str());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(join)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	//3. should get the group data
+	let _data = get_group(
+		secret_token,
+		user.key_data.jwt.as_str(),
+		group.group_id.as_str(),
+		&user.key_data.private_key,
+	);
 }
 
 #[tokio::test]
