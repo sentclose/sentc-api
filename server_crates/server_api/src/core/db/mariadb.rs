@@ -126,7 +126,7 @@ let result = conn
 Ok(to_string(&result).unwrap())
 ```
  */
-pub async fn query<T, P>(sql: String, params: P) -> Result<Vec<T>, HttpErr>
+pub async fn query<T, P>(sql: &'static str, params: P) -> Result<Vec<T>, HttpErr>
 where
 	T: FromRow + Send + 'static,
 	P: Into<Params> + Send,
@@ -143,7 +143,7 @@ where
 
 No vec gets returned, but an options enum
 */
-pub async fn query_first<T, P>(sql: String, params: P) -> Result<Option<T>, HttpErr>
+pub async fn query_first<T, P>(sql: &'static str, params: P) -> Result<Option<T>, HttpErr>
 where
 	T: FromRow + Send + 'static,
 	P: Into<Params> + Send,
