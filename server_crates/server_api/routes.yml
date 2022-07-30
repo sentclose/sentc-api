@@ -77,6 +77,7 @@ routes:
                           - delete: {p: "", s: crate::group::delete}
                           - put: {p: "/invite/:invited_user", s: crate::group::invite_request}
                           - patch: {p: "/invite", s: crate::group::accept_invite}
+                          - delete: {p: "/invite", s: crate::group::reject_invite}
               #_________________________________________________________________________________________________________
               # group routes without the app token check
               - group:

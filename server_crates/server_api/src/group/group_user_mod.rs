@@ -43,6 +43,16 @@ pub(crate) async fn invite_request(mut req: Request) -> JRes<ServerSuccessOutput
 	echo_success()
 }
 
+pub(crate) async fn reject_invite(req: Request) -> JRes<ServerSuccessOutput>
+{
+	let user = get_jwt_data_from_param(&req)?;
+	let group_id = get_name_param_from_req(&req, "group_id")?;
+
+	group_user_model::reject_invite(group_id.to_string(), user.id.to_string()).await?;
+
+	echo_success()
+}
+
 pub(crate) async fn accept_invite(req: Request) -> JRes<ServerSuccessOutput>
 {
 	let user = get_jwt_data_from_param(&req)?;

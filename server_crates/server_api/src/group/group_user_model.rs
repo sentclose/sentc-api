@@ -2,7 +2,7 @@ use sentc_crypto_common::group::GroupKeysForNewMember;
 use sentc_crypto_common::{AppId, GroupId, UserId};
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
-use crate::core::db::{bulk_insert, exec, query_first};
+use crate::core::db::{bulk_insert, exec, exec_transaction, query_first, TransactionData};
 use crate::core::get_time;
 use crate::group::group_entities::{UserGroupRankCheck, GROUP_INVITE_TYPE_INVITE_REQ};
 use crate::group::group_model::{check_group_rank, check_user_in_group};
@@ -76,38 +76,64 @@ pub(super) async fn invite_request(
 	Ok(())
 }
 
+pub(super) async fn reject_invite(group_id: GroupId, user_id: UserId) -> AppRes<()>
+{
+	//check if there is an invite (this is important, because we delete the user keys too)
+	check_for_invite(user_id.to_string(), group_id.to_string()).await?;
+
+	//language=SQL
+	let sql = "DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ?";
+	let params_in = set_params!(group_id.to_string(), user_id.to_string());
+
+	//delete the keys from the users table -> no trigger in the db
+
+	//language=SQL
+	let sql_keys = "DELETE FROM sentc_group_user_keys WHERE group_id = ? AND user_id = ?";
+	let params_keys = set_params!(group_id, user_id);
+
+	exec_transaction(vec![
+		TransactionData {
+			sql,
+			params: params_in,
+		},
+		TransactionData {
+			sql: sql_keys,
+			params: params_keys,
+		},
+	])
+	.await?;
+
+	Ok(())
+}
+
 pub(super) async fn accept_invite(group_id: GroupId, user_id: UserId) -> AppRes<()>
 {
 	//called from the invited user
+	check_for_invite(user_id.to_string(), group_id.to_string()).await?;
 
+	//delete the old entry
 	//language=SQL
-	let sql = "SELECT 1 FROM sentc_group_user_invites_and_join_req WHERE user_id = ? AND group_id = ?";
-
-	let check: Option<UserGroupRankCheck> = query_first(
-		sql.to_string(),
-		set_params!(user_id.to_string(), group_id.to_string()),
-	)
-	.await?;
-
-	match check {
-		Some(_) => {},
-		None => {
-			return Err(HttpErr::new(
-				400,
-				ApiErrorCodes::GroupInviteNotFound,
-				"No invite found".to_string(),
-				None,
-			))
-		},
-	}
+	let sql_del = "DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ?";
+	let params_del = set_params!(group_id.to_string(), user_id.to_string());
 
 	//insert the user into the user group table, the keys are already there from the start invite
 	let time = get_time()?;
 
 	//language=SQL
-	let sql = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`) VALUES (?,?,?,?)";
+	let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`) VALUES (?,?,?,?)";
+	let params_in = set_params!(user_id, group_id, time.to_string(), 4);
 
-	exec(sql, set_params!(user_id, group_id, time.to_string(), 4)).await?;
+	exec_transaction(vec![
+		TransactionData {
+			sql: sql_del,
+			params: params_del,
+		},
+		TransactionData {
+			sql: sql_in,
+			params: params_in,
+		},
+	])
+	.await?;
 
 	Ok(())
 }
@@ -132,4 +158,24 @@ WHERE
 	exec(sql, set_params!(group_id, user_id, app_id)).await?;
 
 	Ok(())
+}
+
+async fn check_for_invite(user_id: UserId, group_id: GroupId) -> AppRes<()>
+{
+	//language=SQL
+	let sql = "SELECT 1 FROM sentc_group_user_invites_and_join_req WHERE user_id = ? AND group_id = ?";
+
+	let check: Option<UserGroupRankCheck> = query_first(sql.to_string(), set_params!(user_id, group_id)).await?;
+
+	match check {
+		Some(_) => Ok(()),
+		None => {
+			return Err(HttpErr::new(
+				400,
+				ApiErrorCodes::GroupInviteNotFound,
+				"No invite found".to_string(),
+				None,
+			))
+		},
+	}
 }
