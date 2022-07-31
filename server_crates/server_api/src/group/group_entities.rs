@@ -553,3 +553,105 @@ impl crate::core::db::FromSqliteRow for GroupKeyUpdate
 		})
 	}
 }
+
+//__________________________________________________________________________________________________
+
+pub struct KeyRotationWorkerKey
+{
+	pub ephemeral_alg: String,
+	pub encrypted_ephemeral_key: String,
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for KeyRotationWorkerKey
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			ephemeral_alg: take_or_err!(row, 0, String),
+			encrypted_ephemeral_key: take_or_err!(row, 1, String),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl crate::core::db::FromSqliteRow for KeyRotationWorkerKey
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			ephemeral_alg: take_or_err!(row, 0),
+			encrypted_ephemeral_key: take_or_err!(row, 1),
+		})
+	}
+}
+
+//__________________________________________________________________________________________________
+
+/**
+Output after key rotation for each user
+*/
+pub struct UserEphKeyOut
+{
+	pub user_id: UserId,
+	pub encrypted_ephemeral_key: String,
+	pub encrypted_eph_key_key_id: EncryptionKeyPairId,
+}
+
+//__________________________________________________________________________________________________
+
+pub struct UserGroupPublicKeyData
+{
+	pub user_id: UserId,
+	pub public_key_id: EncryptionKeyPairId,
+	pub public_key: String,
+	pub public_key_alg: String,
+	pub time: u128,
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for UserGroupPublicKeyData
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			user_id: take_or_err!(row, 0, String),
+			public_key_id: take_or_err!(row, 1, String),
+			public_key: take_or_err!(row, 2, String),
+			public_key_alg: take_or_err!(row, 3, String),
+			time: take_or_err!(row, 4, u128),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl crate::core::db::FromSqliteRow for UserGroupPublicKeyData
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		let time: String = take_or_err!(row, 4);
+		let time: u128 = time.parse().map_err(|e| {
+			crate::core::db::FormSqliteRowError {
+				msg: format!("err in db fetch: {:?}", e),
+			}
+		})?;
+
+		Ok(Self {
+			user_id: take_or_err!(row, 0),
+			public_key_id: take_or_err!(row, 1),
+			public_key: take_or_err!(row, 2),
+			public_key_alg: take_or_err!(row, 3),
+			time,
+		})
+	}
+}
+
+//__________________________________________________________________________________________________

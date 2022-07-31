@@ -1,4 +1,5 @@
 mod group_key_rotation_model;
+pub(crate) mod group_key_rotation_worker;
 
 use rustgram::Request;
 use sentc_crypto_common::group::{DoneKeyRotationData, KeyRotationData, KeyRotationInput, KeyRotationStartServerOutput};
@@ -24,12 +25,13 @@ pub(crate) async fn start_key_rotation(mut req: Request) -> JRes<KeyRotationStar
 	)
 	.await?;
 
+	//TODO change this to a real worker after beta
+	group_key_rotation_worker::start(group_data.group_data.id.to_string(), key_id.to_string()).await?;
+
 	let out = KeyRotationStartServerOutput {
 		key_id,
 		group_id: group_data.group_data.id.to_string(),
 	};
-
-	//TODO start the key rotation via worker
 
 	echo(out)
 }

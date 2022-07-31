@@ -55,6 +55,7 @@ pub enum ApiErrorCodes
 	GroupOnlyOneAdmin,
 	GroupJoinReqNotFound,
 	GroupAccess,
+	GroupKeyRotationKeysNotFound,
 }
 
 impl ApiErrorCodes
@@ -96,6 +97,7 @@ impl ApiErrorCodes
 			ApiErrorCodes::GroupOnlyOneAdmin => 305,
 			ApiErrorCodes::GroupJoinReqNotFound => 306,
 			ApiErrorCodes::GroupAccess => 307,
+			ApiErrorCodes::GroupKeyRotationKeysNotFound => 308,
 		}
 	}
 }

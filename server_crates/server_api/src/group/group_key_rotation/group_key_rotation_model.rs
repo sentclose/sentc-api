@@ -1,11 +1,11 @@
 use sentc_crypto_common::group::{DoneKeyRotationData, KeyRotationData};
-use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
+use sentc_crypto_common::{AppId, EncryptionKeyPairId, GroupId, SymKeyId, UserId};
 use uuid::Uuid;
 
-use crate::core::api_res::AppRes;
-use crate::core::db::{exec, exec_transaction, query, TransactionData};
+use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::core::db::{bulk_insert, exec, exec_transaction, query, query_first, query_string, TransactionData};
 use crate::core::get_time;
-use crate::group::group_entities::GroupKeyUpdate;
+use crate::group::group_entities::{GroupKeyUpdate, KeyRotationWorkerKey, UserEphKeyOut, UserGroupPublicKeyData};
 use crate::set_params;
 
 pub(super) async fn start_key_rotation(group_id: GroupId, user_id: UserId, input: KeyRotationData) -> AppRes<SymKeyId>
@@ -152,6 +152,82 @@ INSERT INTO sentc_group_user_keys
 	let sql = "DELETE FROM sentc_group_user_key_rotation WHERE group_id = ? AND user_id = ? AND key_id = ?";
 
 	exec(sql, set_params!(group_id, user_id, key_id)).await?;
+
+	Ok(())
+}
+
+//__________________________________________________________________________________________________
+//Worker
+
+pub(super) async fn get_new_key(group_id: GroupId, key_id: SymKeyId) -> AppRes<KeyRotationWorkerKey>
+{
+	//language=SQL
+	let sql = "SELECT ephemeral_alg,encrypted_ephemeral_key FROM sentc_group_keys WHERE group_id = ? AND id = ?";
+
+	let key: Option<KeyRotationWorkerKey> = query_first(sql, set_params!(group_id, key_id)).await?;
+
+	match key {
+		Some(k) => Ok(k),
+		None => {
+			Err(HttpErr::new(
+				400,
+				ApiErrorCodes::GroupKeyRotationKeysNotFound,
+				"Internal error, no group keys found, please try again".to_string(),
+				None,
+			))
+		},
+	}
+}
+
+pub(super) async fn get_user_and_public_key(group_id: GroupId, last_fetched: u128) -> AppRes<Vec<UserGroupPublicKeyData>>
+{
+	//language=SQL
+	let sql = r"
+SELECT gu.user_id, public_key, id, keypair_encrypt_alg, gu.time 
+FROM sentc_group_user gu, user_keys uk 
+WHERE 
+    gu.user_id = uk.user_id AND 
+    group_id = ?"
+		.to_string();
+
+	let (sql1, params) = if last_fetched > 0 {
+		//there is a last fetched time time
+		let sql = sql + " AND gu.time <= ? ORDER BY gu.time DESC LIMIT 50";
+		(sql, set_params!(group_id, last_fetched.to_string()))
+	} else {
+		let sql = sql + " ORDER BY gu.time DESC LIMIT 50";
+		(sql, set_params!(group_id))
+	};
+
+	let users: Vec<UserGroupPublicKeyData> = query_string(sql1, params).await?;
+
+	Ok(users)
+}
+
+pub(super) async fn save_user_eph_keys(group_id: GroupId, key_id: EncryptionKeyPairId, keys: Vec<UserEphKeyOut>) -> AppRes<()>
+{
+	bulk_insert(
+		true,
+		"sentc_group_user_key_rotation".to_string(),
+		vec![
+			"key_id".to_string(),
+			"group_id".to_string(),
+			"user_id".to_string(),
+			"encrypted_ephemeral_key".to_string(),
+			"encrypted_eph_key_key_id".to_string(),
+		],
+		keys,
+		move |ob| {
+			set_params!(
+				key_id.to_string(),
+				group_id.to_string(),
+				ob.user_id.to_string(),
+				ob.encrypted_ephemeral_key.to_string(),
+				ob.encrypted_eph_key_key_id.to_string()
+			)
+		},
+	)
+	.await?;
 
 	Ok(())
 }
