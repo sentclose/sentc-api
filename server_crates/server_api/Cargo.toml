@@ -59,7 +59,7 @@ rand = "0.8.5"
 # to get it from ssh: write this in your ~/.cargo/config.toml:
 # [net]
 # git-fetch-with-cli = true
-sentc-crypto = {version = "0.1.0", git = "ssh://git@gitlab.com/sentclose/sentc/sdk.git", default-features = false, features = ["rust"]}
+sentc-crypto = {version = "0.1.0", git = "ssh://git@gitlab.com/sentclose/sentc/sdk.git", default-features = false, features = ["rust", "server"]}
 
 [dev-dependencies]
 # for making req for integration tests
