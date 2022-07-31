@@ -13,13 +13,16 @@ pub async fn start(group_id: GroupId, key_id: SymKeyId) -> AppRes<()>
 	let key_arc = Arc::new(key);
 
 	let mut last_time_fetched = 0;
+	let mut last_user_id = "".to_string();
 
 	loop {
 		let key_cap = key_arc.clone();
 
-		let users = group_key_rotation_model::get_user_and_public_key(group_id.to_string(), last_time_fetched).await?;
+		let users = group_key_rotation_model::get_user_and_public_key(group_id.to_string(), last_time_fetched, last_user_id.to_string()).await?;
 		let len = users.len();
-		last_time_fetched = users[len - 1].time; //the first user is the oldest (order by time DESC)
+
+		last_time_fetched = users[len - 1].time; //the last user is the oldest (order by time DESC)
+		last_user_id = users[len - 1].user_id.to_string();
 
 		//encrypt for each user
 		let user_keys = tokio::task::spawn_blocking(move || encrypt(&key_cap, users))
@@ -36,7 +39,7 @@ pub async fn start(group_id: GroupId, key_id: SymKeyId) -> AppRes<()>
 		//save the keys for the user
 		group_key_rotation_model::save_user_eph_keys(group_id.to_string(), key_id.to_string(), user_keys).await?;
 
-		if len < 50 {
+		if len < 100 {
 			//when there were less than 50 users in this fetch
 			break;
 		}

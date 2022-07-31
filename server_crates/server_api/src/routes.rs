@@ -74,7 +74,7 @@ pub(crate) fn routes() -> Router
 			.add(jwt::jwt_transform),
 	);
 	router.get(
-		"/api/v1/group/invite/:last_fetched_time",
+		"/api/v1/group/invite/:last_fetched_time/:last_group_id",
 		r(crate::group::get_invite_req)
 			.add(app_token::app_token_transform)
 			.add(jwt::jwt_transform),
@@ -86,7 +86,7 @@ pub(crate) fn routes() -> Router
 			.add(jwt::jwt_transform),
 	);
 	router.get(
-		"/api/v1/group/:group_id/keys/:last_fetched_time",
+		"/api/v1/group/:group_id/keys/:last_fetched_time/:last_k_id",
 		r(crate::group::get_user_group_keys)
 			.add(app_token::app_token_transform)
 			.add(jwt::jwt_transform),

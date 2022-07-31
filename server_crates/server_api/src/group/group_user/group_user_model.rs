@@ -99,7 +99,7 @@ pub(super) async fn invite_request(
 	Ok(())
 }
 
-pub(super) async fn get_invite_req_to_user(app_id: AppId, user_id: UserId, last_fetched_time: u128) -> AppRes<Vec<GroupInviteReq>>
+pub(super) async fn get_invite_req_to_user(app_id: AppId, user_id: UserId, last_fetched_time: u128, last_id: GroupId) -> AppRes<Vec<GroupInviteReq>>
 {
 	//called from the user not the group
 
@@ -116,18 +116,22 @@ WHERE
 
 	let (sql1, params) = if last_fetched_time > 0 {
 		//there is a last fetched time time -> set the last fetched time to the params list
-		let sql = sql + " AND i.time <= ? LIMIT 50";
+		//order by time first -> then group id if multiple group ids got the same time
+		let sql = sql + " AND i.time <= ? AND (i.time < ? OR (i.time = ? AND group_id > ?)) ORDER BY i.time DESC, group_id LIMIT 50";
 		(
 			sql,
 			set_params!(
 				user_id,
 				GROUP_INVITE_TYPE_INVITE_REQ,
 				app_id,
-				last_fetched_time.to_string()
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_id
 			),
 		)
 	} else {
-		let sql = sql + " LIMIT 50";
+		let sql = sql + " ORDER BY i.time DESC, group_id LIMIT 50";
 		(sql, set_params!(user_id, GROUP_INVITE_TYPE_INVITE_REQ, app_id))
 	};
 

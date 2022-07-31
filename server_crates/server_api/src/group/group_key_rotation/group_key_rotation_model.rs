@@ -179,7 +179,7 @@ pub(super) async fn get_new_key(group_id: GroupId, key_id: SymKeyId) -> AppRes<K
 	}
 }
 
-pub(super) async fn get_user_and_public_key(group_id: GroupId, last_fetched: u128) -> AppRes<Vec<UserGroupPublicKeyData>>
+pub(super) async fn get_user_and_public_key(group_id: GroupId, last_fetched: u128, last_id: UserId) -> AppRes<Vec<UserGroupPublicKeyData>>
 {
 	//language=SQL
 	let sql = r"
@@ -192,10 +192,19 @@ WHERE
 
 	let (sql1, params) = if last_fetched > 0 {
 		//there is a last fetched time time
-		let sql = sql + " AND gu.time <= ? ORDER BY gu.time DESC LIMIT 50";
-		(sql, set_params!(group_id, last_fetched.to_string()))
+		let sql = sql + " AND gu.time <= ? AND (gu.time < ? OR (gu.time = ? AND gu.user_id > ?)) ORDER BY gu.time DESC, gu.user_id LIMIT 100";
+		(
+			sql,
+			set_params!(
+				group_id,
+				last_fetched.to_string(),
+				last_fetched.to_string(),
+				last_fetched.to_string(),
+				last_id
+			),
+		)
 	} else {
-		let sql = sql + " ORDER BY gu.time DESC LIMIT 50";
+		let sql = sql + " ORDER BY gu.time DESC, gu.user_id LIMIT 100";
 		(sql, set_params!(group_id))
 	};
 

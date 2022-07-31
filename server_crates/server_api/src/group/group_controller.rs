@@ -86,7 +86,9 @@ pub(crate) async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupKeyServer
 	let req_params = get_params(&req)?;
 	let group_id = get_name_param_from_params(req_params, "group_id")?;
 
-	let last_fetched_time = get_name_param_from_params(req_params, "last_fetched_time")?;
+	let params = get_params(&req)?;
+	let last_k_id = get_name_param_from_params(&params, "last_k_id")?;
+	let last_fetched_time = get_name_param_from_params(&params, "last_fetched_time")?;
 	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
 		HttpErr::new(
 			400,
@@ -101,6 +103,7 @@ pub(crate) async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupKeyServer
 		group_id.to_string(),
 		user.id.to_string(),
 		last_fetched_time,
+		last_k_id.to_string(),
 	)
 	.await?;
 

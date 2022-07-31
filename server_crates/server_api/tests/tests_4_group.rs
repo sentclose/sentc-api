@@ -301,7 +301,7 @@ async fn test_15_get_invite_for_user()
 
 	let user_to_invite = &users[1];
 
-	let url = get_url("api/v1/group/".to_owned() + "invite/0");
+	let url = get_url("api/v1/group/".to_owned() + "invite/0/none");
 
 	let client = reqwest::Client::new();
 	let res = client

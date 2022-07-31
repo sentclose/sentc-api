@@ -1,5 +1,5 @@
 use sentc_crypto_common::group::CreateData;
-use sentc_crypto_common::{AppId, GroupId, UserId};
+use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
 use uuid::Uuid;
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
@@ -112,7 +112,13 @@ This keys are normally cached in the client, so it should be fetched once for ea
 
 New keys from key update are fetched by the key update fn
 */
-pub(super) async fn get_user_group_keys(app_id: AppId, group_id: GroupId, user_id: UserId, last_fetched_time: u128) -> AppRes<Vec<GroupUserKeys>>
+pub(super) async fn get_user_group_keys(
+	app_id: AppId,
+	group_id: GroupId,
+	user_id: UserId,
+	last_fetched_time: u128,
+	last_k_id: SymKeyId,
+) -> AppRes<Vec<GroupUserKeys>>
 {
 	//language=SQL
 	let sql = r"
@@ -139,14 +145,22 @@ WHERE
 
 	let (sql1, params) = if last_fetched_time > 0 {
 		//there is a last fetched time time -> set the last fetched time to the params list
-		let sql = sql + " AND uk.time <= ? ORDER BY uk.time DESC LIMIT 50";
+		let sql = sql + " AND uk.time <= ? AND (uk.time < ? OR (uk.time = ? AND k_id > ?)) ORDER BY uk.time DESC, k_id LIMIT 50";
 
 		(
 			sql,
-			set_params!(user_id, group_id, app_id, last_fetched_time.to_string()),
+			set_params!(
+				user_id,
+				group_id,
+				app_id,
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_k_id
+			),
 		)
 	} else {
-		let sql = sql + " ORDER BY uk.time DESC LIMIT 50";
+		let sql = sql + " ORDER BY uk.time DESC, k_id LIMIT 50";
 		(sql, set_params!(user_id, group_id, app_id))
 	};
 
