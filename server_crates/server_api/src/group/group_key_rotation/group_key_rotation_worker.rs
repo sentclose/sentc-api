@@ -37,7 +37,7 @@ pub async fn start(group_id: GroupId, key_id: SymKeyId) -> AppRes<()>
 		group_key_rotation_model::save_user_eph_keys(group_id.to_string(), key_id.to_string(), user_keys).await?;
 
 		if len < 50 {
-			//when there are less than 50 users left
+			//when there were less than 50 users in this fetch
 			break;
 		}
 	}
