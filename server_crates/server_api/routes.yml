@@ -71,6 +71,8 @@ routes:
                     #___________________________________________________________________________________________________
                     # no group mw check needed here
                     - post: {p: "", s: crate::group::create}
+                    # no group mw for get invite req, because this is called form the user, not the group
+                    - get: {p: "/invite/:last_fetched_time", s: crate::group::get_invite_req}
                     - group:
                         p: "/:group_id"
                         gr:
@@ -97,12 +99,3 @@ routes:
                                 - get: {p: "/:last_fetched_time", s: crate::group::get_join_req}
                                 - put: {p: "/:join_user", s: crate::group::accept_join_req}
                                 - delete: {p: "/:join_user", s: crate::group::reject_join_req}
-              #_________________________________________________________________________________________________________
-              # group routes without the app token check
-              - group:
-                  p: "/group"
-                  gr:
-                    - group:
-                        p: "/:group_id"
-                        gr:
-                          - get: { p: "/123", s: crate::group::get }

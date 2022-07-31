@@ -118,11 +118,6 @@ pub(crate) async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupKeyServer
 	echo(keys)
 }
 
-pub(crate) async fn get(_req: Request) -> Result<String, HttpErr>
-{
-	Ok(format!("group"))
-}
-
 fn get_group_user_data_from_req(req: &Request) -> AppRes<&InternalGroupDataComplete>
 {
 	match req.extensions().get::<InternalGroupDataComplete>() {

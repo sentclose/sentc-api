@@ -1,10 +1,10 @@
 use sentc_crypto_common::group::GroupKeysForNewMember;
-use sentc_crypto_common::{GroupId, UserId};
+use sentc_crypto_common::{AppId, GroupId, UserId};
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::core::db::{bulk_insert, exec, exec_transaction, query, query_first, TransactionData};
 use crate::core::get_time;
-use crate::group::group_entities::{GroupJoinReq, UserInGroupCheck, GROUP_INVITE_TYPE_INVITE_REQ, GROUP_INVITE_TYPE_JOIN_REQ};
+use crate::group::group_entities::{GroupInviteReq, GroupJoinReq, UserInGroupCheck, GROUP_INVITE_TYPE_INVITE_REQ, GROUP_INVITE_TYPE_JOIN_REQ};
 use crate::group::group_model::check_group_rank;
 use crate::set_params;
 
@@ -99,6 +99,36 @@ pub(super) async fn invite_request(
 	Ok(())
 }
 
+pub(super) async fn get_invite_req_to_user(app_id: AppId, user_id: UserId, last_fetched_time: u128) -> AppRes<Vec<GroupInviteReq>>
+{
+	//called from the user not the group
+
+	//language=SQL
+	let sql = "
+SELECT group_id, i.time 
+FROM sentc_group_user_invites_and_join_req i, sentc_group g 
+WHERE 
+    user_id = ? AND 
+    i.time >= ? AND 
+    type = ? AND 
+    app_id = ? AND
+    group_id = id
+LIMIT 50";
+
+	let invite_req: Vec<GroupInviteReq> = query(
+		sql,
+		set_params!(
+			user_id,
+			last_fetched_time.to_string(),
+			GROUP_INVITE_TYPE_INVITE_REQ,
+			app_id
+		),
+	)
+	.await?;
+
+	Ok(invite_req)
+}
+
 pub(super) async fn reject_invite(group_id: GroupId, user_id: UserId) -> AppRes<()>
 {
 	//check if there is an invite (this is important, because we delete the user keys too)
@@ -160,6 +190,8 @@ pub(super) async fn accept_invite(group_id: GroupId, user_id: UserId) -> AppRes<
 
 	Ok(())
 }
+
+//__________________________________________________________________________________________________
 
 pub(super) async fn join_req(group_id: GroupId, user_id: UserId) -> AppRes<()>
 {
@@ -314,6 +346,8 @@ pub(super) async fn get_join_req(group_id: GroupId, last_fetched_time: u128, adm
 	Ok(join_req)
 }
 
+//__________________________________________________________________________________________________
+
 pub(super) async fn user_leave_group(group_id: GroupId, user_id: UserId, rank: i32) -> AppRes<()>
 {
 	//get the rank of the user -> check if there is only one admin (check also here if the user is in the group)
@@ -337,6 +371,8 @@ pub(super) async fn user_leave_group(group_id: GroupId, user_id: UserId, rank: i
 
 	Ok(())
 }
+
+//__________________________________________________________________________________________________
 
 async fn check_user_in_group(group_id: GroupId, user_id: UserId) -> AppRes<bool>
 {
