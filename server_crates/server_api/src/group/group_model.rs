@@ -3,7 +3,7 @@ use sentc_crypto_common::{AppId, GroupId, UserId};
 use uuid::Uuid;
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
-use crate::core::db::{exec, exec_transaction, query, query_first, TransactionData};
+use crate::core::db::{exec, exec_transaction, query, query_first, query_string, TransactionData};
 use crate::core::get_time;
 use crate::group::group_entities::{GroupKeyUpdateReady, GroupUserData, GroupUserKeys, InternalGroupData, InternalUserGroupData, UserGroupRankCheck};
 use crate::set_params;
@@ -115,7 +115,7 @@ New keys from key update are fetched by the key update fn
 pub(super) async fn get_user_group_keys(app_id: AppId, group_id: GroupId, user_id: UserId, last_fetched_time: u128) -> AppRes<Vec<GroupUserKeys>>
 {
 	//language=SQL
-	let sql = r"
+	let mut sql = r"
 SELECT 
     k_id,
     encrypted_group_key, 
@@ -134,11 +134,17 @@ WHERE
     k.group_id = ? AND 
     k.id = k_id AND 
     g.id = k.group_id AND 
-    app_id = ? AND 
-    uk.time >= ?
-ORDER BY uk.time DESC LIMIT 50";
+    app_id = ?"
+		.to_string();
 
-	let user_keys: Vec<GroupUserKeys> = query(
+	if last_fetched_time > 0 {
+		//there is a last fetched time time
+		sql += " AND uk.time <= ? ";
+	}
+
+	sql += " ORDER BY uk.time DESC LIMIT 50";
+
+	let user_keys: Vec<GroupUserKeys> = query_string(
 		sql,
 		set_params!(user_id, group_id, app_id, last_fetched_time.to_string()),
 	)

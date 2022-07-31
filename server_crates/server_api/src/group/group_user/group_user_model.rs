@@ -2,7 +2,7 @@ use sentc_crypto_common::group::GroupKeysForNewMember;
 use sentc_crypto_common::{AppId, GroupId, UserId};
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
-use crate::core::db::{bulk_insert, exec, exec_transaction, query, query_first, TransactionData};
+use crate::core::db::{bulk_insert, exec, exec_transaction, query, query_first, query_string, TransactionData};
 use crate::core::get_time;
 use crate::group::group_entities::{GroupInviteReq, GroupJoinReq, UserInGroupCheck, GROUP_INVITE_TYPE_INVITE_REQ, GROUP_INVITE_TYPE_JOIN_REQ};
 use crate::group::group_model::check_group_rank;
@@ -104,18 +104,24 @@ pub(super) async fn get_invite_req_to_user(app_id: AppId, user_id: UserId, last_
 	//called from the user not the group
 
 	//language=SQL
-	let sql = "
+	let mut sql = "
 SELECT group_id, i.time 
 FROM sentc_group_user_invites_and_join_req i, sentc_group g 
 WHERE 
     user_id = ? AND 
-    i.time >= ? AND 
     type = ? AND 
     app_id = ? AND
-    group_id = id
-LIMIT 50";
+    group_id = id"
+		.to_string();
 
-	let invite_req: Vec<GroupInviteReq> = query(
+	if last_fetched_time > 0 {
+		//there is a last fetched time time
+		sql += " AND i.time <= ? ";
+	}
+
+	sql += " LIMIT 50";
+
+	let invite_req: Vec<GroupInviteReq> = query_string(
 		sql,
 		set_params!(
 			user_id,
