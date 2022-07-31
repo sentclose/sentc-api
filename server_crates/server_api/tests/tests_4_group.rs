@@ -241,10 +241,8 @@ async fn test_13_invite_user()
 		.unwrap();
 
 	let body = res.text().await.unwrap();
-	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 }
 
 #[tokio::test]
@@ -347,10 +345,7 @@ async fn test_16_accept_invite()
 
 	let body = res.text().await.unwrap();
 
-	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 
 	//test get group as new user
 	let data = get_group(
@@ -408,10 +403,7 @@ async fn test_17_invite_user_an_reject_invite()
 		.unwrap();
 
 	let body = res.text().await.unwrap();
-	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
 	//no reject the invite
@@ -428,11 +420,7 @@ async fn test_17_invite_user_an_reject_invite()
 		.unwrap();
 
 	let body = res.text().await.unwrap();
-
-	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
 	//the rejected user should not get the group data
@@ -515,11 +503,7 @@ async fn test_19_leave_group()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-
-	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 
 	//this user should not get the group data
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str());
@@ -564,11 +548,7 @@ async fn test_20_join_req()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-
-	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 }
 
 #[tokio::test]
@@ -630,11 +610,7 @@ async fn test_22_send_join_req_aging()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-
-	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
 	let creator = &users[0];
@@ -689,10 +665,7 @@ async fn test_23_reject_join_req()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 }
 
 #[tokio::test]
@@ -752,11 +725,7 @@ async fn test_25_accept_join_req()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-
-	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
 	//2. accept this join req
@@ -790,10 +759,7 @@ async fn test_25_accept_join_req()
 		.unwrap();
 
 	let body = res.text().await.unwrap();
-	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 
 	//3. should get the group data
 	let _data = get_group(
