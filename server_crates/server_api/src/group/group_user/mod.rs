@@ -7,8 +7,10 @@ use crate::core::cache;
 use crate::core::cache::INTERNAL_GROUP_USER_DATA_CACHE;
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
 use crate::core::url_helper::get_name_param_from_req;
-use crate::group::{get_group_user_data_from_req, group_user_model};
+use crate::group::get_group_user_data_from_req;
 use crate::user::jwt::get_jwt_data_from_param;
+
+mod group_user_model;
 
 pub(crate) async fn invite_request(mut req: Request) -> JRes<ServerSuccessOutput>
 {

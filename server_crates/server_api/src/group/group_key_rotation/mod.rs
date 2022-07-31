@@ -1,3 +1,5 @@
+mod group_key_rotation_model;
+
 use rustgram::Request;
 use sentc_crypto_common::group::{DoneKeyRotationData, KeyRotationData, KeyRotationInput, KeyRotationStartServerOutput};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
@@ -5,7 +7,7 @@ use sentc_crypto_common::server_default::ServerSuccessOutput;
 use crate::core::api_res::{echo, echo_success, JRes};
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
 use crate::core::url_helper::get_name_param_from_req;
-use crate::group::{get_group_user_data_from_req, group_key_rotation_model};
+use crate::group::get_group_user_data_from_req;
 
 pub(crate) async fn start_key_rotation(mut req: Request) -> JRes<KeyRotationStartServerOutput>
 {

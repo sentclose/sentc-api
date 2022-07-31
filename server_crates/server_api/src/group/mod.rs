@@ -1,14 +1,12 @@
 mod group_controller;
 pub(crate) mod group_entities;
-mod group_key_rotation_controller;
-pub(crate) mod group_key_rotation_model;
+mod group_key_rotation;
 pub(crate) mod group_model;
-mod group_user_controller;
-pub(crate) mod group_user_model;
+mod group_user;
 
 pub(crate) use group_controller::*;
-pub(crate) use group_key_rotation_controller::*;
-pub(crate) use group_user_controller::*;
+pub(crate) use group_key_rotation::*;
+pub(crate) use group_user::*;
 use rustgram::Request;
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
