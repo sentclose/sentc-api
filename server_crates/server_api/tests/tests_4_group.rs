@@ -4,7 +4,14 @@ use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::KeyData;
-use sentc_crypto_common::group::{GroupCreateOutput, GroupDeleteServerOutput, GroupJoinReqList, GroupKeysForNewMemberServerInput, GroupServerData};
+use sentc_crypto_common::group::{
+	GroupCreateOutput,
+	GroupDeleteServerOutput,
+	GroupInviteReqList,
+	GroupJoinReqList,
+	GroupKeysForNewMemberServerInput,
+	GroupServerData,
+};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::{GroupId, ServerOutput, UserId};
 use server_api::core::api_res::ApiErrorCodes;
@@ -285,7 +292,40 @@ async fn test_14_not_invite_user_without_keys()
 }
 
 #[tokio::test]
-async fn test_15_accept_invite()
+async fn test_15_get_invite_for_user()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+
+	let user_to_invite = &users[1];
+
+	let url = get_url("api/v1/group/".to_owned() + "invite/0");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user_to_invite.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let out = ServerOutput::<Vec<GroupInviteReqList>>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	let out = out.result.unwrap();
+
+	assert_eq!(out.len(), 1);
+	assert_eq!(out[0].group_id.to_string(), group.group_id.to_string());
+}
+
+#[tokio::test]
+async fn test_16_accept_invite()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let mut group = GROUP_TEST_STATE.get().unwrap().write().await;
@@ -332,7 +372,7 @@ async fn test_15_accept_invite()
 }
 
 #[tokio::test]
-async fn test_16_invite_user_an_reject_invite()
+async fn test_17_invite_user_an_reject_invite()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -418,7 +458,7 @@ async fn test_16_invite_user_an_reject_invite()
 }
 
 #[tokio::test]
-async fn test_17_not_leave_group_when_user_is_the_only_admin()
+async fn test_18_not_leave_group_when_user_is_the_only_admin()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -454,7 +494,7 @@ async fn test_17_not_leave_group_when_user_is_the_only_admin()
 }
 
 #[tokio::test]
-async fn test_18_leave_group()
+async fn test_19_leave_group()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -503,7 +543,7 @@ async fn test_18_leave_group()
 }
 
 #[tokio::test]
-async fn test_19_join_req()
+async fn test_20_join_req()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -532,7 +572,7 @@ async fn test_19_join_req()
 }
 
 #[tokio::test]
-async fn test_20_get_join_req()
+async fn test_21_get_join_req()
 {
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
 
@@ -567,7 +607,7 @@ async fn test_20_get_join_req()
 }
 
 #[tokio::test]
-async fn test_21_send_join_req_aging()
+async fn test_22_send_join_req_aging()
 {
 	//this should not err because of insert ignore
 
@@ -627,7 +667,7 @@ async fn test_21_send_join_req_aging()
 }
 
 #[tokio::test]
-async fn test_22_reject_join_req()
+async fn test_23_reject_join_req()
 {
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
 
@@ -656,7 +696,7 @@ async fn test_22_reject_join_req()
 }
 
 #[tokio::test]
-async fn test_23_get_not_join_req_after_reject()
+async fn test_24_get_not_join_req_after_reject()
 {
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
 
@@ -690,7 +730,7 @@ async fn test_23_get_not_join_req_after_reject()
 }
 
 #[tokio::test]
-async fn test_24_accept_join_req()
+async fn test_25_accept_join_req()
 {
 	//1. send the join req again, because we were rejecting the last one
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
