@@ -21,6 +21,10 @@ pub async fn start(group_id: GroupId, key_id: SymKeyId) -> AppRes<()>
 		let users = group_key_rotation_model::get_user_and_public_key(group_id.to_string(), last_time_fetched, last_user_id.to_string()).await?;
 		let len = users.len();
 
+		if len == 0 {
+			break;
+		}
+
 		last_time_fetched = users[len - 1].time; //the last user is the oldest (order by time DESC)
 		last_user_id = users[len - 1].user_id.to_string();
 
@@ -30,7 +34,7 @@ pub async fn start(group_id: GroupId, key_id: SymKeyId) -> AppRes<()>
 			.map_err(|e| {
 				HttpErr::new(
 					400,
-					ApiErrorCodes::UserNotFound,
+					ApiErrorCodes::GroupKeyRotationThread,
 					"Error in user key rotation".to_string(),
 					Some(format!("error in user key rotation: {}", e)),
 				)
@@ -53,9 +57,21 @@ fn encrypt(eph_key: &KeyRotationWorkerKey, users: Vec<UserGroupPublicKeyData>) -
 	let mut encrypted_keys: Vec<UserEphKeyOut> = Vec::with_capacity(users.len());
 
 	for user in users {
-		//TODO encrypt with sdk -> import public key data from string
+		//encrypt with sdk -> import public key data from string
 
-		let encrypted_ephemeral_key = "".to_string();
+		let encrypted_ephemeral_key = sentc_crypto::util_server::encrypt_ephemeral_group_key_with_public_key(
+			user.public_key.as_str(),
+			user.public_key_alg.as_str(),
+			eph_key.encrypted_ephemeral_key.as_str(),
+		)
+		.map_err(|_e| {
+			HttpErr::new(
+				400,
+				ApiErrorCodes::GroupKeyRotationUserEncrypt,
+				"Error in user key rotation encryption".to_string(),
+				None,
+			)
+		})?;
 
 		let ob = UserEphKeyOut {
 			user_id: user.user_id,

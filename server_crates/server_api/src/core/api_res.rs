@@ -56,6 +56,8 @@ pub enum ApiErrorCodes
 	GroupJoinReqNotFound,
 	GroupAccess,
 	GroupKeyRotationKeysNotFound,
+	GroupKeyRotationThread,
+	GroupKeyRotationUserEncrypt,
 }
 
 impl ApiErrorCodes
@@ -98,6 +100,8 @@ impl ApiErrorCodes
 			ApiErrorCodes::GroupJoinReqNotFound => 306,
 			ApiErrorCodes::GroupAccess => 307,
 			ApiErrorCodes::GroupKeyRotationKeysNotFound => 308,
+			ApiErrorCodes::GroupKeyRotationThread => 309,
+			ApiErrorCodes::GroupKeyRotationUserEncrypt => 310,
 		}
 	}
 }
