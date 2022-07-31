@@ -1,5 +1,5 @@
-use sentc_crypto_common::group::{GroupInviteReqList, GroupJoinReqList, GroupKeyServerOutput};
-use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
+use sentc_crypto_common::group::{GroupInviteReqList, GroupJoinReqList, GroupKeyServerOutput, KeyRotationInput};
+use sentc_crypto_common::{AppId, EncryptionKeyPairId, GroupId, SymKeyId, UserId};
 use serde::{Deserialize, Serialize};
 
 use crate::take_or_err;
@@ -191,58 +191,6 @@ impl crate::core::db::FromSqliteRow for UserInGroupCheck
 		Self: Sized,
 	{
 		Ok(Self(take_or_err!(row, 0)))
-	}
-}
-
-//__________________________________________________________________________________________________
-
-pub struct GroupKeyUpdate
-{
-	pub encrypted_ephemeral_key: String,
-	pub encrypted_eph_key_key_id: String,
-	pub encrypted_group_key_by_eph_key: String,
-	pub previous_group_key_id: SymKeyId,
-	pub time: u128,
-}
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for GroupKeyUpdate
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			encrypted_ephemeral_key: take_or_err!(row, 0, String),
-			encrypted_eph_key_key_id: take_or_err!(row, 1, String),
-			encrypted_group_key_by_eph_key: take_or_err!(row, 2, String),
-			previous_group_key_id: take_or_err!(row, 3, String),
-			time: take_or_err!(row, 4, u128),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for GroupKeyUpdate
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		let time: String = take_or_err!(row, 4);
-		let time: u128 = time.parse().map_err(|e| {
-			crate::core::db::FormSqliteRowError {
-				msg: format!("err in db fetch: {:?}", e),
-			}
-		})?;
-
-		Ok(Self {
-			encrypted_ephemeral_key: take_or_err!(row, 0),
-			encrypted_eph_key_key_id: take_or_err!(row, 1),
-			encrypted_group_key_by_eph_key: take_or_err!(row, 2),
-			previous_group_key_id: take_or_err!(row, 3),
-			time,
-		})
 	}
 }
 
@@ -537,3 +485,71 @@ impl crate::core::db::FromSqliteRow for GroupInviteReq
 }
 
 //__________________________________________________________________________________________________
+
+pub struct GroupKeyUpdate
+{
+	pub encrypted_ephemeral_key: String,
+	pub encrypted_eph_key_key_id: String,
+	pub encrypted_group_key_by_eph_key: EncryptionKeyPairId,
+	pub previous_group_key_id: SymKeyId,
+	pub ephemeral_alg: String,
+	pub time: u128,
+}
+
+impl Into<KeyRotationInput> for GroupKeyUpdate
+{
+	fn into(self) -> KeyRotationInput
+	{
+		KeyRotationInput {
+			encrypted_ephemeral_key_by_group_key_and_public_key: self.encrypted_ephemeral_key,
+			encrypted_group_key_by_ephemeral: self.encrypted_group_key_by_eph_key,
+			ephemeral_alg: self.ephemeral_alg,
+			previous_group_key_id: self.previous_group_key_id,
+			encrypted_eph_key_key_id: self.encrypted_eph_key_key_id,
+			time: self.time,
+		}
+	}
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for GroupKeyUpdate
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			encrypted_ephemeral_key: take_or_err!(row, 0, String),
+			encrypted_eph_key_key_id: take_or_err!(row, 1, String),
+			encrypted_group_key_by_eph_key: take_or_err!(row, 2, String),
+			previous_group_key_id: take_or_err!(row, 3, String),
+			ephemeral_alg: take_or_err!(row, 4, String),
+			time: take_or_err!(row, 5, u128),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl crate::core::db::FromSqliteRow for GroupKeyUpdate
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		let time: String = take_or_err!(row, 5);
+		let time: u128 = time.parse().map_err(|e| {
+			crate::core::db::FormSqliteRowError {
+				msg: format!("err in db fetch: {:?}", e),
+			}
+		})?;
+
+		Ok(Self {
+			encrypted_ephemeral_key: take_or_err!(row, 0),
+			encrypted_eph_key_key_id: take_or_err!(row, 1),
+			encrypted_group_key_by_eph_key: take_or_err!(row, 2),
+			previous_group_key_id: take_or_err!(row, 3),
+			ephemeral_alg: take_or_err!(row, 4),
+			time,
+		})
+	}
+}

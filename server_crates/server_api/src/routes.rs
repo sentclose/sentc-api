@@ -151,6 +151,27 @@ pub(crate) fn routes() -> Router
 			.add(app_token::app_token_transform)
 			.add(jwt::jwt_transform),
 	);
+	router.post(
+		"/api/v1/group/:group_id/key_rotation",
+		r(crate::group::start_key_rotation)
+			.add(group::group_transform)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
+	router.get(
+		"/api/v1/group/:group_id/key_rotation",
+		r(crate::group::get_keys_for_update)
+			.add(group::group_transform)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
+	router.put(
+		"/api/v1/group/:group_id/key_rotation/:key_id",
+		r(crate::group::done_key_rotation_for_user)
+			.add(group::group_transform)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
 
 	router
 }

@@ -5,15 +5,7 @@ use uuid::Uuid;
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::core::db::{exec, exec_transaction, query, query_first, TransactionData};
 use crate::core::get_time;
-use crate::group::group_entities::{
-	GroupKeyUpdate,
-	GroupKeyUpdateReady,
-	GroupUserData,
-	GroupUserKeys,
-	InternalGroupData,
-	InternalUserGroupData,
-	UserGroupRankCheck,
-};
+use crate::group::group_entities::{GroupKeyUpdateReady, GroupUserData, GroupUserKeys, InternalGroupData, InternalUserGroupData, UserGroupRankCheck};
 use crate::set_params;
 
 pub(crate) async fn get_internal_group_data(app_id: AppId, group_id: GroupId) -> AppRes<InternalGroupData>
@@ -182,33 +174,6 @@ ORDER BY gk.time DESC LIMIT 1";
 		Some(_) => Ok(true),
 		None => Ok(false),
 	}
-}
-
-pub(super) async fn get_keys_for_key_update(app_id: AppId, group_id: GroupId, user_id: UserId) -> AppRes<Vec<GroupKeyUpdate>>
-{
-	//check if there was a key rotation, fetch all rotation keys in the table
-	//language=SQL
-	let sql = r"
-SELECT 
-    gkr.encrypted_ephemeral_key, 
-    gkr.encrypted_eph_key_key_id,	-- the key id of the public key which was used to encrypt the eph key on the server
-    encrypted_group_key_by_eph_key,
-    previous_group_key_id,
-    gk.time
-FROM 
-    sentc_group_keys gk, 
-    sentc_group_user_key_rotation gkr,
-    sentc_group g
-WHERE user_id = ? AND 
-      g.id = ? AND 
-      app_id = ? AND 
-      key_id = gk.id AND 
-      gk.group_id = g.id 
-ORDER BY gk.time";
-
-	let out: Vec<GroupKeyUpdate> = query(sql, set_params!(user_id, group_id, app_id)).await?;
-
-	Ok(out)
 }
 
 pub(super) async fn create(app_id: AppId, user_id: UserId, data: CreateData) -> AppRes<GroupId>

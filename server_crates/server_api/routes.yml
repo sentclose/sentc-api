@@ -99,3 +99,11 @@ routes:
                                 - get: {p: "/:last_fetched_time", s: crate::group::get_join_req}
                                 - put: {p: "/:join_user", s: crate::group::accept_join_req}
                                 - delete: {p: "/:join_user", s: crate::group::reject_join_req}
+                          #_____________________________________________________________________________________________
+                          # groups for key rotation
+                          - group:
+                              p: "/key_rotation"
+                              gr:
+                                - post: { p: "", s: crate::group::start_key_rotation }
+                                - get: { p: "", s: crate::group::get_keys_for_update }
+                                - put: { p: "/:key_id", s: crate::group::done_key_rotation_for_user }
