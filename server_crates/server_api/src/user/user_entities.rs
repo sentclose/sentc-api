@@ -323,7 +323,7 @@ impl crate::core::db::FromSqliteRow for UserPublicData
 	where
 		Self: Sized,
 	{
-		let k_id = take_or_err!(row, 0);
+		let k_id: String = take_or_err!(row, 0);
 
 		Ok(Self {
 			public_key_id: k_id.to_string(),
