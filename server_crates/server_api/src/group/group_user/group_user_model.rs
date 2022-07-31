@@ -104,7 +104,7 @@ pub(super) async fn get_invite_req_to_user(app_id: AppId, user_id: UserId, last_
 	//called from the user not the group
 
 	//language=SQL
-	let mut sql = "
+	let sql = "
 SELECT group_id, i.time 
 FROM sentc_group_user_invites_and_join_req i, sentc_group g 
 WHERE 
@@ -114,23 +114,24 @@ WHERE
     group_id = id"
 		.to_string();
 
-	if last_fetched_time > 0 {
-		//there is a last fetched time time
-		sql += " AND i.time <= ? ";
-	}
+	let (sql1, params) = if last_fetched_time > 0 {
+		//there is a last fetched time time -> set the last fetched time to the params list
+		let sql = sql + " AND i.time <= ? LIMIT 50";
+		(
+			sql,
+			set_params!(
+				user_id,
+				GROUP_INVITE_TYPE_INVITE_REQ,
+				app_id,
+				last_fetched_time.to_string()
+			),
+		)
+	} else {
+		let sql = sql + " LIMIT 50";
+		(sql, set_params!(user_id, GROUP_INVITE_TYPE_INVITE_REQ, app_id))
+	};
 
-	sql += " LIMIT 50";
-
-	let invite_req: Vec<GroupInviteReq> = query_string(
-		sql,
-		set_params!(
-			user_id,
-			last_fetched_time.to_string(),
-			GROUP_INVITE_TYPE_INVITE_REQ,
-			app_id
-		),
-	)
-	.await?;
+	let invite_req: Vec<GroupInviteReq> = query_string(sql1, params).await?;
 
 	Ok(invite_req)
 }

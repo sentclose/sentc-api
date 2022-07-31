@@ -115,7 +115,7 @@ New keys from key update are fetched by the key update fn
 pub(super) async fn get_user_group_keys(app_id: AppId, group_id: GroupId, user_id: UserId, last_fetched_time: u128) -> AppRes<Vec<GroupUserKeys>>
 {
 	//language=SQL
-	let mut sql = r"
+	let sql = r"
 SELECT 
     k_id,
     encrypted_group_key, 
@@ -137,18 +137,20 @@ WHERE
     app_id = ?"
 		.to_string();
 
-	if last_fetched_time > 0 {
-		//there is a last fetched time time
-		sql += " AND uk.time <= ? ";
-	}
+	let (sql1, params) = if last_fetched_time > 0 {
+		//there is a last fetched time time -> set the last fetched time to the params list
+		let sql = sql + " AND uk.time <= ? ORDER BY uk.time DESC LIMIT 50";
 
-	sql += " ORDER BY uk.time DESC LIMIT 50";
+		(
+			sql,
+			set_params!(user_id, group_id, app_id, last_fetched_time.to_string()),
+		)
+	} else {
+		let sql = sql + " ORDER BY uk.time DESC LIMIT 50";
+		(sql, set_params!(user_id, group_id, app_id))
+	};
 
-	let user_keys: Vec<GroupUserKeys> = query_string(
-		sql,
-		set_params!(user_id, group_id, app_id, last_fetched_time.to_string()),
-	)
-	.await?;
+	let user_keys: Vec<GroupUserKeys> = query_string(sql1, params).await?;
 
 	Ok(user_keys)
 }
