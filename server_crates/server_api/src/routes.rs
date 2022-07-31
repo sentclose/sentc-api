@@ -151,10 +151,6 @@ pub(crate) fn routes() -> Router
 			.add(app_token::app_token_transform)
 			.add(jwt::jwt_transform),
 	);
-	router.get(
-		"/api/v1/group/:group_id/123",
-		r(crate::group::get).add(jwt::jwt_transform),
-	);
 
 	router
 }
