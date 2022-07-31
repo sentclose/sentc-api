@@ -1,23 +1,22 @@
 use sentc_crypto_common::group::GroupKeysForNewMember;
-use sentc_crypto_common::{AppId, GroupId, UserId};
+use sentc_crypto_common::{GroupId, UserId};
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::core::db::{bulk_insert, exec, exec_transaction, query, query_first, TransactionData};
 use crate::core::get_time;
 use crate::group::group_entities::{GroupJoinReq, UserInGroupCheck, GROUP_INVITE_TYPE_INVITE_REQ, GROUP_INVITE_TYPE_JOIN_REQ};
-use crate::group::group_model::{check_group_rank, get_user_rank};
+use crate::group::group_model::check_group_rank;
 use crate::set_params;
 
 pub(super) async fn invite_request(
-	app_id: AppId,
 	group_id: GroupId,
-	starter_user_id: UserId,
 	invited_user: UserId,
 	keys_for_new_user: Vec<GroupKeysForNewMember>,
+	admin_rank: i32,
 ) -> AppRes<()>
 {
 	//1. check the rights of the starter
-	check_group_rank(app_id, group_id.to_string(), starter_user_id, 2).await?;
+	check_group_rank(admin_rank, 2)?;
 
 	//2. check if the user is already in the group
 	let check = check_user_in_group(group_id.to_string(), invited_user.to_string()).await?;
@@ -199,10 +198,10 @@ pub(super) async fn join_req(group_id: GroupId, user_id: UserId) -> AppRes<()>
 	Ok(())
 }
 
-pub(super) async fn reject_join_req(app_id: AppId, group_id: GroupId, admin_id: UserId, user_id: UserId) -> AppRes<()>
+pub(super) async fn reject_join_req(group_id: GroupId, user_id: UserId, admin_rank: i32) -> AppRes<()>
 {
 	//called from the group admin
-	check_group_rank(app_id, group_id.to_string(), admin_id, 2).await?;
+	check_group_rank(admin_rank, 2)?;
 
 	//language=SQL
 	let sql = "DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ?";
@@ -212,15 +211,10 @@ pub(super) async fn reject_join_req(app_id: AppId, group_id: GroupId, admin_id: 
 	Ok(())
 }
 
-pub(super) async fn accept_join_req(
-	app_id: AppId,
-	group_id: GroupId,
-	admin_id: UserId,
-	user_id: UserId,
-	keys_for_new_user: Vec<GroupKeysForNewMember>,
-) -> AppRes<()>
+pub(super) async fn accept_join_req(group_id: GroupId, user_id: UserId, keys_for_new_user: Vec<GroupKeysForNewMember>, admin_rank: i32)
+	-> AppRes<()>
 {
-	check_group_rank(app_id, group_id.to_string(), admin_id, 2).await?;
+	check_group_rank(admin_rank, 2)?;
 
 	//this check in important (see invite user req -> check if there is an invite). we would insert the keys even if the user is already member
 	let check = check_user_in_group(group_id.to_string(), user_id.to_string()).await?;
@@ -304,9 +298,9 @@ pub(super) async fn accept_join_req(
 	Ok(())
 }
 
-pub(super) async fn get_join_req(app_id: AppId, group_id: GroupId, admin_id: UserId, last_fetched_time: u128) -> AppRes<Vec<GroupJoinReq>>
+pub(super) async fn get_join_req(group_id: GroupId, last_fetched_time: u128, admin_rank: i32) -> AppRes<Vec<GroupJoinReq>>
 {
-	check_group_rank(app_id, group_id.to_string(), admin_id, 2).await?;
+	check_group_rank(admin_rank, 2)?;
 
 	//fetch the user with public key in a separate req, when the user decided to accept a join req
 	//language=SQL
@@ -320,11 +314,9 @@ pub(super) async fn get_join_req(app_id: AppId, group_id: GroupId, admin_id: Use
 	Ok(join_req)
 }
 
-pub(super) async fn user_leave_group(app_id: AppId, group_id: GroupId, user_id: UserId) -> AppRes<()>
+pub(super) async fn user_leave_group(group_id: GroupId, user_id: UserId, rank: i32) -> AppRes<()>
 {
 	//get the rank of the user -> check if there is only one admin (check also here if the user is in the group)
-	let rank = get_user_rank(app_id, group_id.to_string(), user_id.to_string()).await?;
-
 	if rank <= 1 {
 		let only_admin = check_for_only_one_admin(group_id.to_string(), user_id.to_string()).await?;
 

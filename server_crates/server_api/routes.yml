@@ -68,27 +68,33 @@ routes:
                   mw:
                     - app_token::app_token_transform
                   gr:
+                    #___________________________________________________________________________________________________
+                    # no group mw check needed here
                     - post: {p: "", s: crate::group::create}
                     - group:
                         p: "/:group_id"
                         gr:
-                          - get: {p: "", s: crate::group::get_user_group_data}
-                          - get: {p: "/keys/:last_fetched_time", s: crate::group::get_user_group_keys}
+                          - get: { p: "", s: crate::group::get_user_group_data }
+                          - get: { p: "/keys/:last_fetched_time", s: crate::group::get_user_group_keys }
+                          - patch: { p: "/invite", s: crate::group::accept_invite }
+                          - delete: { p: "/invite", s: crate::group::reject_invite }
+                          - patch: {p: "/join_req", s: crate::group::join_req}
+                    #___________________________________________________________________________________________________
+                    # group mw check needed here
+                    - group:
+                        p: "/:group_id"
+                        mw:
+                          - group::group_transform
+                        gr:
                           - delete: {p: "", s: crate::group::delete}
                           - delete: {p: "/leave", s: crate::group::leave_group}
+                          - put: {p: "/invite/:invited_user", s: crate::group::invite_request}
                           #_____________________________________________________________________________________________
-                          # groups for invite and join reqs
-                          - group:
-                              p: "/invite"
-                              gr:
-                                - put: {p: "/:invited_user", s: crate::group::invite_request}
-                                - patch: {p: "", s: crate::group::accept_invite}
-                                - delete: {p: "", s: crate::group::reject_invite}
+                          # groups for join reqs
                           - group:
                               p: "/join_req"
                               gr:
                                 - get: {p: "/:last_fetched_time", s: crate::group::get_join_req}
-                                - patch: {p: "", s: crate::group::join_req}
                                 - put: {p: "/:join_user", s: crate::group::accept_join_req}
                                 - delete: {p: "/:join_user", s: crate::group::reject_join_req}
               #_________________________________________________________________________________________________________
