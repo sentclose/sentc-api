@@ -71,6 +71,8 @@ routes:
                     #___________________________________________________________________________________________________
                     # no group mw check needed here
                     - post: {p: "", s: crate::group::create}
+                    # no group mw for get invite req, because this is called form the user, not the group
+                    - get: {p: "/invite/:last_fetched_time", s: crate::group::get_invite_req}
                     - group:
                         p: "/:group_id"
                         gr:

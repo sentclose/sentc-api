@@ -1,5 +1,5 @@
 use rustgram::Request;
-use sentc_crypto_common::group::{GroupJoinReqList, GroupKeysForNewMemberServerInput};
+use sentc_crypto_common::group::{GroupInviteReqList, GroupJoinReqList, GroupKeysForNewMemberServerInput};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 
 use crate::core::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
@@ -43,6 +43,31 @@ pub(crate) async fn invite_request(mut req: Request) -> JRes<ServerSuccessOutput
 	echo_success()
 }
 
+pub(crate) async fn get_invite_req(req: Request) -> JRes<Vec<GroupInviteReqList>>
+{
+	//called from the invited user not the group admin
+
+	let user = get_jwt_data_from_param(&req)?;
+	let last_fetched_time = get_name_param_from_req(&req, "last_fetched_time")?;
+	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
+		HttpErr::new(
+			400,
+			ApiErrorCodes::UnexpectedTime,
+			"last fetched time is wrong".to_string(),
+			None,
+		)
+	})?;
+
+	let reqs = group_user_model::get_invite_req_to_user(user.sub.to_string(), user.id.to_string(), last_fetched_time).await?;
+
+	let mut out: Vec<GroupInviteReqList> = Vec::with_capacity(reqs.len());
+	for item in reqs {
+		out.push(item.into());
+	}
+
+	echo(out)
+}
+
 pub(crate) async fn reject_invite(req: Request) -> JRes<ServerSuccessOutput>
 {
 	let user = get_jwt_data_from_param(&req)?;
@@ -62,6 +87,8 @@ pub(crate) async fn accept_invite(req: Request) -> JRes<ServerSuccessOutput>
 
 	echo_success()
 }
+
+//__________________________________________________________________________________________________
 
 pub(crate) async fn join_req(req: Request) -> JRes<ServerSuccessOutput>
 {
@@ -146,6 +173,8 @@ pub(crate) async fn accept_join_req(mut req: Request) -> JRes<ServerSuccessOutpu
 
 	echo_success()
 }
+
+//__________________________________________________________________________________________________
 
 pub(crate) async fn leave_group(req: Request) -> JRes<ServerSuccessOutput>
 {
