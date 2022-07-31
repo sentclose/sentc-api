@@ -283,3 +283,95 @@ impl crate::core::db::FromSqliteRow for UserKeyFistRow
 }
 
 //__________________________________________________________________________________________________
+
+pub struct UserPublicData
+{
+	pub public_key_id: EncryptionKeyPairId,
+	pub public_key: String,
+	pub public_key_alg: String,
+
+	pub verify_key_id: SignKeyPairId,
+	pub verify_key: String,
+	pub verify_alg: String,
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for UserPublicData
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		let k_id = take_or_err!(row, 0, String);
+
+		Ok(Self {
+			public_key_id: k_id.to_string(),
+			public_key: take_or_err!(row, 1, String),
+			public_key_alg: take_or_err!(row, 2, String),
+
+			verify_key_id: k_id.to_string(),
+			verify_key: take_or_err!(row, 3, String),
+			verify_alg: take_or_err!(row, 4, String),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl crate::core::db::FromSqliteRow for UserPublicData
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		let k_id = take_or_err!(row, 0);
+
+		Ok(Self {
+			public_key_id: k_id.to_string(),
+			public_key: take_or_err!(row, 1),
+			public_key_alg: take_or_err!(row, 2),
+
+			verify_key_id: k_id.to_string(),
+			verify_key: take_or_err!(row, 3),
+			verify_alg: take_or_err!(row, 4),
+		})
+	}
+}
+
+//__________________________________________________________________________________________________
+
+pub struct UserPublicKeyDataEntity
+{
+	pub public_key_id: EncryptionKeyPairId,
+	pub public_key: String,
+	pub public_key_alg: String,
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for UserPublicKeyDataEntity
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			public_key_id: take_or_err!(row, 0, String),
+			public_key: take_or_err!(row, 1, String),
+			public_key_alg: take_or_err!(row, 2, String),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl crate::core::db::FromSqliteRow for UserPublicKeyDataEntity
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			public_key_id: take_or_err!(row, 0),
+			public_key: take_or_err!(row, 1),
+			public_key_alg: take_or_err!(row, 2),
+		})
+	}
+}
