@@ -5,8 +5,54 @@ use uuid::Uuid;
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::core::db::{exec, exec_transaction, query, query_first, TransactionData};
 use crate::core::get_time;
-use crate::group::group_entities::{GroupKeyUpdate, GroupKeyUpdateReady, GroupUserData, GroupUserKeys, UserGroupRankCheck};
+use crate::group::group_entities::{
+	GroupKeyUpdate,
+	GroupKeyUpdateReady,
+	GroupUserData,
+	GroupUserKeys,
+	InternalGroupData,
+	InternalUserGroupData,
+	UserGroupRankCheck,
+};
 use crate::set_params;
+
+pub(crate) async fn get_internal_group_data(app_id: AppId, group_id: GroupId) -> AppRes<InternalGroupData>
+{
+	//language=SQL
+	let sql = "SELECT id as group_id, app_id, parent, time FROM sentc_group WHERE app_id = ? AND id = ?";
+	let group: Option<InternalGroupData> = query_first(sql, set_params!(app_id, group_id)).await?;
+
+	match group {
+		Some(d) => Ok(d),
+		None => {
+			Err(HttpErr::new(
+				400,
+				ApiErrorCodes::GroupAccess,
+				"No access to this group".to_string(),
+				None,
+			))
+		},
+	}
+}
+
+pub(crate) async fn get_internal_group_user_data(group_id: GroupId, user_id: UserId) -> AppRes<InternalUserGroupData>
+{
+	//language=SQL
+	let sql = "SELECT user_id, time, `rank` FROM sentc_group_user WHERE group_id = ? AND user_id = ?";
+	let group_data: Option<InternalUserGroupData> = query_first(sql, set_params!(group_id, user_id)).await?;
+
+	match group_data {
+		Some(d) => Ok(d),
+		None => {
+			Err(HttpErr::new(
+				400,
+				ApiErrorCodes::GroupAccess,
+				"No access to this group".to_string(),
+				None,
+			))
+		},
+	}
+}
 
 /**
 Get the general group data for init the group in the client.
@@ -171,7 +217,7 @@ pub(super) async fn create(app_id: AppId, user_id: UserId, data: CreateData) -> 
 		None => {},
 		Some(p) => {
 			//test here if the user has access to create a child group in this group
-			check_group_rank(app_id.to_string(), p.to_string(), user_id.to_string(), 1).await?;
+			check_group_rank_by_fetch(app_id.to_string(), p.to_string(), user_id.to_string(), 1).await?;
 		},
 	}
 
@@ -276,10 +322,10 @@ VALUES (?,?,?,?,?,?,?)";
 	Ok(group_id)
 }
 
-pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_id: UserId) -> AppRes<()>
+pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_rank: i32) -> AppRes<()>
 {
 	//check with app id to make sure the user is in the right group
-	check_group_rank(app_id.to_string(), group_id.to_string(), user_id, 1).await?;
+	check_group_rank(user_rank, 1)?;
 
 	//language=SQL
 	let sql = "DELETE FROM sentc_group WHERE id = ? AND app_id = ?";
@@ -314,11 +360,28 @@ pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_id: UserId) ->
 }
 
 /**
-Check first if the user is in this group (from this app).
+user here the cache from the mw
 
 Then check if the rank fits
 */
-pub(super) async fn check_group_rank(app_id: AppId, group_id: GroupId, user_id: UserId, req_rank: i32) -> AppRes<()>
+pub(super) fn check_group_rank(user_rank: i32, req_rank: i32) -> AppRes<()>
+{
+	if user_rank > req_rank {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::GroupUserRank,
+			"Wrong group rank for this action".to_string(),
+			None,
+		));
+	}
+
+	Ok(())
+}
+
+/**
+When this route don't get access to the group cache
+*/
+pub(super) async fn check_group_rank_by_fetch(app_id: AppId, group_id: GroupId, user_id: UserId, req_rank: i32) -> AppRes<()>
 {
 	let rank = get_user_rank(app_id, group_id, user_id).await?;
 

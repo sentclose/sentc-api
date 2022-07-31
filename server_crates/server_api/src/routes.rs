@@ -85,24 +85,6 @@ pub(crate) fn routes() -> Router
 			.add(app_token::app_token_transform)
 			.add(jwt::jwt_transform),
 	);
-	router.delete(
-		"/api/v1/group/:group_id",
-		r(crate::group::delete)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
-	);
-	router.delete(
-		"/api/v1/group/:group_id/leave",
-		r(crate::group::leave_group)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
-	);
-	router.put(
-		"/api/v1/group/:group_id/invite/:invited_user",
-		r(crate::group::invite_request)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
-	);
 	router.patch(
 		"/api/v1/group/:group_id/invite",
 		r(crate::group::accept_invite)
@@ -115,27 +97,51 @@ pub(crate) fn routes() -> Router
 			.add(app_token::app_token_transform)
 			.add(jwt::jwt_transform),
 	);
-	router.get(
-		"/api/v1/group/:group_id/join_req/:last_fetched_time",
-		r(crate::group::get_join_req)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
-	);
 	router.patch(
 		"/api/v1/group/:group_id/join_req",
 		r(crate::group::join_req)
 			.add(app_token::app_token_transform)
 			.add(jwt::jwt_transform),
 	);
+	router.delete(
+		"/api/v1/group/:group_id",
+		r(crate::group::delete)
+			.add(group::group_transform)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
+	router.delete(
+		"/api/v1/group/:group_id/leave",
+		r(crate::group::leave_group)
+			.add(group::group_transform)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
+	router.put(
+		"/api/v1/group/:group_id/invite/:invited_user",
+		r(crate::group::invite_request)
+			.add(group::group_transform)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
+	router.get(
+		"/api/v1/group/:group_id/join_req/:last_fetched_time",
+		r(crate::group::get_join_req)
+			.add(group::group_transform)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
 	router.put(
 		"/api/v1/group/:group_id/join_req/:join_user",
 		r(crate::group::accept_join_req)
+			.add(group::group_transform)
 			.add(app_token::app_token_transform)
 			.add(jwt::jwt_transform),
 	);
 	router.delete(
 		"/api/v1/group/:group_id/join_req/:join_user",
 		r(crate::group::reject_join_req)
+			.add(group::group_transform)
 			.add(app_token::app_token_transform)
 			.add(jwt::jwt_transform),
 	);
