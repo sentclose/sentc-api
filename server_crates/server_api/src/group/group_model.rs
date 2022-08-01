@@ -1,19 +1,11 @@
 use sentc_crypto_common::group::CreateData;
-use sentc_crypto_common::{AppId, GroupId, UserId};
+use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
 use uuid::Uuid;
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
-use crate::core::db::{exec, exec_transaction, query, query_first, TransactionData};
+use crate::core::db::{exec, exec_transaction, query, query_first, query_string, TransactionData};
 use crate::core::get_time;
-use crate::group::group_entities::{
-	GroupKeyUpdate,
-	GroupKeyUpdateReady,
-	GroupUserData,
-	GroupUserKeys,
-	InternalGroupData,
-	InternalUserGroupData,
-	UserGroupRankCheck,
-};
+use crate::group::group_entities::{GroupKeyUpdateReady, GroupUserData, GroupUserKeys, InternalGroupData, InternalUserGroupData, UserGroupRankCheck};
 use crate::set_params;
 
 pub(crate) async fn get_internal_group_data(app_id: AppId, group_id: GroupId) -> AppRes<InternalGroupData>
@@ -120,7 +112,13 @@ This keys are normally cached in the client, so it should be fetched once for ea
 
 New keys from key update are fetched by the key update fn
 */
-pub(super) async fn get_user_group_keys(app_id: AppId, group_id: GroupId, user_id: UserId, last_fetched_time: u128) -> AppRes<Vec<GroupUserKeys>>
+pub(super) async fn get_user_group_keys(
+	app_id: AppId,
+	group_id: GroupId,
+	user_id: UserId,
+	last_fetched_time: u128,
+	last_k_id: SymKeyId,
+) -> AppRes<Vec<GroupUserKeys>>
 {
 	//language=SQL
 	let sql = r"
@@ -142,15 +140,31 @@ WHERE
     k.group_id = ? AND 
     k.id = k_id AND 
     g.id = k.group_id AND 
-    app_id = ? AND 
-    uk.time >= ?
-ORDER BY uk.time DESC LIMIT 50";
+    app_id = ?"
+		.to_string();
 
-	let user_keys: Vec<GroupUserKeys> = query(
-		sql,
-		set_params!(user_id, group_id, app_id, last_fetched_time.to_string()),
-	)
-	.await?;
+	let (sql1, params) = if last_fetched_time > 0 {
+		//there is a last fetched time time -> set the last fetched time to the params list
+		let sql = sql + " AND uk.time <= ? AND (uk.time < ? OR (uk.time = ? AND k_id > ?)) ORDER BY uk.time DESC, k_id LIMIT 50";
+
+		(
+			sql,
+			set_params!(
+				user_id,
+				group_id,
+				app_id,
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_k_id
+			),
+		)
+	} else {
+		let sql = sql + " ORDER BY uk.time DESC, k_id LIMIT 50";
+		(sql, set_params!(user_id, group_id, app_id))
+	};
+
+	let user_keys: Vec<GroupUserKeys> = query_string(sql1, params).await?;
 
 	Ok(user_keys)
 }
@@ -165,16 +179,14 @@ pub(super) async fn check_for_key_update(app_id: AppId, user_id: UserId, group_i
 	let sql = r"
 SELECT 1 
 FROM 
-    sentc_group_keys gk, 
     sentc_group_user_key_rotation gkr,
     sentc_group g
 WHERE
     user_id = ? AND
     app_id = ? AND 
-    key_id = gk.id AND
-    g.id = gk.group_id AND
+    g.id = gkr.group_id AND
     g.id = ?
-ORDER BY gk.time DESC LIMIT 1";
+LIMIT 1";
 
 	let key_update: Option<GroupKeyUpdateReady> = query_first(sql, set_params!(user_id, app_id, group_id)).await?;
 
@@ -182,33 +194,6 @@ ORDER BY gk.time DESC LIMIT 1";
 		Some(_) => Ok(true),
 		None => Ok(false),
 	}
-}
-
-pub(super) async fn get_keys_for_key_update(app_id: AppId, group_id: GroupId, user_id: UserId) -> AppRes<Vec<GroupKeyUpdate>>
-{
-	//check if there was a key rotation, fetch all rotation keys in the table
-	//language=SQL
-	let sql = r"
-SELECT 
-    gkr.encrypted_ephemeral_key, 
-    gkr.encrypted_eph_key_key_id,	-- the key id of the public key which was used to encrypt the eph key on the server
-    encrypted_group_key_by_eph_key,
-    previous_group_key_id,
-    gk.time
-FROM 
-    sentc_group_keys gk, 
-    sentc_group_user_key_rotation gkr,
-    sentc_group g
-WHERE user_id = ? AND 
-      g.id = ? AND 
-      app_id = ? AND 
-      key_id = gk.id AND 
-      gk.group_id = g.id 
-ORDER BY gk.time";
-
-	let out: Vec<GroupKeyUpdate> = query(sql, set_params!(user_id, group_id, app_id)).await?;
-
-	Ok(out)
 }
 
 pub(super) async fn create(app_id: AppId, user_id: UserId, data: CreateData) -> AppRes<GroupId>

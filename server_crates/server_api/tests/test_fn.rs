@@ -2,7 +2,7 @@
 
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
-use sentc_crypto::group::GroupOutData;
+use sentc_crypto::group::{GroupKeyData, GroupOutData};
 use sentc_crypto::{KeyData, PrivateKeyFormat, PublicKeyFormat};
 use sentc_crypto_common::group::GroupCreateOutput;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
@@ -237,7 +237,7 @@ pub async fn create_group(secret_token: &str, creator_public_key: &PublicKeyForm
 	out.group_id
 }
 
-pub async fn get_group(secret_token: &str, jwt: &str, group_id: &str, private_key: &PrivateKeyFormat) -> GroupOutData
+pub async fn get_group(secret_token: &str, jwt: &str, group_id: &str, private_key: &PrivateKeyFormat, key_update: bool) -> GroupOutData
 {
 	let url = get_url("api/v1/group/".to_owned() + group_id);
 	let client = reqwest::Client::new();
@@ -252,6 +252,73 @@ pub async fn get_group(secret_token: &str, jwt: &str, group_id: &str, private_ke
 	let body = res.text().await.unwrap();
 
 	let data = sentc_crypto::group::get_group_data(private_key, body.as_str()).unwrap();
+
+	assert_eq!(data.key_update, key_update);
+
+	data
+}
+
+pub async fn add_user_by_invite(
+	secret_token: &str,
+	jwt: &str,
+	group_id: &str,
+	keys: &Vec<GroupKeyData>,
+	user_to_invite_id: &str,
+	user_to_invite_jwt: &str,
+	user_to_add_public_key: &sentc_crypto::sdk_common::user::UserPublicKeyData,
+	user_to_add_private_key: &PrivateKeyFormat,
+) -> GroupOutData
+{
+	let mut group_keys_ref = vec![];
+
+	for decrypted_group_key in keys {
+		group_keys_ref.push(&decrypted_group_key.group_key);
+	}
+
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(user_to_add_public_key, &group_keys_ref).unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + group_id + "/invite/" + user_to_invite_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", secret_token)
+		.body(invite)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+
+	//accept the invite
+	let url = get_url("api/v1/group/".to_owned() + group_id + "/invite");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.patch(url)
+		.header(AUTHORIZATION, auth_header(user_to_invite_jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+
+	let data = get_group(
+		secret_token,
+		user_to_invite_jwt,
+		group_id,
+		user_to_add_private_key,
+		false,
+	)
+	.await;
+
+	assert_eq!(data.rank, 4);
 
 	data
 }

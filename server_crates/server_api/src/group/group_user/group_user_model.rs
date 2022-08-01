@@ -2,7 +2,7 @@ use sentc_crypto_common::group::GroupKeysForNewMember;
 use sentc_crypto_common::{AppId, GroupId, UserId};
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
-use crate::core::db::{bulk_insert, exec, exec_transaction, query, query_first, TransactionData};
+use crate::core::db::{bulk_insert, exec, exec_transaction, query, query_first, query_string, TransactionData};
 use crate::core::get_time;
 use crate::group::group_entities::{GroupInviteReq, GroupJoinReq, UserInGroupCheck, GROUP_INVITE_TYPE_INVITE_REQ, GROUP_INVITE_TYPE_JOIN_REQ};
 use crate::group::group_model::check_group_rank;
@@ -81,6 +81,7 @@ pub(super) async fn invite_request(
 			"encrypted_group_key".to_string(),
 			"encrypted_group_key_key_id".to_string(),
 			"encrypted_alg".to_string(),
+			"time".to_string(),
 		],
 		keys_for_new_user,
 		move |ob| {
@@ -90,7 +91,8 @@ pub(super) async fn invite_request(
 				group_id.to_string(),
 				ob.encrypted_group_key.to_string(),
 				ob.user_public_key_id.to_string(),
-				ob.alg.to_string()
+				ob.encrypted_alg.to_string(),
+				time.to_string()
 			)
 		},
 	)
@@ -99,7 +101,7 @@ pub(super) async fn invite_request(
 	Ok(())
 }
 
-pub(super) async fn get_invite_req_to_user(app_id: AppId, user_id: UserId, last_fetched_time: u128) -> AppRes<Vec<GroupInviteReq>>
+pub(super) async fn get_invite_req_to_user(app_id: AppId, user_id: UserId, last_fetched_time: u128, last_id: GroupId) -> AppRes<Vec<GroupInviteReq>>
 {
 	//called from the user not the group
 
@@ -109,22 +111,33 @@ SELECT group_id, i.time
 FROM sentc_group_user_invites_and_join_req i, sentc_group g 
 WHERE 
     user_id = ? AND 
-    i.time >= ? AND 
     type = ? AND 
     app_id = ? AND
-    group_id = id
-LIMIT 50";
+    group_id = id"
+		.to_string();
 
-	let invite_req: Vec<GroupInviteReq> = query(
-		sql,
-		set_params!(
-			user_id,
-			last_fetched_time.to_string(),
-			GROUP_INVITE_TYPE_INVITE_REQ,
-			app_id
-		),
-	)
-	.await?;
+	let (sql1, params) = if last_fetched_time > 0 {
+		//there is a last fetched time time -> set the last fetched time to the params list
+		//order by time first -> then group id if multiple group ids got the same time
+		let sql = sql + " AND i.time <= ? AND (i.time < ? OR (i.time = ? AND group_id > ?)) ORDER BY i.time DESC, group_id LIMIT 50";
+		(
+			sql,
+			set_params!(
+				user_id,
+				GROUP_INVITE_TYPE_INVITE_REQ,
+				app_id,
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_id
+			),
+		)
+	} else {
+		let sql = sql + " ORDER BY i.time DESC, group_id LIMIT 50";
+		(sql, set_params!(user_id, GROUP_INVITE_TYPE_INVITE_REQ, app_id))
+	};
+
+	let invite_req: Vec<GroupInviteReq> = query_string(sql1, params).await?;
 
 	Ok(invite_req)
 }
@@ -312,6 +325,7 @@ pub(super) async fn accept_join_req(group_id: GroupId, user_id: UserId, keys_for
 			"encrypted_group_key".to_string(),
 			"encrypted_group_key_key_id".to_string(),
 			"encrypted_alg".to_string(),
+			"time".to_string(),
 		],
 		keys_for_new_user,
 		move |ob| {
@@ -321,7 +335,8 @@ pub(super) async fn accept_join_req(group_id: GroupId, user_id: UserId, keys_for
 				group_id.to_string(),
 				ob.encrypted_group_key.to_string(),
 				ob.user_public_key_id.to_string(),
-				ob.alg.to_string()
+				ob.encrypted_alg.to_string(),
+				time.to_string()
 			)
 		},
 	)

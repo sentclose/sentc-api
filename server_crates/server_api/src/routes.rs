@@ -74,7 +74,7 @@ pub(crate) fn routes() -> Router
 			.add(jwt::jwt_transform),
 	);
 	router.get(
-		"/api/v1/group/invite/:last_fetched_time",
+		"/api/v1/group/invite/:last_fetched_time/:last_group_id",
 		r(crate::group::get_invite_req)
 			.add(app_token::app_token_transform)
 			.add(jwt::jwt_transform),
@@ -86,7 +86,7 @@ pub(crate) fn routes() -> Router
 			.add(jwt::jwt_transform),
 	);
 	router.get(
-		"/api/v1/group/:group_id/keys/:last_fetched_time",
+		"/api/v1/group/:group_id/keys/:last_fetched_time/:last_k_id",
 		r(crate::group::get_user_group_keys)
 			.add(app_token::app_token_transform)
 			.add(jwt::jwt_transform),
@@ -147,6 +147,27 @@ pub(crate) fn routes() -> Router
 	router.delete(
 		"/api/v1/group/:group_id/join_req/:join_user",
 		r(crate::group::reject_join_req)
+			.add(group::group_transform)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
+	router.post(
+		"/api/v1/group/:group_id/key_rotation",
+		r(crate::group::start_key_rotation)
+			.add(group::group_transform)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
+	router.get(
+		"/api/v1/group/:group_id/key_rotation",
+		r(crate::group::get_keys_for_update)
+			.add(group::group_transform)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
+	router.put(
+		"/api/v1/group/:group_id/key_rotation/:key_id",
+		r(crate::group::done_key_rotation_for_user)
 			.add(group::group_transform)
 			.add(app_token::app_token_transform)
 			.add(jwt::jwt_transform),

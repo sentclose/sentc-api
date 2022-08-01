@@ -14,6 +14,8 @@ use crate::user::user_entities::{
 	UserExistsEntity,
 	UserKeyFistRow,
 	UserLoginDataEntity,
+	UserPublicData,
+	UserPublicKeyDataEntity,
 };
 
 pub(super) async fn get_jwt_sign_key(kid: &str) -> AppRes<String>
@@ -122,6 +124,70 @@ WHERE user_id = u.id AND u.identifier = ? AND u.app_id = ? ORDER BY uk.time DESC
 
 	Ok(data)
 }
+
+//__________________________________________________________________________________________________
+
+/**
+Get the public and verify key data from this user
+
+TODO
+*/
+pub(super) async fn _get_public_data(app_id: AppId, user_id: UserId) -> AppRes<UserPublicData>
+{
+	//language=SQL
+	let sql = r"
+SELECT uk.id, public_key, keypair_encrypt_alg, verify_key, keypair_sign_alg
+FROM user u,user_keys uk 
+WHERE
+    user_id = ? AND app_id = ? AND user_id = u.id
+ORDER BY uk.time LIMIT 1";
+
+	let data: Option<UserPublicData> = query_first(sql, set_params!(user_id, app_id)).await?;
+
+	match data {
+		Some(d) => Ok(d),
+		None => {
+			Err(HttpErr::new(
+				400,
+				ApiErrorCodes::UserNotFound,
+				"Public data from this user not found".to_string(),
+				None,
+			))
+		},
+	}
+}
+
+/**
+Get just the public key data for this user
+
+TODO
+*/
+pub(super) async fn _get_public_key_data(app_id: AppId, user_id: UserId) -> AppRes<UserPublicKeyDataEntity>
+{
+	//language=SQL
+	let sql = r"
+SELECT uk.id, public_key, keypair_encrypt_alg
+FROM user u,user_keys uk 
+WHERE
+    user_id = ? AND app_id = ? AND user_id = u.id
+ORDER BY uk.time LIMIT 1";
+
+	let data: Option<UserPublicKeyDataEntity> = query_first(sql, set_params!(user_id, app_id)).await?;
+
+	match data {
+		Some(d) => Ok(d),
+		None => {
+			Err(HttpErr::new(
+				400,
+				ApiErrorCodes::UserNotFound,
+				"Public key from this user not found".to_string(),
+				None,
+			))
+		},
+	}
+}
+
+//__________________________________________________________________________________________________
 
 pub(super) async fn register(app_id: &str, register_data: RegisterData) -> AppRes<UserId>
 {
