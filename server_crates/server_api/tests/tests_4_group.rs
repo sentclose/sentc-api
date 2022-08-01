@@ -940,6 +940,65 @@ async fn test_27_done_key_rotation_for_other_user()
 		.insert(user.user_id.to_string(), data_user_1.keys);
 }
 
+#[tokio::test]
+async fn test_28_get_key_with_pagination()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let user = &users[0];
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/keys/0/abc");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let out = ServerOutput::<Vec<sentc_crypto::sdk_common::group::GroupKeyServerOutput>>::from_string(body.as_str()).unwrap();
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	let out = out.result.unwrap();
+	assert_eq!(out.len(), 2);
+
+	let group_keys = sentc_crypto::group::get_group_keys_from_pagination(&user.key_data.private_key, body.as_str()).unwrap();
+
+	//normally use len() - 1 but this time we wont fake a pagination, so we don't use the last item
+	let latest_fetched_id = group_keys[group_keys.len() - 2].group_key.key_id.as_str();
+	let last_fetched_time = group_keys[group_keys.len() - 2].time;
+
+	//fetch it with pagination (a fake page two)
+	let url =
+		get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/keys/" + last_fetched_time.to_string().as_str() + "/" + latest_fetched_id);
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let out = ServerOutput::<Vec<sentc_crypto::sdk_common::group::GroupKeyServerOutput>>::from_string(body.as_str()).unwrap();
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	let out = out.result.unwrap();
+	assert_eq!(out.len(), 1);
+
+	assert_ne!(out[0].group_key_id.to_string(), latest_fetched_id.to_string())
+}
+
+//TODO test user invite with multiple keys
+
 //__________________________________________________________________________________________________
 //delete group
 
