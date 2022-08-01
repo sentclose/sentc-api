@@ -179,7 +179,12 @@ pub(super) async fn get_new_key(group_id: GroupId, key_id: SymKeyId) -> AppRes<K
 	}
 }
 
-pub(super) async fn get_user_and_public_key(group_id: GroupId, last_fetched: u128, last_id: UserId) -> AppRes<Vec<UserGroupPublicKeyData>>
+pub(super) async fn get_user_and_public_key(
+	group_id: GroupId,
+	key_id: SymKeyId,
+	last_fetched: u128,
+	last_id: UserId,
+) -> AppRes<Vec<UserGroupPublicKeyData>>
 {
 	//language=SQL
 	let sql = r"
@@ -187,8 +192,26 @@ SELECT gu.user_id, id, public_key, keypair_encrypt_alg, gu.time
 FROM sentc_group_user gu, user_keys uk 
 WHERE 
     gu.user_id = uk.user_id AND 
-    group_id = ?"
-		.to_string();
+    group_id = ? AND 
+    NOT EXISTS(
+        -- this user is already done -> skip
+        SELECT 1 
+        FROM sentc_group_user_keys gk 
+        WHERE 
+            gk.k_id = ? AND 
+            gk.user_id = gu.user_id AND 
+            gk.group_id = gu.group_id
+    ) AND 
+    NOT EXISTS(
+        -- this user already got a key rotation but needs to done it on the client -> skip
+        SELECT 1 
+        FROM sentc_group_user_key_rotation grk 
+        WHERE 
+            grk.key_id = ? AND 
+            grk.user_id = gu.user_id AND 
+            grk.group_id = gu.group_id
+    )"
+	.to_string();
 
 	let (sql1, params) = if last_fetched > 0 {
 		//there is a last fetched time time
@@ -197,6 +220,8 @@ WHERE
 			sql,
 			set_params!(
 				group_id,
+				key_id.to_string(),
+				key_id,
 				last_fetched.to_string(),
 				last_fetched.to_string(),
 				last_fetched.to_string(),
@@ -205,7 +230,7 @@ WHERE
 		)
 	} else {
 		let sql = sql + " ORDER BY gu.time DESC, gu.user_id LIMIT 100";
-		(sql, set_params!(group_id))
+		(sql, set_params!(group_id, key_id.to_string(), key_id,))
 	};
 
 	let users: Vec<UserGroupPublicKeyData> = query_string(sql1, params).await?;

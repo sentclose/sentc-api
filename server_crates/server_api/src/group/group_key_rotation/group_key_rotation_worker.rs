@@ -18,7 +18,13 @@ pub async fn start(group_id: GroupId, key_id: SymKeyId) -> AppRes<()>
 	loop {
 		let key_cap = key_arc.clone();
 
-		let users = group_key_rotation_model::get_user_and_public_key(group_id.to_string(), last_time_fetched, last_user_id.to_string()).await?;
+		let users = group_key_rotation_model::get_user_and_public_key(
+			group_id.to_string(),
+			key_id.to_string(),
+			last_time_fetched,
+			last_user_id.to_string(),
+		)
+		.await?;
 		let len = users.len();
 
 		if len == 0 {
