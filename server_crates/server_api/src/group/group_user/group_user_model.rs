@@ -81,6 +81,7 @@ pub(super) async fn invite_request(
 			"encrypted_group_key".to_string(),
 			"encrypted_group_key_key_id".to_string(),
 			"encrypted_alg".to_string(),
+			"time".to_string(),
 		],
 		keys_for_new_user,
 		move |ob| {
@@ -90,7 +91,8 @@ pub(super) async fn invite_request(
 				group_id.to_string(),
 				ob.encrypted_group_key.to_string(),
 				ob.user_public_key_id.to_string(),
-				ob.alg.to_string()
+				ob.encrypted_alg.to_string(),
+				time.to_string()
 			)
 		},
 	)
@@ -323,6 +325,7 @@ pub(super) async fn accept_join_req(group_id: GroupId, user_id: UserId, keys_for
 			"encrypted_group_key".to_string(),
 			"encrypted_group_key_key_id".to_string(),
 			"encrypted_alg".to_string(),
+			"time".to_string(),
 		],
 		keys_for_new_user,
 		move |ob| {
@@ -332,7 +335,8 @@ pub(super) async fn accept_join_req(group_id: GroupId, user_id: UserId, keys_for
 				group_id.to_string(),
 				ob.encrypted_group_key.to_string(),
 				ob.user_public_key_id.to_string(),
-				ob.alg.to_string()
+				ob.encrypted_alg.to_string(),
+				time.to_string()
 			)
 		},
 	)
