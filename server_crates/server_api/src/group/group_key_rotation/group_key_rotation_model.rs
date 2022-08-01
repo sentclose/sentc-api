@@ -183,7 +183,7 @@ pub(super) async fn get_user_and_public_key(group_id: GroupId, last_fetched: u12
 {
 	//language=SQL
 	let sql = r"
-SELECT gu.user_id, public_key, id, keypair_encrypt_alg, gu.time 
+SELECT gu.user_id, id, public_key, keypair_encrypt_alg, gu.time 
 FROM sentc_group_user gu, user_keys uk 
 WHERE 
     gu.user_id = uk.user_id AND 
