@@ -94,6 +94,7 @@ pub(super) async fn get_keys_for_key_update(app_id: AppId, group_id: GroupId, us
 	//language=SQL
 	let sql = r"
 SELECT 
+    gk.id,
     gkr.encrypted_ephemeral_key, 
     gkr.encrypted_eph_key_key_id,	-- the key id of the public key which was used to encrypt the eph key on the server
     encrypted_group_key_by_eph_key,
