@@ -1025,6 +1025,9 @@ async fn test_29_invite_user_with_two_keys()
 	)
 	.await;
 
+	//should get all keys
+	assert_eq!(user_group_data_2.keys.len(), 2);
+
 	group
 		.decrypted_group_keys
 		.insert(user_to_invite.user_id.to_string(), user_group_data_2.keys);
