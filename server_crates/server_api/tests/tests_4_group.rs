@@ -19,7 +19,7 @@ use server_api::core::api_res::ApiErrorCodes;
 use server_api::AppRegisterOutput;
 use tokio::sync::{OnceCell, RwLock};
 
-use crate::test_fn::{auth_header, create_app, create_group, create_test_user, delete_app, delete_user, get_group, get_url};
+use crate::test_fn::{add_user_by_invite, auth_header, create_app, create_group, create_test_user, delete_app, delete_user, get_group, get_url};
 
 mod test_fn;
 
@@ -997,7 +997,38 @@ async fn test_28_get_key_with_pagination()
 	assert_ne!(out[0].group_key_id.to_string(), latest_fetched_id.to_string())
 }
 
-//TODO test user invite with multiple keys
+#[tokio::test]
+async fn test_29_invite_user_with_two_keys()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let mut group = GROUP_TEST_STATE.get().unwrap().write().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+
+	let user_to_invite = &users[2];
+
+	let user_keys = group
+		.decrypted_group_keys
+		.get(creator.user_id.as_str())
+		.unwrap();
+
+	let user_group_data_2 = add_user_by_invite(
+		secret_token,
+		creator.key_data.jwt.as_str(),
+		group.group_id.as_str(),
+		user_keys,
+		user_to_invite.user_id.as_str(),
+		user_to_invite.key_data.jwt.as_str(),
+		&user_to_invite.key_data.exported_public_key,
+		&user_to_invite.key_data.private_key,
+	)
+	.await;
+
+	group
+		.decrypted_group_keys
+		.insert(user_to_invite.user_id.to_string(), user_group_data_2.keys);
+}
 
 //__________________________________________________________________________________________________
 //delete group
