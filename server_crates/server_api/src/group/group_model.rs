@@ -133,13 +133,11 @@ SELECT
     uk.time
 FROM 
     sentc_group_keys k, 
-    sentc_group_user_keys uk, 
-    sentc_group g -- group here for the app id
+    sentc_group_user_keys uk
 WHERE 
     user_id = ? AND 
     k.group_id = ? AND 
     k.id = k_id AND 
-    g.id = k.group_id AND 
     app_id = ?"
 		.to_string();
 
@@ -213,7 +211,7 @@ pub(super) async fn create(app_id: AppId, user_id: UserId, data: CreateData) -> 
 	let sql_group = "INSERT INTO sentc_group (id, app_id, parent, identifier, time) VALUES (?,?,?,?,?)";
 	let group_params = set_params!(
 		group_id.to_string(),
-		app_id,
+		app_id.to_string(),
 		data.parent_group_id,
 		"".to_string(),
 		time.to_string()
@@ -227,6 +225,7 @@ INSERT INTO sentc_group_keys
     (
      id, 
      group_id, 
+     app_id,
      private_key_pair_alg, 
      encrypted_private_key, 
      public_key, 
@@ -236,7 +235,7 @@ INSERT INTO sentc_group_keys
      previous_group_key_id,
      time
      ) 
-VALUES (?,?,?,?,?,?,?,?,?,?)";
+VALUES (?,?,?,?,?,?,?,?,?,?,?)";
 
 	let encrypted_ephemeral_key: Option<String> = None;
 	let encrypted_group_key_by_eph_key: Option<String> = None;
@@ -245,6 +244,7 @@ VALUES (?,?,?,?,?,?,?,?,?,?)";
 	let group_data_params = set_params!(
 		group_key_id.to_string(),
 		group_id.to_string(),
+		app_id.to_string(),
 		data.keypair_encrypt_alg,
 		data.encrypted_private_group_key,
 		data.public_group_key,

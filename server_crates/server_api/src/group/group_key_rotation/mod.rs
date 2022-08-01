@@ -19,6 +19,7 @@ pub(crate) async fn start_key_rotation(mut req: Request) -> JRes<KeyRotationStar
 	let input: KeyRotationData = bytes_to_json(&body)?;
 
 	let key_id = group_key_rotation_model::start_key_rotation(
+		group_data.group_data.app_id.to_string(),
 		group_data.group_data.id.to_string(),
 		group_data.user_data.user_id.to_string(),
 		input,

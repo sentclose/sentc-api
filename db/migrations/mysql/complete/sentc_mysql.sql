@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 31. Jul 2022 um 13:32
+-- Erstellungszeit: 01. Aug 2022 um 13:14
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -150,6 +150,7 @@ DELIMITER ;
 CREATE TABLE `sentc_group_keys` (
   `id` varchar(36) NOT NULL,
   `group_id` varchar(36) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
   `private_key_pair_alg` text NOT NULL,
   `encrypted_private_key` text NOT NULL,
   `public_key` text NOT NULL,
@@ -336,7 +337,7 @@ ALTER TABLE `sentc_group`
 --
 ALTER TABLE `sentc_group_keys`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `group_id` (`group_id`);
+  ADD KEY `group_id` (`group_id`,`app_id`) USING BTREE;
 
 --
 -- Indizes für die Tabelle `sentc_group_user`

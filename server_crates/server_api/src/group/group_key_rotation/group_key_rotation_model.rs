@@ -8,7 +8,7 @@ use crate::core::get_time;
 use crate::group::group_entities::{GroupKeyUpdate, KeyRotationWorkerKey, UserEphKeyOut, UserGroupPublicKeyData};
 use crate::set_params;
 
-pub(super) async fn start_key_rotation(group_id: GroupId, user_id: UserId, input: KeyRotationData) -> AppRes<SymKeyId>
+pub(super) async fn start_key_rotation(app_id: AppId, group_id: GroupId, user_id: UserId, input: KeyRotationData) -> AppRes<SymKeyId>
 {
 	//insert the new group key
 
@@ -21,6 +21,7 @@ INSERT INTO sentc_group_keys
     (
      id, 
      group_id, 
+     app_id,
      private_key_pair_alg, 
      encrypted_private_key, 
      public_key, 
@@ -30,11 +31,12 @@ INSERT INTO sentc_group_keys
      previous_group_key_id, 
      ephemeral_alg,
      time
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let params = set_params!(
 		key_id.to_string(),
 		group_id.to_string(),
+		app_id,
 		input.keypair_encrypt_alg,
 		input.encrypted_private_group_key,
 		input.public_group_key,
@@ -103,13 +105,11 @@ SELECT
     gk.time
 FROM 
     sentc_group_keys gk, 
-    sentc_group_user_key_rotation gkr,
-    sentc_group g
+    sentc_group_user_key_rotation gkr
 WHERE user_id = ? AND 
-      g.id = ? AND 
+      gk.group_id = ? AND 
       app_id = ? AND 
-      key_id = gk.id AND 
-      gk.group_id = g.id 
+      key_id = gk.id
 ORDER BY gk.time";
 
 	let out: Vec<GroupKeyUpdate> = query(sql, set_params!(user_id, group_id, app_id)).await?;

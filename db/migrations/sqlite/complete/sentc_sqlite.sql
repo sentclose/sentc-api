@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 1:49pm on July 31, 2022 (UTC)
+-- Exported: 1:15pm on August 1, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -111,7 +111,7 @@ CREATE TABLE sentc_group_keys
 	encrypted_ephemeral_key        text,
 	encrypted_group_key_by_eph_key text,
 	time                           text
-, 'previous_group_key_id' TEXT, 'ephemeral_alg' TEXT);
+, 'previous_group_key_id' TEXT, 'ephemeral_alg' TEXT, 'app_id' TEXT);
 
 ----
 -- Data dump for sentc_group_keys, a total of 0 rows
@@ -281,10 +281,9 @@ CREATE INDEX sentc_group_parent_index
 	on sentc_group (parent);
 
 ----
--- structure for index sentc_group_keys_group_id_index on table sentc_group_keys
+-- structure for index get_group on table sentc_group_keys
 ----
-CREATE INDEX sentc_group_keys_group_id_index
-	on sentc_group_keys (group_id);
+CREATE INDEX 'get_group' ON "sentc_group_keys" ("group_id" ASC, "app_id" ASC);
 
 ----
 -- structure for trigger user_delete_user_keys on table user
