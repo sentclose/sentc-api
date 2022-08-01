@@ -195,6 +195,7 @@ async fn test_12_create_child_group()
 		creator.key_data.jwt.as_str(),
 		child_id.as_str(),
 		&creator.key_data.private_key,
+		false,
 	)
 	.await;
 
@@ -357,6 +358,7 @@ async fn test_16_accept_invite()
 		user_to_invite.key_data.jwt.as_str(),
 		group.group_id.as_str(),
 		&user_to_invite.key_data.private_key,
+		false,
 	)
 	.await;
 
@@ -484,6 +486,7 @@ async fn test_18_not_leave_group_when_user_is_the_only_admin()
 		creator.key_data.jwt.as_str(),
 		group.group_id.as_str(),
 		&creator.key_data.private_key,
+		false,
 	)
 	.await;
 }
@@ -780,6 +783,7 @@ async fn test_25_accept_join_req()
 		user.key_data.jwt.as_str(),
 		group.group_id.as_str(),
 		&user.key_data.private_key,
+		false,
 	);
 }
 
@@ -834,6 +838,7 @@ async fn test_26_start_key_rotation()
 		user.key_data.jwt.as_str(),
 		out.group_id.as_str(),
 		&user.key_data.private_key,
+		false,
 	)
 	.await;
 
@@ -860,11 +865,13 @@ async fn test_27_done_key_rotation_for_other_user()
 		user.key_data.jwt.as_str(),
 		group.group_id.as_str(),
 		&user.key_data.private_key,
+		true,
 	)
 	.await;
 
 	//still one key
 	assert_eq!(data_user.keys.len(), 1);
+	assert_eq!(data_user.key_update, true); //notify the user that there is a key update
 
 	//get the data for the rotation
 
@@ -921,6 +928,7 @@ async fn test_27_done_key_rotation_for_other_user()
 		user.key_data.jwt.as_str(),
 		group.group_id.as_str(),
 		&user.key_data.private_key,
+		false,
 	)
 	.await;
 

@@ -237,7 +237,7 @@ pub async fn create_group(secret_token: &str, creator_public_key: &PublicKeyForm
 	out.group_id
 }
 
-pub async fn get_group(secret_token: &str, jwt: &str, group_id: &str, private_key: &PrivateKeyFormat) -> GroupOutData
+pub async fn get_group(secret_token: &str, jwt: &str, group_id: &str, private_key: &PrivateKeyFormat, key_update: bool) -> GroupOutData
 {
 	let url = get_url("api/v1/group/".to_owned() + group_id);
 	let client = reqwest::Client::new();
@@ -252,6 +252,8 @@ pub async fn get_group(secret_token: &str, jwt: &str, group_id: &str, private_ke
 	let body = res.text().await.unwrap();
 
 	let data = sentc_crypto::group::get_group_data(private_key, body.as_str()).unwrap();
+
+	assert_eq!(data.key_update, key_update);
 
 	data
 }
