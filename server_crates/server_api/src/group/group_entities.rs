@@ -306,7 +306,7 @@ pub struct GroupUserKeys
 	pub public_key: String,
 	pub private_key_pair_alg: String,
 	pub encrypted_group_key_key_id: String,
-	//pub time: u128,
+	pub time: u128,
 }
 
 impl Into<GroupKeyServerOutput> for GroupUserKeys
@@ -322,6 +322,7 @@ impl Into<GroupKeyServerOutput> for GroupUserKeys
 			keypair_encrypt_alg: self.private_key_pair_alg,
 			key_pair_id: self.k_id,
 			user_public_key_id: self.encrypted_group_key_key_id,
+			time: self.time,
 		}
 	}
 }
@@ -341,7 +342,7 @@ impl mysql_async::prelude::FromRow for GroupUserKeys
 			public_key: take_or_err!(row, 4, String),
 			private_key_pair_alg: take_or_err!(row, 5, String),
 			encrypted_group_key_key_id: take_or_err!(row, 6, String),
-			//time: take_or_err!(row, 7, u128),
+			time: take_or_err!(row, 7, u128),
 		})
 	}
 }
@@ -353,7 +354,6 @@ impl crate::core::db::FromSqliteRow for GroupUserKeys
 	where
 		Self: Sized,
 	{
-		/*
 		//time needs to parse from string to the value
 		let time: String = take_or_err!(row, 7);
 		let time: u128 = time.parse().map_err(|e| {
@@ -361,7 +361,6 @@ impl crate::core::db::FromSqliteRow for GroupUserKeys
 				msg: format!("err in db fetch: {:?}", e),
 			}
 		})?;
-		 */
 
 		Ok(Self {
 			k_id: take_or_err!(row, 0),
@@ -371,7 +370,7 @@ impl crate::core::db::FromSqliteRow for GroupUserKeys
 			public_key: take_or_err!(row, 4),
 			private_key_pair_alg: take_or_err!(row, 5),
 			encrypted_group_key_key_id: take_or_err!(row, 6),
-			//time,
+			time,
 		})
 	}
 }
