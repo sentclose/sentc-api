@@ -63,7 +63,7 @@ pub(crate) async fn get_user_group_data(req: Request) -> JRes<GroupServerData>
 		keys.push(user_key.into());
 	}
 
-	let key_update = group_model::check_for_key_update(user.sub.to_string(), user.sub.to_string(), group_id.to_string()).await?;
+	let key_update = group_model::check_for_key_update(user.sub.to_string(), user.id.to_string(), group_id.to_string()).await?;
 
 	let out = GroupServerData {
 		group_id: user_group_data.id,

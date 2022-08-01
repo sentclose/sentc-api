@@ -179,16 +179,14 @@ pub(super) async fn check_for_key_update(app_id: AppId, user_id: UserId, group_i
 	let sql = r"
 SELECT 1 
 FROM 
-    sentc_group_keys gk, 
     sentc_group_user_key_rotation gkr,
     sentc_group g
 WHERE
     user_id = ? AND
     app_id = ? AND 
-    key_id = gk.id AND
-    g.id = gk.group_id AND
+    g.id = gkr.group_id AND
     g.id = ?
-ORDER BY gk.time DESC LIMIT 1";
+LIMIT 1";
 
 	let key_update: Option<GroupKeyUpdateReady> = query_first(sql, set_params!(user_id, app_id, group_id)).await?;
 
