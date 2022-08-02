@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::group::GroupKeyData;
+use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupInviteServerOutput};
 use sentc_crypto::KeyData;
 use sentc_crypto_common::group::{
 	GroupCreateOutput,
@@ -231,7 +232,8 @@ async fn test_13_invite_user()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(&user_to_invite.key_data.exported_public_key, &group_keys_ref).unwrap();
+	let invite =
+		sentc_crypto::group::prepare_group_keys_for_new_member(&user_to_invite.key_data.exported_public_key, &group_keys_ref, false).unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/invite/" + user_to_invite.user_id.as_str());
 
@@ -247,7 +249,9 @@ async fn test_13_invite_user()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	let invite_res: GroupInviteServerOutput = sentc_crypto::util_pub::handle_server_response(body.as_str()).unwrap();
+
+	assert_eq!(invite_res.session_id, None);
 }
 
 #[tokio::test]
@@ -273,7 +277,10 @@ async fn test_14_not_invite_user_without_keys()
 	}
 
 	//no keys -> must be an error
-	let input = GroupKeysForNewMemberServerInput(Vec::new());
+	let input = GroupKeysForNewMemberServerInput {
+		keys: Vec::new(),
+		key_session: false,
+	};
 
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/invite/" + user_to_invite.user_id.as_str());
 
@@ -394,7 +401,8 @@ async fn test_17_invite_user_an_reject_invite()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(&user_to_invite.key_data.exported_public_key, &group_keys_ref).unwrap();
+	let invite =
+		sentc_crypto::group::prepare_group_keys_for_new_member(&user_to_invite.key_data.exported_public_key, &group_keys_ref, false).unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/invite/" + user_to_invite.user_id.as_str());
 
@@ -409,7 +417,9 @@ async fn test_17_invite_user_an_reject_invite()
 		.unwrap();
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+
+	let invite_res: GroupInviteServerOutput = sentc_crypto::util_pub::handle_server_response(body.as_str()).unwrap();
+	assert_eq!(invite_res.session_id, None);
 
 	//______________________________________________________________________________________________
 	//no reject the invite
@@ -757,7 +767,7 @@ async fn test_25_accept_join_req()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let join = sentc_crypto::group::prepare_group_keys_for_new_member(&user_to_accept.key_data.exported_public_key, &group_keys_ref).unwrap();
+	let join = sentc_crypto::group::prepare_group_keys_for_new_member(&user_to_accept.key_data.exported_public_key, &group_keys_ref, false).unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req/" + user_to_accept.user_id.as_str());
 
@@ -772,7 +782,8 @@ async fn test_25_accept_join_req()
 		.unwrap();
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	let join_res: GroupAcceptJoinReqServerOutput = sentc_crypto::util_pub::handle_server_response(body.as_str()).unwrap();
+	assert_eq!(join_res.session_id, None);
 
 	//user is already saved
 

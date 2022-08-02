@@ -3,6 +3,7 @@
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::group::{GroupKeyData, GroupOutData};
+use sentc_crypto::sdk_common::group::GroupAcceptJoinReqServerOutput;
 use sentc_crypto::{KeyData, PrivateKeyFormat, PublicKeyFormat};
 use sentc_crypto_common::group::GroupCreateOutput;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
@@ -275,7 +276,7 @@ pub async fn add_user_by_invite(
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(user_to_add_public_key, &group_keys_ref).unwrap();
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(user_to_add_public_key, &group_keys_ref, false).unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group_id + "/invite/" + user_to_invite_id);
 
@@ -291,7 +292,8 @@ pub async fn add_user_by_invite(
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	let join_res: GroupAcceptJoinReqServerOutput = sentc_crypto::util_pub::handle_server_response(body.as_str()).unwrap();
+	assert_eq!(join_res.session_id, None);
 
 	//accept the invite
 	let url = get_url("api/v1/group/".to_owned() + group_id + "/invite");
