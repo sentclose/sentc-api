@@ -1,10 +1,19 @@
 use sentc_crypto_common::group::GroupKeysForNewMember;
 use sentc_crypto_common::{AppId, GroupId, UserId};
+use uuid::Uuid;
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::core::db::{bulk_insert, exec, exec_transaction, query, query_first, query_string, TransactionData};
 use crate::core::get_time;
-use crate::group::group_entities::{GroupInviteReq, GroupJoinReq, UserInGroupCheck, GROUP_INVITE_TYPE_INVITE_REQ, GROUP_INVITE_TYPE_JOIN_REQ};
+use crate::group::group_entities::{
+	GroupInviteReq,
+	GroupJoinReq,
+	GroupKeySession,
+	GroupNewUserType,
+	UserInGroupCheck,
+	GROUP_INVITE_TYPE_INVITE_REQ,
+	GROUP_INVITE_TYPE_JOIN_REQ,
+};
 use crate::group::group_model::check_group_rank;
 use crate::set_params;
 
@@ -12,8 +21,9 @@ pub(super) async fn invite_request(
 	group_id: GroupId,
 	invited_user: UserId,
 	keys_for_new_user: Vec<GroupKeysForNewMember>,
+	key_session: bool,
 	admin_rank: i32,
-) -> AppRes<()>
+) -> AppRes<Option<String>>
 {
 	//1. check the rights of the starter
 	check_group_rank(admin_rank, 2)?;
@@ -56,23 +66,40 @@ pub(super) async fn invite_request(
 
 	let time = get_time()?;
 
-	//language=SQL
-	let sql = "INSERT INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time) VALUES (?,?,?,?)";
+	let (sql, params, session_id) = if key_session && keys_for_new_user.len() == 100 {
+		//if there are more keys than 100 -> use a session,
+		// the client will know if there are more keys than 100 and asks the server for a session
+		let session_id = Uuid::new_v4().to_string();
 
-	exec(
-		sql,
-		set_params!(
+		//language=SQL
+		let sql_in = "INSERT INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, key_upload_session_id) VALUES (?,?,?,?,?)";
+		let params_in = set_params!(
+			invited_user.to_string(),
+			group_id.to_string(),
+			GROUP_INVITE_TYPE_INVITE_REQ,
+			time.to_string(),
+			session_id.to_string()
+		);
+
+		(sql_in, params_in, Some(session_id))
+	} else {
+		//language=SQL
+		let sql_in = "INSERT INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time) VALUES (?,?,?,?)";
+		let params_in = set_params!(
 			invited_user.to_string(),
 			group_id.to_string(),
 			GROUP_INVITE_TYPE_INVITE_REQ,
 			time.to_string()
-		),
-	)
-	.await?;
+		);
+
+		(sql_in, params_in, None)
+	};
+
+	exec(sql, params).await?;
 
 	insert_user_keys(group_id, invited_user, time, keys_for_new_user).await?;
 
-	Ok(())
+	Ok(session_id)
 }
 
 pub(super) async fn get_invite_req_to_user(app_id: AppId, user_id: UserId, last_fetched_time: u128, last_id: GroupId) -> AppRes<Vec<GroupInviteReq>>
@@ -230,8 +257,13 @@ pub(super) async fn reject_join_req(group_id: GroupId, user_id: UserId, admin_ra
 	Ok(())
 }
 
-pub(super) async fn accept_join_req(group_id: GroupId, user_id: UserId, keys_for_new_user: Vec<GroupKeysForNewMember>, admin_rank: i32)
-	-> AppRes<()>
+pub(super) async fn accept_join_req(
+	group_id: GroupId,
+	user_id: UserId,
+	keys_for_new_user: Vec<GroupKeysForNewMember>,
+	key_session: bool,
+	admin_rank: i32,
+) -> AppRes<Option<String>>
 {
 	check_group_rank(admin_rank, 2)?;
 
@@ -273,9 +305,29 @@ pub(super) async fn accept_join_req(group_id: GroupId, user_id: UserId, keys_for
 	let sql_del = "DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ?";
 	let params_del = set_params!(group_id.to_string(), user_id.to_string());
 
-	//language=SQL
-	let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`) VALUES (?,?,?,?)";
-	let params_in = set_params!(user_id.to_string(), group_id.to_string(), time.to_string(), 4);
+	let (sql_in, params_in, session_id) = if key_session && keys_for_new_user.len() == 100 {
+		//if there are more keys than 100 -> use a session,
+		// the client will know if there are more keys than 100 and asks the server for a session
+		let session_id = Uuid::new_v4().to_string();
+
+		//language=SQL
+		let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, key_upload_session_id) VALUES (?,?,?,?,?)";
+		let params_in = set_params!(
+			user_id.to_string(),
+			group_id.to_string(),
+			time.to_string(),
+			4,
+			session_id.to_string()
+		);
+
+		(sql_in, params_in, Some(session_id))
+	} else {
+		//language=SQL
+		let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`) VALUES (?,?,?,?)";
+		let params_in = set_params!(user_id.to_string(), group_id.to_string(), time.to_string(), 4);
+
+		(sql_in, params_in, None)
+	};
 
 	exec_transaction(vec![
 		TransactionData {
@@ -291,7 +343,7 @@ pub(super) async fn accept_join_req(group_id: GroupId, user_id: UserId, keys_for
 
 	insert_user_keys(group_id, user_id, time, keys_for_new_user).await?;
 
-	Ok(())
+	Ok(session_id)
 }
 
 pub(super) async fn get_join_req(group_id: GroupId, last_fetched_time: u128, admin_rank: i32) -> AppRes<Vec<GroupJoinReq>>
@@ -332,6 +384,66 @@ pub(super) async fn user_leave_group(group_id: GroupId, user_id: UserId, rank: i
 	let sql = "DELETE FROM sentc_group_user WHERE group_id = ? AND user_id = ?";
 
 	exec(sql, set_params!(group_id, user_id)).await?;
+
+	Ok(())
+}
+
+//__________________________________________________________________________________________________
+
+/**
+Where there are too many keys used in this group.
+
+Use session to upload the keys.
+this session is automatically created when doing invite req or accepting join req
+*/
+pub(super) async fn insert_user_keys_via_session(
+	group_id: GroupId,
+	session_id: String,
+	keys_for_new_user: Vec<GroupKeysForNewMember>,
+	insert_type: GroupNewUserType,
+) -> AppRes<()>
+{
+	//check the session id
+	let sql = match insert_type {
+		0 => {
+			//language=SQL
+			let sql = "SELECT user_id FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND key_upload_session_id = ?";
+
+			sql
+		},
+		1 => {
+			//language=SQL
+			let sql = "SELECT user_id FROM sentc_group_user WHERE group_id = ? AND key_upload_session_id = ?";
+
+			sql
+		},
+		_ => {
+			//this should be never the case because this is called from the controller fn.
+			return Err(HttpErr::new(
+				400,
+				ApiErrorCodes::GroupKeySession,
+				"No session found to upload the keys".to_string(),
+				None,
+			));
+		},
+	};
+
+	let user_id: Option<GroupKeySession> = query_first(sql, set_params!(group_id.to_string(), session_id)).await?;
+	let user_id = match user_id {
+		Some(id) => id.0,
+		None => {
+			return Err(HttpErr::new(
+				400,
+				ApiErrorCodes::GroupKeySession,
+				"No session found to upload the keys".to_string(),
+				None,
+			))
+		},
+	};
+
+	let time = get_time()?;
+
+	insert_user_keys(group_id, user_id, time, keys_for_new_user).await?;
 
 	Ok(())
 }

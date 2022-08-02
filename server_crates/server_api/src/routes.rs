@@ -130,6 +130,13 @@ pub(crate) fn routes() -> Router
 			.add(app_token::app_token_transform)
 			.add(jwt::jwt_transform),
 	);
+	router.put(
+		"/api/v1/group/:group_id/invite/session/:key_session_id",
+		r(crate::group::insert_user_keys_via_session_invite)
+			.add(group::group_transform)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
 	router.get(
 		"/api/v1/group/:group_id/join_req/:last_fetched_time",
 		r(crate::group::get_join_req)
@@ -147,6 +154,13 @@ pub(crate) fn routes() -> Router
 	router.delete(
 		"/api/v1/group/:group_id/join_req/:join_user",
 		r(crate::group::reject_join_req)
+			.add(group::group_transform)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
+	router.put(
+		"/api/v1/group/:group_id/join_req/session/:key_session_id",
+		r(crate::group::insert_user_keys_via_session_join_req)
 			.add(group::group_transform)
 			.add(app_token::app_token_transform)
 			.add(jwt::jwt_transform),

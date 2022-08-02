@@ -1,5 +1,14 @@
+use std::future::Future;
+
 use rustgram::Request;
-use sentc_crypto_common::group::{GroupInviteReqList, GroupJoinReqList, GroupKeysForNewMemberServerInput};
+use sentc_crypto_common::group::{
+	GroupAcceptJoinReqServerOutput,
+	GroupInviteReqList,
+	GroupInviteServerOutput,
+	GroupJoinReqList,
+	GroupKeysForNewMember,
+	GroupKeysForNewMemberServerInput,
+};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 
 use crate::core::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
@@ -8,11 +17,12 @@ use crate::core::cache::INTERNAL_GROUP_USER_DATA_CACHE;
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
 use crate::core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 use crate::group::get_group_user_data_from_req;
+use crate::group::group_entities::{GroupNewUserType, GROUP_INVITE_TYPE_INVITE_REQ, GROUP_INVITE_TYPE_JOIN_REQ};
 use crate::user::jwt::get_jwt_data_from_param;
 
 mod group_user_model;
 
-pub(crate) async fn invite_request(mut req: Request) -> JRes<ServerSuccessOutput>
+pub(crate) async fn invite_request(mut req: Request) -> JRes<GroupInviteServerOutput>
 {
 	//no the accept invite, but the keys are prepared for the invited user
 	//don't save this values in the group user keys table, but in the invite table
@@ -25,7 +35,7 @@ pub(crate) async fn invite_request(mut req: Request) -> JRes<ServerSuccessOutput
 
 	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
 
-	if input.0.len() == 0 {
+	if input.keys.len() == 0 {
 		return Err(HttpErr::new(
 			400,
 			ApiErrorCodes::GroupNoKeys,
@@ -34,15 +44,30 @@ pub(crate) async fn invite_request(mut req: Request) -> JRes<ServerSuccessOutput
 		));
 	}
 
-	group_user_model::invite_request(
+	if input.keys.len() > 100 {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::GroupTooManyKeys,
+			"Too many group keys for the user. Split the keys and use pagination".to_string(),
+			None,
+		));
+	}
+
+	let session_id = group_user_model::invite_request(
 		group_data.group_data.id.to_string(),
 		invited_user.to_string(),
-		input.0,
+		input.keys,
+		input.key_session,
 		group_data.user_data.rank,
 	)
 	.await?;
 
-	echo_success()
+	let out = GroupInviteServerOutput {
+		session_id,
+		message: "User was invited. Please wait until the user accepts the invite.".to_string(),
+	};
+
+	echo(out)
 }
 
 pub(crate) async fn get_invite_req(req: Request) -> JRes<Vec<GroupInviteReqList>>
@@ -154,7 +179,7 @@ pub(crate) async fn reject_join_req(req: Request) -> JRes<ServerSuccessOutput>
 
 	echo_success()
 }
-pub(crate) async fn accept_join_req(mut req: Request) -> JRes<ServerSuccessOutput>
+pub(crate) async fn accept_join_req(mut req: Request) -> JRes<GroupAcceptJoinReqServerOutput>
 {
 	let body = get_raw_body(&mut req).await?;
 
@@ -164,7 +189,7 @@ pub(crate) async fn accept_join_req(mut req: Request) -> JRes<ServerSuccessOutpu
 
 	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
 
-	if input.0.len() == 0 {
+	if input.keys.len() == 0 {
 		return Err(HttpErr::new(
 			400,
 			ApiErrorCodes::GroupNoKeys,
@@ -173,15 +198,42 @@ pub(crate) async fn accept_join_req(mut req: Request) -> JRes<ServerSuccessOutpu
 		));
 	}
 
-	group_user_model::accept_join_req(
+	if input.keys.len() > 100 {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::GroupTooManyKeys,
+			"Too many group keys for the user. Split the keys and use pagination".to_string(),
+			None,
+		));
+	}
+
+	let session_id = group_user_model::accept_join_req(
 		group_data.group_data.id.to_string(),
 		join_user.to_string(),
-		input.0,
+		input.keys,
+		input.key_session,
 		group_data.user_data.rank,
 	)
 	.await?;
 
-	echo_success()
+	let out = GroupAcceptJoinReqServerOutput {
+		session_id,
+		message: "The join request was accepted. The user is now a member of this group.".to_string(),
+	};
+
+	echo(out)
+}
+
+//__________________________________________________________________________________________________
+
+pub(crate) fn insert_user_keys_via_session_invite(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
+{
+	insert_user_keys_via_session(req, GROUP_INVITE_TYPE_INVITE_REQ)
+}
+
+pub(crate) fn insert_user_keys_via_session_join_req(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
+{
+	insert_user_keys_via_session(req, GROUP_INVITE_TYPE_JOIN_REQ)
 }
 
 //__________________________________________________________________________________________________
@@ -209,3 +261,42 @@ pub(crate) async fn leave_group(req: Request) -> JRes<ServerSuccessOutput>
 }
 
 //__________________________________________________________________________________________________
+
+async fn insert_user_keys_via_session(mut req: Request, insert_type: GroupNewUserType) -> JRes<ServerSuccessOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let key_session_id = get_name_param_from_req(&req, "key_session_id")?;
+
+	let input: Vec<GroupKeysForNewMember> = bytes_to_json(&body)?;
+
+	if input.len() == 0 {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::GroupNoKeys,
+			"No group keys for the user".to_string(),
+			None,
+		));
+	}
+
+	if input.len() > 100 {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::GroupTooManyKeys,
+			"Too many group keys for the user. Split the keys and use pagination".to_string(),
+			None,
+		));
+	}
+
+	group_user_model::insert_user_keys_via_session(
+		group_data.group_data.id.to_string(),
+		key_session_id.to_string(),
+		input,
+		insert_type,
+	)
+	.await?;
+
+	echo_success()
+}

@@ -91,6 +91,7 @@ routes:
                           - delete: {p: "", s: crate::group::delete}
                           - delete: {p: "/leave", s: crate::group::leave_group}
                           - put: {p: "/invite/:invited_user", s: crate::group::invite_request}
+                          - put: {p: "/invite/session/:key_session_id", s: crate::group::insert_user_keys_via_session_invite}
                           #_____________________________________________________________________________________________
                           # groups for join reqs
                           - group:
@@ -99,6 +100,7 @@ routes:
                                 - get: {p: "/:last_fetched_time", s: crate::group::get_join_req}
                                 - put: {p: "/:join_user", s: crate::group::accept_join_req}
                                 - delete: {p: "/:join_user", s: crate::group::reject_join_req}
+                                - put: {p: "/session/:key_session_id", s: crate::group::insert_user_keys_via_session_join_req}
                           #_____________________________________________________________________________________________
                           # groups for key rotation
                           - group:
