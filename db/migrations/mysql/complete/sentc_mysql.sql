@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 01. Aug 2022 um 13:14
+-- Erstellungszeit: 02. Aug 2022 um 10:14
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -172,7 +172,8 @@ CREATE TABLE `sentc_group_user` (
   `user_id` varchar(36) NOT NULL,
   `group_id` varchar(36) NOT NULL,
   `time` bigint(20) NOT NULL COMMENT 'joined time',
-  `rank` int(11) NOT NULL
+  `rank` int(11) NOT NULL,
+  `key_upload_session_id` varchar(36) DEFAULT NULL COMMENT 'this is used when there are many keys used in this group. then upload the keys via pagination. this is only used for accept join req'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
@@ -197,7 +198,8 @@ CREATE TABLE `sentc_group_user_invites_and_join_req` (
   `user_id` varchar(36) NOT NULL,
   `group_id` varchar(36) NOT NULL,
   `type` int(11) NOT NULL COMMENT '0 = invite (keys needed); 1 = join req (no keys needed)',
-  `time` bigint(20) NOT NULL
+  `time` bigint(20) NOT NULL,
+  `key_upload_session_id` varchar(36) DEFAULT NULL COMMENT 'if there are too many keys used in this group -> upload the keys via session. this is only used for invite req'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='the invite req from the group to an user';
 
 -- --------------------------------------------------------
