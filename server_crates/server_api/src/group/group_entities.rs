@@ -4,15 +4,17 @@ use serde::{Deserialize, Serialize};
 
 use crate::take_or_err;
 
+pub type GroupNewUserType = u16;
+
 /**
 invite (keys needed)
 */
-pub static GROUP_INVITE_TYPE_INVITE_REQ: u16 = 0;
+pub static GROUP_INVITE_TYPE_INVITE_REQ: GroupNewUserType = 0;
 
 /**
 join req (no keys needed)
 */
-pub static GROUP_INVITE_TYPE_JOIN_REQ: u16 = 1;
+pub static GROUP_INVITE_TYPE_JOIN_REQ: GroupNewUserType = 1;
 
 //__________________________________________________________________________________________________
 
@@ -654,6 +656,32 @@ impl crate::core::db::FromSqliteRow for UserGroupPublicKeyData
 			public_key_alg: take_or_err!(row, 3),
 			time,
 		})
+	}
+}
+
+//__________________________________________________________________________________________________
+
+pub struct GroupKeySession(pub UserId);
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for GroupKeySession
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self(take_or_err!(row, 0, String)))
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl crate::core::db::FromSqliteRow for GroupKeySession
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self(take_or_err!(row, 0)))
 	}
 }
 
