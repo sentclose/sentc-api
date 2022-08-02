@@ -13,12 +13,12 @@ use sentc_crypto_common::server_default::ServerSuccessOutput;
 
 use crate::core::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 use crate::core::cache;
-use crate::core::cache::INTERNAL_GROUP_USER_DATA_CACHE;
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
 use crate::core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 use crate::group::get_group_user_data_from_req;
 use crate::group::group_entities::{GroupNewUserType, GROUP_INVITE_TYPE_INVITE_REQ, GROUP_INVITE_TYPE_JOIN_REQ};
 use crate::user::jwt::get_jwt_data_from_param;
+use crate::util::get_group_user_cache_key;
 
 mod group_user_model;
 
@@ -119,6 +119,11 @@ pub(crate) async fn accept_invite(req: Request) -> JRes<ServerSuccessOutput>
 	let group_id = get_name_param_from_req(&req, "group_id")?;
 
 	group_user_model::accept_invite(group_id.to_string(), user.id.to_string()).await?;
+
+	//delete the cache here so the user can join the group
+	let key_user = get_group_user_cache_key(user.sub.as_str(), group_id, user.id.as_str());
+
+	cache::delete(&key_user).await;
 
 	echo_success()
 }
@@ -221,6 +226,16 @@ pub(crate) async fn accept_join_req(mut req: Request) -> JRes<GroupAcceptJoinReq
 		message: "The join request was accepted. The user is now a member of this group.".to_string(),
 	};
 
+	//delete user group cache. no need to delete the user group cache again for upload session,
+	// because after this fn the user is already registered
+	let key_user = get_group_user_cache_key(
+		group_data.group_data.app_id.as_str(),
+		group_data.group_data.id.as_str(),
+		join_user,
+	);
+
+	cache::delete(&key_user).await;
+
 	echo(out)
 }
 
@@ -250,10 +265,11 @@ pub(crate) async fn leave_group(req: Request) -> JRes<ServerSuccessOutput>
 	.await?;
 
 	//delete the user cache
-	let key_group = INTERNAL_GROUP_USER_DATA_CACHE.to_string() +
-		group_data.group_data.app_id.as_str() +
-		"_" + group_data.group_data.id.as_str() +
-		"_" + group_data.user_data.user_id.as_str();
+	let key_group = get_group_user_cache_key(
+		group_data.group_data.app_id.as_str(),
+		group_data.group_data.id.as_str(),
+		group_data.user_data.user_id.as_str(),
+	);
 
 	cache::delete(key_group.as_str()).await;
 
