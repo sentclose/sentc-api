@@ -194,14 +194,23 @@ LIMIT 1";
 	}
 }
 
-pub(super) async fn create(app_id: AppId, user_id: UserId, data: CreateData) -> AppRes<GroupId>
+pub(super) async fn create(
+	app_id: AppId,
+	user_id: UserId,
+	data: CreateData,
+	parent_group_id: Option<GroupId>,
+	user_rank: Option<i32>,
+) -> AppRes<GroupId>
 {
-	match &data.parent_group_id {
-		None => {},
-		Some(p) => {
+	match (&parent_group_id, user_rank) {
+		(None, None) => {},
+		(Some(_p), Some(r)) => {
 			//test here if the user has access to create a child group in this group
-			check_group_rank_by_fetch(app_id.to_string(), p.to_string(), user_id.to_string(), 1).await?;
+			check_group_rank(r, 1)?;
 		},
+		//when parent group is some then user rank must be some too,
+		// because this is set by the controller and not the user.
+		_ => {},
 	}
 
 	let group_id = Uuid::new_v4().to_string();
@@ -212,7 +221,7 @@ pub(super) async fn create(app_id: AppId, user_id: UserId, data: CreateData) -> 
 	let group_params = set_params!(
 		group_id.to_string(),
 		app_id.to_string(),
-		data.parent_group_id,
+		parent_group_id,
 		"".to_string(),
 		time.to_string()
 	);

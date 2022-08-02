@@ -109,6 +109,13 @@ pub(crate) fn routes() -> Router
 			.add(app_token::app_token_transform)
 			.add(jwt::jwt_transform),
 	);
+	router.post(
+		"/api/v1/group/:group_id/child",
+		r(crate::group::create_child_group)
+			.add(group::group_transform)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
 	router.delete(
 		"/api/v1/group/:group_id",
 		r(crate::group::delete)

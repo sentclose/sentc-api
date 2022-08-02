@@ -1,4 +1,7 @@
+use std::future::Future;
+
 use rustgram::Request;
+use sentc_crypto::sdk_common::GroupId;
 use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDeleteServerOutput, GroupKeyServerOutput, GroupServerData};
 
 use crate::core::api_res::{echo, ApiErrorCodes, HttpErr, JRes};
@@ -9,7 +12,22 @@ use crate::group::{get_group_user_data_from_req, group_model};
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::get_group_cache_key;
 
-pub(crate) async fn create(mut req: Request) -> JRes<GroupCreateOutput>
+pub(crate) fn create(req: Request) -> impl Future<Output = JRes<GroupCreateOutput>>
+{
+	create_group(req, None, None)
+}
+
+pub(crate) async fn create_child_group(req: Request) -> JRes<GroupCreateOutput>
+{
+	//this is called in the group mw from the parent group id
+	let group_data = get_group_user_data_from_req(&req)?;
+	let parent_group_id = Some(group_data.group_data.id.to_string());
+	let user_rank = Some(group_data.user_data.rank);
+
+	create_group(req, parent_group_id, user_rank).await
+}
+
+async fn create_group(mut req: Request, parent_group_id: Option<GroupId>, user_rank: Option<i32>) -> JRes<GroupCreateOutput>
 {
 	let body = get_raw_body(&mut req).await?;
 
@@ -17,7 +35,14 @@ pub(crate) async fn create(mut req: Request) -> JRes<GroupCreateOutput>
 
 	let input: CreateData = bytes_to_json(&body)?;
 
-	let group_id = group_model::create(user.sub.to_string(), user.id.to_string(), input).await?;
+	let group_id = group_model::create(
+		user.sub.to_string(),
+		user.id.to_string(),
+		input,
+		parent_group_id,
+		user_rank,
+	)
+	.await?;
 
 	let out = GroupCreateOutput {
 		group_id,

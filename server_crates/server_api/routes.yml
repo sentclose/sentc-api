@@ -88,6 +88,7 @@ routes:
                         mw:
                           - group::group_transform
                         gr:
+                          - post: {p: "/child", s: crate::group::create_child_group}
                           - delete: {p: "", s: crate::group::delete}
                           - delete: {p: "/leave", s: crate::group::leave_group}
                           - put: {p: "/invite/:invited_user", s: crate::group::invite_request}
