@@ -7,12 +7,13 @@ use rustgram::{GramHttpErr, Request, Response};
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::core::cache;
-use crate::core::cache::{CacheVariant, INTERNAL_GROUP_DATA_CACHE, INTERNAL_GROUP_USER_DATA_CACHE, LONG_TTL};
+use crate::core::cache::{CacheVariant, LONG_TTL};
 use crate::core::input_helper::{bytes_to_json, json_to_string};
 use crate::core::url_helper::get_name_param_from_req;
 use crate::group::group_entities::{InternalGroupData, InternalGroupDataComplete, InternalUserGroupData};
 use crate::group::group_model;
 use crate::user::jwt::get_jwt_data_from_param;
+use crate::util::{get_group_cache_key, get_group_user_cache_key};
 
 pub struct GroupMiddleware<S>
 {
@@ -53,8 +54,8 @@ async fn get_group(req: &mut Request) -> AppRes<()>
 	let user = get_jwt_data_from_param(&req)?;
 	let group_id = get_name_param_from_req(&req, "group_id")?;
 
-	let key_group = INTERNAL_GROUP_DATA_CACHE.to_string() + user.sub.as_str() + "_" + group_id;
-	let key_user = INTERNAL_GROUP_USER_DATA_CACHE.to_string() + user.sub.as_str() + "_" + group_id + "_" + user.id.as_str();
+	let key_group = get_group_cache_key(user.sub.as_str(), group_id);
+	let key_user = get_group_user_cache_key(user.sub.as_str(), group_id, user.id.as_str());
 
 	//use to different caches, one for the group, the other for the group user.
 	//this is used because if a group gets deleted -> the cache of the user wont.

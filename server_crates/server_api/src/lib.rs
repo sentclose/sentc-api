@@ -9,6 +9,7 @@ mod group;
 mod middleware;
 mod routes;
 mod user;
+mod util;
 
 pub use customer_app::app_entities::*;
 
