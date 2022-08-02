@@ -3,11 +3,11 @@ use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDeleteServe
 
 use crate::core::api_res::{echo, ApiErrorCodes, HttpErr, JRes};
 use crate::core::cache;
-use crate::core::cache::INTERNAL_GROUP_DATA_CACHE;
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
 use crate::core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 use crate::group::{get_group_user_data_from_req, group_model};
 use crate::user::jwt::get_jwt_data_from_param;
+use crate::util::get_group_cache_key;
 
 pub(crate) async fn create(mut req: Request) -> JRes<GroupCreateOutput>
 {
@@ -38,7 +38,10 @@ pub(crate) async fn delete(req: Request) -> JRes<GroupDeleteServerOutput>
 	.await?;
 
 	//don't delete cache for each group user, but for the group
-	let key_group = INTERNAL_GROUP_DATA_CACHE.to_string() + group_data.group_data.app_id.as_str() + "_" + group_data.group_data.id.as_str();
+	let key_group = get_group_cache_key(
+		group_data.group_data.app_id.as_str(),
+		group_data.group_data.id.as_str(),
+	);
 	cache::delete(key_group.as_str()).await;
 
 	let out = GroupDeleteServerOutput {

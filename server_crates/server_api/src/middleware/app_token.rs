@@ -7,11 +7,12 @@ use rustgram::{GramHttpErr, Request, Response};
 
 use crate::core::api_res::{ApiErrorCodes, HttpErr};
 use crate::core::cache;
-use crate::core::cache::{CacheVariant, APP_TOKEN_CACHE, LONG_TTL};
+use crate::core::cache::{CacheVariant, LONG_TTL};
 use crate::core::input_helper::{bytes_to_json, json_to_string};
 use crate::customer_app::app_entities::AppData;
 use crate::customer_app::app_model;
 use crate::customer_app::app_util::hash_token_from_string_to_string;
+use crate::util::APP_TOKEN_CACHE;
 
 pub struct AppTokenMiddleware<S>
 {

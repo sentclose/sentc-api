@@ -10,10 +10,11 @@ use rustgram::{GramHttpErr, Request, Response};
 
 use crate::core::api_res::{ApiErrorCodes, HttpErr};
 use crate::core::cache;
-use crate::core::cache::{CacheVariant, DEFAULT_TTL, JWT_CACHE};
+use crate::core::cache::{CacheVariant, DEFAULT_TTL};
 use crate::core::input_helper::{bytes_to_json, json_to_string};
 use crate::user::jwt::auth;
 use crate::user::user_entities::UserJwtEntity;
+use crate::util::JWT_CACHE;
 
 const BEARER: &str = "Bearer ";
 
