@@ -109,15 +109,13 @@ async fn get_group(app_id: &str, group_id: &str, user_id: &str) -> AppRes<Intern
 
 	let user_data = if search_again {
 		//when there was just a ref to a parent group for the user data -> get the parent group user data
-		let user_data = match user_data.get_values_from_parent {
+		match user_data.get_values_from_parent {
 			Some(id) => {
 				let (result, _) = get_group_user(app_id, id.as_str(), user_id).await?;
 				result
 			},
 			None => user_data,
-		};
-
-		user_data
+		}
 	} else {
 		user_data
 	};
