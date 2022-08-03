@@ -107,7 +107,7 @@ async fn test_10_create_group()
 	let creator = USERS_TEST_STATE.get().unwrap().read().await;
 	let creator = &creator[0];
 
-	let group_input = sentc_crypto::group::prepare_create(&creator.key_data.public_key, None).unwrap();
+	let group_input = sentc_crypto::group::prepare_create(&creator.key_data.public_key).unwrap();
 
 	let url = get_url("api/v1/group".to_owned());
 	let client = reqwest::Client::new();
@@ -183,9 +183,21 @@ async fn test_12_create_child_group()
 	let creator = USERS_TEST_STATE.get().unwrap().read().await;
 	let creator = &creator[0];
 
+	//use here the public group key for child group!
+	let group_public_key = &group
+		.decrypted_group_keys
+		.get(creator.user_id.as_str())
+		.unwrap()[0]
+		.public_group_key;
+	let group_private_key = &group
+		.decrypted_group_keys
+		.get(creator.user_id.as_str())
+		.unwrap()[0]
+		.private_group_key;
+
 	let child_id = create_group(
 		secret_token,
-		&creator.key_data.public_key,
+		group_public_key,
 		Some(group.group_id.to_string()),
 		creator.key_data.jwt.as_str(),
 	)
@@ -195,7 +207,7 @@ async fn test_12_create_child_group()
 		secret_token,
 		creator.key_data.jwt.as_str(),
 		child_id.as_str(),
-		&creator.key_data.private_key,
+		group_private_key,
 		false,
 	)
 	.await;
@@ -458,7 +470,7 @@ async fn test_17_invite_user_an_reject_invite()
 	let out = ServerOutput::<GroupServerData>::from_string(body.as_str()).unwrap();
 
 	assert_eq!(out.status, false);
-	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::GroupUserNotFound.get_int_code());
+	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::GroupAccess.get_int_code());
 }
 
 //__________________________________________________________________________________________________
@@ -543,7 +555,7 @@ async fn test_19_leave_group()
 	let out = ServerOutput::<GroupServerData>::from_string(body.as_str()).unwrap();
 
 	assert_eq!(out.status, false);
-	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::GroupUserNotFound.get_int_code());
+	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::GroupAccess.get_int_code());
 }
 
 //__________________________________________________________________________________________________

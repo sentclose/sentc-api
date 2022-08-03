@@ -212,9 +212,13 @@ pub async fn create_test_user(secret_token: &str, public_token: &str, username: 
 
 pub async fn create_group(secret_token: &str, creator_public_key: &PublicKeyFormat, parent_group_id: Option<GroupId>, jwt: &str) -> GroupId
 {
-	let group_input = sentc_crypto::group::prepare_create(creator_public_key, parent_group_id).unwrap();
+	let group_input = sentc_crypto::group::prepare_create(creator_public_key).unwrap();
 
-	let url = get_url("api/v1/group".to_owned());
+	let url = match parent_group_id {
+		Some(p) => get_url("api/v1/group".to_owned() + "/" + p.as_str() + "/child"),
+		None => get_url("api/v1/group".to_owned()),
+	};
+
 	let client = reqwest::Client::new();
 	let res = client
 		.post(url)

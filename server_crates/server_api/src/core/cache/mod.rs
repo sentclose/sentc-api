@@ -57,8 +57,4 @@ pub enum CacheVariant<T>
 
 pub static DEFAULT_TTL: usize = 60 * 60; //1h (60 sec * 60 min)
 pub static LONG_TTL: usize = 60 * 60 * 24; //24 h
-
-pub static JWT_CACHE: &'static str = "jwtcache_";
-pub static APP_TOKEN_CACHE: &'static str = "apptokencache_";
-pub static INTERNAL_GROUP_DATA_CACHE: &'static str = "internalgroupdatacache_";
-pub static INTERNAL_GROUP_USER_DATA_CACHE: &'static str = "internalgroupuserdatacache_";
+pub static SHORT_TTL: usize = 60 * 5; //5 min

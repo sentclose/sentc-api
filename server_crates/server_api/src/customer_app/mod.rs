@@ -7,7 +7,6 @@ use rustgram::Request;
 
 use crate::core::api_res::{echo, ApiErrorCodes, HttpErr, JRes};
 use crate::core::cache;
-use crate::core::cache::APP_TOKEN_CACHE;
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
 use crate::core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 use crate::customer_app::app_entities::{
@@ -22,6 +21,7 @@ use crate::customer_app::app_entities::{
 };
 use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
 use crate::user::jwt::create_jwt_keys;
+use crate::util::APP_TOKEN_CACHE;
 
 pub(crate) async fn get_jwt_details(req: Request) -> JRes<Vec<AppJwtData>>
 {

@@ -88,12 +88,12 @@ impl crate::core::db::FromSqliteRow for InternalGroupData
 internally used in cache to check every user
  */
 #[derive(Serialize, Deserialize)]
-
 pub struct InternalUserGroupData
 {
 	pub user_id: UserId,
 	pub joined_time: u128,
 	pub rank: i32,
+	pub get_values_from_parent: Option<GroupId>, //if the user is in a parent group -> get the user data of this parent to get the rank
 }
 
 #[cfg(feature = "mysql")]
@@ -107,6 +107,7 @@ impl mysql_async::prelude::FromRow for InternalUserGroupData
 			user_id: take_or_err!(row, 0, String),
 			joined_time: take_or_err!(row, 1, u128),
 			rank: take_or_err!(row, 2, i32),
+			get_values_from_parent: None,
 		})
 	}
 }
@@ -129,6 +130,59 @@ impl crate::core::db::FromSqliteRow for InternalUserGroupData
 			user_id: take_or_err!(row, 0),
 			joined_time: time,
 			rank: take_or_err!(row, 2),
+			get_values_from_parent: None,
+		})
+	}
+}
+
+//__________________________________________________________________________________________________
+
+/**
+internally used in cache to check every user
+
+This is fetched when the user is not a direct member but a member from a parent.
+ */
+#[derive(Serialize, Deserialize)]
+pub struct InternalUserGroupDataFromParent
+{
+	pub get_values_from_parent: GroupId,
+	pub joined_time: u128,
+	pub rank: i32,
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for InternalUserGroupDataFromParent
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			get_values_from_parent: take_or_err!(row, 0, String),
+			joined_time: take_or_err!(row, 1, u128),
+			rank: take_or_err!(row, 2, i32),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl crate::core::db::FromSqliteRow for InternalUserGroupDataFromParent
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		let time: String = take_or_err!(row, 1);
+		let time: u128 = time.parse().map_err(|e| {
+			crate::core::db::FormSqliteRowError {
+				msg: format!("err in db fetch: {:?}", e),
+			}
+		})?;
+
+		Ok(Self {
+			get_values_from_parent: take_or_err!(row, 0),
+			joined_time: time,
+			rank: take_or_err!(row, 2),
 		})
 	}
 }
@@ -142,32 +196,6 @@ pub struct InternalGroupDataComplete
 {
 	pub group_data: InternalGroupData,
 	pub user_data: InternalUserGroupData,
-}
-
-//__________________________________________________________________________________________________
-
-pub struct UserGroupRankCheck(pub i32);
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for UserGroupRankCheck
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self(take_or_err!(row, 0, i32)))
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for UserGroupRankCheck
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self(take_or_err!(row, 0)))
-	}
 }
 
 //__________________________________________________________________________________________________
@@ -223,77 +251,28 @@ impl crate::core::db::FromSqliteRow for GroupKeyUpdateReady
 }
 
 //__________________________________________________________________________________________________
-/**
-External used group user data for each group user and each client.
-*/
-pub struct GroupUserData
-{
-	pub id: GroupId,
-	pub parent_group_id: Option<GroupId>,
-	pub rank: i32,
-	pub created_time: u128,
-	pub joined_time: u128,
-}
+
+pub struct GroupChildren(pub GroupId);
 
 #[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for GroupUserData
+impl mysql_async::prelude::FromRow for GroupChildren
 {
 	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
 	where
 		Self: Sized,
 	{
-		//use this here because the macro don't handle Option<T>
-		let parent_group_id = match row.take_opt::<Option<String>, _>(1) {
-			Some(value) => {
-				match value {
-					Ok(ir) => ir,
-					Err(mysql_async::FromValueError(_value)) => {
-						return Err(mysql_async::FromRowError(row));
-					},
-				}
-			},
-			None => return Err(mysql_async::FromRowError(row)),
-		};
-
-		Ok(Self {
-			id: take_or_err!(row, 0, String),
-			parent_group_id,
-			rank: take_or_err!(row, 2, i32),
-			created_time: take_or_err!(row, 3, u128),
-			joined_time: take_or_err!(row, 4, u128),
-		})
+		Ok(Self(take_or_err!(row, 0, String)))
 	}
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for GroupUserData
+impl crate::core::db::FromSqliteRow for GroupChildren
 {
 	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
-		//time needs to parse from string to the value
-		let created_time: String = take_or_err!(row, 3);
-		let created_time: u128 = created_time.parse().map_err(|e| {
-			crate::core::db::FormSqliteRowError {
-				msg: format!("err in db fetch: {:?}", e),
-			}
-		})?;
-
-		let joined_time: String = take_or_err!(row, 4);
-		let joined_time: u128 = joined_time.parse().map_err(|e| {
-			crate::core::db::FormSqliteRowError {
-				msg: format!("err in db fetch: {:?}", e),
-			}
-		})?;
-
-		Ok(Self {
-			id: take_or_err!(row, 0),
-			parent_group_id: take_or_err!(row, 1),
-			rank: take_or_err!(row, 2),
-			created_time,
-			joined_time,
-		})
+		Ok(Self(take_or_err!(row, 0)))
 	}
 }
 

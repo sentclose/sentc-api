@@ -7,12 +7,13 @@ use rustgram::{GramHttpErr, Request, Response};
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::core::cache;
-use crate::core::cache::{CacheVariant, INTERNAL_GROUP_DATA_CACHE, INTERNAL_GROUP_USER_DATA_CACHE, LONG_TTL};
+use crate::core::cache::{CacheVariant, LONG_TTL, SHORT_TTL};
 use crate::core::input_helper::{bytes_to_json, json_to_string};
 use crate::core::url_helper::get_name_param_from_req;
-use crate::group::group_entities::{InternalGroupData, InternalGroupDataComplete, InternalUserGroupData};
+use crate::group::group_entities::{InternalGroupData, InternalGroupDataComplete, InternalUserGroupData, InternalUserGroupDataFromParent};
 use crate::group::group_model;
 use crate::user::jwt::get_jwt_data_from_param;
+use crate::util::{get_group_cache_key, get_group_user_cache_key, get_group_user_parent_ref_key};
 
 pub struct GroupMiddleware<S>
 {
@@ -31,7 +32,7 @@ where
 		let next = self.inner.clone();
 
 		Box::pin(async move {
-			match get_group(&mut req).await {
+			match get_group_from_req(&mut req).await {
 				Ok(_) => {},
 				Err(e) => return e.get_res(),
 			}
@@ -48,13 +49,21 @@ pub fn group_transform<S>(inner: S) -> GroupMiddleware<S>
 	}
 }
 
-async fn get_group(req: &mut Request) -> AppRes<()>
+async fn get_group_from_req(req: &mut Request) -> AppRes<()>
 {
 	let user = get_jwt_data_from_param(&req)?;
 	let group_id = get_name_param_from_req(&req, "group_id")?;
 
-	let key_group = INTERNAL_GROUP_DATA_CACHE.to_string() + user.sub.as_str() + "_" + group_id;
-	let key_user = INTERNAL_GROUP_USER_DATA_CACHE.to_string() + user.sub.as_str() + "_" + group_id + "_" + user.id.as_str();
+	let group_data = get_group(user.sub.as_str(), group_id, user.id.as_str()).await?;
+
+	req.extensions_mut().insert(group_data);
+
+	Ok(())
+}
+
+async fn get_group(app_id: &str, group_id: &str, user_id: &str) -> AppRes<InternalGroupDataComplete>
+{
+	let key_group = get_group_cache_key(app_id, group_id);
 
 	//use to different caches, one for the group, the other for the group user.
 	//this is used because if a group gets deleted -> the cache of the user wont.
@@ -62,7 +71,7 @@ async fn get_group(req: &mut Request) -> AppRes<()>
 	let entity = match cache::get(key_group.as_str()).await {
 		Some(j) => bytes_to_json(j.as_bytes())?,
 		None => {
-			let data = match group_model::get_internal_group_data(user.sub.to_string(), group_id.to_string()).await {
+			let data = match group_model::get_internal_group_data(app_id.to_string(), group_id.to_string()).await {
 				Ok(d) => d,
 				Err(e) => {
 					cache::add(
@@ -96,17 +105,123 @@ async fn get_group(req: &mut Request) -> AppRes<()>
 		},
 	};
 
-	let entity = match cache::get(key_user.as_str()).await {
-		Some(j) => bytes_to_json(j.as_bytes())?,
+	let (user_data, search_again) = get_group_user(app_id, group_id, user_id).await?;
+
+	let user_data = if search_again {
+		//when there was just a ref to a parent group for the user data -> get the parent group user data
+		match user_data.get_values_from_parent {
+			Some(id) => {
+				let (result, _) = get_group_user(app_id, id.as_str(), user_id).await?;
+				result
+			},
+			None => user_data,
+		}
+	} else {
+		user_data
+	};
+
+	let group_data = InternalGroupDataComplete {
+		group_data: entity_group,
+		user_data,
+	};
+
+	Ok(group_data)
+}
+
+/**
+Example usage:
+
+1. User is in group as direct member:
+	- first check the cache if the user is in the cache:
+	 - if not
+		- go to the model and then the user should be there in this use case
+		 - skip the check parent part
+		 - cache the data
+		 - return the data from the cache
+	 - if in cache:
+		 - just return the data from the cache
+2. User is not a direct member but member of a parent group
+	- first check the cache from this group if the user is in
+	 - if not
+		 - check the model if user is a direct member (in this use case not)
+		 - search all parent groups via sql recursion if we found a parent group of this group where the user is member
+		 - if no group found -> cache it for 5 min (because we don't know when the user joined any of the parent groups)
+		 - if get the group values back
+		 - build a cache from this values and store it with a ref on the real group data
+			(this is important because when user joint a parent group later, then the cache from this child group is still wrong)
+		 - return the data
+	 - if in cache with a ref:
+		 - return the data,
+		 - in get_group fn we are searching for the real user data from the ref parent group again (mostly via cache), to see if the cache is still valid
+*/
+async fn get_group_user(app_id: &str, group_id: &str, user_id: &str) -> AppRes<(InternalUserGroupData, bool)>
+{
+	let key_user = get_group_user_cache_key(app_id, group_id, user_id);
+
+	let (entity, search_again) = match cache::get(key_user.as_str()).await {
+		Some(j) => (bytes_to_json(j.as_bytes())?, true),
 		None => {
-			let data = match group_model::get_internal_group_user_data(group_id.to_string(), user.id.to_string()).await {
-				Ok(d) => d,
+			let data = match group_model::get_internal_group_user_data(group_id.to_string(), user_id.to_string()).await? {
+				Some(d) => d,
+				None => {
+					//check the parent ref to this group and user.
+					let parent_ref = get_user_from_parent(group_id, user_id).await?;
+
+					let d = InternalUserGroupData {
+						user_id: user_id.to_string(),
+						joined_time: parent_ref.joined_time,
+						rank: parent_ref.rank,
+						get_values_from_parent: Some(parent_ref.get_values_from_parent),
+					};
+
+					d
+				},
+			};
+
+			let data = CacheVariant::Some(data);
+
+			//cache the data everytime even if the user is not a direct member of the group,
+			// if not direct member then work with reference to the parent group in get group fn
+			cache::add(key_user, json_to_string(&data)?, LONG_TTL).await;
+
+			//when user is direct member or we checked the parent group ref (with the real data)
+			//we don't need to look up again if this data is still valid.
+			(data, false)
+		},
+	};
+
+	let entity = match entity {
+		CacheVariant::Some(d) => d,
+		CacheVariant::None => {
+			return Err(HttpErr::new(
+				400,
+				ApiErrorCodes::GroupAccess,
+				"No access to this group".to_string(),
+				None,
+			))
+		},
+	};
+
+	Ok((entity, search_again))
+}
+
+async fn get_user_from_parent(group_id: &str, user_id: &str) -> AppRes<InternalUserGroupDataFromParent>
+{
+	let key = get_group_user_parent_ref_key(group_id, user_id);
+
+	let entity = match cache::get(key.as_str()).await {
+		Some(v) => bytes_to_json(v.as_bytes())?,
+		None => {
+			//get the ref from the db
+			let user_from_parent = match group_model::get_user_from_parent_groups(group_id.to_string(), user_id.to_string()).await {
+				Ok(u) => u,
 				Err(e) => {
-					//cache wrong input too
+					//cache wrong input too,
+					// but only for 5 min because we don't know when the user joined any of the parent groups.
 					cache::add(
-						key_user,
-						json_to_string(&CacheVariant::<InternalUserGroupData>::None)?,
-						LONG_TTL,
+						key,
+						json_to_string(&CacheVariant::<InternalUserGroupDataFromParent>::None)?,
+						SHORT_TTL,
 					)
 					.await;
 
@@ -114,9 +229,10 @@ async fn get_group(req: &mut Request) -> AppRes<()>
 				},
 			};
 
-			let data = CacheVariant::Some(data);
+			let data = CacheVariant::Some(user_from_parent);
 
-			cache::add(key_user, json_to_string(&data)?, LONG_TTL).await;
+			//when there is a ref -> cache it long
+			cache::add(key, json_to_string(&data)?, LONG_TTL).await;
 
 			data
 		},
@@ -134,12 +250,5 @@ async fn get_group(req: &mut Request) -> AppRes<()>
 		},
 	};
 
-	let group_data = InternalGroupDataComplete {
-		group_data: entity_group,
-		user_data: entity,
-	};
-
-	req.extensions_mut().insert(group_data);
-
-	Ok(())
+	Ok(entity)
 }

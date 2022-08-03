@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 02. Aug 2022 um 10:14
+-- Erstellungszeit: 02. Aug 2022 um 23:06
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -173,7 +173,8 @@ CREATE TABLE `sentc_group_user` (
   `group_id` varchar(36) NOT NULL,
   `time` bigint(20) NOT NULL COMMENT 'joined time',
   `rank` int(11) NOT NULL,
-  `key_upload_session_id` varchar(36) DEFAULT NULL COMMENT 'this is used when there are many keys used in this group. then upload the keys via pagination. this is only used for accept join req'
+  `key_upload_session_id` varchar(36) DEFAULT NULL COMMENT 'this is used when there are many keys used in this group. then upload the keys via pagination. this is only used for accept join req',
+  `type` tinyint(4) NOT NULL DEFAULT 0 COMMENT '0 = normal user, 1 = group from parent group'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --

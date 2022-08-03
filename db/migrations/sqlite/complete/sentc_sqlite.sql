@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 10:15am on August 2, 2022 (UTC)
+-- Exported: 11:07pm on August 2, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -176,7 +176,7 @@ CREATE TABLE sentc_group_user_key_rotation
 CREATE TABLE 'sentc_group_user' (
 	user_id  text,
 	group_id text,
-	time     text,'rank' INTEGER, 'key_upload_session_id' TEXT,
+	time     text,'rank' INTEGER, 'key_upload_session_id' TEXT, 'type' TEXT DEFAULT NULL,
 	constraint sentc_group_user_pk
 		primary key (user_id, group_id)
 );

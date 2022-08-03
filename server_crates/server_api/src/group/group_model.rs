@@ -3,10 +3,17 @@ use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
 use uuid::Uuid;
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
-use crate::core::db::{exec, exec_transaction, query, query_first, query_string, TransactionData};
+use crate::core::db::{exec, exec_string, exec_transaction, get_in, query, query_first, query_string, TransactionData};
 use crate::core::get_time;
-use crate::group::group_entities::{GroupKeyUpdateReady, GroupUserData, GroupUserKeys, InternalGroupData, InternalUserGroupData, UserGroupRankCheck};
-use crate::set_params;
+use crate::group::group_entities::{
+	GroupChildren,
+	GroupKeyUpdateReady,
+	GroupUserKeys,
+	InternalGroupData,
+	InternalUserGroupData,
+	InternalUserGroupDataFromParent,
+};
+use crate::{set_params, set_params_vec};
 
 pub(crate) async fn get_internal_group_data(app_id: AppId, group_id: GroupId) -> AppRes<InternalGroupData>
 {
@@ -27,15 +34,47 @@ pub(crate) async fn get_internal_group_data(app_id: AppId, group_id: GroupId) ->
 	}
 }
 
-pub(crate) async fn get_internal_group_user_data(group_id: GroupId, user_id: UserId) -> AppRes<InternalUserGroupData>
+pub(crate) async fn get_user_from_parent_groups(group_id: GroupId, user_id: UserId) -> AppRes<InternalUserGroupDataFromParent>
 {
+	//search via recursion all parent ids for this group.
+	//https://www.mysqltutorial.org/mysql-adjacency-list-tree/
+	//https://rolandgeng.de/managing-trees-in-mysql-using-the-adjacency-list-model/
+	/*
+		//language=SQL
+		let sql = r"
+	WITH RECURSIVE parents (id, parent) AS (
+		SELECT id, parent FROM sentc_group WHERE id = ?
+
+		UNION ALL
+
+		SELECT g.id, g.parent FROM parents p
+				  JOIN sentc_group g ON p.parent = g.id
+	)
+	SELECT id FROM parents
+	";
+	*/
+
 	//language=SQL
-	let sql = "SELECT user_id, time, `rank` FROM sentc_group_user WHERE group_id = ? AND user_id = ?";
-	let group_data: Option<InternalUserGroupData> = query_first(sql, set_params!(group_id, user_id)).await?;
+	let sql = r"
+SELECT group_id, time, `rank` FROM sentc_group_user WHERE user_id = ? AND group_id IN (
+    WITH RECURSIVE parents (id, parent) AS ( 
+		SELECT id, parent FROM sentc_group WHERE id = ?
+										   
+		UNION ALL 
+		
+		SELECT g.id, g.parent FROM parents p 
+				  JOIN sentc_group g ON p.parent = g.id
+	)
+	SELECT id FROM parents
+) LIMIT 1
+";
+
+	let group_data: Option<InternalUserGroupDataFromParent> = query_first(sql, set_params!(user_id, group_id)).await?;
 
 	match group_data {
 		Some(d) => Ok(d),
 		None => {
+			//user was never found in any of the parent groups
 			Err(HttpErr::new(
 				400,
 				ApiErrorCodes::GroupAccess,
@@ -46,64 +85,16 @@ pub(crate) async fn get_internal_group_user_data(group_id: GroupId, user_id: Use
 	}
 }
 
-/**
-Get the general group data for init the group in the client.
-
-This info only needs to fetched once for each client, because it is normally cached int he client.
-*/
-pub(super) async fn get_user_group_data(app_id: AppId, user_id: UserId, group_id: GroupId) -> AppRes<(GroupUserData, Vec<GroupUserKeys>)>
+pub(crate) async fn get_internal_group_user_data(group_id: GroupId, user_id: UserId) -> AppRes<Option<InternalUserGroupData>>
 {
 	//language=SQL
-	let sql = r"
-SELECT id, parent, `rank`, g.time as created_time, gu.time as joined_time
-FROM 
-    sentc_group g,
-    sentc_group_user gu
-WHERE 
-    app_id = ? AND 
-    id = ? AND
-    user_id = ? AND
-    group_id = id";
+	let sql = "SELECT user_id, time, `rank` FROM sentc_group_user WHERE group_id = ? AND user_id = ?";
+	let group_data: Option<InternalUserGroupData> = query_first(sql, set_params!(group_id, user_id)).await?;
 
-	let user_group_data: Option<GroupUserData> = query_first(sql, set_params!(app_id, group_id.to_string(), user_id.to_string())).await?;
-
-	let user_group_data = match user_group_data {
-		Some(d) => d,
-		None => {
-			return Err(HttpErr::new(
-				400,
-				ApiErrorCodes::GroupUserNotFound,
-				"Group user not exists in this group".to_string(),
-				None,
-			))
-		},
-	};
-
-	//just a simple query, without time checking and pagination (this is done in other fn)
-	//language=SQL
-	let sql = r"
-SELECT 
-    k_id,
-    encrypted_group_key, 
-    group_key_alg, 
-    encrypted_private_key,
-    public_key,
-    private_key_pair_alg,
-    uk.encrypted_group_key_key_id,
-    uk.time
-FROM 
-    sentc_group_keys k, 
-    sentc_group_user_keys uk 
-WHERE 
-    user_id = ? AND 
-    k.group_id = ? AND 
-    id = k_id
-ORDER BY uk.time DESC LIMIT 50";
-
-	let user_keys: Vec<GroupUserKeys> = query(sql, set_params!(user_id, group_id)).await?;
-
-	Ok((user_group_data, user_keys))
+	Ok(group_data)
 }
+
+//__________________________________________________________________________________________________
 
 /**
 Get every other group keys with pagination.
@@ -111,6 +102,8 @@ Get every other group keys with pagination.
 This keys are normally cached in the client, so it should be fetched once for each client.
 
 New keys from key update are fetched by the key update fn
+
+For child group: use the parent group id as user id.
 */
 pub(super) async fn get_user_group_keys(
 	app_id: AppId,
@@ -169,6 +162,8 @@ WHERE
 
 /**
 Get the info if there was a key update in the mean time
+
+For child group: use the parent group id as user id.
 */
 pub(super) async fn check_for_key_update(app_id: AppId, user_id: UserId, group_id: GroupId) -> AppRes<bool>
 {
@@ -194,15 +189,27 @@ LIMIT 1";
 	}
 }
 
-pub(super) async fn create(app_id: AppId, user_id: UserId, data: CreateData) -> AppRes<GroupId>
+pub(super) async fn create(
+	app_id: AppId,
+	user_id: UserId,
+	data: CreateData,
+	parent_group_id: Option<GroupId>,
+	user_rank: Option<i32>,
+) -> AppRes<GroupId>
 {
-	match &data.parent_group_id {
-		None => {},
-		Some(p) => {
+	let (insert_user_id, user_type) = match (&parent_group_id, user_rank) {
+		(None, None) => (user_id, 0),
+		(Some(p), Some(r)) => {
 			//test here if the user has access to create a child group in this group
-			check_group_rank_by_fetch(app_id.to_string(), p.to_string(), user_id.to_string(), 1).await?;
+			check_group_rank(r, 1)?;
+
+			//when it is a parent group -> use this id as user id for the group user insert
+			(p.to_string(), 1)
 		},
-	}
+		//when parent group is some then user rank must be some too,
+		// because this is set by the controller and not the user.
+		_ => (user_id, 0),
+	};
 
 	let group_id = Uuid::new_v4().to_string();
 	let time = get_time()?;
@@ -212,7 +219,7 @@ pub(super) async fn create(app_id: AppId, user_id: UserId, data: CreateData) -> 
 	let group_params = set_params!(
 		group_id.to_string(),
 		app_id.to_string(),
-		data.parent_group_id,
+		parent_group_id,
 		"".to_string(),
 		time.to_string()
 	);
@@ -256,9 +263,17 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?)";
 	);
 
 	//insert he creator => rank = 0
+	//handle parent group as the creator.
+
 	//language=SQL
-	let sql_group_user = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`) VALUES (?,?,?,?)";
-	let group_user_params = set_params!(user_id.to_string(), group_id.to_string(), time.to_string(), 0);
+	let sql_group_user = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
+	let group_user_params = set_params!(
+		insert_user_id.to_string(),
+		group_id.to_string(),
+		time.to_string(),
+		0,
+		user_type
+	);
 
 	//language=SQL
 	let sql_group_user_keys = r"
@@ -276,7 +291,7 @@ VALUES (?,?,?,?,?,?,?)";
 
 	let group_user_keys_params = set_params!(
 		group_key_id,
-		user_id,
+		insert_user_id,
 		group_id.to_string(),
 		data.encrypted_group_key,
 		data.encrypted_group_key_alg,
@@ -314,24 +329,22 @@ pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_rank: i32) -> 
 
 	//language=SQL
 	let sql = "DELETE FROM sentc_group WHERE id = ? AND app_id = ?";
-	let delete_params = set_params!(group_id.to_string(), app_id.to_string());
+	exec(sql, set_params!(group_id.to_string(), app_id.to_string())).await?;
 
-	//delete the children
-	//language=SQL
-	let sql_delete_child = "DELETE FROM sentc_group WHERE parent = ? AND app_id = ?";
-	let delete_children_params = set_params!(group_id.to_string(), app_id);
+	//delete the children via recursion, can't delete them directly because sqlite don't support delete from multiple tables
+	//can't delete it via trigger because it is the same table
+	//can't delete it via on delete cascade because the trigger for the children won't run, so we are left with garbage data.
+	let children = get_children_to_parent(group_id.to_string(), app_id.to_string()).await?;
 
-	exec_transaction(vec![
-		TransactionData {
-			sql,
-			params: delete_params,
-		},
-		TransactionData {
-			sql: sql_delete_child,
-			params: delete_children_params,
-		},
-	])
-	.await?;
+	if children.len() > 0 {
+		let get_in = get_in(&children);
+
+		//language=SQLx
+		let sql_delete_child = format!("DELETE FROM sentc_group WHERE id IN ({})", get_in);
+
+		//set params with vec
+		exec_string(sql_delete_child, set_params_vec!(children)).await?;
+	}
 
 	//delete the rest of the user group keys, this is the rest from user invite but this wont get deleted when group user gets deleted
 	//important: do this after the delete!
@@ -363,52 +376,22 @@ pub(super) fn check_group_rank(user_rank: i32, req_rank: i32) -> AppRes<()>
 	Ok(())
 }
 
-/**
-When this route don't get access to the group cache
-*/
-pub(super) async fn check_group_rank_by_fetch(app_id: AppId, group_id: GroupId, user_id: UserId, req_rank: i32) -> AppRes<()>
-{
-	let rank = get_user_rank(app_id, group_id, user_id).await?;
-
-	if rank > req_rank {
-		return Err(HttpErr::new(
-			400,
-			ApiErrorCodes::GroupUserRank,
-			"Wrong group rank for this action".to_string(),
-			None,
-		));
-	}
-
-	Ok(())
-}
-
-pub(super) async fn get_user_rank(app_id: AppId, group_id: GroupId, user_id: UserId) -> AppRes<i32>
+pub(super) async fn get_children_to_parent(group_id: GroupId, app_id: AppId) -> AppRes<Vec<GroupChildren>>
 {
 	//language=SQL
 	let sql = r"
-SELECT `rank` 
-FROM 
-    sentc_group_user gu,
-    sentc_group g
-WHERE 
-    group_id = ? AND 
-    id = group_id AND 
-    app_id = ? AND
-    user_id = ?";
+WITH RECURSIVE children (id) AS ( 
+    SELECT g.id from sentc_group g WHERE g.parent = ? AND g.app_id = ?
+                                   
+    UNION ALL 
+        
+    SELECT g1.id FROM children c
+            JOIN sentc_group g1 ON c.id = g1.parent AND g1.app_id = ?
+)
+SELECT * FROM children
+";
 
-	let rank: Option<UserGroupRankCheck> = query_first(sql, set_params!(group_id, app_id, user_id)).await?;
+	let children: Vec<GroupChildren> = query(sql, set_params!(group_id, app_id.to_string(), app_id)).await?;
 
-	let rank = match rank {
-		Some(r) => r,
-		None => {
-			return Err(HttpErr::new(
-				400,
-				ApiErrorCodes::GroupUserNotFound,
-				"Group user not found".to_string(),
-				None,
-			))
-		},
-	};
-
-	Ok(rank.0)
+	Ok(children)
 }
