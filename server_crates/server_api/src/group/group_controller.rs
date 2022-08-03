@@ -7,7 +7,7 @@ use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDeleteServe
 use crate::core::api_res::{echo, ApiErrorCodes, HttpErr, JRes};
 use crate::core::cache;
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
-use crate::core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
+use crate::core::url_helper::{get_name_param_from_params, get_params};
 use crate::group::{get_group_user_data_from_req, group_model};
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::get_group_cache_key;
@@ -78,12 +78,20 @@ pub(crate) async fn delete(req: Request) -> JRes<GroupDeleteServerOutput>
 
 pub(crate) async fn get_user_group_data(req: Request) -> JRes<GroupServerData>
 {
-	//don't get the group data from mw cache, this is done by the model fetch
+	let group_data = get_group_user_data_from_req(&req)?;
 
-	let user = get_jwt_data_from_param(&req)?;
-	let group_id = get_name_param_from_req(&req, "group_id")?;
+	let app_id = &group_data.group_data.app_id;
+	let group_id = &group_data.group_data.id;
+	let user_id = &group_data.user_data.user_id;
 
-	let (user_group_data, user_keys) = group_model::get_user_group_data(user.sub.to_string(), user.id.to_string(), group_id.to_string()).await?;
+	let user_keys = group_model::get_user_group_keys(
+		app_id.to_string(),
+		group_id.to_string(),
+		user_id.to_string(),
+		0, //fetch the first page
+		"".to_string(),
+	)
+	.await?;
 
 	let mut keys: Vec<GroupKeyServerOutput> = Vec::with_capacity(user_keys.len());
 
@@ -91,16 +99,21 @@ pub(crate) async fn get_user_group_data(req: Request) -> JRes<GroupServerData>
 		keys.push(user_key.into());
 	}
 
-	let key_update = group_model::check_for_key_update(user.sub.to_string(), user.id.to_string(), group_id.to_string()).await?;
+	let key_update = group_model::check_for_key_update(app_id.to_string(), user_id.to_string(), group_id.to_string()).await?;
+
+	let parent = match &group_data.group_data.parent {
+		Some(p) => Some(p.to_string()),
+		None => None,
+	};
 
 	let out = GroupServerData {
-		group_id: user_group_data.id,
-		parent_group_id: user_group_data.parent_group_id,
+		group_id: group_id.to_string(),
+		parent_group_id: parent,
 		keys,
 		key_update,
-		rank: user_group_data.rank,
-		created_time: user_group_data.created_time,
-		joined_time: user_group_data.joined_time,
+		rank: group_data.user_data.rank,
+		created_time: group_data.group_data.time,
+		joined_time: group_data.user_data.joined_time,
 	};
 
 	echo(out)
