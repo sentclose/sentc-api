@@ -470,7 +470,7 @@ async fn test_17_invite_user_an_reject_invite()
 	let out = ServerOutput::<GroupServerData>::from_string(body.as_str()).unwrap();
 
 	assert_eq!(out.status, false);
-	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::GroupUserNotFound.get_int_code());
+	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::GroupAccess.get_int_code());
 }
 
 //__________________________________________________________________________________________________
@@ -555,7 +555,7 @@ async fn test_19_leave_group()
 	let out = ServerOutput::<GroupServerData>::from_string(body.as_str()).unwrap();
 
 	assert_eq!(out.status, false);
-	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::GroupUserNotFound.get_int_code());
+	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::GroupAccess.get_int_code());
 }
 
 //__________________________________________________________________________________________________
