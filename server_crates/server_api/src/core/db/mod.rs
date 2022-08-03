@@ -10,11 +10,12 @@ mod mariadb;
 mod sqlite;
 
 #[cfg(feature = "mysql")]
-pub use self::mariadb::{bulk_insert, exec, exec_transaction, query, query_first, query_first_string, query_string, TransactionData};
+pub use self::mariadb::{bulk_insert, exec, exec_string, exec_transaction, query, query_first, query_first_string, query_string, TransactionData};
 #[cfg(feature = "sqlite")]
 pub use self::sqlite::{
 	bulk_insert,
 	exec,
+	exec_string,
 	exec_transaction,
 	query,
 	query_first,

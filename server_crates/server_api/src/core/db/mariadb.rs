@@ -205,6 +205,17 @@ where
 		.map_err(|e| db_exec_err(&e))
 }
 
+pub async fn exec_string<P>(sql: String, params: P) -> Result<(), HttpErr>
+where
+	P: Into<Params> + Send,
+{
+	let mut conn = get_conn().await?;
+
+	conn.exec_drop(sql, params)
+		.await
+		.map_err(|e| db_exec_err(&e))
+}
+
 /**
 # Execute in transaction
 
