@@ -146,6 +146,13 @@ pub(crate) fn routes() -> Router
 			.add(app_token::app_token_transform)
 			.add(jwt::jwt_transform),
 	);
+	router.put(
+		"/api/v1/group/:group_id/change_rank",
+		r(crate::group::change_rank)
+			.add(group::group_transform)
+			.add(app_token::app_token_transform)
+			.add(jwt::jwt_transform),
+	);
 	router.get(
 		"/api/v1/group/:group_id/join_req/:last_fetched_time",
 		r(crate::group::get_join_req)

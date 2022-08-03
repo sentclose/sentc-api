@@ -3,6 +3,7 @@ use std::future::Future;
 use rustgram::Request;
 use sentc_crypto_common::group::{
 	GroupAcceptJoinReqServerOutput,
+	GroupChangeRankServerInput,
 	GroupInviteReqList,
 	GroupInviteServerOutput,
 	GroupJoinReqList,
@@ -269,6 +270,43 @@ pub(crate) async fn leave_group(req: Request) -> JRes<ServerSuccessOutput>
 		group_data.group_data.app_id.as_str(),
 		group_data.group_data.id.as_str(),
 		group_data.user_data.user_id.as_str(),
+	);
+
+	cache::delete(key_group.as_str()).await;
+
+	echo_success()
+}
+
+//__________________________________________________________________________________________________
+
+/**
+Update the user rank. The rank of a creator cannot changed.
+
+When deleting the cache for this group, and the group got children then for all children the rank must be updated too.
+This is done because we use a reference to the parent group when we look for the user rank in the group mw.
+If this user is not in a parent group -> this wouldn't effect any groups
+*/
+pub(crate) async fn change_rank(mut req: Request) -> JRes<ServerSuccessOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let input: GroupChangeRankServerInput = bytes_to_json(&body)?;
+
+	group_user_model::update_rank(
+		group_data.group_data.id.to_string(),
+		group_data.user_data.rank,
+		input.changed_user_id.to_string(),
+		input.new_rank,
+	)
+	.await?;
+
+	//delete user cache of the changed user
+	let key_group = get_group_user_cache_key(
+		group_data.group_data.app_id.as_str(),
+		group_data.group_data.id.as_str(),
+		input.changed_user_id.as_str(),
 	);
 
 	cache::delete(key_group.as_str()).await;
