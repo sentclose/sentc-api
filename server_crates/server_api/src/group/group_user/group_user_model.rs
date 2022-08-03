@@ -9,7 +9,6 @@ use crate::group::group_entities::{
 	GroupInviteReq,
 	GroupJoinReq,
 	GroupKeySession,
-	GroupNewUserType,
 	UserInGroupCheck,
 	GROUP_INVITE_TYPE_INVITE_REQ,
 	GROUP_INVITE_TYPE_JOIN_REQ,
@@ -390,6 +389,64 @@ pub(super) async fn user_leave_group(group_id: GroupId, user_id: UserId, rank: i
 
 //__________________________________________________________________________________________________
 
+pub(super) async fn update_rank(group_id: GroupId, admin_rank: i32, changed_user_id: UserId, new_rank: i32) -> AppRes<()>
+{
+	check_group_rank(admin_rank, 1)?;
+
+	//only one creator
+	if new_rank == 0 || new_rank > 4 {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::GroupUserRankUpdate,
+			"Wrong rank used".to_string(),
+			None,
+		));
+	}
+
+	//check if this user wants to cache the rank of the creator and check if the user exists in this group
+	//language=SQL
+	let sql = "SELECT `rank` FROM sentc_group_user WHERE user_id = ? AND group_id = ?";
+
+	let check: Option<UserInGroupCheck> = query_first(sql, set_params!(changed_user_id.to_string(), group_id.to_string())).await?;
+
+	let check = match check {
+		Some(c) => c.0,
+		None => {
+			return Err(HttpErr::new(
+				400,
+				ApiErrorCodes::GroupUserNotFound,
+				"User not found in this group".to_string(),
+				None,
+			))
+		},
+	};
+
+	if check == 0 {
+		//changed user is creator
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::GroupUserRankUpdate,
+			"Can't change the rank of a group creator".to_string(),
+			None,
+		));
+	}
+
+	//language=SQL
+	let sql = "UPDATE sentc_group_user SET `rank` = ? WHERE group_id = ? AND user_id = ?";
+
+	exec(sql, set_params!(new_rank, group_id, changed_user_id)).await?;
+
+	Ok(())
+}
+
+//__________________________________________________________________________________________________
+
+pub(super) enum InsertNewUserType
+{
+	Invite,
+	Join,
+}
+
 /**
 Where there are too many keys used in this group.
 
@@ -400,31 +457,22 @@ pub(super) async fn insert_user_keys_via_session(
 	group_id: GroupId,
 	session_id: String,
 	keys_for_new_user: Vec<GroupKeysForNewMember>,
-	insert_type: GroupNewUserType,
+	insert_type: InsertNewUserType,
 ) -> AppRes<()>
 {
 	//check the session id
 	let sql = match insert_type {
-		0 => {
+		InsertNewUserType::Invite => {
 			//language=SQL
 			let sql = "SELECT user_id FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND key_upload_session_id = ?";
 
 			sql
 		},
-		1 => {
+		InsertNewUserType::Join => {
 			//language=SQL
 			let sql = "SELECT user_id FROM sentc_group_user WHERE group_id = ? AND key_upload_session_id = ?";
 
 			sql
-		},
-		_ => {
-			//this should be never the case because this is called from the controller fn.
-			return Err(HttpErr::new(
-				400,
-				ApiErrorCodes::GroupKeySession,
-				"No session found to upload the keys".to_string(),
-				None,
-			));
 		},
 	};
 

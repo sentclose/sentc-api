@@ -171,6 +171,7 @@ async fn get_group_user(app_id: &str, group_id: &str, user_id: &str) -> AppRes<(
 						user_id: user_id.to_string(),
 						joined_time: parent_ref.joined_time,
 						rank: parent_ref.rank,
+						//only set the ref to parent group here
 						get_values_from_parent: Some(parent_ref.get_values_from_parent),
 					};
 
