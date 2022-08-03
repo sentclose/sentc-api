@@ -9,7 +9,6 @@ use crate::group::group_entities::{
 	GroupInviteReq,
 	GroupJoinReq,
 	GroupKeySession,
-	GroupNewUserType,
 	UserInGroupCheck,
 	GROUP_INVITE_TYPE_INVITE_REQ,
 	GROUP_INVITE_TYPE_JOIN_REQ,
@@ -390,6 +389,12 @@ pub(super) async fn user_leave_group(group_id: GroupId, user_id: UserId, rank: i
 
 //__________________________________________________________________________________________________
 
+pub(super) enum InsertNewUserType
+{
+	Invite,
+	Join,
+}
+
 /**
 Where there are too many keys used in this group.
 
@@ -400,31 +405,22 @@ pub(super) async fn insert_user_keys_via_session(
 	group_id: GroupId,
 	session_id: String,
 	keys_for_new_user: Vec<GroupKeysForNewMember>,
-	insert_type: GroupNewUserType,
+	insert_type: InsertNewUserType,
 ) -> AppRes<()>
 {
 	//check the session id
 	let sql = match insert_type {
-		0 => {
+		InsertNewUserType::Invite => {
 			//language=SQL
 			let sql = "SELECT user_id FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND key_upload_session_id = ?";
 
 			sql
 		},
-		1 => {
+		InsertNewUserType::Join => {
 			//language=SQL
 			let sql = "SELECT user_id FROM sentc_group_user WHERE group_id = ? AND key_upload_session_id = ?";
 
 			sql
-		},
-		_ => {
-			//this should be never the case because this is called from the controller fn.
-			return Err(HttpErr::new(
-				400,
-				ApiErrorCodes::GroupKeySession,
-				"No session found to upload the keys".to_string(),
-				None,
-			));
 		},
 	};
 

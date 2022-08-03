@@ -16,7 +16,7 @@ use crate::core::cache;
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
 use crate::core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 use crate::group::get_group_user_data_from_req;
-use crate::group::group_entities::{GroupNewUserType, GROUP_INVITE_TYPE_INVITE_REQ, GROUP_INVITE_TYPE_JOIN_REQ};
+use crate::group::group_user::group_user_model::InsertNewUserType;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::get_group_user_cache_key;
 
@@ -243,12 +243,12 @@ pub(crate) async fn accept_join_req(mut req: Request) -> JRes<GroupAcceptJoinReq
 
 pub(crate) fn insert_user_keys_via_session_invite(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
 {
-	insert_user_keys_via_session(req, GROUP_INVITE_TYPE_INVITE_REQ)
+	insert_user_keys_via_session(req, InsertNewUserType::Invite)
 }
 
 pub(crate) fn insert_user_keys_via_session_join_req(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
 {
-	insert_user_keys_via_session(req, GROUP_INVITE_TYPE_JOIN_REQ)
+	insert_user_keys_via_session(req, InsertNewUserType::Join)
 }
 
 //__________________________________________________________________________________________________
@@ -278,7 +278,7 @@ pub(crate) async fn leave_group(req: Request) -> JRes<ServerSuccessOutput>
 
 //__________________________________________________________________________________________________
 
-async fn insert_user_keys_via_session(mut req: Request, insert_type: GroupNewUserType) -> JRes<ServerSuccessOutput>
+async fn insert_user_keys_via_session(mut req: Request, insert_type: InsertNewUserType) -> JRes<ServerSuccessOutput>
 {
 	let body = get_raw_body(&mut req).await?;
 
