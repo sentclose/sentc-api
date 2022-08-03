@@ -3,9 +3,10 @@ use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
 use uuid::Uuid;
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
-use crate::core::db::{exec, exec_transaction, query, query_first, query_string, TransactionData};
+use crate::core::db::{exec, exec_string, exec_transaction, get_in, query, query_first, query_string, TransactionData};
 use crate::core::get_time;
 use crate::group::group_entities::{
+	GroupChildren,
 	GroupKeyUpdateReady,
 	GroupUserData,
 	GroupUserKeys,
@@ -13,7 +14,7 @@ use crate::group::group_entities::{
 	InternalUserGroupData,
 	InternalUserGroupDataFromParent,
 };
-use crate::set_params;
+use crate::{set_params, set_params_vec};
 
 pub(crate) async fn get_internal_group_data(app_id: AppId, group_id: GroupId) -> AppRes<InternalGroupData>
 {
@@ -390,24 +391,22 @@ pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_rank: i32) -> 
 
 	//language=SQL
 	let sql = "DELETE FROM sentc_group WHERE id = ? AND app_id = ?";
-	let delete_params = set_params!(group_id.to_string(), app_id.to_string());
+	exec(sql, set_params!(group_id.to_string(), app_id.to_string())).await?;
 
-	//delete the children
-	//language=SQL
-	let sql_delete_child = "DELETE FROM sentc_group WHERE parent = ? AND app_id = ?";
-	let delete_children_params = set_params!(group_id.to_string(), app_id);
+	//delete the children via recursion, can't delete them directly because sqlite don't support delete from multiple tables
+	//can't delete it via trigger because it is the same table
+	//can't delete it via on delete cascade because the trigger for the children won't run, so we are left with garbage data.
+	let children = get_children_to_parent(group_id.to_string(), app_id.to_string()).await?;
 
-	exec_transaction(vec![
-		TransactionData {
-			sql,
-			params: delete_params,
-		},
-		TransactionData {
-			sql: sql_delete_child,
-			params: delete_children_params,
-		},
-	])
-	.await?;
+	if children.len() > 0 {
+		let get_in = get_in(&children);
+
+		//language=SQLx
+		let sql_delete_child = format!("DELETE FROM sentc_group WHERE id IN ({})", get_in);
+
+		//set params with vec
+		exec_string(sql_delete_child, set_params_vec!(children)).await?;
+	}
 
 	//delete the rest of the user group keys, this is the rest from user invite but this wont get deleted when group user gets deleted
 	//important: do this after the delete!
@@ -437,4 +436,24 @@ pub(super) fn check_group_rank(user_rank: i32, req_rank: i32) -> AppRes<()>
 	}
 
 	Ok(())
+}
+
+pub(super) async fn get_children_to_parent(group_id: GroupId, app_id: AppId) -> AppRes<Vec<GroupChildren>>
+{
+	//language=SQL
+	let sql = r"
+WITH RECURSIVE children (id) AS ( 
+    SELECT g.id from sentc_group g WHERE g.parent = ? AND g.app_id = ?
+                                   
+    UNION ALL 
+        
+    SELECT g1.id FROM children c
+            JOIN sentc_group g1 ON c.id = g1.parent AND g1.app_id = ?
+)
+SELECT * FROM children
+";
+
+	let children: Vec<GroupChildren> = query(sql, set_params!(group_id, app_id.to_string(), app_id)).await?;
+
+	Ok(children)
 }

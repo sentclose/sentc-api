@@ -251,6 +251,32 @@ impl crate::core::db::FromSqliteRow for GroupKeyUpdateReady
 }
 
 //__________________________________________________________________________________________________
+
+pub struct GroupChildren(pub GroupId);
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for GroupChildren
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self(take_or_err!(row, 0, String)))
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl crate::core::db::FromSqliteRow for GroupChildren
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self(take_or_err!(row, 0)))
+	}
+}
+
+//__________________________________________________________________________________________________
 /**
 External used group user data for each group user and each client.
 */
