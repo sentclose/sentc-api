@@ -6,6 +6,7 @@ use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupInviteServerOutput};
 use sentc_crypto::KeyData;
 use sentc_crypto_common::group::{
+	GroupChangeRankServerInput,
 	GroupCreateOutput,
 	GroupDeleteServerOutput,
 	GroupInviteReqList,
@@ -1057,10 +1058,90 @@ async fn test_29_invite_user_with_two_keys()
 }
 
 //__________________________________________________________________________________________________
+
+#[tokio::test]
+async fn test_30_update_rank()
+{
+	//update the rank of a user and check if the rank for the child group is also updated
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+	let user_to_change = &users[1];
+
+	let input = GroupChangeRankServerInput {
+		changed_user_id: user_to_change.user_id.to_string(),
+		new_rank: 2,
+	};
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/change_rank");
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(input.to_string().unwrap())
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+
+	//get the group data with the new rank
+	let data = get_group(
+		secret_token,
+		user_to_change.key_data.jwt.as_str(),
+		group.group_id.as_str(),
+		&user_to_change.key_data.private_key,
+		false,
+	)
+	.await;
+
+	assert_eq!(data.rank, 2);
+}
+
+#[tokio::test]
+async fn test_31_no_rank_change_without_permission()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let user_without_permission = &users[1];
+
+	let input = GroupChangeRankServerInput {
+		changed_user_id: user_without_permission.user_id.to_string(),
+		new_rank: 2,
+	};
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/change_rank");
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(
+			AUTHORIZATION,
+			auth_header(user_without_permission.key_data.jwt.as_str()),
+		)
+		.header("x-sentc-app-token", secret_token)
+		.body(input.to_string().unwrap())
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, false);
+}
+
+//__________________________________________________________________________________________________
 //delete group
 
 #[tokio::test]
-async fn test_30_delete_group()
+async fn test_32_delete_group()
 {
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
 
