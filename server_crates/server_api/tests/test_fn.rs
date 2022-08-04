@@ -1,14 +1,17 @@
 #![allow(dead_code)]
 
+use std::env;
+
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::group::{GroupKeyData, GroupOutData};
 use sentc_crypto::sdk_common::group::GroupAcceptJoinReqServerOutput;
 use sentc_crypto::{KeyData, PrivateKeyFormat, PublicKeyFormat};
 use sentc_crypto_common::group::GroupCreateOutput;
-use sentc_crypto_common::server_default::ServerSuccessOutput;
-use sentc_crypto_common::{GroupId, ServerOutput, UserId};
+use sentc_crypto_common::user::RegisterData;
+use sentc_crypto_common::{CustomerId, GroupId, ServerOutput, UserId};
 use server_api_common::app::{AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput};
+use server_api_common::customer::{CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput};
 
 pub fn get_url(path: String) -> String
 {
@@ -20,9 +23,102 @@ pub fn auth_header(jwt: &str) -> String
 	format!("Bearer {}", jwt)
 }
 
-pub async fn create_app() -> AppRegisterOutput
+/**
+Register customer but without the email check
+*/
+pub async fn register_customer(email: String, pw: &str) -> CustomerId
 {
-	//TODO add here the customer jwt when customer mod is done
+	let url = get_url("api/v1/customer/register".to_string());
+
+	let register_data = sentc_crypto::user::register(email.as_str(), pw).unwrap();
+	let register_data = RegisterData::from_string(register_data.as_str()).unwrap();
+
+	let public_token = env::var("SENTC_PUBLIC_TOKEN").unwrap();
+
+	let input = CustomerRegisterData {
+		email,
+		register_data,
+	};
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(serde_json::to_string(&input).unwrap())
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<CustomerRegisterOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	out.result.unwrap().customer_id
+}
+
+pub async fn login_customer(email: &str, pw: &str) -> CustomerDoneLoginOutput
+{
+	let public_token = env::var("SENTC_PUBLIC_TOKEN").unwrap();
+
+	let url = get_url("api/v1/customer/prepare_login".to_owned());
+
+	let prep_server_input = sentc_crypto::user::prepare_login_start(email).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token.as_str())
+		.body(prep_server_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let (auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
+
+	// //done login
+	let url = get_url("api/v1/customer/done_login".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token.as_str())
+		.body(auth_key)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<CustomerDoneLoginOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	out.result.unwrap()
+}
+
+pub async fn customer_delete(customer_jwt: &str)
+{
+	//TODO delete customer
+}
+
+pub async fn create_test_customer(email: &str, pw: &str) -> (CustomerId, CustomerDoneLoginOutput)
+{
+	let id = register_customer(email.to_string(), pw).await;
+	let customer_data = login_customer(email, pw).await;
+
+	(id, customer_data)
+}
+
+//__________________________________________________________________________________________________
+
+pub async fn create_app(customer_jwt: &str) -> AppRegisterOutput
+{
 	let url = get_url("api/v1/customer/app".to_owned());
 
 	let input = AppRegisterInput {
@@ -32,6 +128,7 @@ pub async fn create_app() -> AppRegisterOutput
 	let client = reqwest::Client::new();
 	let res = client
 		.post(url)
+		.header(AUTHORIZATION, auth_header(customer_jwt))
 		.body(input.to_string().unwrap())
 		.send()
 		.await
@@ -52,14 +149,17 @@ pub async fn create_app() -> AppRegisterOutput
 	}
 }
 
-pub async fn add_app_jwt_keys(app_id: &str) -> AppJwtRegisterOutput
+pub async fn add_app_jwt_keys(customer_jwt: &str, app_id: &str) -> AppJwtRegisterOutput
 {
-	//TODO add here the customer jwt when customer mod is done
-
 	let url = get_url("api/v1/customer/app/".to_owned() + app_id + "/new_jwt_keys");
 
 	let client = reqwest::Client::new();
-	let res = client.patch(url).send().await.unwrap();
+	let res = client
+		.patch(url)
+		.header(AUTHORIZATION, auth_header(customer_jwt))
+		.send()
+		.await
+		.unwrap();
 
 	assert_eq!(res.status(), StatusCode::OK);
 
@@ -73,14 +173,17 @@ pub async fn add_app_jwt_keys(app_id: &str) -> AppJwtRegisterOutput
 	out.result.unwrap()
 }
 
-pub async fn delete_app_jwt_key(app_id: &str, jwt_id: &str)
+pub async fn delete_app_jwt_key(customer_jwt: &str, app_id: &str, jwt_id: &str)
 {
-	//TODO add here the customer jwt when customer mod is done
-
 	let url = get_url("api/v1/customer/app/".to_owned() + app_id + "/jwt/" + jwt_id);
 
 	let client = reqwest::Client::new();
-	let res = client.delete(url).send().await.unwrap();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(customer_jwt))
+		.send()
+		.await
+		.unwrap();
 
 	assert_eq!(res.status(), StatusCode::OK);
 
@@ -89,18 +192,23 @@ pub async fn delete_app_jwt_key(app_id: &str, jwt_id: &str)
 	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 }
 
-pub async fn delete_app(app_id: &str)
+pub async fn delete_app(customer_jwt: &str, app_id: &str)
 {
-	//TODO add here the customer jwt when customer mod is done
-
 	let url = get_url("api/v1/customer/app/".to_owned() + app_id);
 	let client = reqwest::Client::new();
-	let res = client.delete(url).send().await.unwrap();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(customer_jwt))
+		.send()
+		.await
+		.unwrap();
 
 	let body = res.text().await.unwrap();
 
 	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 }
+
+//__________________________________________________________________________________________________
 
 pub async fn register_user(app_secret_token: &str, username: &str, password: &str) -> UserId
 {
@@ -144,11 +252,7 @@ pub async fn delete_user(app_secret_token: &str, jwt: &str)
 
 	let body = res.text().await.unwrap();
 
-	//TODO change this to sdk done delete
-	let delete_output = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(delete_output.status, true);
-	assert_eq!(delete_output.err_code, None);
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 }
 
 pub async fn login_user(public_token: &str, username: &str, pw: &str) -> KeyData

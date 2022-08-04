@@ -19,9 +19,22 @@ use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::{GroupId, ServerOutput, UserId};
 use server_api::core::api_res::ApiErrorCodes;
 use server_api_common::app::AppRegisterOutput;
+use server_api_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
 
-use crate::test_fn::{add_user_by_invite, auth_header, create_app, create_group, create_test_user, delete_app, delete_user, get_group, get_url};
+use crate::test_fn::{
+	add_user_by_invite,
+	auth_header,
+	create_app,
+	create_group,
+	create_test_customer,
+	create_test_user,
+	customer_delete,
+	delete_app,
+	delete_user,
+	get_group,
+	get_url,
+};
 
 mod test_fn;
 
@@ -40,6 +53,7 @@ pub struct GroupState
 	pub decrypted_group_keys: HashMap<UserId, Vec<GroupKeyData>>,
 }
 
+static CUSTOMER_TEST_STATE: OnceCell<RwLock<CustomerDoneLoginOutput>> = OnceCell::const_new();
 static APP_TEST_STATE: OnceCell<RwLock<AppRegisterOutput>> = OnceCell::const_new();
 static USERS_TEST_STATE: OnceCell<RwLock<Vec<UserState>>> = OnceCell::const_new();
 static GROUP_TEST_STATE: OnceCell<RwLock<GroupState>> = OnceCell::const_new();
@@ -47,8 +61,16 @@ static GROUP_TEST_STATE: OnceCell<RwLock<GroupState>> = OnceCell::const_new();
 #[tokio::test]
 async fn aaa_init_global_test()
 {
+	let (_, customer_data) = create_test_customer("helle@test4.com", "12345").await;
+
+	let customer_jwt = customer_data.user_keys.jwt.to_string();
+
+	CUSTOMER_TEST_STATE
+		.get_or_init(|| async move { RwLock::new(customer_data) })
+		.await;
+
 	//create here an app
-	let app_data = create_app().await;
+	let app_data = create_app(customer_jwt.as_str()).await;
 
 	let secret_token = app_data.secret_token.to_string();
 	let public_token = app_data.public_token.to_string();
@@ -1188,5 +1210,15 @@ async fn zzz_clean_up()
 		delete_user(secret_token, user.key_data.jwt.as_str()).await;
 	}
 
-	delete_app(app.app_id.as_str()).await;
+	let customer_jwt = &CUSTOMER_TEST_STATE
+		.get()
+		.unwrap()
+		.read()
+		.await
+		.user_keys
+		.jwt;
+
+	delete_app(customer_jwt, app.app_id.as_str()).await;
+
+	customer_delete(customer_jwt).await;
 }
