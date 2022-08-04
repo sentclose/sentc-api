@@ -548,11 +548,7 @@ async fn test_18_reset_password()
 
 	let body = res.text().await.unwrap();
 
-	//TODO let sdk handle this server output
-	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
 	//test login with the old pw
@@ -694,12 +690,8 @@ async fn test_21_user_delete()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-	let delete_output = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(delete_output.status, true);
-	assert_eq!(delete_output.err_code, None);
-
-	//TODO validate it with the sdk done user delete
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 }
 
 #[derive(Serialize, Deserialize)]
