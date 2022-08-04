@@ -1888,14 +1888,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "server_api_route_builder"
-version = "0.1.0"
-dependencies = [
- "rustgram",
-]
-
-[[package]]
-name = "server_api_token"
+name = "server_api_init"
 version = "0.1.0"
 dependencies = [
  "dotenv",
@@ -1904,6 +1897,13 @@ dependencies = [
  "serde",
  "serde_json",
  "server_api_common",
+]
+
+[[package]]
+name = "server_api_route_builder"
+version = "0.1.0"
+dependencies = [
+ "rustgram",
 ]
 
 [[package]]

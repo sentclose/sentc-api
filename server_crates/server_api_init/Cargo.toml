@@ -1,5 +1,5 @@
 [package]
-name = "server_api_token"
+name = "server_api_init"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,6 +7,8 @@ edition = "2021"
 
 [dependencies]
 sentc-crypto-common = {version = "0.1.0", path = "../../sdk-common" }
+
+server_api_common = {version = "0.1.0", path = "../server_api_common", default-features = false}
 
 reqwest = { version = "0.11.11", features = ["json","blocking"] }
 
