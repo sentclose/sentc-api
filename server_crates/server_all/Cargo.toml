@@ -17,3 +17,5 @@ server_dashboard = {version = "0.1.0", path = "../server_dashboard"}
 default = ["mysql"]
 mysql = ["server_api/mysql"]
 sqlite = ["server_api/sqlite"]
+
+send_mail = ["server_api/lettre"]

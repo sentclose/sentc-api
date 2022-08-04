@@ -1,6 +1,5 @@
-use sentc_crypto_common::{AppId, CustomerId, JwtKeyId, SignKeyPairId};
+use sentc_crypto_common::{AppId, CustomerId, SignKeyPairId};
 use serde::{Deserialize, Serialize};
-use serde_json::to_string;
 
 use crate::take_or_err;
 
@@ -14,7 +13,7 @@ Cache this data:
 Only internal values from the db
  */
 #[derive(Serialize, Deserialize)]
-pub(crate) struct AppData
+pub struct AppData
 {
 	pub app_data: AppDataGeneral,
 	pub jwt_data: Vec<AppJwt>, //use the newest jwt data to create a jwt, but use the old one to validate the old jwt.
@@ -25,7 +24,7 @@ pub(crate) struct AppData
 Describe what token was sent from the req, the public or private
 */
 #[derive(Serialize, Deserialize)]
-pub(crate) enum AuthWithToken
+pub enum AuthWithToken
 {
 	Public,
 	Secret,
@@ -39,7 +38,7 @@ This values can only be exists once
 Only internal values from the db
  */
 #[derive(Serialize, Deserialize)]
-pub(crate) struct AppDataGeneral
+pub struct AppDataGeneral
 {
 	pub customer_id: CustomerId,
 	pub app_id: AppId,
@@ -94,7 +93,7 @@ It is possible to have multiple valid jwt keys.
 Only internal values from the db
  */
 #[derive(Serialize, Deserialize)]
-pub(crate) struct AppJwt
+pub struct AppJwt
 {
 	pub jwt_key_id: SignKeyPairId,
 	pub jwt_alg: String, //should be ES384 for now
@@ -141,87 +140,6 @@ impl crate::core::db::FromSqliteRow for AppJwt
 //__________________________________________________________________________________________________
 
 #[derive(Serialize, Deserialize)]
-pub struct AppRegisterInput
-{
-	pub identifier: Option<String>,
-}
-
-impl AppRegisterInput
-{
-	pub fn to_string(&self) -> serde_json::Result<String>
-	{
-		to_string(self)
-	}
-}
-
-/**
-When creating multiple jwt keys for this app
-
-Always return this for every new jwt key pair
- */
-#[derive(Serialize, Deserialize)]
-pub struct AppJwtRegisterOutput
-{
-	pub customer_id: CustomerId,
-	pub app_id: AppId,
-	pub jwt_id: JwtKeyId,
-	pub jwt_verify_key: String,
-	pub jwt_sign_key: String,
-	pub jwt_alg: String, //should be ES384 for now
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct AppRegisterOutput
-{
-	pub customer_id: CustomerId,
-	pub app_id: AppId,
-
-	//don't show this values in te normal app data
-	pub secret_token: String,
-	pub public_token: String,
-
-	pub jwt_data: AppJwtRegisterOutput,
-}
-
-//__________________________________________________________________________________________________
-
-#[derive(Serialize, Deserialize)]
-pub struct AppTokenRenewOutput
-{
-	pub secret_token: String,
-	pub public_token: String,
-}
-
-//__________________________________________________________________________________________________
-
-#[derive(Serialize, Deserialize)]
-pub struct AppDeleteOutput
-{
-	pub old_app_id: AppId,
-	pub msg: String,
-}
-
-//__________________________________________________________________________________________________
-
-#[derive(Serialize, Deserialize)]
-pub struct AppUpdateOutput
-{
-	pub app_id: AppId,
-	pub msg: String,
-}
-
-//__________________________________________________________________________________________________
-
-#[derive(Serialize, Deserialize)]
-pub struct JwtKeyDeleteOutput
-{
-	pub old_jwt_id: AppId,
-	pub msg: String,
-}
-
-//__________________________________________________________________________________________________
-
-#[derive(Serialize, Deserialize)]
 pub(crate) struct AppExistsEntity(pub i64);
 
 #[cfg(feature = "mysql")]
@@ -248,6 +166,7 @@ impl crate::core::db::FromSqliteRow for AppExistsEntity
 
 //__________________________________________________________________________________________________
 
+//copy in api common crate but without the db trait impl
 #[derive(Serialize, Deserialize)]
 pub struct AppJwtData
 {

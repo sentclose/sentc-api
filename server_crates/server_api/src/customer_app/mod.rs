@@ -4,32 +4,23 @@ pub(crate) mod app_util;
 
 use rand::RngCore;
 use rustgram::Request;
+use sentc_crypto_common::server_default::ServerSuccessOutput;
+use server_api_common::app::{AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, AppTokenRenewOutput};
 
-use crate::core::api_res::{echo, ApiErrorCodes, HttpErr, JRes};
+use crate::core::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 use crate::core::cache;
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
 use crate::core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
-use crate::customer_app::app_entities::{
-	AppDeleteOutput,
-	AppJwtData,
-	AppJwtRegisterOutput,
-	AppRegisterInput,
-	AppRegisterOutput,
-	AppTokenRenewOutput,
-	AppUpdateOutput,
-	JwtKeyDeleteOutput,
-};
+use crate::customer::customer_util;
+use crate::customer_app::app_entities::AppJwtData;
 use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
-use crate::user::jwt::create_jwt_keys;
+use crate::user::jwt::{create_jwt_keys, get_jwt_data_from_param};
 use crate::util::APP_TOKEN_CACHE;
 
 pub(crate) async fn get_jwt_details(req: Request) -> JRes<Vec<AppJwtData>>
 {
-	//TODO activate it when customer mod is done
-	// let customer = get_jwt_data_from_param(&req)?;
-	// let customer_id = &customer.id;
-
-	let customer_id = &"abcdefg".to_string();
+	let customer = get_jwt_data_from_param(&req)?;
+	let customer_id = &customer.id;
 
 	let app_id = get_name_param_from_req(&req, "app_id")?;
 
@@ -43,11 +34,11 @@ pub(crate) async fn create_app(mut req: Request) -> JRes<AppRegisterOutput>
 	let body = get_raw_body(&mut req).await?;
 	let input: AppRegisterInput = bytes_to_json(&body)?;
 
-	//TODO activate it when customer mod is done
-	// let customer = get_jwt_data_from_param(&req)?;
-	// let customer_id = &customer.id;
+	let customer = get_jwt_data_from_param(&req)?;
+	let customer_id = &customer.id;
 
-	let customer_id = &"abcdefg".to_string();
+	//only create apps when validate the e-mail
+	customer_util::check_customer_valid(customer_id.to_string()).await?;
 
 	//1. create and hash tokens
 	let (secret_token, public_token) = generate_tokens()?;
@@ -95,11 +86,8 @@ pub(crate) async fn renew_tokens(req: Request) -> JRes<AppTokenRenewOutput>
 	//no support for the old tokens anymore (unlike jwt)
 	//get the actual tokens (to delete them from the cache)
 
-	//TODO activate it when customer mod is done
-	// let customer = get_jwt_data_from_param(&req)?;
-	// let customer_id = &customer.id;
-
-	let customer_id = &"abcdefg".to_string();
+	let customer = get_jwt_data_from_param(&req)?;
+	let customer_id = &customer.id;
 
 	let app_id = get_name_param_from_req(&req, "app_id")?;
 
@@ -136,11 +124,8 @@ pub(crate) async fn renew_tokens(req: Request) -> JRes<AppTokenRenewOutput>
 
 pub(crate) async fn add_jwt_keys(req: Request) -> JRes<AppJwtRegisterOutput>
 {
-	//TODO activate it when customer mod is done
-	// let customer = get_jwt_data_from_param(&req)?;
-	// let customer_id = &customer.id;
-
-	let customer_id = &"abcdefg".to_string();
+	let customer = get_jwt_data_from_param(&req)?;
+	let customer_id = &customer.id;
 
 	let app_id = get_name_param_from_req(&req, "app_id")?;
 
@@ -167,13 +152,10 @@ pub(crate) async fn add_jwt_keys(req: Request) -> JRes<AppJwtRegisterOutput>
 	echo(out)
 }
 
-pub(crate) async fn delete_jwt_keys(req: Request) -> JRes<JwtKeyDeleteOutput>
+pub(crate) async fn delete_jwt_keys(req: Request) -> JRes<ServerSuccessOutput>
 {
-	//TODO activate it when customer mod is done
-	// let customer = get_jwt_data_from_param(&req)?;
-	// let customer_id = &customer.id;
-
-	let customer_id = &"abcdefg".to_string();
+	let customer = get_jwt_data_from_param(&req)?;
+	let customer_id = &customer.id;
 
 	let req_params = get_params(&req)?;
 	let app_id = get_name_param_from_params(req_params, "app_id")?;
@@ -181,55 +163,34 @@ pub(crate) async fn delete_jwt_keys(req: Request) -> JRes<JwtKeyDeleteOutput>
 
 	app_model::delete_jwt_keys(customer_id.to_string(), app_id.to_string(), jwt_id.to_string()).await?;
 
-	let out = JwtKeyDeleteOutput {
-		old_jwt_id: jwt_id.to_string(),
-		msg: "Jwt keys deleted".to_string(),
-	};
-
-	echo(out)
+	echo_success()
 }
 
-pub(crate) async fn delete(req: Request) -> JRes<AppDeleteOutput>
+pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 {
-	//TODO activate it when customer mod is done
-	// let customer = get_jwt_data_from_param(&req)?;
-	// let customer_id = &customer.id;
-
-	let customer_id = &"abcdefg".to_string();
+	let customer = get_jwt_data_from_param(&req)?;
+	let customer_id = &customer.id;
 
 	let app_id = get_name_param_from_req(&req, "app_id")?;
 
 	app_model::delete(customer_id.to_string(), app_id.to_string()).await?;
 
-	let out = AppDeleteOutput {
-		old_app_id: app_id.to_string(),
-		msg: "App deleted".to_string(),
-	};
-
-	echo(out)
+	echo_success()
 }
 
-pub(crate) async fn update(mut req: Request) -> JRes<AppUpdateOutput>
+pub(crate) async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 {
 	let body = get_raw_body(&mut req).await?;
 	let input: AppRegisterInput = bytes_to_json(&body)?;
 
-	//TODO activate it when customer mod is done
-	// let customer = get_jwt_data_from_param(&req)?;
-	// let customer_id = &customer.id;
-
-	let customer_id = &"abcdefg".to_string();
+	let customer = get_jwt_data_from_param(&req)?;
+	let customer_id = &customer.id;
 
 	let app_id = get_name_param_from_req(&req, "app_id")?;
 
 	app_model::update(customer_id.to_string(), app_id.to_string(), input.identifier).await?;
 
-	let out = AppUpdateOutput {
-		app_id: app_id.to_string(),
-		msg: "App updated".to_string(),
-	};
-
-	echo(out)
+	echo_success()
 }
 
 fn generate_tokens() -> Result<([u8; 50], [u8; 30]), HttpErr>

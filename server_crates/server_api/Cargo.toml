@@ -9,6 +9,8 @@ edition = "2021"
 # the server outputs for the frontend to handle
 sentc-crypto-common = {version = "0.1.0", path = "../../sdk-common" }
 
+server_api_common = {version = "0.1.0", path = "../server_api_common", default-features = false}
+
 # server impl
 hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
@@ -55,6 +57,10 @@ base64 = "0.13.0"
 rand = "0.8.5"
 
 #_______________________________________________________________________________________________________________________
+#send emails
+lettre = { version = "0.10.0-rc.6", default-features = false, features = ["smtp-transport", "tokio1-rustls-tls", "hostname", "builder"], optional = true }
+
+#_______________________________________________________________________________________________________________________
 # salt creation on server
 # to get it from ssh: write this in your ~/.cargo/config.toml:
 # [net]
@@ -72,3 +78,6 @@ sentc-crypto = {version = "0.1.0", git = "ssh://git@gitlab.com/sentclose/sentc/s
 default = ["mysql"]
 mysql = ["mysql_async","mysql_common"]
 sqlite = ["deadpool-sqlite","rusqlite"]
+
+# When enabled send the custumor resgistration mail
+send_mail = ["lettre"]

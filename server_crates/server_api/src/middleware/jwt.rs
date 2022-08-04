@@ -1,4 +1,5 @@
 use std::collections::hash_map::DefaultHasher;
+use std::env;
 use std::future::Future;
 use std::hash::{Hash, Hasher};
 use std::pin::Pin;
@@ -7,12 +8,13 @@ use std::sync::Arc;
 use hyper::header::AUTHORIZATION;
 use rustgram::service::Service;
 use rustgram::{GramHttpErr, Request, Response};
+use sentc_crypto_common::AppId;
 
 use crate::core::api_res::{ApiErrorCodes, HttpErr};
 use crate::core::cache;
 use crate::core::cache::{CacheVariant, DEFAULT_TTL};
 use crate::core::input_helper::{bytes_to_json, json_to_string};
-use crate::user::jwt::auth;
+use crate::user::jwt::{auth, get_jwt_data_from_param};
 use crate::user::user_entities::UserJwtEntity;
 use crate::util::JWT_CACHE;
 
@@ -57,6 +59,71 @@ pub fn jwt_transform<S>(inner: S) -> JwtMiddleware<S>
 		check_exp: true,
 	}
 }
+
+/**
+Check here the app id of the sentc base app too in the jwt.
+
+Only the base app can create this jwt
+*/
+pub struct JwtMiddlewareAppCheck<S>
+{
+	inner: Arc<S>,
+	check_exp: bool,
+	sentc_app_id: AppId,
+}
+
+impl<S> Service<Request> for JwtMiddlewareAppCheck<S>
+where
+	S: Service<Request, Output = Response>,
+{
+	type Output = S::Output;
+	type Future = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
+
+	fn call(&self, mut req: Request) -> Self::Future
+	{
+		let check_exp = self.check_exp;
+		let app_id = self.sentc_app_id.to_string();
+		let next = self.inner.clone();
+
+		Box::pin(async move {
+			match jwt_check(&mut req, false, check_exp).await {
+				Ok(_) => {},
+				Err(e) => return e.get_res(),
+			}
+
+			let jwt = match get_jwt_data_from_param(&req) {
+				Ok(jwt) => jwt,
+				Err(e) => return e.get_res(),
+			};
+
+			//check the app id
+			if jwt.sub != app_id {
+				return HttpErr::new(
+					400,
+					ApiErrorCodes::CustomerWrongAppToken,
+					"Wrong jwt used".to_string(),
+					None,
+				)
+				.get_res();
+			}
+
+			next.call(req).await
+		})
+	}
+}
+
+pub fn jwt_app_check_transform<S>(inner: S) -> JwtMiddlewareAppCheck<S>
+{
+	let sentc_app_id = env::var("SENTC_APP_ID").unwrap();
+
+	JwtMiddlewareAppCheck {
+		inner: Arc::new(inner),
+		check_exp: true,
+		sentc_app_id,
+	}
+}
+
+//__________________________________________________________________________________________________
 
 async fn jwt_check(req: &mut Request, optional: bool, check_exp: bool) -> Result<(), HttpErr>
 {

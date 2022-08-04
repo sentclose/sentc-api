@@ -34,13 +34,19 @@ pub enum ApiErrorCodes
 
 	NoParameter,
 
+	EmailSend,
+	EmailMessage,
+
+	CustomerWrongAppToken,
+	CustomerEmailValidate,
+	CustomerNotFound,
+	CustomerEmailTokenValid,
+
 	UserNotFound,
 	UserExists,
 	Login,
 	WrongJwtAction,
-
 	AuthKeyFormat,
-
 	SaltError,
 
 	AppTokenNotFound,
@@ -69,31 +75,46 @@ impl ApiErrorCodes
 	{
 		match self {
 			ApiErrorCodes::PageNotFound => 404,
+
 			ApiErrorCodes::JsonToString => 10,
 			ApiErrorCodes::JsonParse => 11,
 			ApiErrorCodes::InputTooBig => 12,
 			ApiErrorCodes::UnexpectedTime => 12,
+
 			ApiErrorCodes::NoDbConnection => 20,
 			ApiErrorCodes::DbQuery => 21,
 			ApiErrorCodes::DbExecute => 22,
 			ApiErrorCodes::DbBulkInsert => 23,
 			ApiErrorCodes::DbTx => 24,
+
 			ApiErrorCodes::JwtValidation => 30,
 			ApiErrorCodes::JwtNotFound => 31,
 			ApiErrorCodes::JwtWrongFormat => 32,
 			ApiErrorCodes::JwtCreation => 33,
 			ApiErrorCodes::JwtKeyCreation => 34,
 			ApiErrorCodes::JwtKeyNotFound => 35,
+
 			ApiErrorCodes::NoParameter => 40,
+
+			ApiErrorCodes::EmailSend => 50,
+			ApiErrorCodes::EmailMessage => 51,
+
+			ApiErrorCodes::CustomerWrongAppToken => 60,
+			ApiErrorCodes::CustomerEmailValidate => 61,
+			ApiErrorCodes::CustomerNotFound => 62,
+			ApiErrorCodes::CustomerEmailTokenValid => 63,
+
 			ApiErrorCodes::UserNotFound => 100,
 			ApiErrorCodes::UserExists => 101,
 			ApiErrorCodes::SaltError => 110,
 			ApiErrorCodes::AuthKeyFormat => 111,
 			ApiErrorCodes::Login => 112,
 			ApiErrorCodes::WrongJwtAction => 113,
+
 			ApiErrorCodes::AppTokenNotFound => 200,
 			ApiErrorCodes::AppTokenWrongFormat => 201,
 			ApiErrorCodes::AppNotFound => 202,
+
 			ApiErrorCodes::GroupUserNotFound => 300,
 			ApiErrorCodes::GroupUserRank => 301,
 			ApiErrorCodes::GroupUserExists => 302,
@@ -116,8 +137,8 @@ impl ApiErrorCodes
 pub struct HttpErr
 {
 	http_status_code: u16,
-	api_error_code: ApiErrorCodes,
-	msg: String,
+	pub api_error_code: ApiErrorCodes,
+	pub msg: String,
 	debug_msg: Option<String>,
 }
 

@@ -15,10 +15,23 @@ use sentc_crypto_common::{ServerOutput, UserId};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 use server_api::core::api_res::ApiErrorCodes;
-use server_api::AppRegisterOutput;
+use server_api_common::app::AppRegisterOutput;
+use server_api_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
 
-use crate::test_fn::{add_app_jwt_keys, auth_header, create_app, delete_app, delete_app_jwt_key, delete_user, get_url, login_user, register_user};
+use crate::test_fn::{
+	add_app_jwt_keys,
+	auth_header,
+	create_app,
+	create_test_customer,
+	customer_delete,
+	delete_app,
+	delete_app_jwt_key,
+	delete_user,
+	get_url,
+	login_user,
+	register_user,
+};
 
 mod test_fn;
 
@@ -29,6 +42,7 @@ pub struct UserState
 	pub user_id: UserId,
 	pub key_data: Option<KeyData>,
 	pub app_data: AppRegisterOutput,
+	pub customer_data: CustomerDoneLoginOutput,
 }
 
 static USER_TEST_STATE: OnceCell<RwLock<UserState>> = OnceCell::const_new();
@@ -36,8 +50,14 @@ static USER_TEST_STATE: OnceCell<RwLock<UserState>> = OnceCell::const_new();
 #[tokio::test]
 async fn aaa_init_global_test()
 {
+	dotenv::dotenv().ok();
+
+	let (_, customer_data) = create_test_customer("hello@test3.com", "12345").await;
+
+	let customer_jwt = &customer_data.user_keys.jwt;
+
 	//create here an app
-	let app_data = create_app().await;
+	let app_data = create_app(customer_jwt).await;
 
 	//this fn must be execute first!
 	USER_TEST_STATE
@@ -49,6 +69,7 @@ async fn aaa_init_global_test()
 					user_id: "".to_string(),
 					key_data: None,
 					app_data,
+					customer_data,
 				})
 			}
 		})
@@ -340,10 +361,17 @@ async fn test_16_user_delete_with_wrong_jwt()
 	let old_jwt = &user.key_data.as_ref().unwrap().jwt;
 	let old_jwt_data = &user.app_data.jwt_data;
 
-	let new_keys = add_app_jwt_keys(user.app_data.app_id.as_str()).await;
+	let customer_jwt = &user.customer_data.user_keys.jwt;
+
+	let new_keys = add_app_jwt_keys(customer_jwt, user.app_data.app_id.as_str()).await;
 
 	//delete the old jwt
-	delete_app_jwt_key(old_jwt_data.app_id.as_str(), old_jwt_data.jwt_id.as_str()).await;
+	delete_app_jwt_key(
+		customer_jwt,
+		old_jwt_data.app_id.as_str(),
+		old_jwt_data.jwt_id.as_str(),
+	)
+	.await;
 
 	let url = get_url("api/v1/user".to_owned());
 	let client = reqwest::Client::new();
@@ -767,6 +795,9 @@ async fn test_23_register_and_login_user_via_test_fn()
 async fn zzz_clean_up()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
+	let customer_jwt = &user.customer_data.user_keys.jwt;
 
-	delete_app(user.app_data.app_id.as_str()).await;
+	delete_app(customer_jwt, user.app_data.app_id.as_str()).await;
+
+	customer_delete(customer_jwt).await;
 }
