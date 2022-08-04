@@ -1,5 +1,6 @@
 use crate::take_or_err;
 
+#[cfg(feature = "send_mail")]
 pub(crate) enum RegisterEmailStatus
 {
 	Success,

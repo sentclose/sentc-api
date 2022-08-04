@@ -12,8 +12,10 @@ use server_api_common::customer::{
 };
 
 use crate::core::api_res::{echo, echo_success, ApiErrorCodes, AppRes, HttpErr, JRes};
+#[cfg(feature = "send_mail")]
 use crate::core::email::send_mail_registration;
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
+#[cfg(feature = "send_mail")]
 use crate::customer::customer_entities::RegisterEmailStatus;
 use crate::customer_app::app_util::get_app_data_from_req;
 use crate::user;
@@ -104,6 +106,7 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<CustomerDoneLoginOutput
 	let done_login: DoneLoginServerInput = bytes_to_json(&body)?;
 	let app_data = get_app_data_from_req(&req)?;
 
+	//TODO dont get all keys just the jwt (auth user and jwt creation)
 	let user_keys = user::user_service::done_login(app_data, done_login).await?;
 
 	let customer_data = customer_model::get_customer_email_data(user_keys.user_id.to_string()).await?;
@@ -128,11 +131,26 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<CustomerDoneLoginOutput
 	echo(out)
 }
 
-//TODO delete customer
+pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
+{
+	let user = get_jwt_data_from_param(&req)?;
+
+	user::user_service::delete(user).await?;
+
+	customer_model::delete(user.id.to_string()).await?;
+
+	//TODO delete the apps, groups and users of this user, maybe with service from all areas.
+
+	echo_success()
+}
+
+//TODO resend email
 
 //TODO email update, with valid
 
 //TODO save real data, e.g. real name or company, address, etc
+
+//TODO reset and change password (check ofr validated email)
 
 //__________________________________________________________________________________________________
 

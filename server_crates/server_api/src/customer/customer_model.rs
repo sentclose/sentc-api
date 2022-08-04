@@ -3,7 +3,9 @@ use sentc_crypto_common::CustomerId;
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::core::db::{exec, query_first};
 use crate::core::get_time;
-use crate::customer::customer_entities::{CustomerDataEntity, CustomerEmailToken, CustomerEmailValid, RegisterEmailStatus};
+#[cfg(feature = "send_mail")]
+use crate::customer::customer_entities::RegisterEmailStatus;
+use crate::customer::customer_entities::{CustomerDataEntity, CustomerEmailToken, CustomerEmailValid};
 use crate::set_params;
 
 pub(super) async fn check_customer_valid(customer_id: CustomerId) -> AppRes<CustomerEmailValid>
@@ -64,6 +66,7 @@ pub(super) async fn register_customer(email: String, customer_id: CustomerId, va
 	Ok(())
 }
 
+#[cfg(feature = "send_mail")]
 pub(super) async fn sent_mail(customer_id: CustomerId, status: RegisterEmailStatus) -> AppRes<()>
 {
 	let (status, err) = match status {
@@ -129,4 +132,16 @@ pub(super) async fn get_customer_email_data(customer_id: CustomerId) -> AppRes<C
 			))
 		},
 	}
+}
+
+//__________________________________________________________________________________________________
+
+pub(super) async fn delete(customer_id: CustomerId) -> AppRes<()>
+{
+	//language=SQL
+	let sql = "DELETE FROM sentc_customer WHERE id = ?";
+
+	exec(sql, set_params!(customer_id)).await?;
+
+	Ok(())
 }

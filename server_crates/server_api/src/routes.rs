@@ -27,6 +27,10 @@ pub(crate) fn routes() -> Router
 		"/api/v1/customer/register/:email_key",
 		r(crate::customer::done_register).add(jwt::jwt_app_check_transform),
 	);
+	router.delete(
+		"/api/v1/customer",
+		r(crate::customer::delete).add(jwt::jwt_app_check_transform),
+	);
 	router.post(
 		"/api/v1/customer/app",
 		r(crate::customer_app::create_app).add(jwt::jwt_app_check_transform),
