@@ -11,29 +11,49 @@ use crate::middleware::*;
 pub(crate) fn routes() -> Router
 {
 	let mut router = Router::new(crate::not_found_handler);
-	router.post("/api/v1/customer/register", r(crate::customer::register));
+	router.post(
+		"/api/v1/customer/register",
+		r(crate::customer::register).add(app_token::app_token_base_app_transform),
+	);
+	router.post(
+		"/api/v1/customer/prepare_login",
+		r(crate::customer::prepare_login).add(app_token::app_token_base_app_transform),
+	);
+	router.post(
+		"/api/v1/customer/done_login",
+		r(crate::customer::done_login).add(app_token::app_token_base_app_transform),
+	);
 	router.get(
 		"/api/v1/customer/register/:email_key",
-		r(crate::customer::done_register),
+		r(crate::customer::done_register).add(jwt::jwt_app_check_transform),
 	);
-	router.post("/api/v1/customer/app", r(crate::customer_app::create_app));
-	router.put("/api/v1/customer/app/:app_id", r(crate::customer_app::update));
-	router.delete("/api/v1/customer/app/:app_id", r(crate::customer_app::delete));
+	router.post(
+		"/api/v1/customer/app",
+		r(crate::customer_app::create_app).add(jwt::jwt_app_check_transform),
+	);
+	router.put(
+		"/api/v1/customer/app/:app_id",
+		r(crate::customer_app::update).add(jwt::jwt_app_check_transform),
+	);
+	router.delete(
+		"/api/v1/customer/app/:app_id",
+		r(crate::customer_app::delete).add(jwt::jwt_app_check_transform),
+	);
 	router.patch(
 		"/api/v1/customer/app/:app_id/token_renew",
-		r(crate::customer_app::renew_tokens),
+		r(crate::customer_app::renew_tokens).add(jwt::jwt_app_check_transform),
 	);
 	router.patch(
 		"/api/v1/customer/app/:app_id/new_jwt_keys",
-		r(crate::customer_app::add_jwt_keys),
+		r(crate::customer_app::add_jwt_keys).add(jwt::jwt_app_check_transform),
 	);
 	router.get(
 		"/api/v1/customer/app/:app_id/jwt",
-		r(crate::customer_app::get_jwt_details),
+		r(crate::customer_app::get_jwt_details).add(jwt::jwt_app_check_transform),
 	);
 	router.delete(
 		"/api/v1/customer/app/:app_id/jwt/:jwt_id",
-		r(crate::customer_app::delete_jwt_keys),
+		r(crate::customer_app::delete_jwt_keys).add(jwt::jwt_app_check_transform),
 	);
 	router.post(
 		"/api/v1/exists",

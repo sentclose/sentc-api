@@ -7,27 +7,36 @@ routes:
       p: "/v1"
       gr:
         #_______________________________________________________________________________________________________________
-        # customer register routes, don't need any mw
-        - post: {p: "/customer/register", s: crate::customer::register}
-        - get: {p: "/customer/register/:email_key", s: crate::customer::done_register}
-
-        #_______________________________________________________________________________________________________________
-        # customer routes are called form the dashboard
-        # TODO check customer jwt, with extra mw (to check the aud and the app id, app id must be the internal sentc id)
+        # customer
         - group:
             p: "/customer"
+            mw:
+              - app_token::app_token_base_app_transform
             gr:
+              - post: {p: "/register", s: crate::customer::register}
+              - post: {p: "/prepare_login", s: crate::customer::prepare_login}
+              - post: {p: "/done_login", s: crate::customer::done_login}
+        #_______________________________________________________________________________________________________________
+        # customer routes with the jwt check, but no app check because the jwt got already the app reference,
+        # and we are only using public token for dashboard routes
+        - group:
+            p: "/customer"
+            mw:
+              - jwt::jwt_app_check_transform
+            gr:
+              # customer must be logged in, in the dashboard when sending this req
+              - get: {p: "/register/:email_key", s: crate::customer::done_register}
               - post: { p: "/app", s: crate::customer_app::create_app }
               - group:
                   p: "/app/:app_id"
                   gr:
-                    - put: {p: "", s: crate::customer_app::update}
-                    - delete: {p: "", s: crate::customer_app::delete}
-                    - patch: {p: "/token_renew", s: crate::customer_app::renew_tokens}
+                    - put: { p: "", s: crate::customer_app::update }
+                    - delete: { p: "", s: crate::customer_app::delete }
+                    - patch: { p: "/token_renew", s: crate::customer_app::renew_tokens }
                     # jwt keys
-                    - patch: {p: "/new_jwt_keys", s: crate::customer_app::add_jwt_keys}
-                    - get: {p: "/jwt", s: crate::customer_app::get_jwt_details}
-                    - delete: {p: "/jwt/:jwt_id", s: crate::customer_app::delete_jwt_keys}
+                    - patch: { p: "/new_jwt_keys", s: crate::customer_app::add_jwt_keys }
+                    - get: { p: "/jwt", s: crate::customer_app::get_jwt_details }
+                    - delete: { p: "/jwt/:jwt_id", s: crate::customer_app::delete_jwt_keys }
         #_______________________________________________________________________________________________________________
         # routes don't need jwt check, but an app token
         - group:
