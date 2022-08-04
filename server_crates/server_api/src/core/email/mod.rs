@@ -45,9 +45,9 @@ impl Email
 	pub fn new(from: String) -> Self
 	{
 		//This is executed at the server start, so unwrap is ok here
-		let user = env::var("EMAIL_ADDRESS").unwrap();
-		let pw = env::var("EMAIL_ADDRESS").unwrap();
-		let server = env::var("EMAIL_ADDRESS").unwrap();
+		let user = env::var("EMAIL_USER").unwrap();
+		let pw = env::var("EMAIL_PW").unwrap();
+		let server = env::var("EMAIL_SERVER").unwrap();
 		let port = env::var("EMAIL_PORT").unwrap().parse().unwrap();
 		let from = from.parse().unwrap();
 
