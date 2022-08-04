@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 04. Aug 2022 um 08:51
+-- Erstellungszeit: 02. Aug 2022 um 23:06
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -37,13 +37,6 @@ CREATE TABLE `app` (
   `hash_alg` text DEFAULT NULL,
   `time` bigint(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Daten für Tabelle `app`
---
-
-INSERT INTO `app` (`id`, `customer_id`, `identifier`, `hashed_secret_token`, `hashed_public_token`, `hash_alg`, `time`) VALUES
-('48858316-0ba9-41e9-80a0-ff8ce1359c7c', 'sentc_int', '', 'ngbGMRtW0AGQ5TmJH1jPE0llT5OarbXP8Fevh6XW9yk=', 'emGMPnU7TOYZoOoRp42r5+jxYeyo0b5k/D7O2cFbxm4=', 'SHA256', 1659602647972);
 
 --
 -- Trigger `app`
@@ -83,13 +76,6 @@ CREATE TABLE `app_jwt_keys` (
   `alg` text NOT NULL,
   `time` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='multiple per app';
-
---
--- Daten für Tabelle `app_jwt_keys`
---
-
-INSERT INTO `app_jwt_keys` (`id`, `app_id`, `sign_key`, `verify_key`, `alg`, `time`) VALUES
-('d882292b-f8e4-4e19-b6c7-1b0a19c2c47c', '48858316-0ba9-41e9-80a0-ff8ce1359c7c', 'MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDCMfu+E4RIbC/1kJGybGU9PnI3V6TlmAgKI6vsKTBNuNFKl7/d6QcqsuaCAzDlO+mehZANiAASGSKIwyFkmXFlfoHu2cF/aiScnQf15h9jjZ0XQhRO7gOW/4miMUkKhYiJ1g88qzUnhgo0XrWN3N4OmirkNd69Px23Dy9Uz3oKXkRBfjGmglVYvcN4Omu+zpwc+7MM9XAc=', 'BIZIojDIWSZcWV+ge7ZwX9qJJydB/XmH2ONnRdCFE7uA5b/iaIxSQqFiInWDzyrNSeGCjRetY3c3g6aKuQ13r0/HbcPL1TPegpeREF+MaaCVVi9w3g6a77OnBz7swz1cBw==', 'ES384', 1659602647972);
 
 -- --------------------------------------------------------
 

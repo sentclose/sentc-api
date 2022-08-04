@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 8:51am on August 4, 2022 (UTC)
+-- Exported: 11:07pm on August 2, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -56,9 +56,8 @@ CREATE TABLE app_jwt_keys
 );
 
 ----
--- Data dump for app_jwt_keys, a total of 1 rows
+-- Data dump for app_jwt_keys, a total of 0 rows
 ----
-INSERT INTO "app_jwt_keys" ("id","app_id","sign_key","verify_key","alg","time") VALUES ('d882292b-f8e4-4e19-b6c7-1b0a19c2c47c','48858316-0ba9-41e9-80a0-ff8ce1359c7c','MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDCMfu+E4RIbC/1kJGybGU9PnI3V6TlmAgKI6vsKTBNuNFKl7/d6QcqsuaCAzDlO+mehZANiAASGSKIwyFkmXFlfoHu2cF/aiScnQf15h9jjZ0XQhRO7gOW/4miMUkKhYiJ1g88qzUnhgo0XrWN3N4OmirkNd69Px23Dy9Uz3oKXkRBfjGmglVYvcN4Omu+zpwc+7MM9XAc=','BIZIojDIWSZcWV+ge7ZwX9qJJydB/XmH2ONnRdCFE7uA5b/iaIxSQqFiInWDzyrNSeGCjRetY3c3g6aKuQ13r0/HbcPL1TPegpeREF+MaaCVVi9w3g6a77OnBz7swz1cBw==','ES384','1659602647972');
 
 ----
 -- Table structure for app
@@ -75,9 +74,8 @@ CREATE TABLE 'app' (
 );
 
 ----
--- Data dump for app, a total of 1 rows
+-- Data dump for app, a total of 0 rows
 ----
-INSERT INTO "app" ("id","customer_id","identifier","hashed_secret_token","hashed_public_token","hash_alg","time") VALUES ('48858316-0ba9-41e9-80a0-ff8ce1359c7c','sentc_int',NULL,'ngbGMRtW0AGQ5TmJH1jPE0llT5OarbXP8Fevh6XW9yk=','emGMPnU7TOYZoOoRp42r5+jxYeyo0b5k/D7O2cFbxm4=','SHA256','1659602647972');
 
 ----
 -- Table structure for sentc_group
