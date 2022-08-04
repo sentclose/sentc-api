@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 02. Aug 2022 um 23:06
+-- Erstellungszeit: 04. Aug 2022 um 16:11
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -110,6 +110,22 @@ CREATE TABLE `internally_db_version` (
   `version` varchar(36) NOT NULL,
   `time` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='for migration';
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_customer`
+--
+
+CREATE TABLE `sentc_customer` (
+  `id` varchar(36) NOT NULL COMMENT 'the user_id from user table because customer and user are related',
+  `email` text NOT NULL,
+  `email_validate_sent` bigint(20) NOT NULL,
+  `email_validate` tinyint(1) NOT NULL DEFAULT 0,
+  `email_status` int(11) NOT NULL DEFAULT 1 COMMENT 'the status of the send email: 1 = normal, other value = error code',
+  `email_error_msg` text DEFAULT NULL,
+  `email_token` text NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -326,6 +342,12 @@ ALTER TABLE `app_options`
 --
 ALTER TABLE `internally_db_version`
   ADD PRIMARY KEY (`version`);
+
+--
+-- Indizes für die Tabelle `sentc_customer`
+--
+ALTER TABLE `sentc_customer`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indizes für die Tabelle `sentc_group`
