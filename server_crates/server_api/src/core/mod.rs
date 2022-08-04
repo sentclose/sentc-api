@@ -5,6 +5,8 @@ use crate::core::api_res::{ApiErrorCodes, HttpErr};
 pub mod api_res;
 pub mod cache;
 pub mod db;
+#[cfg(feature = "send_mail")]
+pub mod email;
 pub mod input_helper;
 pub mod url_helper;
 
