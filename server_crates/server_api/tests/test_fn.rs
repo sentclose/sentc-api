@@ -104,7 +104,22 @@ pub async fn login_customer(email: &str, pw: &str) -> CustomerDoneLoginOutput
 
 pub async fn customer_delete(customer_jwt: &str)
 {
-	//TODO delete customer
+	let public_token = env::var("SENTC_PUBLIC_TOKEN").unwrap();
+
+	let url = get_url("api/v1/customer".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header("x-sentc-app-token", public_token.as_str())
+		.header(AUTHORIZATION, auth_header(customer_jwt))
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 }
 
 pub async fn create_test_customer(email: &str, pw: &str) -> (CustomerId, CustomerDoneLoginOutput)
