@@ -1,4 +1,4 @@
-use sentc_crypto_common::{AppId, CustomerId, JwtKeyId};
+use sentc_crypto_common::{AppId, CustomerId, JwtKeyId, SignKeyPairId};
 use serde::{Deserialize, Serialize};
 use serde_json::to_string;
 
@@ -52,4 +52,15 @@ pub struct AppTokenRenewOutput
 {
 	pub secret_token: String,
 	pub public_token: String,
+}
+
+//copy from app internal entity but without the db trait impl
+#[derive(Serialize, Deserialize)]
+pub struct AppJwtData
+{
+	pub jwt_key_id: SignKeyPairId,
+	pub jwt_alg: String, //should be ES384 for now
+	pub time: u128,
+	pub sign_key: String,
+	pub verify_key: String,
 }

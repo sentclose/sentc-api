@@ -166,6 +166,7 @@ impl crate::core::db::FromSqliteRow for AppExistsEntity
 
 //__________________________________________________________________________________________________
 
+//copy in api common crate but without the db trait impl
 #[derive(Serialize, Deserialize)]
 pub struct AppJwtData
 {
