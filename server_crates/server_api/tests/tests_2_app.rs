@@ -1,7 +1,6 @@
 use reqwest::StatusCode;
 use sentc_crypto_common::ServerOutput;
-use server_api::AppJwtData;
-use server_api_common::app::{AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, AppTokenRenewOutput};
+use server_api_common::app::{AppJwtData, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, AppTokenRenewOutput};
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{add_app_jwt_keys, create_app, delete_app, delete_app_jwt_key, get_url};
