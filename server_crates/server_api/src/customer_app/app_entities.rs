@@ -1,6 +1,5 @@
-use sentc_crypto_common::{AppId, CustomerId, JwtKeyId, SignKeyPairId};
+use sentc_crypto_common::{AppId, CustomerId, SignKeyPairId};
 use serde::{Deserialize, Serialize};
-use serde_json::to_string;
 
 use crate::take_or_err;
 
@@ -136,87 +135,6 @@ impl crate::core::db::FromSqliteRow for AppJwt
 			time,
 		})
 	}
-}
-
-//__________________________________________________________________________________________________
-
-#[derive(Serialize, Deserialize)]
-pub struct AppRegisterInput
-{
-	pub identifier: Option<String>,
-}
-
-impl AppRegisterInput
-{
-	pub fn to_string(&self) -> serde_json::Result<String>
-	{
-		to_string(self)
-	}
-}
-
-/**
-When creating multiple jwt keys for this app
-
-Always return this for every new jwt key pair
- */
-#[derive(Serialize, Deserialize)]
-pub struct AppJwtRegisterOutput
-{
-	pub customer_id: CustomerId,
-	pub app_id: AppId,
-	pub jwt_id: JwtKeyId,
-	pub jwt_verify_key: String,
-	pub jwt_sign_key: String,
-	pub jwt_alg: String, //should be ES384 for now
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct AppRegisterOutput
-{
-	pub customer_id: CustomerId,
-	pub app_id: AppId,
-
-	//don't show this values in te normal app data
-	pub secret_token: String,
-	pub public_token: String,
-
-	pub jwt_data: AppJwtRegisterOutput,
-}
-
-//__________________________________________________________________________________________________
-
-#[derive(Serialize, Deserialize)]
-pub struct AppTokenRenewOutput
-{
-	pub secret_token: String,
-	pub public_token: String,
-}
-
-//__________________________________________________________________________________________________
-
-#[derive(Serialize, Deserialize)]
-pub struct AppDeleteOutput
-{
-	pub old_app_id: AppId,
-	pub msg: String,
-}
-
-//__________________________________________________________________________________________________
-
-#[derive(Serialize, Deserialize)]
-pub struct AppUpdateOutput
-{
-	pub app_id: AppId,
-	pub msg: String,
-}
-
-//__________________________________________________________________________________________________
-
-#[derive(Serialize, Deserialize)]
-pub struct JwtKeyDeleteOutput
-{
-	pub old_jwt_id: AppId,
-	pub msg: String,
 }
 
 //__________________________________________________________________________________________________

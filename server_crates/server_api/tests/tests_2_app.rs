@@ -1,15 +1,7 @@
 use reqwest::StatusCode;
 use sentc_crypto_common::ServerOutput;
-use server_api::{
-	AppDeleteOutput,
-	AppJwtData,
-	AppJwtRegisterOutput,
-	AppRegisterInput,
-	AppRegisterOutput,
-	AppTokenRenewOutput,
-	AppUpdateOutput,
-	JwtKeyDeleteOutput,
-};
+use server_api::AppJwtData;
+use server_api_common::app::{AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, AppTokenRenewOutput};
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{add_app_jwt_keys, create_app, delete_app, delete_app_jwt_key, get_url};
@@ -110,14 +102,7 @@ async fn test_2_update_app()
 
 	let body = res.text().await.unwrap();
 
-	let out = ServerOutput::<AppUpdateOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
-
-	let out = out.result.unwrap();
-	assert_eq!(out.app_id, app.app_id.to_string());
-	assert_eq!(out.msg, "App updated");
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 }
 
 #[tokio::test]
@@ -233,14 +218,7 @@ async fn test_6_delete_jwt_keys()
 
 	let body = res.text().await.unwrap();
 
-	let out = ServerOutput::<JwtKeyDeleteOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
-
-	let out = out.result.unwrap();
-
-	assert_eq!(out.old_jwt_id, jwt_id.to_string());
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 
 	app.jwt_data.as_mut().unwrap().remove(0);
 }
@@ -262,14 +240,7 @@ async fn test_7_delete_app()
 
 	let body = res.text().await.unwrap();
 
-	let out = ServerOutput::<AppDeleteOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
-
-	let out = out.result.unwrap();
-	assert_eq!(out.old_app_id, app_id.to_string());
-	assert_eq!(out.msg, "App deleted");
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 }
 
 #[tokio::test]

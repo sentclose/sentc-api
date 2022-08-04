@@ -18,7 +18,7 @@ use sentc_crypto_common::group::{
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::{GroupId, ServerOutput, UserId};
 use server_api::core::api_res::ApiErrorCodes;
-use server_api::AppRegisterOutput;
+use server_api_common::app::AppRegisterOutput;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{add_user_by_invite, auth_header, create_app, create_group, create_test_user, delete_app, delete_user, get_group, get_url};

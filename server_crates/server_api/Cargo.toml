@@ -9,6 +9,8 @@ edition = "2021"
 # the server outputs for the frontend to handle
 sentc-crypto-common = {version = "0.1.0", path = "../../sdk-common" }
 
+server_api_common = {version = "0.1.0", path = "../server_api_common", default-features = false}
+
 # server impl
 hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1", features = ["full"] }

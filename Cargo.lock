@@ -1872,9 +1872,19 @@ dependencies = [
  "sentc-crypto-common 0.1.0",
  "serde",
  "serde_json",
+ "server_api_common",
  "tokio",
  "tokio-util",
  "uuid",
+]
+
+[[package]]
+name = "server_api_common"
+version = "0.1.0"
+dependencies = [
+ "sentc-crypto-common 0.1.0",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1893,6 +1903,7 @@ dependencies = [
  "sentc-crypto-common 0.1.0",
  "serde",
  "serde_json",
+ "server_api_common",
 ]
 
 [[package]]

@@ -15,7 +15,7 @@ use sentc_crypto_common::{ServerOutput, UserId};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 use server_api::core::api_res::ApiErrorCodes;
-use server_api::AppRegisterOutput;
+use server_api_common::app::AppRegisterOutput;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{add_app_jwt_keys, auth_header, create_app, delete_app, delete_app_jwt_key, delete_user, get_url, login_user, register_user};

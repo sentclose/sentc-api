@@ -8,7 +8,7 @@ use sentc_crypto::{KeyData, PrivateKeyFormat, PublicKeyFormat};
 use sentc_crypto_common::group::GroupCreateOutput;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::{GroupId, ServerOutput, UserId};
-use server_api::{AppDeleteOutput, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, JwtKeyDeleteOutput};
+use server_api_common::app::{AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput};
 
 pub fn get_url(path: String) -> String
 {
@@ -73,7 +73,7 @@ pub async fn add_app_jwt_keys(app_id: &str) -> AppJwtRegisterOutput
 	out.result.unwrap()
 }
 
-pub async fn delete_app_jwt_key(app_id: &str, jwt_id: &str) -> JwtKeyDeleteOutput
+pub async fn delete_app_jwt_key(app_id: &str, jwt_id: &str)
 {
 	//TODO add here the customer jwt when customer mod is done
 
@@ -86,12 +86,7 @@ pub async fn delete_app_jwt_key(app_id: &str, jwt_id: &str) -> JwtKeyDeleteOutpu
 
 	let body = res.text().await.unwrap();
 
-	let out = ServerOutput::<JwtKeyDeleteOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
-
-	out.result.unwrap()
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 }
 
 pub async fn delete_app(app_id: &str)
@@ -104,14 +99,7 @@ pub async fn delete_app(app_id: &str)
 
 	let body = res.text().await.unwrap();
 
-	let out = ServerOutput::<AppDeleteOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
-
-	let out = out.result.unwrap();
-	assert_eq!(out.old_app_id, app_id.to_string());
-	assert_eq!(out.msg, "App deleted");
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
 }
 
 pub async fn register_user(app_secret_token: &str, username: &str, password: &str) -> UserId
