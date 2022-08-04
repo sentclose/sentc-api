@@ -61,6 +61,8 @@ static GROUP_TEST_STATE: OnceCell<RwLock<GroupState>> = OnceCell::const_new();
 #[tokio::test]
 async fn aaa_init_global_test()
 {
+	dotenv::dotenv().ok();
+
 	let (_, customer_data) = create_test_customer("helle@test4.com", "12345").await;
 
 	let customer_jwt = customer_data.user_keys.jwt.to_string();

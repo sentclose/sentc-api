@@ -23,6 +23,8 @@ static APP_TEST_STATE: OnceCell<RwLock<AppState>> = OnceCell::const_new();
 #[tokio::test]
 async fn aaa_init_global_test()
 {
+	dotenv::dotenv().ok();
+
 	APP_TEST_STATE
 		.get_or_init(|| {
 			async {

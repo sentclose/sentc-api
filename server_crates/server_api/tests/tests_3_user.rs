@@ -50,6 +50,8 @@ static USER_TEST_STATE: OnceCell<RwLock<UserState>> = OnceCell::const_new();
 #[tokio::test]
 async fn aaa_init_global_test()
 {
+	dotenv::dotenv().ok();
+
 	let (_, customer_data) = create_test_customer("hello@test3.com", "12345").await;
 
 	let customer_jwt = &customer_data.user_keys.jwt;
