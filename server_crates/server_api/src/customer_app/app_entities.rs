@@ -14,7 +14,7 @@ Cache this data:
 Only internal values from the db
  */
 #[derive(Serialize, Deserialize)]
-pub(crate) struct AppData
+pub struct AppData
 {
 	pub app_data: AppDataGeneral,
 	pub jwt_data: Vec<AppJwt>, //use the newest jwt data to create a jwt, but use the old one to validate the old jwt.
@@ -25,7 +25,7 @@ pub(crate) struct AppData
 Describe what token was sent from the req, the public or private
 */
 #[derive(Serialize, Deserialize)]
-pub(crate) enum AuthWithToken
+pub enum AuthWithToken
 {
 	Public,
 	Secret,
@@ -39,7 +39,7 @@ This values can only be exists once
 Only internal values from the db
  */
 #[derive(Serialize, Deserialize)]
-pub(crate) struct AppDataGeneral
+pub struct AppDataGeneral
 {
 	pub customer_id: CustomerId,
 	pub app_id: AppId,
@@ -94,7 +94,7 @@ It is possible to have multiple valid jwt keys.
 Only internal values from the db
  */
 #[derive(Serialize, Deserialize)]
-pub(crate) struct AppJwt
+pub struct AppJwt
 {
 	pub jwt_key_id: SignKeyPairId,
 	pub jwt_alg: String, //should be ES384 for now
