@@ -34,6 +34,10 @@ pub enum ApiErrorCodes
 
 	NoParameter,
 
+	CustomerWrongAppToken,
+	CustomerEmailValidate,
+	CustomerNotFound,
+
 	UserNotFound,
 	UserExists,
 	Login,
@@ -85,6 +89,10 @@ impl ApiErrorCodes
 			ApiErrorCodes::JwtKeyCreation => 34,
 			ApiErrorCodes::JwtKeyNotFound => 35,
 			ApiErrorCodes::NoParameter => 40,
+			ApiErrorCodes::CustomerWrongAppToken => 50,
+			ApiErrorCodes::CustomerEmailValidate => 51,
+			ApiErrorCodes::CustomerNotFound => 52,
+
 			ApiErrorCodes::UserNotFound => 100,
 			ApiErrorCodes::UserExists => 101,
 			ApiErrorCodes::SaltError => 110,

@@ -1,9 +1,11 @@
+use std::env;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
 use rustgram::service::Service;
 use rustgram::{GramHttpErr, Request, Response};
+use sentc_crypto::sdk_common::AppId;
 
 use crate::core::api_res::{ApiErrorCodes, HttpErr};
 use crate::core::cache;
@@ -11,7 +13,7 @@ use crate::core::cache::{CacheVariant, LONG_TTL};
 use crate::core::input_helper::{bytes_to_json, json_to_string};
 use crate::customer_app::app_entities::AppData;
 use crate::customer_app::app_model;
-use crate::customer_app::app_util::hash_token_from_string_to_string;
+use crate::customer_app::app_util::{get_app_data_from_req, hash_token_from_string_to_string};
 use crate::util::APP_TOKEN_CACHE;
 
 pub struct AppTokenMiddleware<S>
@@ -47,6 +49,66 @@ pub fn app_token_transform<S>(inner: S) -> AppTokenMiddleware<S>
 		inner: Arc::new(inner),
 	}
 }
+
+/**
+Middleware to check if the right sentc base app was used. Only used for internal routes
+*/
+pub struct AppTokenBaseAppMiddleware<S>
+{
+	inner: Arc<S>,
+	sentc_app_id: AppId,
+}
+
+impl<S> Service<Request> for AppTokenBaseAppMiddleware<S>
+where
+	S: Service<Request, Output = Response>,
+{
+	type Output = S::Output;
+	type Future = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
+
+	fn call(&self, mut req: Request) -> Self::Future
+	{
+		let app_id = self.sentc_app_id.to_string();
+		let next = self.inner.clone();
+
+		Box::pin(async move {
+			match token_check(&mut req).await {
+				Ok(_) => {},
+				Err(e) => return e.get_res(),
+			}
+
+			//check the app id
+			let app_data = match get_app_data_from_req(&req) {
+				Ok(d) => d,
+				Err(e) => return e.get_res(),
+			};
+
+			if app_data.app_data.app_id != app_id {
+				return HttpErr::new(
+					400,
+					ApiErrorCodes::CustomerWrongAppToken,
+					"Wrong app token used".to_string(),
+					None,
+				)
+				.get_res();
+			}
+
+			next.call(req).await
+		})
+	}
+}
+
+pub fn app_token_base_app_transform<S>(inner: S) -> AppTokenBaseAppMiddleware<S>
+{
+	let sentc_app_id = env::var("SENTC_APP_ID").unwrap();
+
+	AppTokenBaseAppMiddleware {
+		inner: Arc::new(inner),
+		sentc_app_id,
+	}
+}
+
+//__________________________________________________________________________________________________
 
 async fn token_check(req: &mut Request) -> Result<(), HttpErr>
 {
