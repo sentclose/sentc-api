@@ -1,7 +1,7 @@
 use rand::RngCore;
 use rustgram::Request;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
-use sentc_crypto_common::user::{DoneLoginServerInput, PrepareLoginSaltServerOutput, PrepareLoginServerInput};
+use sentc_crypto_common::user::{DoneLoginServerInput, PrepareLoginSaltServerOutput, PrepareLoginServerInput, UserUpdateServerInput};
 use server_api_common::customer::{
 	CustomerDoneLoginOutput,
 	CustomerDoneRegistrationInput,
@@ -192,6 +192,15 @@ pub(crate) async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 	}
 
 	let user = get_jwt_data_from_param(&req)?;
+
+	//update in user table too
+	user::user_service::update(
+		user,
+		UserUpdateServerInput {
+			user_identifier: email.to_string(),
+		},
+	)
+	.await?;
 
 	let validate_token = generate_email_validate_token()?;
 
