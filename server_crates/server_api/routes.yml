@@ -16,6 +16,8 @@ routes:
               - post: {p: "/register", s: crate::customer::register}
               - post: {p: "/prepare_login", s: crate::customer::prepare_login}
               - post: {p: "/done_login", s: crate::customer::done_login}
+              - put: {p: "/password_reset", s: crate::customer::prepare_reset_password}
+              - put: {p: "/password_reset_validation", s: crate::customer::done_reset_password}
         #_______________________________________________________________________________________________________________
         # customer routes with the jwt check, but no app check because the jwt got already the app reference,
         # and we are only using public token for dashboard routes
@@ -28,6 +30,7 @@ routes:
               - get: {p: "/register/:email_key", s: crate::customer::done_register}
               - patch: {p: "/email_resend", s: crate::customer::resend_email}
               - put: {p: "", s: crate::customer::update}
+              - put: {p: "/password", s: crate::customer::change_password}
               - delete: {p: "", s: crate::customer::delete}
               # ________________________________________________________________________________________________________
               # App routes

@@ -6,7 +6,13 @@ use crate::core::db::{exec, query_first};
 use crate::core::get_time;
 #[cfg(feature = "send_mail")]
 use crate::customer::customer_entities::RegisterEmailStatus;
-use crate::customer::customer_entities::{CustomerDataEntity, CustomerEmailToken, CustomerEmailValid};
+use crate::customer::customer_entities::{
+	CustomerDataByEmailEntity,
+	CustomerDataEntity,
+	CustomerEmailByToken,
+	CustomerEmailToken,
+	CustomerEmailValid,
+};
 use crate::set_params;
 
 pub(super) async fn check_customer_valid(customer_id: CustomerId) -> AppRes<CustomerEmailValid>
@@ -115,12 +121,52 @@ pub(super) async fn get_email_token(customer_id: CustomerId) -> AppRes<CustomerE
 	}
 }
 
+pub(super) async fn get_email_by_token(email: String) -> AppRes<CustomerEmailByToken>
+{
+	//language=SQL
+	let sql = "SELECT email, id FROM sentc_customer WHERE email_token = ?";
+
+	let token: Option<CustomerEmailByToken> = query_first(sql, set_params!(email)).await?;
+
+	match token {
+		Some(t) => Ok(t),
+		None => {
+			Err(HttpErr::new(
+				400,
+				ApiErrorCodes::CustomerNotFound,
+				"No token found".to_string(),
+				None,
+			))
+		},
+	}
+}
+
 pub(super) async fn get_customer_email_data(customer_id: CustomerId) -> AppRes<CustomerDataEntity>
 {
 	//language=SQL
 	let sql = "SELECT email,email_validate, email_validate_sent, email_status FROM sentc_customer WHERE id= ?";
 
 	let customer: Option<CustomerDataEntity> = query_first(sql, set_params!(customer_id)).await?;
+
+	match customer {
+		Some(c) => Ok(c),
+		None => {
+			Err(HttpErr::new(
+				400,
+				ApiErrorCodes::CustomerNotFound,
+				"Customer not found".to_string(),
+				None,
+			))
+		},
+	}
+}
+
+pub(super) async fn get_customer_email_data_by_email(email: String) -> AppRes<CustomerDataByEmailEntity>
+{
+	//language=SQL
+	let sql = "SELECT id, email_validate, email_validate_sent, email_status FROM sentc_customer WHERE email= ?";
+
+	let customer: Option<CustomerDataByEmailEntity> = query_first(sql, set_params!(email)).await?;
 
 	match customer {
 		Some(c) => Ok(c),
@@ -190,3 +236,15 @@ WHERE id = ?";
 
 	Ok(())
 }
+
+pub(super) async fn reset_password_token_save(customer_id: CustomerId, validate_token: String) -> AppRes<()>
+{
+	//language=SQL
+	let sql = "UPDATE sentc_customer SET email_token = ? WHERE id = ?";
+
+	exec(sql, set_params!(validate_token, customer_id)).await?;
+
+	Ok(())
+}
+
+//__________________________________________________________________________________________________

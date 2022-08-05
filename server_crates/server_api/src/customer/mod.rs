@@ -1,13 +1,21 @@
 use rand::RngCore;
 use rustgram::Request;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
-use sentc_crypto_common::user::{DoneLoginServerInput, PrepareLoginSaltServerOutput, PrepareLoginServerInput, UserUpdateServerInput};
+use sentc_crypto_common::user::{
+	ChangePasswordData,
+	DoneLoginServerInput,
+	PrepareLoginSaltServerOutput,
+	PrepareLoginServerInput,
+	UserUpdateServerInput,
+};
 use server_api_common::customer::{
 	CustomerDoneLoginOutput,
+	CustomerDonePasswordResetInput,
 	CustomerDoneRegistrationInput,
 	CustomerEmailData,
 	CustomerRegisterData,
 	CustomerRegisterOutput,
+	CustomerResetPasswordInput,
 	CustomerUpdateInput,
 };
 
@@ -61,7 +69,7 @@ pub(crate) async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 	.await?;
 
 	#[cfg(feature = "send_mail")]
-	send_mail(email, validate_token, customer_id.to_string()).await;
+	send_mail(email, validate_token, customer_id.to_string(), EmailTopic::Register).await;
 
 	let out = CustomerRegisterOutput {
 		customer_id,
@@ -106,7 +114,13 @@ pub(crate) async fn resend_email(req: Request) -> JRes<ServerSuccessOutput>
 	let _token = customer_model::get_email_token(customer_id.to_string()).await?;
 
 	#[cfg(feature = "send_mail")]
-	send_mail(_token.email.as_str(), _token.email_token, customer_id.to_string()).await;
+	send_mail(
+		_token.email.as_str(),
+		_token.email_token,
+		customer_id.to_string(),
+		EmailTopic::Register,
+	)
+	.await;
 
 	echo_success()
 }
@@ -207,35 +221,130 @@ pub(crate) async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 	customer_model::update(update_data, user.id.to_string(), validate_token.to_string()).await?;
 
 	#[cfg(feature = "send_mail")]
-	send_mail(email.as_str(), validate_token, user.id.to_string()).await;
+	send_mail(
+		email.as_str(),
+		validate_token,
+		user.id.to_string(),
+		EmailTopic::EmailUpdate,
+	)
+	.await;
 
 	echo_success()
 }
 
-//TODO save real data, e.g. real name or company, address, etc
+//__________________________________________________________________________________________________
 
-//TODO reset and change password (check ofr validated email)
+pub(crate) async fn change_password(mut req: Request) -> JRes<ServerSuccessOutput>
+{
+	//with a fresh jwt
+	let body = get_raw_body(&mut req).await?;
+	let update_data: ChangePasswordData = bytes_to_json(&body)?;
+
+	let user = get_jwt_data_from_param(&req)?;
+
+	user::user_service::change_password(user, update_data).await?;
+
+	echo_success()
+}
+
+pub(crate) async fn prepare_reset_password(mut req: Request) -> JRes<ServerSuccessOutput>
+{
+	//create a token. this is send to the email. if no valid email -> no password reset!
+	//no jwt check because the user needs a pw to login to get a jwt
+
+	let body = get_raw_body(&mut req).await?;
+	let data: CustomerResetPasswordInput = bytes_to_json(&body)?;
+
+	let email = data.email.to_string();
+
+	let email_check = email::check_email(email.as_str());
+
+	if email_check == false {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::CustomerEmailSyntax,
+			"E-mail address is not valid".to_string(),
+			None,
+		));
+	}
+
+	//model will notify the user if the email is not found
+	let email_data = customer_model::get_customer_email_data_by_email(data.email).await?;
+
+	if email_data.email_valid == 0 {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::CustomerEmailValidate,
+			"E-mail address is not active. Please validate your email first.".to_string(),
+			None,
+		));
+	}
+
+	let validate_token = generate_email_validate_token()?;
+
+	customer_model::reset_password_token_save(email_data.id.to_string(), validate_token.to_string()).await?;
+
+	#[cfg(feature = "send_mail")]
+	send_mail(email.as_str(), validate_token, email_data.id, EmailTopic::PwReset).await;
+
+	echo_success()
+}
+
+pub(crate) async fn done_reset_password(mut req: Request) -> JRes<ServerSuccessOutput>
+{
+	//this is called when the user clicks on the email link and gets send to the pw reset page (token in get param).
+	//then call this fn from the frontend with the token and the new password.
+
+	let body = get_raw_body(&mut req).await?;
+	let input: CustomerDonePasswordResetInput = bytes_to_json(&body)?;
+
+	let token_data = customer_model::get_email_by_token(input.token).await?;
+
+	user::user_service::reset_password(token_data.id.as_str(), input.reset_password_data).await?;
+
+	echo_success()
+}
+
+//TODO save real data, e.g. real name or company, address, etc, update this data separately from email
 
 //__________________________________________________________________________________________________
+
+#[cfg(feature = "send_mail")]
+enum EmailTopic
+{
+	Register,
+	PwReset,
+	EmailUpdate,
+}
 
 /**
 Send the validation email.
 */
 #[cfg(feature = "send_mail")]
-async fn send_mail(email: &str, token: String, customer_id: sentc_crypto_common::CustomerId)
+async fn send_mail(email: &str, token: String, customer_id: sentc_crypto_common::CustomerId, topic: EmailTopic)
 {
+	let text = match topic {
+		EmailTopic::Register => {
+			format!(
+				"Thanks for registration at sentc. Here is your e-mail validation token: {}",
+				token
+			)
+		},
+		EmailTopic::PwReset => {
+			format!("Here is your password reset token: {}", token)
+		},
+		EmailTopic::EmailUpdate => {
+			format!("Here is your e-mail validation token: {}", token)
+		},
+	};
+
 	//don't wait for the response
-	tokio::task::spawn(process_send_mail(email.to_string(), token, customer_id));
+	tokio::task::spawn(process_send_mail(email.to_string(), text, customer_id));
 }
 
 #[cfg(feature = "send_mail")]
-async fn process_send_mail(email: String, token_string: String, customer_id: sentc_crypto_common::CustomerId) -> AppRes<()>
+async fn process_send_mail(email: String, text: String, customer_id: sentc_crypto_common::CustomerId) -> AppRes<()>
 {
-	let text = format!(
-		"Thanks for registration at sentc. Here is your e-mail validation token: {}",
-		token_string
-	);
-
 	let status = match send_mail_registration(email.as_str(), "Validate email address for sentc", text).await {
 		Ok(_) => RegisterEmailStatus::Success,
 		Err(e) => {

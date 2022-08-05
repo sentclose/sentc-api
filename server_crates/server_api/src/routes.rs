@@ -23,6 +23,14 @@ pub(crate) fn routes() -> Router
 		"/api/v1/customer/done_login",
 		r(crate::customer::done_login).add(app_token::app_token_base_app_transform),
 	);
+	router.put(
+		"/api/v1/customer/password_reset",
+		r(crate::customer::prepare_reset_password).add(app_token::app_token_base_app_transform),
+	);
+	router.put(
+		"/api/v1/customer/password_reset_validation",
+		r(crate::customer::done_reset_password).add(app_token::app_token_base_app_transform),
+	);
 	router.get(
 		"/api/v1/customer/register/:email_key",
 		r(crate::customer::done_register).add(jwt::jwt_app_check_transform),
@@ -34,6 +42,10 @@ pub(crate) fn routes() -> Router
 	router.put(
 		"/api/v1/customer",
 		r(crate::customer::update).add(jwt::jwt_app_check_transform),
+	);
+	router.put(
+		"/api/v1/customer/password",
+		r(crate::customer::change_password).add(jwt::jwt_app_check_transform),
 	);
 	router.delete(
 		"/api/v1/customer",

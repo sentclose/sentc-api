@@ -1,4 +1,4 @@
-use sentc_crypto_common::user::{DoneLoginServerKeysOutput, RegisterData};
+use sentc_crypto_common::user::{DoneLoginServerKeysOutput, RegisterData, ResetPasswordData};
 use sentc_crypto_common::CustomerId;
 use serde::{Deserialize, Serialize};
 
@@ -40,5 +40,18 @@ pub struct CustomerEmailData
 #[derive(Serialize, Deserialize)]
 pub struct CustomerUpdateInput
 {
-	pub new_email: String
+	pub new_email: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CustomerResetPasswordInput
+{
+	pub email: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CustomerDonePasswordResetInput
+{
+	pub token: String,
+	pub reset_password_data: ResetPasswordData,
 }
