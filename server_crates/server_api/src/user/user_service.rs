@@ -183,12 +183,12 @@ pub async fn change_password(user: &UserJwtEntity, input: ChangePasswordData) ->
 	Ok(())
 }
 
-pub async fn reset_password(user: &UserJwtEntity, input: ResetPasswordData) -> AppRes<()>
+pub async fn reset_password(user_id: &str, input: ResetPasswordData) -> AppRes<()>
 {
 	//no fresh jwt here because the user can't login and get a fresh jwt without the password
 	//but still needs a valid jwt. jwt refresh is possible without a password!
 
-	user_model::reset_password(user.id.as_str(), input).await?;
+	user_model::reset_password(user_id, input).await?;
 
 	Ok(())
 }

@@ -110,10 +110,10 @@ pub(crate) async fn change_password(mut req: Request) -> JRes<ServerSuccessOutpu
 pub(crate) async fn reset_password(mut req: Request) -> JRes<ServerSuccessOutput>
 {
 	let body = get_raw_body(&mut req).await?;
-	let user = get_jwt_data_from_param(&req)?;
+	let user = get_jwt_data_from_param(&req)?; //non fresh jwt here
 	let input: ResetPasswordData = bytes_to_json(&body)?;
 
-	user_service::reset_password(user, input).await?;
+	user_service::reset_password(user.id.as_str(), input).await?;
 
 	echo_success()
 }
