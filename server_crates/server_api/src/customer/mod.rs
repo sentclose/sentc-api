@@ -2,13 +2,13 @@ use rand::RngCore;
 use rustgram::Request;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{DoneLoginServerInput, PrepareLoginSaltServerOutput, PrepareLoginServerInput};
-use sentc_crypto_common::CustomerId;
 use server_api_common::customer::{
 	CustomerDoneLoginOutput,
 	CustomerDoneRegistrationInput,
 	CustomerEmailData,
 	CustomerRegisterData,
 	CustomerRegisterOutput,
+	CustomerUpdateInput,
 };
 
 use crate::core::api_res::{echo, echo_success, ApiErrorCodes, AppRes, HttpErr, JRes};
@@ -169,7 +169,39 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
-//TODO email update, with valid
+//__________________________________________________________________________________________________
+
+pub(crate) async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
+{
+	//call done register again when validate the token
+
+	let body = get_raw_body(&mut req).await?;
+	let update_data: CustomerUpdateInput = bytes_to_json(&body)?;
+
+	let email = update_data.new_email.to_string();
+
+	let email_check = email::check_email(email.as_str());
+
+	if email_check == false {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::CustomerEmailSyntax,
+			"E-mail address is not valid".to_string(),
+			None,
+		));
+	}
+
+	let user = get_jwt_data_from_param(&req)?;
+
+	let validate_token = generate_email_validate_token()?;
+
+	customer_model::update(update_data, user.id.to_string(), validate_token.to_string()).await?;
+
+	#[cfg(feature = "send_mail")]
+	send_mail(email.as_str(), validate_token, user.id.to_string()).await;
+
+	echo_success()
+}
 
 //TODO save real data, e.g. real name or company, address, etc
 
@@ -181,14 +213,14 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 Send the validation email.
 */
 #[cfg(feature = "send_mail")]
-async fn send_mail(email: &str, token: String, customer_id: CustomerId)
+async fn send_mail(email: &str, token: String, customer_id: sentc_crypto_common::CustomerId)
 {
 	//don't wait for the response
 	tokio::task::spawn(process_send_mail(email.to_string(), token, customer_id));
 }
 
 #[cfg(feature = "send_mail")]
-async fn process_send_mail(email: String, token_string: String, customer_id: CustomerId) -> AppRes<()>
+async fn process_send_mail(email: String, token_string: String, customer_id: sentc_crypto_common::CustomerId) -> AppRes<()>
 {
 	let text = format!(
 		"Thanks for registration at sentc. Here is your e-mail validation token: {}",

@@ -31,6 +31,10 @@ pub(crate) fn routes() -> Router
 		"/api/v1/customer/email_resend",
 		r(crate::customer::resend_email).add(jwt::jwt_app_check_transform),
 	);
+	router.put(
+		"/api/v1/customer",
+		r(crate::customer::update).add(jwt::jwt_app_check_transform),
+	);
 	router.delete(
 		"/api/v1/customer",
 		r(crate::customer::delete).add(jwt::jwt_app_check_transform),

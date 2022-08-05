@@ -36,3 +36,9 @@ pub struct CustomerEmailData
 	pub email_send: u128,
 	pub email_status: i32,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct CustomerUpdateInput
+{
+	pub new_email: String
+}

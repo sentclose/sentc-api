@@ -1,4 +1,5 @@
 use sentc_crypto_common::CustomerId;
+use server_api_common::customer::CustomerUpdateInput;
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::core::db::{exec, query_first};
@@ -142,6 +143,50 @@ pub(super) async fn delete(customer_id: CustomerId) -> AppRes<()>
 	let sql = "DELETE FROM sentc_customer WHERE id = ?";
 
 	exec(sql, set_params!(customer_id)).await?;
+
+	Ok(())
+}
+
+//__________________________________________________________________________________________________
+
+pub(super) async fn update(data: CustomerUpdateInput, customer_id: CustomerId, validate_token: String) -> AppRes<()>
+{
+	let time = get_time()?;
+
+	#[cfg(feature = "send_mail")]
+	let email_status = 0;
+	#[cfg(feature = "send_mail")]
+	let email_validate = 0;
+
+	//for testing -> don't send email
+	#[cfg(not(feature = "send_mail"))]
+	let email_status = 1;
+	#[cfg(not(feature = "send_mail"))]
+	let email_validate = 1;
+
+	//language=SQL
+	let sql = r"
+UPDATE sentc_customer 
+SET 
+    email = ?, 
+    email_validate_sent = ?, 
+    email_validate = ?, 
+    email_status = ?, 
+    email_token = ? 
+WHERE id = ?";
+
+	exec(
+		sql,
+		set_params!(
+			data.new_email,
+			time.to_string(),
+			email_validate,
+			email_status,
+			validate_token,
+			customer_id,
+		),
+	)
+	.await?;
 
 	Ok(())
 }
