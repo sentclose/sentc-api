@@ -149,8 +149,6 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 
 	customer_model::delete(user.id.to_string()).await?;
 
-	//TODO delete the apps, groups and users of this user, maybe with service from all areas.
-
 	echo_success()
 }
 

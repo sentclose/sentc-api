@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 11:07pm on August 2, 2022 (UTC)
+-- Exported: 11:41am on August 5, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -19,26 +19,14 @@ CREATE TABLE "test"
 );
 
 ----
--- Data dump for test, a total of 0 rows
-----
-
-----
 -- Table structure for user
 ----
 CREATE TABLE 'user' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'identifier' TEXT, 'time' TEXT);
 
 ----
--- Data dump for user, a total of 0 rows
-----
-
-----
 -- Table structure for user_keys
 ----
 CREATE TABLE 'user_keys' ('id' TEXT PRIMARY KEY NOT NULL, 'user_id' TEXT, 'client_random_value' TEXT, 'public_key' TEXT, 'encrypted_private_key' TEXT, 'keypair_encrypt_alg' TEXT, 'encrypted_sign_key' TEXT, 'verify_key' TEXT, 'keypair_sign_alg' TEXT, 'derived_alg' TEXT, 'encrypted_master_key' TEXT, 'master_key_alg' TEXT, 'hashed_auth_key' TEXT, 'time' TEXT, encrypted_master_key_alg text);
-
-----
--- Data dump for user_keys, a total of 0 rows
-----
 
 ----
 -- Table structure for app_jwt_keys
@@ -56,10 +44,6 @@ CREATE TABLE app_jwt_keys
 );
 
 ----
--- Data dump for app_jwt_keys, a total of 0 rows
-----
-
-----
 -- Table structure for app
 ----
 CREATE TABLE 'app' (
@@ -74,10 +58,6 @@ CREATE TABLE 'app' (
 );
 
 ----
--- Data dump for app, a total of 0 rows
-----
-
-----
 -- Table structure for sentc_group
 ----
 CREATE TABLE sentc_group
@@ -90,10 +70,6 @@ CREATE TABLE sentc_group
 	identifier text,
 	time       text
 );
-
-----
--- Data dump for sentc_group, a total of 0 rows
-----
 
 ----
 -- Table structure for sentc_group_keys
@@ -114,10 +90,6 @@ CREATE TABLE sentc_group_keys
 , 'previous_group_key_id' TEXT, 'ephemeral_alg' TEXT, 'app_id' TEXT);
 
 ----
--- Data dump for sentc_group_keys, a total of 0 rows
-----
-
-----
 -- Table structure for sentc_group_user_invites_and_join_req
 ----
 CREATE TABLE sentc_group_user_invites_and_join_req
@@ -129,10 +101,6 @@ CREATE TABLE sentc_group_user_invites_and_join_req
 	constraint sentc_group_user_invites_and_join_req_pk
 		primary key (user_id, group_id)
 );
-
-----
--- Data dump for sentc_group_user_invites_and_join_req, a total of 0 rows
-----
 
 ----
 -- Table structure for sentc_group_user_keys
@@ -150,10 +118,6 @@ CREATE TABLE sentc_group_user_keys
 );
 
 ----
--- Data dump for sentc_group_user_keys, a total of 0 rows
-----
-
-----
 -- Table structure for sentc_group_user_key_rotation
 ----
 CREATE TABLE sentc_group_user_key_rotation
@@ -167,10 +131,6 @@ CREATE TABLE sentc_group_user_key_rotation
 );
 
 ----
--- Data dump for sentc_group_user_key_rotation, a total of 0 rows
-----
-
-----
 -- Table structure for sentc_group_user
 ----
 CREATE TABLE 'sentc_group_user' (
@@ -182,8 +142,9 @@ CREATE TABLE 'sentc_group_user' (
 );
 
 ----
--- Data dump for sentc_group_user, a total of 0 rows
+-- Table structure for sentc_customer
 ----
+CREATE TABLE 'sentc_customer' ('id' TEXT PRIMARY KEY NOT NULL, 'email' TEXT, 'email_validate_sent' TEXT, 'email_validate' BOOLEAN, 'email_status' INTEGER, 'email_error_msg' TEXT, 'email_token' TEXT);
 
 ----
 -- structure for index sqlite_autoindex_test_1 on table test
@@ -286,6 +247,11 @@ CREATE INDEX sentc_group_parent_index
 CREATE INDEX 'get_group' ON "sentc_group_keys" ("group_id" ASC, "app_id" ASC);
 
 ----
+-- structure for index sqlite_autoindex_sentc_customer_1 on table sentc_customer
+----
+;
+
+----
 -- structure for trigger user_delete_user_keys on table user
 ----
 CREATE TRIGGER 'user_delete_user_keys' AFTER DELETE ON "user" FOR EACH ROW BEGIN DELETE FROM user_keys WHERE user_id = OLD.id; END;
@@ -324,4 +290,14 @@ CREATE TRIGGER ' group_user_delete_key_rotation_keys' AFTER DELETE ON "sentc_gro
 -- structure for trigger group_user_delete_user_keys on table sentc_group_user
 ----
 CREATE TRIGGER 'group_user_delete_user_keys' AFTER DELETE ON "sentc_group_user" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_keys WHERE user_id = OLD.user_id AND group_id = OLD.group_id; END;
+
+----
+-- structure for trigger delete_group on table app
+----
+CREATE TRIGGER 'delete_group' AFTER DELETE ON "app" FOR EACH ROW BEGIN DELETE FROM sentc_group WHERE app_id = OLD.id; END;
+
+----
+-- structure for trigger delete_app on table sentc_customer
+----
+CREATE TRIGGER 'delete_app' AFTER DELETE ON "sentc_customer" FOR EACH ROW BEGIN DELETE FROM app WHERE customer_id = OLD.id; END;
 COMMIT;
