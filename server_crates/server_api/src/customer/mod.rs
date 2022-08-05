@@ -103,10 +103,10 @@ pub(crate) async fn resend_email(req: Request) -> JRes<ServerSuccessOutput>
 	let customer = get_jwt_data_from_param(&req)?;
 	let customer_id = &customer.id;
 
-	let token = customer_model::get_email_token(customer_id.to_string()).await?;
+	let _token = customer_model::get_email_token(customer_id.to_string()).await?;
 
 	#[cfg(feature = "send_mail")]
-	send_mail(token.email.as_str(), token.email_token, customer_id.to_string()).await;
+	send_mail(_token.email.as_str(), _token.email_token, customer_id.to_string()).await;
 
 	echo_success()
 }

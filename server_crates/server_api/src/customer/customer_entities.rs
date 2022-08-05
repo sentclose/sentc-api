@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::take_or_err;
 
 #[cfg(feature = "send_mail")]
