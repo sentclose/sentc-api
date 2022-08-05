@@ -125,6 +125,16 @@ WHERE user_id = u.id AND u.identifier = ? AND u.app_id = ? ORDER BY uk.time DESC
 	Ok(data)
 }
 
+pub(super) async fn get_done_login_light_data(app_id: &str, user_identifier: &str) -> AppRes<Option<UserKeyFistRow>>
+{
+	//language=SQL
+	let sql = "SELECT id FROM user WHERE identifier = ? AND app_id = ?";
+
+	let data: Option<UserKeyFistRow> = query_first(sql, set_params!(user_identifier.to_string(), app_id.to_string())).await?;
+
+	Ok(data)
+}
+
 //__________________________________________________________________________________________________
 
 /**

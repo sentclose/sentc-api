@@ -145,8 +145,7 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<CustomerDoneLoginOutput
 	let done_login: DoneLoginServerInput = bytes_to_json(&body)?;
 	let app_data = get_app_data_from_req(&req)?;
 
-	//TODO dont get all keys just the jwt (auth user and jwt creation)
-	let user_keys = user::user_service::done_login(app_data, done_login).await?;
+	let user_keys = user::user_service::done_login_light(app_data, done_login, "customer").await?;
 
 	let customer_data = customer_model::get_customer_email_data(user_keys.user_id.to_string()).await?;
 
