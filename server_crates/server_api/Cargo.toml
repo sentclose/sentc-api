@@ -61,6 +61,10 @@ rand = "0.8.5"
 lettre = { version = "0.10.0-rc.6", default-features = false, features = ["smtp-transport", "tokio1-rustls-tls", "hostname", "builder"], optional = true }
 
 #_______________________________________________________________________________________________________________________
+#regex
+regex = "1.6.0"
+
+#_______________________________________________________________________________________________________________________
 # salt creation on server
 # to get it from ssh: write this in your ~/.cargo/config.toml:
 # [net]

@@ -1963,6 +1963,7 @@ dependencies = [
  "mysql_async",
  "mysql_common",
  "rand",
+ "regex",
  "reqwest",
  "ring",
  "rusqlite",

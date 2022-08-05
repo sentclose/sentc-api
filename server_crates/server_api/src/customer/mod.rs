@@ -12,8 +12,9 @@ use server_api_common::customer::{
 };
 
 use crate::core::api_res::{echo, echo_success, ApiErrorCodes, AppRes, HttpErr, JRes};
+use crate::core::email;
 #[cfg(feature = "send_mail")]
-use crate::core::email::send_mail_registration;
+use crate::core::email::send_mail::send_mail_registration;
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
 #[cfg(feature = "send_mail")]
 use crate::customer::customer_entities::RegisterEmailStatus;
@@ -35,7 +36,16 @@ pub(crate) async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 
 	let app_data = get_app_data_from_req(&req)?;
 
-	//TODO check if it is an email
+	let email_check = email::check_email(email);
+
+	if email_check == false {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::CustomerEmailSyntax,
+			"E-mail address is not valid".to_string(),
+			None,
+		));
+	}
 
 	let registered_user_account = user::user_service::register(app_data, register_data.register_data).await?;
 	let customer_id = registered_user_account.user_id;
