@@ -12,7 +12,7 @@ static EMAIL_SENDER_REGISTER: OnceCell<Email> = OnceCell::const_new();
 
 pub async fn init_email_register()
 {
-	let from = format!("Sentc registration <{}>", env::var("EMAIL_ADDRESS").unwrap());
+	let from = format!("Sentc <{}>", env::var("EMAIL_ADDRESS").unwrap());
 
 	EMAIL_SENDER_REGISTER
 		.get_or_init(move || {
