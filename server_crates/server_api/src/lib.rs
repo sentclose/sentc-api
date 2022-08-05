@@ -36,8 +36,9 @@ pub async fn start()
 	core::db::init_db().await;
 	core::cache::init_cache().await;
 
+	core::email::init_email_checker().await;
 	#[cfg(feature = "send_mail")]
-	core::email::init_email_register().await;
+	core::email::send_mail::init_email_register().await;
 }
 
 /**
