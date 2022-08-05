@@ -86,7 +86,11 @@ impl crate::core::db::FromSqliteRow for CustomerDataEntity
 
 //__________________________________________________________________________________________________
 
-pub(crate) struct CustomerEmailToken(pub String);
+pub(crate) struct CustomerEmailToken
+{
+	pub email_token: String,
+	pub email: String,
+}
 
 #[cfg(feature = "mysql")]
 impl mysql_async::prelude::FromRow for CustomerEmailToken
@@ -95,7 +99,10 @@ impl mysql_async::prelude::FromRow for CustomerEmailToken
 	where
 		Self: Sized,
 	{
-		Ok(Self(take_or_err!(row, 0, String)))
+		Ok(Self {
+			email_token: take_or_err!(row, 0, String),
+			email: take_or_err!(row, 1, String),
+		})
 	}
 }
 
@@ -106,7 +113,10 @@ impl crate::core::db::FromSqliteRow for CustomerEmailToken
 	where
 		Self: Sized,
 	{
-		Ok(Self(take_or_err!(row, 0)))
+		Ok(Self {
+			email_token: take_or_err!(row, 0),
+			email: take_or_err!(row, 1),
+		})
 	}
 }
 

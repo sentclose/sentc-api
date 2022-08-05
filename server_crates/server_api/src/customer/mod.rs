@@ -84,7 +84,7 @@ pub(crate) async fn done_register(mut req: Request) -> JRes<ServerSuccessOutput>
 
 	let db_token = customer_model::get_email_token(customer_id.to_string()).await?;
 
-	if input.token != db_token.0 {
+	if input.token != db_token.email_token {
 		return Err(HttpErr::new(
 			400,
 			ApiErrorCodes::CustomerEmailTokenValid,
@@ -97,6 +97,21 @@ pub(crate) async fn done_register(mut req: Request) -> JRes<ServerSuccessOutput>
 
 	echo_success()
 }
+
+pub(crate) async fn resend_email(req: Request) -> JRes<ServerSuccessOutput>
+{
+	let customer = get_jwt_data_from_param(&req)?;
+	let customer_id = &customer.id;
+
+	let token = customer_model::get_email_token(customer_id.to_string()).await?;
+
+	#[cfg(feature = "send_mail")]
+	send_mail(token.email.as_str(), token.email_token, customer_id.to_string()).await;
+
+	echo_success()
+}
+
+//__________________________________________________________________________________________________
 
 pub(crate) async fn prepare_login(mut req: Request) -> JRes<PrepareLoginSaltServerOutput>
 {
@@ -141,6 +156,8 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<CustomerDoneLoginOutput
 	echo(out)
 }
 
+//__________________________________________________________________________________________________
+
 pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 {
 	let user = get_jwt_data_from_param(&req)?;
@@ -151,8 +168,6 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 
 	echo_success()
 }
-
-//TODO resend email
 
 //TODO email update, with valid
 

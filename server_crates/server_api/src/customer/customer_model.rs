@@ -97,7 +97,7 @@ pub(super) async fn done_register(customer_id: CustomerId) -> AppRes<()>
 pub(super) async fn get_email_token(customer_id: CustomerId) -> AppRes<CustomerEmailToken>
 {
 	//language=SQL
-	let sql = "SELECT email_token FROM sentc_customer WHERE id = ?";
+	let sql = "SELECT email_token, email FROM sentc_customer WHERE id = ?";
 
 	let token: Option<CustomerEmailToken> = query_first(sql, set_params!(customer_id)).await?;
 

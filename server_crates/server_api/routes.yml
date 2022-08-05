@@ -26,6 +26,7 @@ routes:
             gr:
               # customer must be logged in, in the dashboard when sending this req
               - get: {p: "/register/:email_key", s: crate::customer::done_register}
+              - patch: {p: "/email_resend", s: crate::customer::resend_email}
               - delete: {p: "", s: crate::customer::delete}
               # ________________________________________________________________________________________________________
               # App routes
