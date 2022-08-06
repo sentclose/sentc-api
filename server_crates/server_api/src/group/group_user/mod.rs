@@ -296,6 +296,33 @@ pub(crate) async fn leave_group(req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
+pub(crate) async fn kick_user_from_group(req: Request) -> JRes<ServerSuccessOutput>
+{
+	check_endpoint_with_req(&req, Endpoint::GroupUserDelete)?;
+
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let user_id = get_name_param_from_req(&req, "user_id")?;
+
+	group_user_model::kick_user_from_group(
+		group_data.group_data.id.to_string(),
+		user_id.to_string(),
+		group_data.user_data.rank,
+	)
+	.await?;
+
+	//delete the user cache
+	let key_group = get_group_user_cache_key(
+		group_data.group_data.app_id.as_str(),
+		group_data.group_data.id.as_str(),
+		user_id,
+	);
+
+	cache::delete(key_group.as_str()).await;
+
+	echo_success()
+}
+
 //__________________________________________________________________________________________________
 
 /**

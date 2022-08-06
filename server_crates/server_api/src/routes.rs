@@ -198,6 +198,13 @@ pub(crate) fn routes() -> Router
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
+	router.delete(
+		"/api/v1/group/:group_id/kick/:user_id",
+		r(crate::group::kick_user_from_group)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
 	router.put(
 		"/api/v1/group/:group_id/invite/:invited_user",
 		r(crate::group::invite_request)
