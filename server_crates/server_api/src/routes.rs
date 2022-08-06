@@ -63,6 +63,10 @@ pub(crate) fn routes() -> Router
 		"/api/v1/customer/app/:app_id",
 		r(crate::customer_app::update).add(jwt::jwt_app_check_transform),
 	);
+	router.put(
+		"/api/v1/customer/app/:app_id/options",
+		r(crate::customer_app::update_options).add(jwt::jwt_app_check_transform),
+	);
 	router.delete(
 		"/api/v1/customer/app/:app_id",
 		r(crate::customer_app::delete).add(jwt::jwt_app_check_transform),
