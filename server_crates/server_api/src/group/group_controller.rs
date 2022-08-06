@@ -8,6 +8,7 @@ use crate::core::api_res::{echo, ApiErrorCodes, HttpErr, JRes};
 use crate::core::cache;
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
 use crate::core::url_helper::{get_name_param_from_params, get_params};
+use crate::customer_app::app_util::{check_endpoint_with_req, Endpoint};
 use crate::group::{get_group_user_data_from_req, group_model};
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::get_group_cache_key;
@@ -31,6 +32,8 @@ async fn create_group(mut req: Request, parent_group_id: Option<GroupId>, user_r
 {
 	let body = get_raw_body(&mut req).await?;
 
+	check_endpoint_with_req(&req, Endpoint::GroupCreate)?;
+
 	let user = get_jwt_data_from_param(&req)?;
 
 	let input: CreateData = bytes_to_json(&body)?;
@@ -53,6 +56,8 @@ async fn create_group(mut req: Request, parent_group_id: Option<GroupId>, user_r
 
 pub(crate) async fn delete(req: Request) -> JRes<GroupDeleteServerOutput>
 {
+	check_endpoint_with_req(&req, Endpoint::GroupDelete)?;
+
 	let group_data = get_group_user_data_from_req(&req)?;
 
 	group_model::delete(
@@ -78,6 +83,8 @@ pub(crate) async fn delete(req: Request) -> JRes<GroupDeleteServerOutput>
 
 pub(crate) async fn get_user_group_data(req: Request) -> JRes<GroupServerData>
 {
+	check_endpoint_with_req(&req, Endpoint::GroupUserDataGet)?;
+
 	let group_data = get_group_user_data_from_req(&req)?;
 
 	let app_id = &group_data.group_data.app_id;
@@ -121,6 +128,8 @@ pub(crate) async fn get_user_group_data(req: Request) -> JRes<GroupServerData>
 
 pub(crate) async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupKeyServerOutput>>
 {
+	check_endpoint_with_req(&req, Endpoint::GroupUserDataGet)?;
+
 	//don't get the group data from mw cache, this is done by the model fetch
 
 	let user = get_jwt_data_from_param(&req)?;

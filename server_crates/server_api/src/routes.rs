@@ -63,6 +63,10 @@ pub(crate) fn routes() -> Router
 		"/api/v1/customer/app/:app_id",
 		r(crate::customer_app::update).add(jwt::jwt_app_check_transform),
 	);
+	router.put(
+		"/api/v1/customer/app/:app_id/options",
+		r(crate::customer_app::update_options).add(jwt::jwt_app_check_transform),
+	);
 	router.delete(
 		"/api/v1/customer/app/:app_id",
 		r(crate::customer_app::delete).add(jwt::jwt_app_check_transform),
@@ -99,156 +103,170 @@ pub(crate) fn routes() -> Router
 		"/api/v1/done_login",
 		r(crate::user::done_login).add(app_token::app_token_transform),
 	);
-	router.get("/api/v1/user", r(crate::user::get).add(jwt::jwt_transform));
-	router.put("/api/v1/user", r(crate::user::update).add(jwt::jwt_transform));
+	router.get(
+		"/api/v1/user",
+		r(crate::user::get)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.put(
+		"/api/v1/user",
+		r(crate::user::update)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
 	router.put(
 		"/api/v1/user/update_pw",
-		r(crate::user::change_password).add(jwt::jwt_transform),
+		r(crate::user::change_password)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.put(
 		"/api/v1/user/reset_pw",
-		r(crate::user::reset_password).add(jwt::jwt_transform),
+		r(crate::user::reset_password)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.delete(
 		"/api/v1/user",
 		r(crate::user::delete)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.post(
 		"/api/v1/group",
 		r(crate::group::create)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.get(
 		"/api/v1/group/invite/:last_fetched_time/:last_group_id",
 		r(crate::group::get_invite_req)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.patch(
 		"/api/v1/group/:group_id/invite",
 		r(crate::group::accept_invite)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.delete(
 		"/api/v1/group/:group_id/invite",
 		r(crate::group::reject_invite)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.patch(
 		"/api/v1/group/:group_id/join_req",
 		r(crate::group::join_req)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.get(
 		"/api/v1/group/:group_id",
 		r(crate::group::get_user_group_data)
 			.add(group::group_transform)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.get(
 		"/api/v1/group/:group_id/keys/:last_fetched_time/:last_k_id",
 		r(crate::group::get_user_group_keys)
 			.add(group::group_transform)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.post(
 		"/api/v1/group/:group_id/child",
 		r(crate::group::create_child_group)
 			.add(group::group_transform)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.delete(
 		"/api/v1/group/:group_id",
 		r(crate::group::delete)
 			.add(group::group_transform)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.delete(
 		"/api/v1/group/:group_id/leave",
 		r(crate::group::leave_group)
 			.add(group::group_transform)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.put(
 		"/api/v1/group/:group_id/invite/:invited_user",
 		r(crate::group::invite_request)
 			.add(group::group_transform)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.put(
 		"/api/v1/group/:group_id/invite/session/:key_session_id",
 		r(crate::group::insert_user_keys_via_session_invite)
 			.add(group::group_transform)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.put(
 		"/api/v1/group/:group_id/change_rank",
 		r(crate::group::change_rank)
 			.add(group::group_transform)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.get(
 		"/api/v1/group/:group_id/join_req/:last_fetched_time",
 		r(crate::group::get_join_req)
 			.add(group::group_transform)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.put(
 		"/api/v1/group/:group_id/join_req/:join_user",
 		r(crate::group::accept_join_req)
 			.add(group::group_transform)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.delete(
 		"/api/v1/group/:group_id/join_req/:join_user",
 		r(crate::group::reject_join_req)
 			.add(group::group_transform)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.put(
 		"/api/v1/group/:group_id/join_req/session/:key_session_id",
 		r(crate::group::insert_user_keys_via_session_join_req)
 			.add(group::group_transform)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.post(
 		"/api/v1/group/:group_id/key_rotation",
 		r(crate::group::start_key_rotation)
 			.add(group::group_transform)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.get(
 		"/api/v1/group/:group_id/key_rotation",
 		r(crate::group::get_keys_for_update)
 			.add(group::group_transform)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.put(
 		"/api/v1/group/:group_id/key_rotation/:key_id",
 		r(crate::group::done_key_rotation_for_user)
 			.add(group::group_transform)
-			.add(app_token::app_token_transform)
-			.add(jwt::jwt_transform),
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 
 	router

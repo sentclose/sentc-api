@@ -93,7 +93,7 @@ async fn test_10_user_exists()
 	let res = client
 		.post(url)
 		.body(input.to_string().unwrap())
-		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.header("x-sentc-app-token", &user.app_data.public_token)
 		.send()
 		.await
 		.unwrap();
@@ -458,6 +458,7 @@ async fn test_17_change_user_pw()
 	let client = reqwest::Client::new();
 	let res = client
 		.put(url)
+		.header("x-sentc-app-token", public_token)
 		.header(AUTHORIZATION, auth_header(jwt.as_str()))
 		.body(input)
 		.send()
@@ -538,6 +539,7 @@ async fn test_18_reset_password()
 	let client = reqwest::Client::new();
 	let res = client
 		.put(url)
+		.header("x-sentc-app-token", public_token)
 		.header(AUTHORIZATION, auth_header(key_data.jwt.as_str()))
 		.body(input)
 		.send()
@@ -616,6 +618,7 @@ async fn test_19_user_update()
 	let res = client
 		.put(url)
 		.body(input.to_string().unwrap())
+		.header("x-sentc-app-token", &user.app_data.public_token)
 		.header(AUTHORIZATION, auth_header(jwt))
 		.send()
 		.await
@@ -654,6 +657,7 @@ async fn test_20_user_not_update_when_identifier_exists()
 	let res = client
 		.put(url)
 		.body(input.to_string().unwrap())
+		.header("x-sentc-app-token", &user.app_data.public_token)
 		.header(AUTHORIZATION, auth_header(jwt))
 		.send()
 		.await

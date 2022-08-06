@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 11:41am on August 5, 2022 (UTC)
+-- Exported: 8:27pm on August 6, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -197,6 +197,16 @@ CREATE TABLE 'sentc_customer' ('id' TEXT PRIMARY KEY NOT NULL, 'email' TEXT, 'em
 ----
 
 ----
+-- Table structure for app_options
+----
+CREATE TABLE 'app_options' ('app_id' TEXT PRIMARY KEY NOT NULL, 'group_create' INTEGER, 'group_get' INTEGER, 'group_invite' INTEGER, 'group_reject_invite' INTEGER, 'group_accept_invite' INTEGER, 'group_join_req' INTEGER, 'group_accept_join_req' INTEGER, 'group_reject_join_req' INTEGER, 'group_key_rotation' INTEGER, 'group_user_delete' INTEGER, 'group_change_rank' INTEGER, 'group_delete' INTEGER, 'group_leave' INTEGER, 'user_exists' INTEGER, 'user_register' INTEGER, 'user_delete' INTEGER, 'user_update' INTEGER, 'user_change_password' INTEGER, 'user_reset_password' INTEGER, 'user_prepare_login' INTEGER, 'user_done_login' INTEGER);
+
+----
+-- Data dump for app_options, a total of 1 rows
+----
+INSERT INTO "app_options" ("app_id","group_create","group_get","group_invite","group_reject_invite","group_accept_invite","group_join_req","group_accept_join_req","group_reject_join_req","group_key_rotation","group_user_delete","group_change_rank","group_delete","group_leave","user_exists","user_register","user_delete","user_update","user_change_password","user_reset_password","user_prepare_login","user_done_login") VALUES ('1665eb92-4513-469f-81d8-b72a62e0134c','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0');
+
+----
 -- structure for index sqlite_autoindex_test_1 on table test
 ----
 ;
@@ -302,6 +312,11 @@ CREATE INDEX 'get_group' ON "sentc_group_keys" ("group_id" ASC, "app_id" ASC);
 ;
 
 ----
+-- structure for index sqlite_autoindex_app_options_1 on table app_options
+----
+;
+
+----
 -- structure for trigger user_delete_user_keys on table user
 ----
 CREATE TRIGGER 'user_delete_user_keys' AFTER DELETE ON "user" FOR EACH ROW BEGIN DELETE FROM user_keys WHERE user_id = OLD.id; END;
@@ -350,4 +365,9 @@ CREATE TRIGGER 'delete_group' AFTER DELETE ON "app" FOR EACH ROW BEGIN DELETE FR
 -- structure for trigger delete_app on table sentc_customer
 ----
 CREATE TRIGGER 'delete_app' AFTER DELETE ON "sentc_customer" FOR EACH ROW BEGIN DELETE FROM app WHERE customer_id = OLD.id; END;
+
+----
+-- structure for trigger  delete_options on table app
+----
+CREATE TRIGGER ' delete_options' AFTER DELETE ON "app" FOR EACH ROW BEGIN DELETE FROM app_options WHERE app_id = OLD.id; END;
 COMMIT;

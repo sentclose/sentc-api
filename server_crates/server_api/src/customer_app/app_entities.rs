@@ -18,6 +18,7 @@ pub struct AppData
 	pub app_data: AppDataGeneral,
 	pub jwt_data: Vec<AppJwt>, //use the newest jwt data to create a jwt, but use the old one to validate the old jwt.
 	pub auth_with_token: AuthWithToken,
+	pub options: AppOptionsEntity,
 }
 
 /**
@@ -133,6 +134,119 @@ impl crate::core::db::FromSqliteRow for AppJwt
 			jwt_key_id: take_or_err!(row, 0),
 			jwt_alg: take_or_err!(row, 1),
 			time,
+		})
+	}
+}
+
+//__________________________________________________________________________________________________
+
+#[derive(Serialize, Deserialize)]
+pub struct AppOptionsEntity
+{
+	pub group_create: i32,
+	pub group_get: i32,
+	pub group_invite: i32,
+	pub group_reject_invite: i32,
+	pub group_accept_invite: i32,
+
+	pub group_join_req: i32,
+	pub group_accept_join_req: i32,
+	pub group_reject_join_req: i32,
+
+	pub group_key_rotation: i32,
+
+	pub group_user_delete: i32,
+	pub group_delete: i32,
+
+	pub group_leave: i32,
+	pub group_change_rank: i32,
+
+	pub user_exists: i32,
+	pub user_register: i32,
+	pub user_delete: i32,
+	pub user_update: i32,
+	pub user_change_password: i32,
+	pub user_reset_password: i32,
+	pub user_prepare_login: i32,
+	pub user_done_login: i32,
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for AppOptionsEntity
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			group_create: take_or_err!(row, 0, i32),
+			group_get: take_or_err!(row, 1, i32),
+
+			group_invite: take_or_err!(row, 2, i32),
+			group_reject_invite: take_or_err!(row, 3, i32),
+			group_accept_invite: take_or_err!(row, 4, i32),
+
+			group_join_req: take_or_err!(row, 5, i32),
+			group_accept_join_req: take_or_err!(row, 6, i32),
+			group_reject_join_req: take_or_err!(row, 7, i32),
+
+			group_key_rotation: take_or_err!(row, 8, i32),
+
+			group_user_delete: take_or_err!(row, 9, i32),
+
+			group_delete: take_or_err!(row, 10, i32),
+
+			group_leave: take_or_err!(row, 11, i32),
+			group_change_rank: take_or_err!(row, 12, i32),
+
+			user_exists: take_or_err!(row, 13, i32),
+			user_register: take_or_err!(row, 14, i32),
+			user_delete: take_or_err!(row, 15, i32),
+			user_update: take_or_err!(row, 16, i32),
+			user_change_password: take_or_err!(row, 17, i32),
+			user_reset_password: take_or_err!(row, 18, i32),
+			user_prepare_login: take_or_err!(row, 19, i32),
+			user_done_login: take_or_err!(row, 20, i32),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl crate::core::db::FromSqliteRow for AppOptionsEntity
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			group_create: take_or_err!(row, 0),
+			group_get: take_or_err!(row, 1),
+
+			group_invite: take_or_err!(row, 2),
+			group_reject_invite: take_or_err!(row, 3),
+			group_accept_invite: take_or_err!(row, 4),
+
+			group_join_req: take_or_err!(row, 5),
+			group_accept_join_req: take_or_err!(row, 6),
+			group_reject_join_req: take_or_err!(row, 7),
+
+			group_key_rotation: take_or_err!(row, 8),
+
+			group_user_delete: take_or_err!(row, 9),
+
+			group_delete: take_or_err!(row, 10),
+
+			group_leave: take_or_err!(row, 11),
+			group_change_rank: take_or_err!(row, 12),
+
+			user_exists: take_or_err!(row, 13),
+			user_register: take_or_err!(row, 14),
+			user_delete: take_or_err!(row, 15),
+			user_update: take_or_err!(row, 16),
+			user_change_password: take_or_err!(row, 17),
+			user_reset_password: take_or_err!(row, 18),
+			user_prepare_login: take_or_err!(row, 19),
+			user_done_login: take_or_err!(row, 20),
 		})
 	}
 }

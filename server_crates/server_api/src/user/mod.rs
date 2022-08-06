@@ -22,7 +22,7 @@ use sentc_crypto_common::user::{
 
 use crate::core::api_res::{echo, echo_success, JRes};
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
-use crate::customer_app::app_util::get_app_data_from_req;
+use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::user::user_entities::UserEntity;
 
@@ -31,6 +31,8 @@ pub(crate) async fn exists(mut req: Request) -> JRes<UserIdentifierAvailableServ
 	let body = get_raw_body(&mut req).await?;
 	let data: UserIdentifierAvailableServerInput = bytes_to_json(&body)?;
 	let app_data = get_app_data_from_req(&req)?;
+
+	check_endpoint_with_app_options(app_data, Endpoint::UserExists)?;
 
 	let out = user_service::exists(app_data, data).await?;
 
@@ -44,6 +46,8 @@ pub(crate) async fn register(mut req: Request) -> JRes<RegisterServerOutput>
 	let register_input: RegisterData = bytes_to_json(&body)?;
 	let app_data = get_app_data_from_req(&req)?;
 
+	check_endpoint_with_app_options(app_data, Endpoint::UserRegister)?;
+
 	let out = user_service::register(app_data, register_input).await?;
 
 	echo(out)
@@ -55,6 +59,8 @@ pub(crate) async fn prepare_login(mut req: Request) -> JRes<PrepareLoginSaltServ
 	let user_identifier: PrepareLoginServerInput = bytes_to_json(&body)?;
 
 	let app_data = get_app_data_from_req(&req)?;
+
+	check_endpoint_with_app_options(app_data, Endpoint::UserPrepLogin)?;
 
 	let out = user_service::prepare_login(app_data, user_identifier).await?;
 
@@ -68,6 +74,8 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerKeysOutp
 
 	let app_data = get_app_data_from_req(&req)?;
 
+	check_endpoint_with_app_options(app_data, Endpoint::UserDoneLogin)?;
+
 	let out = user_service::done_login(app_data, done_login).await?;
 
 	echo(out)
@@ -78,6 +86,8 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerKeysOutp
 
 pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 {
+	check_endpoint_with_req(&req, Endpoint::UserDelete)?;
+
 	let user = get_jwt_data_from_param(&req)?;
 
 	user_service::delete(user).await?;
@@ -91,6 +101,8 @@ pub(crate) async fn update(mut req: Request) -> JRes<UserUpdateServerOut>
 	let update_input: UserUpdateServerInput = bytes_to_json(&body)?;
 	let user = get_jwt_data_from_param(&req)?;
 
+	check_endpoint_with_req(&req, Endpoint::UserUpdate)?;
+
 	let out = user_service::update(user, update_input).await?;
 
 	echo(out)
@@ -102,6 +114,8 @@ pub(crate) async fn change_password(mut req: Request) -> JRes<ServerSuccessOutpu
 	let user = get_jwt_data_from_param(&req)?;
 	let input: ChangePasswordData = bytes_to_json(&body)?;
 
+	check_endpoint_with_req(&req, Endpoint::UserChangePassword)?;
+
 	user_service::change_password(user, input).await?;
 
 	echo_success()
@@ -112,6 +126,8 @@ pub(crate) async fn reset_password(mut req: Request) -> JRes<ServerSuccessOutput
 	let body = get_raw_body(&mut req).await?;
 	let user = get_jwt_data_from_param(&req)?; //non fresh jwt here
 	let input: ResetPasswordData = bytes_to_json(&body)?;
+
+	check_endpoint_with_req(&req, Endpoint::UserResetPassword)?;
 
 	user_service::reset_password(user.id.as_str(), input).await?;
 
