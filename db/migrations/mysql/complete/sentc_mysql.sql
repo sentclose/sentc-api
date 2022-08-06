@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 05. Aug 2022 um 11:39
+-- Erstellungszeit: 06. Aug 2022 um 20:26
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -50,6 +50,10 @@ CREATE TRIGGER `delete_group` AFTER DELETE ON `app` FOR EACH ROW DELETE FROM sen
 $$
 DELIMITER ;
 DELIMITER $$
+CREATE TRIGGER `delete_options` AFTER DELETE ON `app` FOR EACH ROW DELETE FROM app_options WHERE app_id = OLD.id
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `delete_user` AFTER DELETE ON `app` FOR EACH ROW DELETE FROM user WHERE app_id = OLD.id
 $$
 DELIMITER ;
@@ -92,16 +96,24 @@ CREATE TABLE `app_options` (
   `group_create` int(11) NOT NULL COMMENT 'create a group',
   `group_get` int(11) NOT NULL COMMENT 'get the group keys',
   `group_invite` int(11) NOT NULL COMMENT 'sending invites',
+  `group_reject_invite` int(11) NOT NULL,
+  `group_accept_invite` int(11) NOT NULL,
   `group_join_req` int(11) NOT NULL COMMENT 'sending join req',
   `group_accept_join_req` int(11) NOT NULL,
+  `group_reject_join_req` int(11) NOT NULL,
   `group_key_rotation` int(11) NOT NULL,
   `group_user_delete` int(11) NOT NULL,
-  `group_user_update` int(11) NOT NULL COMMENT 'update rank',
-  `user_regsiter` int(11) NOT NULL,
+  `group_change_rank` int(11) NOT NULL,
+  `group_delete` int(11) NOT NULL,
+  `group_leave` int(11) NOT NULL,
+  `user_exists` int(11) NOT NULL,
+  `user_register` int(11) NOT NULL,
   `user_delete` int(11) NOT NULL,
   `user_update` int(11) NOT NULL COMMENT 'change identifier',
   `user_change_password` int(11) NOT NULL,
-  `user_reset_password` int(11) NOT NULL
+  `user_reset_password` int(11) NOT NULL,
+  `user_prepare_login` int(11) NOT NULL,
+  `user_done_login` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='option: 0 = not allowed,  1 = public token, 2 = secret token';
 
 -- --------------------------------------------------------
