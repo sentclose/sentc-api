@@ -387,6 +387,47 @@ pub(super) async fn user_leave_group(group_id: GroupId, user_id: UserId, rank: i
 	Ok(())
 }
 
+pub(super) async fn kick_user_from_group(group_id: GroupId, user_id: UserId, rank: i32) -> AppRes<()>
+{
+	check_group_rank(rank, 1)?;
+
+	//check the rank of the member -> if it is the creator => don't kick
+
+	//language=SQL
+	let sql = "SELECT `rank` FROM sentc_group_user WHERE user_id = ? AND group_id = ?";
+
+	let check: Option<UserInGroupCheck> = query_first(sql, set_params!(user_id.to_string(), group_id.to_string())).await?;
+
+	let check = match check {
+		Some(c) => c.0,
+		None => {
+			return Err(HttpErr::new(
+				400,
+				ApiErrorCodes::GroupUserNotFound,
+				"User not found in this group".to_string(),
+				None,
+			))
+		},
+	};
+
+	if check == 0 {
+		//changed user is creator
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::GroupUserRankUpdate,
+			"Can't delete the group creator".to_string(),
+			None,
+		));
+	}
+
+	//language=SQL
+	let sql = "DELETE FROM sentc_group_user WHERE group_id = ? AND user_id = ?";
+
+	exec(sql, set_params!(group_id, user_id)).await?;
+
+	Ok(())
+}
+
 //__________________________________________________________________________________________________
 
 pub(super) async fn update_rank(group_id: GroupId, admin_rank: i32, changed_user_id: UserId, new_rank: i32) -> AppRes<()>

@@ -1161,11 +1161,53 @@ async fn test_31_no_rank_change_without_permission()
 	assert_eq!(out.status, false);
 }
 
+#[tokio::test]
+async fn test_32_kick_user_from_group()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+	let user_to_kick = &users[2];
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/kick/" + &user_to_kick.user_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+
+	//user should not get group data
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user_to_kick.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, false);
+}
+
 //__________________________________________________________________________________________________
 //delete group
 
 #[tokio::test]
-async fn test_32_delete_group()
+async fn test_33_delete_group()
 {
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
 

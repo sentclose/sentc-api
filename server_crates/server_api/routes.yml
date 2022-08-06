@@ -106,8 +106,11 @@ routes:
                           - post: {p: "/child", s: crate::group::create_child_group}
                           - delete: {p: "", s: crate::group::delete}
                           - delete: {p: "/leave", s: crate::group::leave_group}
+                          - delete: {p: "/kick/:user_id", s: crate::group::kick_user_from_group}
+
                           - put: {p: "/invite/:invited_user", s: crate::group::invite_request}
                           - put: {p: "/invite/session/:key_session_id", s: crate::group::insert_user_keys_via_session_invite}
+
                           - put: {p: "/change_rank", s: crate::group::change_rank}
                           #_____________________________________________________________________________________________
                           # groups for join reqs
