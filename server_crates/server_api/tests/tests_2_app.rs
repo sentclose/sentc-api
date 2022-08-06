@@ -2,7 +2,10 @@ use std::time::Duration;
 
 use hyper::header::AUTHORIZATION;
 use reqwest::StatusCode;
+use sentc_crypto_common::server_default::ServerSuccessOutput;
+use sentc_crypto_common::user::RegisterServerOutput;
 use sentc_crypto_common::ServerOutput;
+use server_api::core::api_res::ApiErrorCodes;
 use server_api_common::app::{
 	AppJwtData,
 	AppJwtRegisterOutput,
@@ -299,7 +302,89 @@ async fn test_16_get_all_apps()
 }
 
 #[tokio::test]
-async fn test_17_delete_app()
+async fn test_17_update_app_options()
+{
+	//first try to register user with default app options and a public token
+
+	let app = APP_TEST_STATE.get().unwrap().read().await;
+	let customer_jwt = &app.customer_data.user_keys.jwt;
+
+	let username = "admin";
+	let pw = "12345";
+
+	let input = sentc_crypto::user::register(username, pw).unwrap();
+
+	let url = get_url("api/v1/register".to_owned());
+
+	//this should fail because it is the public token
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", &app.app_public_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	//normally user register result but it's an err so it's ok to use the default
+	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, false);
+	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::AppAction.get_int_code());
+
+	//change the app options to lax -> so we can register user via public token
+
+	let input = AppOptions::default_lax();
+
+	let url = get_url("api/v1/customer/app/".to_string() + app.app_id.as_str() + "/options");
+
+	//this should fail because it is the public token
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(customer_jwt))
+		.body(serde_json::to_string(&input).unwrap())
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+
+	//now try register with public token
+
+	let input = sentc_crypto::user::register(username, pw).unwrap();
+
+	let url = get_url("api/v1/register".to_owned());
+
+	//this should fail because it is the public token
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", &app.app_public_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let register_out = ServerOutput::<RegisterServerOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(register_out.status, true);
+	assert_eq!(register_out.err_code, None);
+
+	let register_out = register_out.result.unwrap();
+	assert_eq!(register_out.user_identifier, username.to_string());
+
+	sentc_crypto::user::done_register(body.as_str()).unwrap();
+}
+
+#[tokio::test]
+async fn test_18_delete_app()
 {
 	let app = APP_TEST_STATE.get().unwrap().read().await;
 
@@ -324,7 +409,7 @@ async fn test_17_delete_app()
 }
 
 #[tokio::test]
-async fn test_18_create_app_test_fn()
+async fn test_19_create_app_test_fn()
 {
 	let app = APP_TEST_STATE.get().unwrap().read().await;
 
@@ -345,7 +430,7 @@ async fn test_18_create_app_test_fn()
 }
 
 #[tokio::test]
-async fn test_19_get_all_apps_via_pagination()
+async fn test_20_get_all_apps_via_pagination()
 {
 	let app = APP_TEST_STATE.get().unwrap().read().await;
 
