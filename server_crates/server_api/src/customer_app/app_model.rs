@@ -1,11 +1,12 @@
 use sentc_crypto_common::{AppId, CustomerId, JwtKeyId, UserId};
+use server_api_common::app::{AppOptions, AppRegisterInput};
 use uuid::Uuid;
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::core::db::{exec, exec_transaction, query, query_first, TransactionData};
 use crate::core::get_time;
 use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppExistsEntity, AppJwt, AppJwtData, AuthWithToken};
-use crate::set_params;
+use crate::{set_params, AppOptionsEntity};
 
 /**
 # Internal app data
@@ -52,10 +53,54 @@ WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 		));
 	};
 
+	//get the options
+	//language=SQL
+	let sql = r"
+SELECT 
+    group_create,
+    group_get,
+    group_invite,
+    group_reject_invite,
+    group_accept_invite,
+    group_join_req,
+    group_accept_join_req,
+    group_reject_join_req,
+    group_key_rotation,
+    group_user_delete,
+    group_delete,
+    group_leave,
+    group_change_rank,
+    user_exists,
+    user_register,
+    user_delete,
+    user_update,
+    user_change_password,
+    user_reset_password,
+    user_prepare_login,
+    user_done_login
+FROM app_options 
+WHERE 
+    app_id = ?";
+
+	let options: Option<AppOptionsEntity> = query_first(sql, set_params!(app_data.app_id.to_string())).await?;
+
+	let options = match options {
+		Some(o) => o,
+		None => {
+			return Err(HttpErr::new(
+				401,
+				ApiErrorCodes::AppTokenNotFound,
+				"App token not found".to_string(),
+				None,
+			))
+		},
+	};
+
 	Ok(AppData {
 		app_data,
 		jwt_data,
 		auth_with_token,
+		options,
 	})
 }
 
@@ -113,7 +158,7 @@ ORDER BY ak.time DESC";
 
 pub(super) async fn create_app(
 	customer_id: &UserId,
-	identifier: Option<String>,
+	input: AppRegisterInput,
 	hashed_secret_token: String,
 	hashed_public_token: String,
 	alg: &str,
@@ -138,7 +183,7 @@ INSERT INTO app
      ) 
 VALUES (?,?,?,?,?,?,?)";
 
-	let identifier = match identifier {
+	let identifier = match input.identifier {
 		Some(i) => i,
 		None => "".to_string(),
 	};
@@ -166,6 +211,61 @@ VALUES (?,?,?,?,?,?,?)";
 		time.to_string()
 	);
 
+	let app_options = input.options;
+
+	//language=SQL
+	let sql_options = r"
+INSERT INTO app_options 
+    (
+     app_id, 
+     group_create, 
+     group_get, 
+     group_invite, 
+     group_reject_invite, 
+     group_accept_invite, 
+     group_join_req, 
+     group_accept_join_req, 
+     group_reject_join_req, 
+     group_key_rotation, 
+     group_user_delete, 
+     group_change_rank, 
+     group_delete, 
+     group_leave, 
+     user_exists, 
+     user_register, 
+     user_delete, 
+     user_update, 
+     user_change_password, 
+     user_reset_password, 
+     user_prepare_login, 
+     user_done_login
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+	let params_options = set_params!(
+		app_id.to_string(),
+		app_options.group_create,
+		app_options.group_get,
+		app_options.group_invite,
+		app_options.group_reject_invite,
+		app_options.group_accept_invite,
+		app_options.group_join_req,
+		app_options.group_accept_join_req,
+		app_options.group_reject_join_req,
+		app_options.group_key_rotation,
+		app_options.group_user_delete,
+		app_options.group_change_rank,
+		app_options.group_delete,
+		app_options.group_leave,
+		app_options.user_exists,
+		app_options.user_register,
+		app_options.user_delete,
+		app_options.user_update,
+		app_options.user_change_password,
+		app_options.user_reset_password,
+		app_options.user_prepare_login,
+		app_options.user_done_login
+	);
+
 	exec_transaction(vec![
 		TransactionData {
 			sql: sql_app,
@@ -174,6 +274,10 @@ VALUES (?,?,?,?,?,?,?)";
 		TransactionData {
 			sql: sql_jwt,
 			params: params_jwt,
+		},
+		TransactionData {
+			sql: sql_options,
+			params: params_options,
 		},
 	])
 	.await?;
@@ -266,6 +370,75 @@ pub(super) async fn update(customer_id: CustomerId, app_id: AppId, identifier: O
 	Ok(())
 }
 
+pub(super) async fn update_options(customer_id: CustomerId, app_id: AppId, app_options: AppOptions) -> AppRes<()>
+{
+	check_app_exists(customer_id, app_id.to_string()).await?;
+
+	//delete the old options
+
+	//language=SQL
+	let sql = "DELETE FROM app_options WHERE app_id = ?";
+
+	exec(sql, set_params!(app_id.to_string())).await?;
+
+	//language=SQL
+	let sql_options = r"
+INSERT INTO app_options 
+    (
+     app_id, 
+     group_create, 
+     group_get, 
+     group_invite, 
+     group_reject_invite, 
+     group_accept_invite, 
+     group_join_req, 
+     group_accept_join_req, 
+     group_reject_join_req, 
+     group_key_rotation, 
+     group_user_delete, 
+     group_change_rank, 
+     group_delete, 
+     group_leave, 
+     user_exists, 
+     user_register, 
+     user_delete, 
+     user_update, 
+     user_change_password, 
+     user_reset_password, 
+     user_prepare_login, 
+     user_done_login
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+	let params_options = set_params!(
+		app_id.to_string(),
+		app_options.group_create,
+		app_options.group_get,
+		app_options.group_invite,
+		app_options.group_reject_invite,
+		app_options.group_accept_invite,
+		app_options.group_join_req,
+		app_options.group_accept_join_req,
+		app_options.group_reject_join_req,
+		app_options.group_key_rotation,
+		app_options.group_user_delete,
+		app_options.group_change_rank,
+		app_options.group_delete,
+		app_options.group_leave,
+		app_options.user_exists,
+		app_options.user_register,
+		app_options.user_delete,
+		app_options.user_update,
+		app_options.user_change_password,
+		app_options.user_reset_password,
+		app_options.user_prepare_login,
+		app_options.user_done_login
+	);
+
+	exec(sql_options, params_options).await?;
+
+	Ok(())
+}
+
 pub(super) async fn delete(customer_id: CustomerId, app_id: AppId) -> AppRes<()>
 {
 	//use the double check with the customer id to check if this app really belongs to the customer!
@@ -277,6 +450,8 @@ pub(super) async fn delete(customer_id: CustomerId, app_id: AppId) -> AppRes<()>
 
 	Ok(())
 }
+
+//__________________________________________________________________________________________________
 
 async fn check_app_exists(customer_id: CustomerId, app_id: AppId) -> AppRes<()>
 {

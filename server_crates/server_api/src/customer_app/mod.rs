@@ -5,7 +5,7 @@ pub(crate) mod app_util;
 use rand::RngCore;
 use rustgram::Request;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
-use server_api_common::app::{AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, AppTokenRenewOutput};
+use server_api_common::app::{AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, AppTokenRenewOutput, AppUpdateInput};
 
 use crate::core::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 use crate::core::cache;
@@ -53,7 +53,7 @@ pub(crate) async fn create_app(mut req: Request) -> JRes<AppRegisterOutput>
 	//	the str values are used because the real values are exported to the user
 	let (app_id, jwt_id) = app_model::create_app(
 		customer_id,
-		input.identifier,
+		input,
 		hashed_secret_token,
 		hashed_public_token,
 		HASH_ALG,
@@ -181,7 +181,7 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 pub(crate) async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 {
 	let body = get_raw_body(&mut req).await?;
-	let input: AppRegisterInput = bytes_to_json(&body)?;
+	let input: AppUpdateInput = bytes_to_json(&body)?;
 
 	let customer = get_jwt_data_from_param(&req)?;
 	let customer_id = &customer.id;

@@ -3,20 +3,38 @@ use rustgram::Request;
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::customer_app::app_entities::AppData;
+use crate::AuthWithToken;
 
 pub static HASH_ALG: &'static str = "SHA256";
 
-// pub enum Endpoint
-// {
-// 	UserExistsCheck,
-// 	UserRegister,
-// 	UserDelete,
-// 	UserPrepLogin,
-// 	UserDoneLogin,
-//
-// 	GroupCreate,
-// 	GroupDelete,
-// }
+pub enum Endpoint
+{
+	UserExists,
+	UserRegister,
+	UserDelete,
+	UserPrepLogin,
+	UserDoneLogin,
+	UserUpdate,
+	UserChangePassword,
+	UserResetPassword,
+
+	GroupCreate,
+	GroupDelete,
+	GroupUserDataGet,
+
+	GroupKeyRotation,
+
+	GroupInvite,
+	GroupAcceptInvite,
+	GroupRejectInvite,
+	GroupJoinReq,
+	GroupAcceptJoinReq,
+	GroupRejectJoinReq,
+
+	GroupLeave,
+	GroupChangeRank,
+	GroupUserDelete,
+}
 
 pub(crate) fn get_app_data_from_req(req: &Request) -> AppRes<&AppData>
 {
@@ -74,19 +92,78 @@ pub fn hash_token_from_string_to_string(token: &str) -> AppRes<String>
 	hash_token_to_string(&token)
 }
 
-// pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endpoint) -> AppRes<()>
-// {
-// 	todo!()
-// }
-//
-// /**
-// Check the endpoint with the app options
-//
-// get the options from req
-// */
-// pub fn check_endpoint_with_req(req: &Request, endpoint: Endpoint) -> AppRes<()>
-// {
-// 	let data = get_app_data_from_req(req)?;
-//
-// 	check_endpoint_with_app_options(data, endpoint)
-// }
+pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endpoint) -> AppRes<()>
+{
+	let token_used = &app_data.auth_with_token;
+	let options = &app_data.options;
+
+	let token_needed = match endpoint {
+		Endpoint::UserExists => options.user_exists,
+		Endpoint::UserRegister => options.user_register,
+		Endpoint::UserDelete => options.user_delete,
+		Endpoint::UserPrepLogin => options.user_prepare_login,
+		Endpoint::UserDoneLogin => options.user_done_login,
+		Endpoint::UserUpdate => options.user_update,
+		Endpoint::UserChangePassword => options.user_change_password,
+		Endpoint::UserResetPassword => options.user_reset_password,
+
+		Endpoint::GroupCreate => options.group_create,
+		Endpoint::GroupDelete => options.group_delete,
+		Endpoint::GroupUserDataGet => options.group_get,
+
+		Endpoint::GroupKeyRotation => options.group_key_rotation,
+		Endpoint::GroupInvite => options.group_invite,
+		Endpoint::GroupAcceptInvite => options.group_accept_invite,
+		Endpoint::GroupRejectInvite => options.group_reject_invite,
+		Endpoint::GroupJoinReq => options.group_join_req,
+		Endpoint::GroupAcceptJoinReq => options.group_accept_join_req,
+		Endpoint::GroupRejectJoinReq => options.group_reject_join_req,
+
+		Endpoint::GroupLeave => options.group_leave,
+		Endpoint::GroupChangeRank => options.group_change_rank,
+		Endpoint::GroupUserDelete => options.group_user_delete,
+	};
+
+	let token_needed = match token_needed {
+		1 => AuthWithToken::Public,
+		2 => AuthWithToken::Secret,
+		_ => {
+			return Err(HttpErr::new(
+				400,
+				ApiErrorCodes::AppAction,
+				"No access to this action".to_string(),
+				None,
+			))
+		},
+	};
+
+	match (&token_needed, token_used) {
+		//both public is ok
+		(AuthWithToken::Public, AuthWithToken::Public) => Ok(()),
+		//public required but secret is ok because secret > public
+		(AuthWithToken::Public, AuthWithToken::Secret) => Ok(()),
+		//Both secret is ok
+		(AuthWithToken::Secret, AuthWithToken::Secret) => Ok(()),
+		//when secret required but public token => err
+		(AuthWithToken::Secret, AuthWithToken::Public) => {
+			Err(HttpErr::new(
+				400,
+				ApiErrorCodes::AppAction,
+				"No access to this action".to_string(),
+				None,
+			))
+		},
+	}
+}
+
+/**
+Check the endpoint with the app options
+
+get the options from req
+*/
+pub fn check_endpoint_with_req(req: &Request, endpoint: Endpoint) -> AppRes<()>
+{
+	let data = get_app_data_from_req(req)?;
+
+	check_endpoint_with_app_options(data, endpoint)
+}
