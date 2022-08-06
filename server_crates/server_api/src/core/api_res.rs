@@ -41,6 +41,7 @@ pub enum ApiErrorCodes
 	CustomerEmailValidate,
 	CustomerNotFound,
 	CustomerEmailTokenValid,
+	CustomerEmailSyntax,
 
 	UserNotFound,
 	UserExists,
@@ -103,6 +104,7 @@ impl ApiErrorCodes
 			ApiErrorCodes::CustomerEmailValidate => 61,
 			ApiErrorCodes::CustomerNotFound => 62,
 			ApiErrorCodes::CustomerEmailTokenValid => 63,
+			ApiErrorCodes::CustomerEmailSyntax => 64,
 
 			ApiErrorCodes::UserNotFound => 100,
 			ApiErrorCodes::UserExists => 101,

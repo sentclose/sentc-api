@@ -3,6 +3,7 @@ use std::ptr;
 use sentc_crypto::util_pub::HashedAuthenticationKey;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
+	DoneLoginLightServerOutput,
 	DoneLoginServerInput,
 	DoneLoginServerKeysOutput,
 	PrepareLoginSaltServerOutput,
@@ -57,6 +58,53 @@ pub async fn prepare_login(app_data: &AppData, user_identifier: PrepareLoginServ
 	Ok(out)
 }
 
+/**
+Only the jwt and user id, no keys
+*/
+pub async fn done_login_light(app_data: &AppData, done_login: DoneLoginServerInput, aud: &str) -> AppRes<DoneLoginLightServerOutput>
+{
+	auth_user(
+		app_data.app_data.app_id.to_string(),
+		done_login.user_identifier.as_str(),
+		done_login.auth_key,
+	)
+	.await?;
+
+	let id = user_model::get_done_login_light_data(app_data.app_data.app_id.as_str(), done_login.user_identifier.as_str()).await?;
+
+	let id = match id {
+		Some(d) => d,
+		None => {
+			return Err(HttpErr::new(
+				401,
+				ApiErrorCodes::Login,
+				"Wrong username or password".to_owned(),
+				None,
+			))
+		},
+	};
+
+	let jwt = create_jwt(
+		id.0.as_str(),
+		done_login.user_identifier.as_str(),
+		app_data.app_data.app_id.as_str(),
+		&app_data.jwt_data[0], //use always the latest created jwt data
+		aud,
+		true,
+	)
+	.await?;
+
+	let out = DoneLoginLightServerOutput {
+		user_id: id.0,
+		jwt,
+	};
+
+	Ok(out)
+}
+
+/**
+After successful login return the user keys so they can be decrypted in the client
+*/
 pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) -> AppRes<DoneLoginServerKeysOutput>
 {
 	auth_user(
@@ -183,12 +231,12 @@ pub async fn change_password(user: &UserJwtEntity, input: ChangePasswordData) ->
 	Ok(())
 }
 
-pub async fn reset_password(user: &UserJwtEntity, input: ResetPasswordData) -> AppRes<()>
+pub async fn reset_password(user_id: &str, input: ResetPasswordData) -> AppRes<()>
 {
 	//no fresh jwt here because the user can't login and get a fresh jwt without the password
 	//but still needs a valid jwt. jwt refresh is possible without a password!
 
-	user_model::reset_password(user.id.as_str(), input).await?;
+	user_model::reset_password(user_id, input).await?;
 
 	Ok(())
 }

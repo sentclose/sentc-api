@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 04. Aug 2022 um 16:11
+-- Erstellungszeit: 05. Aug 2022 um 11:39
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -43,6 +43,10 @@ CREATE TABLE `app` (
 --
 DELIMITER $$
 CREATE TRIGGER `delete_app_jwt` AFTER DELETE ON `app` FOR EACH ROW DELETE FROM app_jwt_keys WHERE app_id = OLD.id
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `delete_group` AFTER DELETE ON `app` FOR EACH ROW DELETE FROM sentc_group WHERE app_id = OLD.id
 $$
 DELIMITER ;
 DELIMITER $$
@@ -126,6 +130,14 @@ CREATE TABLE `sentc_customer` (
   `email_error_msg` text DEFAULT NULL,
   `email_token` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Trigger `sentc_customer`
+--
+DELIMITER $$
+CREATE TRIGGER `delete_app` AFTER DELETE ON `sentc_customer` FOR EACH ROW DELETE FROM app WHERE customer_id = OLD.id
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 

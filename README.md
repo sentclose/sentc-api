@@ -18,7 +18,7 @@ cargo run --release
 
 Integration tests. A maria db connection is needed.
 ````shell
-cargo test  --test * -- --test-threads=1
+cargo test  --test '*' -- --test-threads=1
 ````
 
 Unit tests
@@ -45,7 +45,7 @@ cargo run --features=sqlite --no-default-features --release
 
 Integration tests. A path to the sqlite db is needed in as env
 ````shell
-cargo test --features=sqlite --no-default-features  --test * -- --test-threads=1
+cargo test --features=sqlite --no-default-features  --test '*' -- --test-threads=1
 ````
 
 Unit tests
