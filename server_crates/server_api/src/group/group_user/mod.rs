@@ -16,6 +16,7 @@ use crate::core::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 use crate::core::cache;
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
 use crate::core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
+use crate::customer_app::app_util::{check_endpoint_with_req, Endpoint};
 use crate::group::get_group_user_data_from_req;
 use crate::group::group_user::group_user_model::InsertNewUserType;
 use crate::user::jwt::get_jwt_data_from_param;
@@ -29,6 +30,8 @@ pub(crate) async fn invite_request(mut req: Request) -> JRes<GroupInviteServerOu
 	//don't save this values in the group user keys table, but in the invite table
 
 	let body = get_raw_body(&mut req).await?;
+
+	check_endpoint_with_req(&req, Endpoint::GroupInvite)?;
 
 	let group_data = get_group_user_data_from_req(&req)?;
 
@@ -73,6 +76,8 @@ pub(crate) async fn invite_request(mut req: Request) -> JRes<GroupInviteServerOu
 
 pub(crate) async fn get_invite_req(req: Request) -> JRes<Vec<GroupInviteReqList>>
 {
+	check_endpoint_with_req(&req, Endpoint::GroupInvite)?;
+
 	//called from the invited user not the group admin
 
 	let user = get_jwt_data_from_param(&req)?;
@@ -106,6 +111,8 @@ pub(crate) async fn get_invite_req(req: Request) -> JRes<Vec<GroupInviteReqList>
 
 pub(crate) async fn reject_invite(req: Request) -> JRes<ServerSuccessOutput>
 {
+	check_endpoint_with_req(&req, Endpoint::GroupRejectInvite)?;
+
 	let user = get_jwt_data_from_param(&req)?;
 	let group_id = get_name_param_from_req(&req, "group_id")?;
 
@@ -116,6 +123,8 @@ pub(crate) async fn reject_invite(req: Request) -> JRes<ServerSuccessOutput>
 
 pub(crate) async fn accept_invite(req: Request) -> JRes<ServerSuccessOutput>
 {
+	check_endpoint_with_req(&req, Endpoint::GroupAcceptInvite)?;
+
 	let user = get_jwt_data_from_param(&req)?;
 	let group_id = get_name_param_from_req(&req, "group_id")?;
 
@@ -133,6 +142,8 @@ pub(crate) async fn accept_invite(req: Request) -> JRes<ServerSuccessOutput>
 
 pub(crate) async fn join_req(req: Request) -> JRes<ServerSuccessOutput>
 {
+	check_endpoint_with_req(&req, Endpoint::GroupJoinReq)?;
+
 	let user = get_jwt_data_from_param(&req)?;
 	let group_id = get_name_param_from_req(&req, "group_id")?;
 
@@ -143,6 +154,8 @@ pub(crate) async fn join_req(req: Request) -> JRes<ServerSuccessOutput>
 
 pub(crate) async fn get_join_req(req: Request) -> JRes<Vec<GroupJoinReqList>>
 {
+	check_endpoint_with_req(&req, Endpoint::GroupJoinReq)?;
+
 	let group_data = get_group_user_data_from_req(&req)?;
 
 	let last_fetched_time = get_name_param_from_req(&req, "last_fetched_time")?;
@@ -172,6 +185,8 @@ pub(crate) async fn get_join_req(req: Request) -> JRes<Vec<GroupJoinReqList>>
 
 pub(crate) async fn reject_join_req(req: Request) -> JRes<ServerSuccessOutput>
 {
+	check_endpoint_with_req(&req, Endpoint::GroupRejectJoinReq)?;
+
 	let group_data = get_group_user_data_from_req(&req)?;
 
 	let join_user = get_name_param_from_req(&req, "join_user")?;
@@ -188,6 +203,8 @@ pub(crate) async fn reject_join_req(req: Request) -> JRes<ServerSuccessOutput>
 pub(crate) async fn accept_join_req(mut req: Request) -> JRes<GroupAcceptJoinReqServerOutput>
 {
 	let body = get_raw_body(&mut req).await?;
+
+	check_endpoint_with_req(&req, Endpoint::GroupAcceptJoinReq)?;
 
 	let group_data = get_group_user_data_from_req(&req)?;
 
@@ -256,6 +273,8 @@ pub(crate) fn insert_user_keys_via_session_join_req(req: Request) -> impl Future
 
 pub(crate) async fn leave_group(req: Request) -> JRes<ServerSuccessOutput>
 {
+	check_endpoint_with_req(&req, Endpoint::GroupLeave)?;
+
 	let group_data = get_group_user_data_from_req(&req)?;
 
 	group_user_model::user_leave_group(
@@ -289,6 +308,8 @@ If this user is not in a parent group -> this wouldn't effect any groups
 pub(crate) async fn change_rank(mut req: Request) -> JRes<ServerSuccessOutput>
 {
 	let body = get_raw_body(&mut req).await?;
+
+	check_endpoint_with_req(&req, Endpoint::GroupChangeRank)?;
 
 	let group_data = get_group_user_data_from_req(&req)?;
 
