@@ -1,8 +1,10 @@
+use std::time::Duration;
+
 use hyper::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto_common::ServerOutput;
 use server_api_common::app::{AppJwtData, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, AppTokenRenewOutput};
-use server_api_common::customer::CustomerDoneLoginOutput;
+use server_api_common::customer::{CustomerAppList, CustomerDoneLoginOutput};
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{add_app_jwt_keys, auth_header, create_app, create_test_customer, customer_delete, delete_app, delete_app_jwt_key, get_url};
@@ -43,7 +45,7 @@ async fn aaa_init_global_test()
 }
 
 #[tokio::test]
-async fn test_1_create_app()
+async fn test_10_create_app()
 {
 	let mut app = APP_TEST_STATE.get().unwrap().write().await;
 
@@ -87,7 +89,7 @@ async fn test_1_create_app()
 }
 
 #[tokio::test]
-async fn test_2_update_app()
+async fn test_11_update_app()
 {
 	let app = APP_TEST_STATE.get().unwrap().read().await;
 
@@ -116,7 +118,7 @@ async fn test_2_update_app()
 }
 
 #[tokio::test]
-async fn test_3_renew_tokens()
+async fn test_12_renew_tokens()
 {
 	let mut app = APP_TEST_STATE.get().unwrap().write().await;
 
@@ -156,7 +158,7 @@ async fn test_3_renew_tokens()
 }
 
 #[tokio::test]
-async fn test_4_add_new_jwt_keys()
+async fn test_13_add_new_jwt_keys()
 {
 	let mut app = APP_TEST_STATE.get().unwrap().write().await;
 
@@ -196,7 +198,7 @@ async fn test_4_add_new_jwt_keys()
 }
 
 #[tokio::test]
-async fn test_5_get_app_jwt_keys()
+async fn test_14_get_app_jwt_keys()
 {
 	let app = APP_TEST_STATE.get().unwrap().read().await;
 
@@ -229,7 +231,7 @@ async fn test_5_get_app_jwt_keys()
 }
 
 #[tokio::test]
-async fn test_6_delete_jwt_keys()
+async fn test_15_delete_jwt_keys()
 {
 	let mut app = APP_TEST_STATE.get().unwrap().write().await;
 
@@ -257,7 +259,38 @@ async fn test_6_delete_jwt_keys()
 }
 
 #[tokio::test]
-async fn test_7_delete_app()
+async fn test_16_get_all_apps()
+{
+	let app = APP_TEST_STATE.get().unwrap().read().await;
+
+	let customer_jwt = &app.customer_data.user_keys.jwt;
+	let app_id = &app.app_id;
+
+	//fetch the first page
+	let url = get_url("api/v1/customer/apps/".to_owned() + "0" + "/none");
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(customer_jwt))
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<Vec<CustomerAppList>>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	let out = out.result.unwrap();
+
+	assert_eq!(out.len(), 1);
+	assert_eq!(out[0].id.to_string(), app_id.to_string());
+}
+
+#[tokio::test]
+async fn test_17_delete_app()
 {
 	let app = APP_TEST_STATE.get().unwrap().read().await;
 
@@ -282,7 +315,7 @@ async fn test_7_delete_app()
 }
 
 #[tokio::test]
-async fn test_8_create_app_test_fn()
+async fn test_18_create_app_test_fn()
 {
 	let app = APP_TEST_STATE.get().unwrap().read().await;
 
@@ -300,6 +333,78 @@ async fn test_8_create_app_test_fn()
 	.await;
 
 	delete_app(customer_jwt, app_data.app_id.as_str()).await;
+}
+
+#[tokio::test]
+async fn test_19_get_all_apps_via_pagination()
+{
+	let app = APP_TEST_STATE.get().unwrap().read().await;
+
+	let customer_jwt = &app.customer_data.user_keys.jwt;
+
+	//first create multiple apps, sleep between apps to get a different time
+	let app_data_0 = create_app(customer_jwt).await;
+	tokio::time::sleep(Duration::from_millis(20)).await;
+	let app_data_1 = create_app(customer_jwt).await;
+	tokio::time::sleep(Duration::from_millis(20)).await;
+	let app_data_2 = create_app(customer_jwt).await;
+
+	//fetch the first page
+	let url = get_url("api/v1/customer/apps/".to_owned() + "0" + "/none");
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(customer_jwt))
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<Vec<CustomerAppList>>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	let out = out.result.unwrap();
+
+	assert_eq!(out.len(), 3);
+	assert_eq!(out[0].id.to_string(), app_data_0.app_id);
+	assert_eq!(out[1].id.to_string(), app_data_1.app_id);
+	assert_eq!(out[2].id.to_string(), app_data_2.app_id);
+
+	//fetch a fake 2nd page
+	let url = get_url("api/v1/customer/apps/".to_owned() + out[0].time.to_string().as_str() + "/" + out[0].id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(customer_jwt))
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<Vec<CustomerAppList>>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	let out = out.result.unwrap();
+
+	assert_eq!(out.len(), 2);
+	assert_eq!(out[0].id.to_string(), app_data_1.app_id);
+	assert_eq!(out[1].id.to_string(), app_data_2.app_id);
+
+	//Don't delete this apps, let it delete via customer delete in the next test
+}
+
+#[tokio::test]
+async fn zzz_clean_up()
+{
+	let app = APP_TEST_STATE.get().unwrap().read().await;
+
+	let customer_jwt = &app.customer_data.user_keys.jwt;
 
 	customer_delete(customer_jwt).await;
 }
