@@ -1,5 +1,5 @@
 use sentc_crypto_common::user::{DoneLoginLightServerOutput, RegisterData, ResetPasswordData};
-use sentc_crypto_common::CustomerId;
+use sentc_crypto_common::{AppId, CustomerId};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -54,4 +54,12 @@ pub struct CustomerDonePasswordResetInput
 {
 	pub token: String,
 	pub reset_password_data: ResetPasswordData,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CustomerAppList
+{
+	pub id: AppId,
+	pub identifier: String,
+	pub time: u128,
 }

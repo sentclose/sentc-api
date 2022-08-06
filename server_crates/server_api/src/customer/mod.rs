@@ -9,6 +9,7 @@ use sentc_crypto_common::user::{
 	UserUpdateServerInput,
 };
 use server_api_common::customer::{
+	CustomerAppList,
 	CustomerDoneLoginOutput,
 	CustomerDonePasswordResetInput,
 	CustomerDoneRegistrationInput,
@@ -25,14 +26,13 @@ use crate::core::email;
 use crate::core::email::send_mail::send_mail_registration;
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
 use crate::core::url_helper::{get_name_param_from_params, get_params};
-use crate::customer::customer_entities::CustomerAppList;
 #[cfg(feature = "send_mail")]
 use crate::customer::customer_entities::RegisterEmailStatus;
 use crate::customer_app::app_util::get_app_data_from_req;
 use crate::user;
 use crate::user::jwt::get_jwt_data_from_param;
 
-mod customer_entities;
+pub mod customer_entities;
 pub(crate) mod customer_model;
 pub mod customer_util;
 
@@ -328,7 +328,12 @@ pub(crate) async fn get_all_apps(req: Request) -> JRes<Vec<CustomerAppList>>
 
 	let list = customer_model::get_all_apps(user.id.to_string(), last_fetched_time, last_app_id.to_string()).await?;
 
-	echo(list)
+	let mut out: Vec<CustomerAppList> = Vec::with_capacity(list.len());
+	for item in list {
+		out.push(item.into());
+	}
+
+	echo(out)
 }
 
 //__________________________________________________________________________________________________
