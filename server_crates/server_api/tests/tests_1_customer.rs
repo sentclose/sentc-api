@@ -155,6 +155,8 @@ async fn test_11_register_customer()
 
 	let body = res.text().await.unwrap();
 
+	println!("{}", body);
+
 	let out = ServerOutput::<CustomerRegisterOutput>::from_string(body.as_str()).unwrap();
 
 	assert_eq!(out.status, true);

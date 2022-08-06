@@ -3,7 +3,15 @@ use std::time::Duration;
 use hyper::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto_common::ServerOutput;
-use server_api_common::app::{AppJwtData, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, AppTokenRenewOutput};
+use server_api_common::app::{
+	AppJwtData,
+	AppJwtRegisterOutput,
+	AppOptions,
+	AppRegisterInput,
+	AppRegisterOutput,
+	AppTokenRenewOutput,
+	AppUpdateInput,
+};
 use server_api_common::customer::{CustomerAppList, CustomerDoneLoginOutput};
 use tokio::sync::{OnceCell, RwLock};
 
@@ -53,6 +61,7 @@ async fn test_10_create_app()
 
 	let input = AppRegisterInput {
 		identifier: Some("My app".to_string()),
+		options: AppOptions::default(),
 	};
 
 	let customer_jwt = &app.customer_data.user_keys.jwt;
@@ -95,7 +104,7 @@ async fn test_11_update_app()
 
 	let customer_jwt = &app.customer_data.user_keys.jwt;
 
-	let input = AppRegisterInput {
+	let input = AppUpdateInput {
 		identifier: Some("My app updated".to_string()),
 	};
 
