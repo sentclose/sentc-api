@@ -1,12 +1,13 @@
-use sentc_crypto_common::CustomerId;
+use sentc_crypto_common::{AppId, CustomerId};
 use server_api_common::customer::CustomerUpdateInput;
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
-use crate::core::db::{exec, query_first};
+use crate::core::db::{exec, query_first, query_string};
 use crate::core::get_time;
 #[cfg(feature = "send_mail")]
 use crate::customer::customer_entities::RegisterEmailStatus;
 use crate::customer::customer_entities::{
+	CustomerAppList,
 	CustomerDataByEmailEntity,
 	CustomerDataEntity,
 	CustomerEmailByToken,
@@ -248,3 +249,24 @@ pub(super) async fn reset_password_token_save(customer_id: CustomerId, validate_
 }
 
 //__________________________________________________________________________________________________
+
+pub(super) async fn get_all_apps(customer_id: CustomerId, last_fetched_time: u128, last_app_id: AppId) -> AppRes<Vec<CustomerAppList>>
+{
+	//language=SQL
+	let sql = "SELECT id,identifier FROM app WHERE customer_id = ?".to_string();
+
+	let (sql, params) = if last_fetched_time > 0 {
+		let sql = sql + " AND time >=? AND (time > ? OR (time = ? AND id > ?)) ORDER BY time, id LIMIT 20";
+		(
+			sql,
+			set_params!(customer_id, last_fetched_time, last_fetched_time, last_app_id),
+		)
+	} else {
+		let sql = sql + " ORDER BY time, id LIMIT 20";
+		(sql, set_params!(customer_id))
+	};
+
+	let list: Vec<CustomerAppList> = query_string(sql, params).await?;
+
+	Ok(list)
+}

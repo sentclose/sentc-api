@@ -32,6 +32,8 @@ routes:
               - put: {p: "", s: crate::customer::update}
               - put: {p: "/password", s: crate::customer::change_password}
               - delete: {p: "", s: crate::customer::delete}
+
+              - get: {p: "/apps/:last_fetched_time/:last_app_id", s: crate::customer::get_all_apps}
               # ________________________________________________________________________________________________________
               # App routes
               - post: { p: "/app", s: crate::customer_app::create_app }

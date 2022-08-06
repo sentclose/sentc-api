@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
-use sentc_crypto_common::CustomerId;
+use sentc_crypto_common::{AppId, CustomerId};
+use serde::{Deserialize, Serialize};
 
 use crate::take_or_err;
 
@@ -205,6 +206,43 @@ impl crate::core::db::FromSqliteRow for CustomerEmailByToken
 		Ok(Self {
 			email: take_or_err!(row, 0),
 			id: take_or_err!(row, 1),
+		})
+	}
+}
+
+//__________________________________________________________________________________________________
+
+#[derive(Serialize, Deserialize)]
+pub(crate) struct CustomerAppList
+{
+	pub id: AppId,
+	pub identifier: String,
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for CustomerAppList
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			id: take_or_err!(row, 0, String),
+			identifier: take_or_err!(row, 1, String),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl crate::core::db::FromSqliteRow for CustomerAppList
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			id: take_or_err!(row, 0),
+			identifier: take_or_err!(row, 1),
 		})
 	}
 }

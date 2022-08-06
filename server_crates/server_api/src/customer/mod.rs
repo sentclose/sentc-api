@@ -24,6 +24,8 @@ use crate::core::email;
 #[cfg(feature = "send_mail")]
 use crate::core::email::send_mail::send_mail_registration;
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
+use crate::core::url_helper::{get_name_param_from_params, get_params};
+use crate::customer::customer_entities::CustomerAppList;
 #[cfg(feature = "send_mail")]
 use crate::customer::customer_entities::RegisterEmailStatus;
 use crate::customer_app::app_util::get_app_data_from_req;
@@ -305,6 +307,29 @@ pub(crate) async fn done_reset_password(mut req: Request) -> JRes<ServerSuccessO
 }
 
 //TODO save real data, e.g. real name or company, address, etc, update this data separately from email
+
+//__________________________________________________________________________________________________
+
+pub(crate) async fn get_all_apps(req: Request) -> JRes<Vec<CustomerAppList>>
+{
+	let user = get_jwt_data_from_param(&req)?;
+
+	let params = get_params(&req)?;
+	let last_app_id = get_name_param_from_params(&params, "last_app_id")?;
+	let last_fetched_time = get_name_param_from_params(&params, "last_fetched_time")?;
+	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
+		HttpErr::new(
+			400,
+			ApiErrorCodes::UnexpectedTime,
+			"last fetched time is wrong".to_string(),
+			None,
+		)
+	})?;
+
+	let list = customer_model::get_all_apps(user.id.to_string(), last_fetched_time, last_app_id.to_string()).await?;
+
+	echo(list)
+}
 
 //__________________________________________________________________________________________________
 
