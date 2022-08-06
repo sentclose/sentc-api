@@ -1,7 +1,7 @@
 use std::env;
 
 use reqwest::header::AUTHORIZATION;
-use sentc_crypto_common::user::RegisterData;
+use sentc_crypto_common::user::{ChangePasswordData, DoneLoginServerInput, DoneLoginServerKeysOutput, PrepareLoginSaltServerOutput, RegisterData};
 use sentc_crypto_common::ServerOutput;
 use server_api::core::api_res::ApiErrorCodes;
 use server_api_common::customer::{CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput, CustomerUpdateInput};
@@ -296,6 +296,314 @@ async fn test_13_update_customer()
 
 	customer.customer_data = Some(login_data);
 	customer.customer_email = new_email;
+}
+
+//__________________________________________________________________________________________________
+
+#[tokio::test]
+async fn test_14_change_password()
+{
+	//
+	let mut customer = CUSTOMER_TEST_STATE.get().unwrap().write().await;
+
+	let email = &customer.customer_email;
+	let pw = &customer.customer_pw;
+	let public_token = customer.public_token.as_str();
+
+	let new_pw = "987456";
+
+	//______________________________________________________________________________________________
+	//login again to get a fresh jwt
+
+	let url = get_url("api/v1/customer/prepare_login".to_owned());
+
+	let prep_server_input = sentc_crypto::user::prepare_login_start(email).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(prep_server_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let (auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
+
+	// //done login
+	let url = get_url("api/v1/customer/done_login".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(auth_key.to_string())
+		.send()
+		.await
+		.unwrap();
+
+	let body_done_login = res.text().await.unwrap();
+
+	let out = ServerOutput::<CustomerDoneLoginOutput>::from_string(body_done_login.as_str()).unwrap();
+
+	//use a new fresh jwt
+	let jwt = out.result.unwrap().user_keys.jwt;
+
+	//______________________________________________________________________________________________
+	let pw_change_data = get_fake_pw_change_data(auth_key.as_str(), pw, new_pw);
+
+	let url = get_url("api/v1/customer/password".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header("x-sentc-app-token", public_token)
+		.header(AUTHORIZATION, auth_header(jwt.as_str()))
+		.body(pw_change_data)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+
+	//______________________________________________________________________________________________
+	//should not login with wrong password
+
+	let url = get_url("api/v1/customer/prepare_login".to_owned());
+
+	let prep_server_input = sentc_crypto::user::prepare_login_start(email).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(prep_server_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	//try login with the old pw
+	let (auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
+
+	// //done login
+	let url = get_url("api/v1/customer/done_login".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(auth_key)
+		.send()
+		.await
+		.unwrap();
+
+	let body_done_login = res.text().await.unwrap();
+
+	let out = ServerOutput::<CustomerDoneLoginOutput>::from_string(body_done_login.as_str()).unwrap();
+
+	assert_eq!(out.status, false);
+
+	//______________________________________________________________________________________________
+	//login with new password
+
+	let login_data = login_customer(email.as_str(), new_pw).await;
+
+	customer.customer_data = Some(login_data);
+	customer.customer_pw = new_pw.to_string();
+}
+
+#[tokio::test]
+async fn test_15_change_password_again_from_pw_change()
+{
+	//
+	let mut customer = CUSTOMER_TEST_STATE.get().unwrap().write().await;
+
+	let email = &customer.customer_email;
+	let pw = &customer.customer_pw;
+	let public_token = customer.public_token.as_str();
+
+	let new_pw = "12345";
+
+	//______________________________________________________________________________________________
+	//login again to get a fresh jwt
+
+	let url = get_url("api/v1/customer/prepare_login".to_owned());
+
+	let prep_server_input = sentc_crypto::user::prepare_login_start(email).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(prep_server_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let (auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
+
+	// //done login
+	let url = get_url("api/v1/customer/done_login".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(auth_key.to_string())
+		.send()
+		.await
+		.unwrap();
+
+	let body_done_login = res.text().await.unwrap();
+
+	let out = ServerOutput::<CustomerDoneLoginOutput>::from_string(body_done_login.as_str()).unwrap();
+
+	//use a new fresh jwt
+	let jwt = out.result.unwrap().user_keys.jwt;
+
+	//______________________________________________________________________________________________
+	let pw_change_data = get_fake_pw_change_data(auth_key.as_str(), pw, new_pw);
+
+	let url = get_url("api/v1/customer/password".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header("x-sentc-app-token", public_token)
+		.header(AUTHORIZATION, auth_header(jwt.as_str()))
+		.body(pw_change_data)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+
+	//______________________________________________________________________________________________
+	//should not login with wrong password
+
+	let url = get_url("api/v1/customer/prepare_login".to_owned());
+
+	let prep_server_input = sentc_crypto::user::prepare_login_start(email).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(prep_server_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	//try login with the old pw
+	let (auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
+
+	// //done login
+	let url = get_url("api/v1/customer/done_login".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(auth_key)
+		.send()
+		.await
+		.unwrap();
+
+	let body_done_login = res.text().await.unwrap();
+
+	let out = ServerOutput::<CustomerDoneLoginOutput>::from_string(body_done_login.as_str()).unwrap();
+
+	assert_eq!(out.status, false);
+
+	//______________________________________________________________________________________________
+	//login with new password
+
+	let login_data = login_customer(email.as_str(), new_pw).await;
+
+	customer.customer_data = Some(login_data);
+	customer.customer_pw = new_pw.to_string();
+}
+
+fn get_fake_pw_change_data(prepare_login_auth_key_input: &str, old_pw: &str, new_pw: &str) -> String
+{
+	//use a fake master key to change the password,
+	// just register the user again with fake data but with the old password to decrypt the fake data!
+	let fake_key_data = sentc_crypto::user::register("abc", old_pw).unwrap();
+	let fake_key_data = RegisterData::from_string(fake_key_data.as_str()).unwrap();
+
+	//do the server prepare login again to get the salt (we need a salt to this fake register data)
+	let salt_string = sentc_crypto::util_server::generate_salt_from_base64_to_string(
+		fake_key_data.derived.client_random_value.as_str(),
+		fake_key_data.derived.derived_alg.as_str(),
+		"",
+	)
+	.unwrap();
+
+	let prepare_login_user_data = PrepareLoginSaltServerOutput {
+		salt_string,
+		derived_encryption_key_alg: fake_key_data.derived.derived_alg.to_string(),
+	};
+	let prepare_login_user_data = ServerOutput {
+		status: true,
+		err_msg: None,
+		err_code: None,
+		result: Some(prepare_login_user_data),
+	};
+	let prepare_login_user_data = prepare_login_user_data.to_string().unwrap();
+
+	let done_login_user_data = DoneLoginServerKeysOutput {
+		encrypted_master_key: fake_key_data.master_key.encrypted_master_key,
+		encrypted_private_key: fake_key_data.derived.encrypted_private_key,
+		public_key_string: fake_key_data.derived.public_key,
+		keypair_encrypt_alg: fake_key_data.derived.keypair_encrypt_alg,
+		encrypted_sign_key: fake_key_data.derived.encrypted_sign_key,
+		verify_key_string: fake_key_data.derived.verify_key,
+		keypair_sign_alg: fake_key_data.derived.keypair_sign_alg,
+		keypair_encrypt_id: "abc".to_string(),
+		keypair_sign_id: "abc".to_string(),
+		jwt: "abc".to_string(),
+		user_id: "abc".to_string(),
+	};
+
+	//must be a server response out
+	let done_login_user_data = ServerOutput {
+		status: true,
+		err_msg: None,
+		err_code: None,
+		result: Some(done_login_user_data),
+	};
+
+	let done_login_user_data = done_login_user_data.to_string().unwrap();
+
+	let pw_change_data = sentc_crypto::user::change_password(
+		old_pw,
+		new_pw,
+		prepare_login_user_data.as_str(),
+		done_login_user_data.as_str(),
+	)
+	.unwrap();
+
+	//set the old auth key from the prepare login (because we are using non registered fake data for pw change)
+	let mut pw_change_data = ChangePasswordData::from_string(pw_change_data.as_str()).unwrap();
+	//the auth key from prepare login returns the server input as string -> get here the auth key
+	let auth_key = DoneLoginServerInput::from_string(prepare_login_auth_key_input).unwrap();
+
+	pw_change_data.old_auth_key = auth_key.auth_key;
+	let pw_change_data = pw_change_data.to_string().unwrap();
+
+	pw_change_data
 }
 
 //__________________________________________________________________________________________________
