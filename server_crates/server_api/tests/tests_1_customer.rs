@@ -536,7 +536,7 @@ async fn test_15_change_password_again_from_pw_change()
 	customer.customer_pw = new_pw.to_string();
 }
 
-fn get_fake_pw_change_data(prepare_login_auth_key_input: &str, old_pw: &str, new_pw: &str) -> String
+fn get_fake_login_data(old_pw: &str) -> (String, String)
 {
 	//use a fake master key to change the password,
 	// just register the user again with fake data but with the old password to decrypt the fake data!
@@ -555,13 +555,6 @@ fn get_fake_pw_change_data(prepare_login_auth_key_input: &str, old_pw: &str, new
 		salt_string,
 		derived_encryption_key_alg: fake_key_data.derived.derived_alg.to_string(),
 	};
-	let prepare_login_user_data = ServerOutput {
-		status: true,
-		err_msg: None,
-		err_code: None,
-		result: Some(prepare_login_user_data),
-	};
-	let prepare_login_user_data = prepare_login_user_data.to_string().unwrap();
 
 	let done_login_user_data = DoneLoginServerKeysOutput {
 		encrypted_master_key: fake_key_data.master_key.encrypted_master_key,
@@ -577,15 +570,30 @@ fn get_fake_pw_change_data(prepare_login_auth_key_input: &str, old_pw: &str, new
 		user_id: "abc".to_string(),
 	};
 
-	//must be a server response out
+	let prepare_login_user_data = ServerOutput {
+		status: true,
+		err_msg: None,
+		err_code: None,
+		result: Some(prepare_login_user_data),
+	};
+	let prepare_login_user_data = prepare_login_user_data.to_string().unwrap();
+
 	let done_login_user_data = ServerOutput {
 		status: true,
 		err_msg: None,
 		err_code: None,
 		result: Some(done_login_user_data),
 	};
-
 	let done_login_user_data = done_login_user_data.to_string().unwrap();
+
+	(prepare_login_user_data, done_login_user_data)
+}
+
+fn get_fake_pw_change_data(prepare_login_auth_key_input: &str, old_pw: &str, new_pw: &str) -> String
+{
+	//TODo do this in the dashboard client
+
+	let (prepare_login_user_data, done_login_user_data) = get_fake_login_data(old_pw);
 
 	let pw_change_data = sentc_crypto::user::change_password(
 		old_pw,
@@ -604,6 +612,151 @@ fn get_fake_pw_change_data(prepare_login_auth_key_input: &str, old_pw: &str, new
 	let pw_change_data = pw_change_data.to_string().unwrap();
 
 	pw_change_data
+}
+
+//__________________________________________________________________________________________________
+
+#[cfg(feature = "mysql")]
+#[tokio::test]
+async fn test_16_reset_customer_password()
+{
+	//
+	let mut customer = CUSTOMER_TEST_STATE.get().unwrap().write().await;
+
+	let email = &customer.customer_email;
+	let public_token = customer.public_token.as_str();
+	let id = customer.customer_id.to_string();
+	let pw = &customer.customer_pw;
+
+	let new_pw = "123456789";
+
+	let input = server_api_common::customer::CustomerResetPasswordInput {
+		email: email.to_string(),
+	};
+
+	let url = get_url("api/v1/customer/password_reset".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header("x-sentc-app-token", public_token)
+		.body(serde_json::to_string(&input).unwrap())
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+
+	//get the token -> in real app the token gets send by email.
+	server_api::start().await;
+
+	//language=SQL
+	let sql = "SELECT email_token FROM sentc_customer WHERE id = ?";
+
+	let token: Option<CustomerEmailToken> = server_api::core::db::query_first(sql, server_api::set_params!(id))
+		.await
+		.unwrap();
+	let token = token.unwrap().email_token;
+
+	//make a fake register and login to get fake decrypted private keys, then do the pw reset like normal user
+	//use a rand pw to generate the fake keys
+	let (prepare_login_user_data, done_login_user_data) = get_fake_login_data("abc");
+
+	//use the same fake pw here
+	let (_auth_key, derived_master_key) = sentc_crypto::user::prepare_login(email, "abc", prepare_login_user_data.as_str()).unwrap();
+
+	let user_key_data = sentc_crypto::user::done_login(&derived_master_key, done_login_user_data.as_str()).unwrap();
+
+	let pw_reset_out = sentc_crypto::user::reset_password(new_pw, &user_key_data.private_key, &user_key_data.sign_key).unwrap();
+	let reset_password_data = sentc_crypto_common::user::ResetPasswordData::from_string(pw_reset_out.as_str()).unwrap();
+
+	let input = server_api_common::customer::CustomerDonePasswordResetInput {
+		token,
+		reset_password_data,
+	};
+
+	let url = get_url("api/v1/customer/password_reset_validation".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header("x-sentc-app-token", public_token)
+		.body(serde_json::to_string(&input).unwrap())
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+
+	//______________________________________________________________________________________________
+	//should not login with old pw
+
+	let url = get_url("api/v1/customer/prepare_login".to_owned());
+
+	let prep_server_input = sentc_crypto::user::prepare_login_start(email).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(prep_server_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	//try login with the old pw
+	let (auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
+
+	// //done login
+	let url = get_url("api/v1/customer/done_login".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(auth_key)
+		.send()
+		.await
+		.unwrap();
+
+	let body_done_login = res.text().await.unwrap();
+
+	let out = ServerOutput::<CustomerDoneLoginOutput>::from_string(body_done_login.as_str()).unwrap();
+
+	assert_eq!(out.status, false);
+
+	//______________________________________________________________________________________________
+	//login with new password
+
+	let login_data = login_customer(email.as_str(), new_pw).await;
+
+	customer.customer_data = Some(login_data);
+	customer.customer_pw = new_pw.to_string();
+}
+
+#[cfg(feature = "mysql")]
+pub(crate) struct CustomerEmailToken
+{
+	pub email_token: String,
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for CustomerEmailToken
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			email_token: server_api::take_or_err!(row, 0, String),
+		})
+	}
 }
 
 //__________________________________________________________________________________________________
