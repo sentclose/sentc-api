@@ -8,6 +8,8 @@ use sentc_crypto_common::user::{
 	RegisterServerOutput,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
+	UserPublicData,
+	UserPublicKeyDataServerOutput,
 	UserUpdateServerInput,
 	UserUpdateServerOut,
 };
@@ -673,10 +675,71 @@ async fn test_20_user_not_update_when_identifier_exists()
 	assert_eq!(out.err_code.unwrap(), 101);
 }
 
+#[tokio::test]
+async fn test_21_get_user_public_data()
+{
+	let user = &USER_TEST_STATE.get().unwrap().read().await;
+
+	let url = get_url("api/v1/user/".to_owned() + user.user_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<UserPublicData>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+
+	let out = out.result.unwrap();
+
+	assert_eq!(
+		out.public_key_id,
+		user.key_data
+			.as_ref()
+			.unwrap()
+			.public_key
+			.key_id
+			.to_string()
+	);
+
+	//get user public key
+	let url = get_url("api/v1/user/".to_owned() + user.user_id.as_str() + "/public_key");
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<UserPublicKeyDataServerOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+
+	let out = out.result.unwrap();
+
+	assert_eq!(
+		out.public_key_id,
+		user.key_data
+			.as_ref()
+			.unwrap()
+			.public_key
+			.key_id
+			.to_string()
+	);
+}
+
 //do user tests before this one!
 
 #[tokio::test]
-async fn test_21_user_delete()
+async fn test_22_user_delete()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let jwt = &user.key_data.as_ref().unwrap().jwt;
@@ -718,7 +781,7 @@ impl WrongRegisterData
 }
 
 #[tokio::test]
-async fn test_22_not_register_user_with_wrong_input()
+async fn test_23_not_register_user_with_wrong_input()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 
@@ -772,7 +835,7 @@ async fn test_22_not_register_user_with_wrong_input()
 }
 
 #[tokio::test]
-async fn test_23_register_and_login_user_via_test_fn()
+async fn test_24_register_and_login_user_via_test_fn()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let secret_token = &user.app_data.secret_token;
