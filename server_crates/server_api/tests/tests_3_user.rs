@@ -12,6 +12,7 @@ use sentc_crypto_common::user::{
 	UserPublicKeyDataServerOutput,
 	UserUpdateServerInput,
 	UserUpdateServerOut,
+	UserVerifyKeyDataServerOutput,
 };
 use sentc_crypto_common::{ServerOutput, UserId};
 use serde::{Deserialize, Serialize};
@@ -707,6 +708,16 @@ async fn test_21_get_user_public_data()
 			.to_string()
 	);
 
+	assert_eq!(
+		out.verify_key_id,
+		user.key_data
+			.as_ref()
+			.unwrap()
+			.verify_key
+			.key_id
+			.to_string()
+	);
+
 	//get user public key
 	let url = get_url("api/v1/user/".to_owned() + user.user_id.as_str() + "/public_key");
 	let client = reqwest::Client::new();
@@ -731,6 +742,34 @@ async fn test_21_get_user_public_data()
 			.as_ref()
 			.unwrap()
 			.public_key
+			.key_id
+			.to_string()
+	);
+
+	//get user verify key
+	let url = get_url("api/v1/user/".to_owned() + user.user_id.as_str() + "/verify_key");
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<UserVerifyKeyDataServerOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+
+	let out = out.result.unwrap();
+
+	assert_eq!(
+		out.verify_key_id,
+		user.key_data
+			.as_ref()
+			.unwrap()
+			.verify_key
 			.key_id
 			.to_string()
 	);
