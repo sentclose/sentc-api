@@ -87,6 +87,18 @@ pub(crate) fn routes() -> Router
 		"/api/v1/customer/app/:app_id/jwt/:jwt_id",
 		r(crate::customer_app::delete_jwt_keys).add(jwt::jwt_app_check_transform),
 	);
+	router.get(
+		"/api/v1/user/:user_id",
+		r(crate::user::get).add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/user/:user_id/public_key",
+		r(crate::user::get_public_key_data).add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/user/:user_id/verify_key",
+		r(crate::user::get_verify_key_data).add(app_token::app_token_transform),
+	);
 	router.post(
 		"/api/v1/exists",
 		r(crate::user::exists).add(app_token::app_token_transform),
@@ -102,12 +114,6 @@ pub(crate) fn routes() -> Router
 	router.post(
 		"/api/v1/done_login",
 		r(crate::user::done_login).add(app_token::app_token_transform),
-	);
-	router.get(
-		"/api/v1/user",
-		r(crate::user::get)
-			.add(jwt::jwt_transform)
-			.add(app_token::app_token_transform),
 	);
 	router.put(
 		"/api/v1/user",

@@ -169,6 +169,7 @@ pub struct AppOptionsEntity
 	pub user_reset_password: i32,
 	pub user_prepare_login: i32,
 	pub user_done_login: i32,
+	pub user_public_data: i32,
 }
 
 #[cfg(feature = "mysql")]
@@ -207,6 +208,7 @@ impl mysql_async::prelude::FromRow for AppOptionsEntity
 			user_reset_password: take_or_err!(row, 18, i32),
 			user_prepare_login: take_or_err!(row, 19, i32),
 			user_done_login: take_or_err!(row, 20, i32),
+			user_public_data: take_or_err!(row, 21, i32),
 		})
 	}
 }
@@ -247,6 +249,7 @@ impl crate::core::db::FromSqliteRow for AppOptionsEntity
 			user_reset_password: take_or_err!(row, 18),
 			user_prepare_login: take_or_err!(row, 19),
 			user_done_login: take_or_err!(row, 20),
+			user_public_data: take_or_err!(row, 21),
 		})
 	}
 }

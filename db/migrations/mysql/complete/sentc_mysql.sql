@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 06. Aug 2022 um 20:26
+-- Erstellungszeit: 07. Aug 2022 um 07:02
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -113,7 +113,8 @@ CREATE TABLE `app_options` (
   `user_change_password` int(11) NOT NULL,
   `user_reset_password` int(11) NOT NULL,
   `user_prepare_login` int(11) NOT NULL,
-  `user_done_login` int(11) NOT NULL
+  `user_done_login` int(11) NOT NULL,
+  `user_public_data` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='option: 0 = not allowed,  1 = public token, 2 = secret token';
 
 -- --------------------------------------------------------

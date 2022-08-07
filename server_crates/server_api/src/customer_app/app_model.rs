@@ -77,7 +77,8 @@ SELECT
     user_change_password,
     user_reset_password,
     user_prepare_login,
-    user_done_login
+    user_done_login,
+    user_public_data
 FROM app_options 
 WHERE 
     app_id = ?";
@@ -238,8 +239,9 @@ INSERT INTO app_options
      user_change_password, 
      user_reset_password, 
      user_prepare_login, 
-     user_done_login
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+     user_done_login,
+     user_public_data
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let params_options = set_params!(
 		app_id.to_string(),
@@ -263,7 +265,8 @@ INSERT INTO app_options
 		app_options.user_change_password,
 		app_options.user_reset_password,
 		app_options.user_prepare_login,
-		app_options.user_done_login
+		app_options.user_done_login,
+		app_options.user_public_data
 	);
 
 	exec_transaction(vec![
@@ -406,8 +409,9 @@ INSERT INTO app_options
      user_change_password, 
      user_reset_password, 
      user_prepare_login, 
-     user_done_login
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+     user_done_login,
+     user_public_data
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let params_options = set_params!(
 		app_id.to_string(),
@@ -431,7 +435,8 @@ INSERT INTO app_options
 		app_options.user_change_password,
 		app_options.user_reset_password,
 		app_options.user_prepare_login,
-		app_options.user_done_login
+		app_options.user_done_login,
+		app_options.user_public_data
 	);
 
 	exec(sql_options, params_options).await?;

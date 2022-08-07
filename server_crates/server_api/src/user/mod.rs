@@ -16,15 +16,18 @@ use sentc_crypto_common::user::{
 	ResetPasswordData,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
+	UserPublicData,
+	UserPublicKeyDataServerOutput,
 	UserUpdateServerInput,
 	UserUpdateServerOut,
+	UserVerifyKeyDataServerOutput,
 };
 
 use crate::core::api_res::{echo, echo_success, JRes};
 use crate::core::input_helper::{bytes_to_json, get_raw_body};
+use crate::core::url_helper::get_name_param_from_req;
 use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use crate::user::jwt::get_jwt_data_from_param;
-use crate::user::user_entities::UserEntity;
 
 pub(crate) async fn exists(mut req: Request) -> JRes<UserIdentifierAvailableServerOutput>
 {
@@ -134,12 +137,41 @@ pub(crate) async fn reset_password(mut req: Request) -> JRes<ServerSuccessOutput
 	echo_success()
 }
 
-pub(crate) async fn get(_req: Request) -> JRes<UserEntity>
+pub(crate) async fn get(req: Request) -> JRes<UserPublicData>
 {
-	let user_id = "abc"; //get this from the url param
+	check_endpoint_with_req(&req, Endpoint::UserPublicData)?;
 
-	//
-	let user = user_model::get_user(user_id).await?;
+	let app_data = get_app_data_from_req(&req)?;
 
-	echo(user)
+	let user_id = get_name_param_from_req(&req, "user_id")?;
+
+	let data = user_model::get_public_data(app_data.app_data.app_id.to_string(), user_id.to_string()).await?;
+
+	echo(data.into())
+}
+
+pub(crate) async fn get_public_key_data(req: Request) -> JRes<UserPublicKeyDataServerOutput>
+{
+	check_endpoint_with_req(&req, Endpoint::UserPublicData)?;
+
+	let app_data = get_app_data_from_req(&req)?;
+
+	let user_id = get_name_param_from_req(&req, "user_id")?;
+
+	let data = user_model::get_public_key_data(app_data.app_data.app_id.to_string(), user_id.to_string()).await?;
+
+	echo(data.into())
+}
+
+pub(crate) async fn get_verify_key_data(req: Request) -> JRes<UserVerifyKeyDataServerOutput>
+{
+	check_endpoint_with_req(&req, Endpoint::UserPublicData)?;
+
+	let app_data = get_app_data_from_req(&req)?;
+
+	let user_id = get_name_param_from_req(&req, "user_id")?;
+
+	let data = user_model::get_verify_key_data(app_data.app_data.app_id.to_string(), user_id.to_string()).await?;
+
+	echo(data.into())
 }
