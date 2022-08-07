@@ -126,7 +126,7 @@ async fn test_11_update_app()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 }
 
 #[tokio::test]
@@ -265,7 +265,7 @@ async fn test_15_delete_jwt_keys()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	app.jwt_data.as_mut().unwrap().remove(0);
 }
@@ -352,7 +352,7 @@ async fn test_17_update_app_options()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	//now try register with public token
 
@@ -405,7 +405,7 @@ async fn test_18_delete_app()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 }
 
 #[tokio::test]

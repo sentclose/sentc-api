@@ -553,7 +553,7 @@ async fn test_18_reset_password()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
 	//test login with the old pw
@@ -797,7 +797,7 @@ async fn test_22_user_delete()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 }
 
 #[derive(Serialize, Deserialize)]

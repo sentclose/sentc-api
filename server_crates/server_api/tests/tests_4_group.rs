@@ -286,7 +286,7 @@ async fn test_13_invite_user()
 
 	let body = res.text().await.unwrap();
 
-	let invite_res: GroupInviteServerOutput = sentc_crypto::util_pub::handle_server_response(body.as_str()).unwrap();
+	let invite_res: GroupInviteServerOutput = sentc_crypto::util::public::handle_server_response(body.as_str()).unwrap();
 
 	assert_eq!(invite_res.session_id, None);
 }
@@ -394,7 +394,7 @@ async fn test_16_accept_invite()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	//test get group as new user
 	let data = get_group(
@@ -455,7 +455,7 @@ async fn test_17_invite_user_an_reject_invite()
 
 	let body = res.text().await.unwrap();
 
-	let invite_res: GroupInviteServerOutput = sentc_crypto::util_pub::handle_server_response(body.as_str()).unwrap();
+	let invite_res: GroupInviteServerOutput = sentc_crypto::util::public::handle_server_response(body.as_str()).unwrap();
 	assert_eq!(invite_res.session_id, None);
 
 	//______________________________________________________________________________________________
@@ -473,7 +473,7 @@ async fn test_17_invite_user_an_reject_invite()
 		.unwrap();
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
 	//the rejected user should not get the group data
@@ -560,7 +560,7 @@ async fn test_19_leave_group()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	//this user should not get the group data
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str());
@@ -608,7 +608,7 @@ async fn test_20_join_req()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 }
 
 #[tokio::test]
@@ -670,7 +670,7 @@ async fn test_22_send_join_req_aging()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
 	let creator = &users[0];
@@ -725,7 +725,7 @@ async fn test_23_reject_join_req()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 }
 
 #[tokio::test]
@@ -785,7 +785,7 @@ async fn test_25_accept_join_req()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
 	//2. accept this join req
@@ -819,7 +819,7 @@ async fn test_25_accept_join_req()
 		.unwrap();
 
 	let body = res.text().await.unwrap();
-	let join_res: GroupAcceptJoinReqServerOutput = sentc_crypto::util_pub::handle_server_response(body.as_str()).unwrap();
+	let join_res: GroupAcceptJoinReqServerOutput = sentc_crypto::util::public::handle_server_response(body.as_str()).unwrap();
 	assert_eq!(join_res.session_id, None);
 
 	//user is already saved
@@ -968,7 +968,7 @@ async fn test_27_done_key_rotation_for_other_user()
 			.unwrap();
 
 		let body = res.text().await.unwrap();
-		sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+		sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 	}
 
 	let data_user_1 = get_group(
@@ -1112,7 +1112,7 @@ async fn test_30_update_rank()
 		.unwrap();
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	//get the group data with the new rank
 	let data = get_group(
@@ -1183,7 +1183,7 @@ async fn test_32_kick_user_from_group()
 		.unwrap();
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	//user should not get group data
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str());
