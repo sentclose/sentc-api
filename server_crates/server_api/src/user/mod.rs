@@ -137,8 +137,7 @@ pub(crate) async fn refresh_jwt(mut req: Request) -> JRes<DoneLoginLightServerOu
 
 	let app_data = get_app_data_from_req(&req)?;
 
-	//TODO use other endpoint
-	check_endpoint_with_app_options(app_data, Endpoint::UserPublicData)?;
+	check_endpoint_with_app_options(app_data, Endpoint::UserRefreshJwt)?;
 
 	//this can be an expired jwt, but the app id must be valid
 	//to get the old token in the client when init the user client -> save the old jwt in the client like the keys

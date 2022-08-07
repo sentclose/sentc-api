@@ -18,6 +18,7 @@ pub enum Endpoint
 	UserChangePassword,
 	UserResetPassword,
 	UserPublicData,
+	UserRefreshJwt,
 
 	GroupCreate,
 	GroupDelete,
@@ -108,6 +109,7 @@ pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endp
 		Endpoint::UserChangePassword => options.user_change_password,
 		Endpoint::UserResetPassword => options.user_reset_password,
 		Endpoint::UserPublicData => options.user_public_data,
+		Endpoint::UserRefreshJwt => options.user_jwt_refresh,
 
 		Endpoint::GroupCreate => options.group_create,
 		Endpoint::GroupDelete => options.group_delete,
