@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 07. Aug 2022 um 07:02
+-- Erstellungszeit: 07. Aug 2022 um 12:26
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -277,6 +277,19 @@ CREATE TABLE `sentc_group_user_key_rotation` (
 -- --------------------------------------------------------
 
 --
+-- Tabellenstruktur für Tabelle `sentc_user_token`
+--
+
+CREATE TABLE `sentc_user_token` (
+  `user_id` varchar(36) NOT NULL,
+  `token` varchar(100) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
+  `time` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Tabellenstruktur für Tabelle `test`
 --
 
@@ -302,6 +315,10 @@ CREATE TABLE `user` (
 --
 -- Trigger `user`
 --
+DELIMITER $$
+CREATE TRIGGER `user_delete_jwt_refresh` AFTER DELETE ON `user` FOR EACH ROW DELETE FROM sentc_user_token WHERE user_id = OLD.id
+$$
+DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `user_delete_user_keys` AFTER DELETE ON `user` FOR EACH ROW DELETE FROM user_keys WHERE user_id = OLD.id
 $$
@@ -412,6 +429,12 @@ ALTER TABLE `sentc_group_user_keys`
 --
 ALTER TABLE `sentc_group_user_key_rotation`
   ADD PRIMARY KEY (`key_id`,`user_id`) USING BTREE;
+
+--
+-- Indizes für die Tabelle `sentc_user_token`
+--
+ALTER TABLE `sentc_user_token`
+  ADD PRIMARY KEY (`user_id`,`token`,`app_id`) USING BTREE;
 
 --
 -- Indizes für die Tabelle `test`

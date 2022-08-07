@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 7:01am on August 7, 2022 (UTC)
+-- Exported: 12:31pm on August 7, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -207,6 +207,23 @@ CREATE TABLE 'app_options' ('app_id' TEXT PRIMARY KEY NOT NULL, 'group_create' I
 INSERT INTO "app_options" ("app_id","group_create","group_get","group_invite","group_reject_invite","group_accept_invite","group_join_req","group_accept_join_req","group_reject_join_req","group_key_rotation","group_user_delete","group_change_rank","group_delete","group_leave","user_exists","user_register","user_delete","user_update","user_change_password","user_reset_password","user_prepare_login","user_done_login","user_public_data") VALUES ('1665eb92-4513-469f-81d8-b72a62e0134c','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0');
 
 ----
+-- Table structure for sentc_user_token
+----
+CREATE TABLE "sentc_user_token"
+(
+	user_id TEXT,
+	token   TEXT,
+	app_id  TEXT,
+	time    TEXT,
+	constraint sentc_user_token_pk
+		primary key (user_id, app_id, token)
+);
+
+----
+-- Data dump for sentc_user_token, a total of 0 rows
+----
+
+----
 -- structure for index sqlite_autoindex_test_1 on table test
 ----
 ;
@@ -317,6 +334,11 @@ CREATE INDEX 'get_group' ON "sentc_group_keys" ("group_id" ASC, "app_id" ASC);
 ;
 
 ----
+-- structure for index sqlite_autoindex_sentc_user_token_1 on table sentc_user_token
+----
+;
+
+----
 -- structure for trigger user_delete_user_keys on table user
 ----
 CREATE TRIGGER 'user_delete_user_keys' AFTER DELETE ON "user" FOR EACH ROW BEGIN DELETE FROM user_keys WHERE user_id = OLD.id; END;
@@ -370,4 +392,9 @@ CREATE TRIGGER 'delete_app' AFTER DELETE ON "sentc_customer" FOR EACH ROW BEGIN 
 -- structure for trigger  delete_options on table app
 ----
 CREATE TRIGGER ' delete_options' AFTER DELETE ON "app" FOR EACH ROW BEGIN DELETE FROM app_options WHERE app_id = OLD.id; END;
+
+----
+-- structure for trigger user_delete_jwt_refresh on table user
+----
+CREATE TRIGGER 'user_delete_jwt_refresh' AFTER DELETE ON "user" FOR EACH ROW BEGIN DELETE FROM sentc_user_token WHERE user_id = OLD.id; END;
 COMMIT;
