@@ -31,6 +31,12 @@ pub(crate) fn routes() -> Router
 		"/api/v1/customer/password_reset_validation",
 		r(crate::customer::done_reset_password).add(app_token::app_token_base_app_transform),
 	);
+	router.put(
+		"/api/v1/customer/refresh",
+		r(crate::customer::refresh_jwt)
+			.add(jwt::jwt_expire_transform)
+			.add(app_token::app_token_base_app_transform),
+	);
 	router.get(
 		"/api/v1/customer/register/:email_key",
 		r(crate::customer::done_register).add(jwt::jwt_app_check_transform),

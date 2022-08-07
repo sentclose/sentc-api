@@ -3,7 +3,9 @@ use rustgram::Request;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
+	DoneLoginLightServerOutput,
 	DoneLoginServerInput,
+	JwtRefreshInput,
 	PrepareLoginSaltServerOutput,
 	PrepareLoginServerInput,
 	UserUpdateServerInput,
@@ -167,6 +169,18 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<CustomerDoneLoginOutput
 			email_status: customer_data.email_status,
 		},
 	};
+
+	echo(out)
+}
+
+pub(crate) async fn refresh_jwt(mut req: Request) -> JRes<DoneLoginLightServerOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+	let input: JwtRefreshInput = bytes_to_json(&body)?;
+	let app_data = get_app_data_from_req(&req)?;
+	let user = get_jwt_data_from_param(&req)?;
+
+	let out = user::user_service::refresh_jwt(app_data, user.id.to_string(), input, "customer").await?;
 
 	echo(out)
 }
