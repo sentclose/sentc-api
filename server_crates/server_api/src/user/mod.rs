@@ -20,6 +20,7 @@ use sentc_crypto_common::user::{
 	UserPublicKeyDataServerOutput,
 	UserUpdateServerInput,
 	UserUpdateServerOut,
+	UserVerifyKeyDataServerOutput,
 };
 
 use crate::core::api_res::{echo, echo_success, JRes};
@@ -158,6 +159,19 @@ pub(crate) async fn get_public_key_data(req: Request) -> JRes<UserPublicKeyDataS
 	let user_id = get_name_param_from_req(&req, "user_id")?;
 
 	let data = user_model::get_public_key_data(app_data.app_data.app_id.to_string(), user_id.to_string()).await?;
+
+	echo(data.into())
+}
+
+pub(crate) async fn get_verify_key_data(req: Request) -> JRes<UserVerifyKeyDataServerOutput>
+{
+	check_endpoint_with_req(&req, Endpoint::UserPublicData)?;
+
+	let app_data = get_app_data_from_req(&req)?;
+
+	let user_id = get_name_param_from_req(&req, "user_id")?;
+
+	let data = user_model::get_verify_key_data(app_data.app_data.app_id.to_string(), user_id.to_string()).await?;
 
 	echo(data.into())
 }

@@ -1,4 +1,4 @@
-use sentc_crypto_common::user::UserPublicKeyDataServerOutput;
+use sentc_crypto_common::user::{UserPublicKeyDataServerOutput, UserVerifyKeyDataServerOutput};
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, UserId};
 use serde::{Deserialize, Serialize};
 
@@ -351,6 +351,57 @@ impl crate::core::db::FromSqliteRow for UserPublicKeyDataEntity
 			public_key_id: take_or_err!(row, 0),
 			public_key: take_or_err!(row, 1),
 			public_key_alg: take_or_err!(row, 2),
+		})
+	}
+}
+
+//__________________________________________________________________________________________________
+
+pub struct UserVerifyKeyDataEntity
+{
+	pub verify_key_id: EncryptionKeyPairId,
+	pub verify_key: String,
+	pub verify_key_alg: String,
+}
+
+impl Into<UserVerifyKeyDataServerOutput> for UserVerifyKeyDataEntity
+{
+	fn into(self) -> UserVerifyKeyDataServerOutput
+	{
+		UserVerifyKeyDataServerOutput {
+			verify_key_id: self.verify_key_id,
+			verify_key: self.verify_key,
+			verify_key_alg: self.verify_key_alg,
+		}
+	}
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for UserVerifyKeyDataEntity
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			verify_key_id: take_or_err!(row, 0, String),
+			verify_key: take_or_err!(row, 1, String),
+			verify_key_alg: take_or_err!(row, 2, String),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl crate::core::db::FromSqliteRow for UserVerifyKeyDataEntity
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			verify_key_id: take_or_err!(row, 0),
+			verify_key: take_or_err!(row, 1),
+			verify_key_alg: take_or_err!(row, 2),
 		})
 	}
 }

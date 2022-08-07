@@ -95,6 +95,10 @@ pub(crate) fn routes() -> Router
 		"/api/v1/user/:user_id/public_key",
 		r(crate::user::get_public_key_data).add(app_token::app_token_transform),
 	);
+	router.get(
+		"/api/v1/user/:user_id/verify_key",
+		r(crate::user::get_verify_key_data).add(app_token::app_token_transform),
+	);
 	router.post(
 		"/api/v1/exists",
 		r(crate::user::exists).add(app_token::app_token_transform),

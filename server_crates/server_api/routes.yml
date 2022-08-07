@@ -57,6 +57,7 @@ routes:
             gr:
               - get: { p: "/user/:user_id", s: crate::user::get }
               - get: { p: "/user/:user_id/public_key", s: crate::user::get_public_key_data }
+              - get: { p: "/user/:user_id/verify_key", s: crate::user::get_verify_key_data }
               - post: {p: "/exists", s: crate::user::exists}
               - post: {p: "/register", s: crate::user::register}
               - post: {p: "/prepare_login", s: crate::user::prepare_login}
