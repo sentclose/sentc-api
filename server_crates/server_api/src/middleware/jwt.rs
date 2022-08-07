@@ -60,6 +60,15 @@ pub fn jwt_transform<S>(inner: S) -> JwtMiddleware<S>
 	}
 }
 
+pub fn jwt_expire_transform<S>(inner: S) -> JwtMiddleware<S>
+{
+	JwtMiddleware {
+		inner: Arc::new(inner),
+		optional: false,
+		check_exp: false,
+	}
+}
+
 /**
 Check here the app id of the sentc base app too in the jwt.
 
