@@ -1,3 +1,4 @@
+use sentc_crypto_common::user::UserPublicKeyDataServerOutput;
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, UserId};
 use serde::{Deserialize, Serialize};
 
@@ -67,55 +68,6 @@ pub struct UserJwtEntity
 	pub aud: String,
 	pub sub: String, //the app id
 	pub fresh: bool,
-}
-
-//__________________________________________________________________________________________________
-//User info
-
-#[derive(Serialize, Deserialize)]
-pub struct UserEntity
-{
-	id: String,
-	name: String,
-	time: u128,
-}
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for UserEntity
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(UserEntity {
-			id: take_or_err!(row, 0, String),
-			name: take_or_err!(row, 1, String),
-			time: take_or_err!(row, 2, u128),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for UserEntity
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		//time needs to parse from string to the value
-		let time: String = take_or_err!(row, 2);
-		let time: u128 = time.parse().map_err(|e| {
-			crate::core::db::FormSqliteRowError {
-				msg: format!("err in db fetch: {:?}", e),
-			}
-		})?;
-
-		Ok(UserEntity {
-			id: take_or_err!(row, 0),
-			name: take_or_err!(row, 1),
-			time: time,
-		})
-	}
 }
 
 //__________________________________________________________________________________________________
@@ -295,6 +247,21 @@ pub struct UserPublicData
 	pub verify_alg: String,
 }
 
+impl Into<sentc_crypto_common::user::UserPublicData> for UserPublicData
+{
+	fn into(self) -> sentc_crypto_common::user::UserPublicData
+	{
+		sentc_crypto_common::user::UserPublicData {
+			public_key_id: self.public_key_id,
+			public_key: self.public_key,
+			public_key_alg: self.public_key_alg,
+			verify_key_id: self.verify_key_id,
+			verify_key: self.verify_key,
+			verify_alg: self.verify_alg,
+		}
+	}
+}
+
 #[cfg(feature = "mysql")]
 impl mysql_async::prelude::FromRow for UserPublicData
 {
@@ -344,6 +311,18 @@ pub struct UserPublicKeyDataEntity
 	pub public_key_id: EncryptionKeyPairId,
 	pub public_key: String,
 	pub public_key_alg: String,
+}
+
+impl Into<UserPublicKeyDataServerOutput> for UserPublicKeyDataEntity
+{
+	fn into(self) -> UserPublicKeyDataServerOutput
+	{
+		UserPublicKeyDataServerOutput {
+			public_key_id: self.public_key_id,
+			public_key: self.public_key,
+			public_key_alg: self.public_key_alg,
+		}
+	}
 }
 
 #[cfg(feature = "mysql")]

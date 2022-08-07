@@ -55,6 +55,8 @@ routes:
             mw:
               - app_token::app_token_transform
             gr:
+              - get: { p: "/user/:user_id", s: crate::user::get }
+              - get: { p: "/user/:user_id/public_key", s: crate::user::get_public_key_data }
               - post: {p: "/exists", s: crate::user::exists}
               - post: {p: "/register", s: crate::user::register}
               - post: {p: "/prepare_login", s: crate::user::prepare_login}
@@ -72,7 +74,6 @@ routes:
               - group:
                   p: "/user"
                   gr:
-                    - get: {p: "", s: crate::user::get}
                     - put: {p: "", s: crate::user::update}
                     - put: {p: "/update_pw", s: crate::user::change_password}
                     - put: {p: "/reset_pw", s: crate::user::reset_password}

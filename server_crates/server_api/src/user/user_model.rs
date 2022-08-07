@@ -10,7 +10,6 @@ use crate::user::user_entities::{
 	DoneLoginServerKeysOutputEntity,
 	JwtSignKey,
 	JwtVerifyKey,
-	UserEntity,
 	UserExistsEntity,
 	UserKeyFistRow,
 	UserLoginDataEntity,
@@ -139,10 +138,8 @@ pub(super) async fn get_done_login_light_data(app_id: &str, user_identifier: &st
 
 /**
 Get the public and verify key data from this user
-
-TODO
 */
-pub(super) async fn _get_public_data(app_id: AppId, user_id: UserId) -> AppRes<UserPublicData>
+pub(super) async fn get_public_data(app_id: AppId, user_id: UserId) -> AppRes<UserPublicData>
 {
 	//language=SQL
 	let sql = r"
@@ -169,10 +166,8 @@ ORDER BY uk.time LIMIT 1";
 
 /**
 Get just the public key data for this user
-
-TODO
 */
-pub(super) async fn _get_public_key_data(app_id: AppId, user_id: UserId) -> AppRes<UserPublicKeyDataEntity>
+pub(super) async fn get_public_key_data(app_id: AppId, user_id: UserId) -> AppRes<UserPublicKeyDataEntity>
 {
 	//language=SQL
 	let sql = r"
@@ -399,24 +394,4 @@ WHERE
 	.await?;
 
 	Ok(())
-}
-
-pub(super) async fn get_user(user_id: &str) -> AppRes<UserEntity>
-{
-	//language=SQL
-	let sql = "SELECT * FROM test WHERE id = ?";
-
-	let user: Option<UserEntity> = query_first(sql, set_params!(user_id.to_string())).await?;
-
-	match user {
-		Some(u) => Ok(u),
-		None => {
-			Err(HttpErr::new(
-				200,
-				ApiErrorCodes::UserNotFound,
-				"user not found".to_string(),
-				None,
-			))
-		},
-	}
 }
