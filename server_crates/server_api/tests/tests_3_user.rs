@@ -3,6 +3,7 @@ use reqwest::StatusCode;
 use sentc_crypto::KeyData;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{
+	DoneLoginLightServerOutput,
 	DoneLoginServerKeysOutput,
 	MasterKey,
 	RegisterServerOutput,
@@ -775,10 +776,93 @@ async fn test_21_get_user_public_data()
 	);
 }
 
+#[tokio::test]
+async fn test_22_refresh_jwt()
+{
+	let user = &USER_TEST_STATE.get().unwrap().read().await;
+	let jwt = &user.key_data.as_ref().unwrap().jwt;
+
+	let input = sentc_crypto::user::prepare_refresh_jwt(&user.key_data.as_ref().unwrap().refresh_token).unwrap();
+
+	let url = get_url("api/v1/refresh".to_owned());
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	println!("{}", body);
+
+	let out = ServerOutput::<DoneLoginLightServerOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+
+	let out = out.result.unwrap();
+
+	let non_fresh_jwt = out.jwt;
+
+	//don't need to change jwt in user data because the old one is still valid
+
+	//______________________________________________________________________________________________
+
+	//check new jwt -> the error here comes from the wrong update but not from a wrong jwt
+	let new_username = "bla".to_string();
+
+	let input = UserUpdateServerInput {
+		user_identifier: new_username.to_string(),
+	};
+
+	let url = get_url("api/v1/user".to_owned());
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.body(input.to_string().unwrap())
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.header(AUTHORIZATION, auth_header(non_fresh_jwt.as_str()))
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<UserUpdateServerOut>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, false);
+	assert_eq!(out.err_code.unwrap(), 101);
+
+	//______________________________________________________________________________________________
+	//it should not delete the user because a fresh jwt is needed here.
+	let user = &USER_TEST_STATE.get().unwrap().read().await;
+
+	let url = get_url("api/v1/user".to_owned());
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(non_fresh_jwt.as_str()))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, false);
+	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::WrongJwtAction.get_int_code());
+}
+
 //do user tests before this one!
 
 #[tokio::test]
-async fn test_22_user_delete()
+async fn test_23_user_delete()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let jwt = &user.key_data.as_ref().unwrap().jwt;
@@ -820,7 +904,7 @@ impl WrongRegisterData
 }
 
 #[tokio::test]
-async fn test_23_not_register_user_with_wrong_input()
+async fn test_24_not_register_user_with_wrong_input()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 
@@ -874,7 +958,7 @@ async fn test_23_not_register_user_with_wrong_input()
 }
 
 #[tokio::test]
-async fn test_24_register_and_login_user_via_test_fn()
+async fn test_25_register_and_login_user_via_test_fn()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let secret_token = &user.app_data.secret_token;

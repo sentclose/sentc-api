@@ -567,6 +567,7 @@ fn get_fake_login_data(old_pw: &str) -> (String, String)
 		keypair_encrypt_id: "abc".to_string(),
 		keypair_sign_id: "abc".to_string(),
 		jwt: "abc".to_string(),
+		refresh_token: "abc".to_string(),
 		user_id: "abc".to_string(),
 	};
 

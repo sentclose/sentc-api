@@ -39,6 +39,7 @@ pub struct AppOptions
 	pub user_prepare_login: i32,
 	pub user_done_login: i32,
 	pub user_public_data: i32,
+	pub user_refresh: i32,
 }
 
 impl Default for AppOptions
@@ -68,6 +69,7 @@ impl Default for AppOptions
 			user_prepare_login: 1,
 			user_done_login: 1,
 			user_public_data: 1,
+			user_refresh: 1,
 		}
 	}
 }
@@ -99,6 +101,7 @@ impl AppOptions
 			user_prepare_login: 1,
 			user_done_login: 1,
 			user_public_data: 1,
+			user_refresh: 1,
 		}
 	}
 }

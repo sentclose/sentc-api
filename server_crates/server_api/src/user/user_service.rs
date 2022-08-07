@@ -1,11 +1,14 @@
 use std::ptr;
 
+use rand::RngCore;
+use sentc_crypto::sdk_common::UserId;
 use sentc_crypto::util::public::HashedAuthenticationKey;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
 	DoneLoginLightServerOutput,
 	DoneLoginServerInput,
 	DoneLoginServerKeysOutput,
+	JwtRefreshInput,
 	PrepareLoginSaltServerOutput,
 	PrepareLoginServerInput,
 	RegisterData,
@@ -140,6 +143,16 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 	)
 	.await?;
 
+	let refresh_token = create_refresh_token()?;
+
+	//activate refresh token
+	user_model::insert_refresh_token(
+		app_data.app_data.app_id.to_string(),
+		user_data.user_id.to_string(),
+		refresh_token.to_string(),
+	)
+	.await?;
+
 	let out = DoneLoginServerKeysOutput {
 		encrypted_master_key: user_data.encrypted_master_key,
 		encrypted_private_key: user_data.encrypted_private_key,
@@ -151,6 +164,7 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 		keypair_encrypt_id: user_data.keypair_encrypt_id,
 		keypair_sign_id: user_data.keypair_sign_id,
 		jwt,
+		refresh_token,
 		user_id: user_data.user_id,
 	};
 
@@ -159,6 +173,46 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 
 //__________________________________________________________________________________________________
 // user fn with jwt
+
+pub async fn refresh_jwt(app_data: &AppData, user_id: UserId, input: JwtRefreshInput, aud: &str) -> AppRes<DoneLoginLightServerOutput>
+{
+	//get the token from the db
+	let check = user_model::check_refresh_token(
+		app_data.app_data.app_id.to_string(),
+		user_id.to_string(),
+		input.refresh_token,
+	)
+	.await?;
+
+	let user_identifier = match check {
+		Some(u) => u.0,
+		None => {
+			return Err(HttpErr::new(
+				400,
+				ApiErrorCodes::RefreshToken,
+				"Refresh token not found".to_string(),
+				None,
+			))
+		},
+	};
+
+	let jwt = create_jwt(
+		user_id.as_str(),
+		user_identifier.as_str(),
+		app_data.app_data.app_id.as_str(),
+		&app_data.jwt_data[0], //use always the latest created jwt data
+		aud,
+		false,
+	)
+	.await?;
+
+	let out = DoneLoginLightServerOutput {
+		user_id,
+		jwt,
+	};
+
+	Ok(out)
+}
 
 pub async fn delete(user: &UserJwtEntity) -> AppRes<()>
 {
@@ -272,6 +326,26 @@ async fn create_salt(app_id: &str, user_identifier: &str) -> Result<PrepareLogin
 	};
 
 	Ok(out)
+}
+
+fn create_refresh_token() -> AppRes<String>
+{
+	let mut rng = rand::thread_rng();
+
+	let mut token = [0u8; 50];
+
+	rng.try_fill_bytes(&mut token).map_err(|_| {
+		HttpErr::new(
+			400,
+			ApiErrorCodes::AppTokenWrongFormat,
+			"Can't create refresh token".to_string(),
+			None,
+		)
+	})?;
+
+	let token_string = base64::encode_config(token, base64::URL_SAFE_NO_PAD);
+
+	Ok(token_string)
 }
 
 async fn auth_user(app_id: AppId, user_identifier: &str, auth_key: String) -> Result<String, HttpErr>
