@@ -398,7 +398,7 @@ fn generate_email_validate_token() -> AppRes<String>
 		HttpErr::new(
 			400,
 			ApiErrorCodes::AppTokenWrongFormat,
-			"Can't create secret token".to_string(),
+			"Can't create email token".to_string(),
 			None,
 		)
 	})?;
