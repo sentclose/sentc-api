@@ -6,7 +6,7 @@ use crate::take_or_err;
 
 //generated with browser console: btoa(String.fromCharCode.apply(null, window.crypto.getRandomValues(new Uint8Array(128/8))));
 //the value with the used alg
-pub static SERVER_RANDOM_VALUE: (&'static str, &'static str) = ("zx4AKPCMHkeZnh21ciQ62w==", sentc_crypto::util_pub::ARGON_2_OUTPUT);
+pub static SERVER_RANDOM_VALUE: (&'static str, &'static str) = ("zx4AKPCMHkeZnh21ciQ62w==", sentc_crypto::util::public::ARGON_2_OUTPUT);
 
 //__________________________________________________________________________________________________
 //Jwt

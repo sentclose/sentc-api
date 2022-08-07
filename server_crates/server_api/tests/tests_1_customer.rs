@@ -249,7 +249,7 @@ async fn test_13_update_customer()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
 	//it should not login with the old email
@@ -368,7 +368,7 @@ async fn test_14_change_password()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
 	//should not login with wrong password
@@ -486,7 +486,7 @@ async fn test_15_change_password_again_from_pw_change()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
 	//should not login with wrong password
@@ -544,7 +544,7 @@ fn get_fake_login_data(old_pw: &str) -> (String, String)
 	let fake_key_data = RegisterData::from_string(fake_key_data.as_str()).unwrap();
 
 	//do the server prepare login again to get the salt (we need a salt to this fake register data)
-	let salt_string = sentc_crypto::util_server::generate_salt_from_base64_to_string(
+	let salt_string = sentc_crypto::util::server::generate_salt_from_base64_to_string(
 		fake_key_data.derived.client_random_value.as_str(),
 		fake_key_data.derived.derived_alg.as_str(),
 		"",
@@ -647,7 +647,7 @@ async fn test_16_reset_customer_password()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	//get the token -> in real app the token gets send by email.
 	server_api::start().await;
@@ -690,7 +690,7 @@ async fn test_16_reset_customer_password()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
 	//should not login with old pw
@@ -782,5 +782,5 @@ async fn test_30_delete_customer()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 }

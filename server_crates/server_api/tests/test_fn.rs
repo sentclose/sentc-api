@@ -119,7 +119,7 @@ pub async fn customer_delete(customer_jwt: &str)
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 }
 
 pub async fn create_test_customer(email: &str, pw: &str) -> (CustomerId, CustomerDoneLoginOutput)
@@ -205,7 +205,7 @@ pub async fn delete_app_jwt_key(customer_jwt: &str, app_id: &str, jwt_id: &str)
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 }
 
 pub async fn delete_app(customer_jwt: &str, app_id: &str)
@@ -221,7 +221,7 @@ pub async fn delete_app(customer_jwt: &str, app_id: &str)
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 }
 
 //__________________________________________________________________________________________________
@@ -268,7 +268,7 @@ pub async fn delete_user(app_secret_token: &str, jwt: &str)
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 }
 
 pub async fn login_user(public_token: &str, username: &str, pw: &str) -> KeyData
@@ -404,7 +404,7 @@ pub async fn add_user_by_invite(
 
 	let body = res.text().await.unwrap();
 
-	let join_res: GroupAcceptJoinReqServerOutput = sentc_crypto::util_pub::handle_server_response(body.as_str()).unwrap();
+	let join_res: GroupAcceptJoinReqServerOutput = sentc_crypto::util::public::handle_server_response(body.as_str()).unwrap();
 	assert_eq!(join_res.session_id, None);
 
 	//accept the invite
@@ -421,7 +421,7 @@ pub async fn add_user_by_invite(
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util_pub::handle_general_server_response(body.as_str()).unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	let data = get_group(
 		secret_token,

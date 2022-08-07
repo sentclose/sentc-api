@@ -65,7 +65,7 @@ fn encrypt(eph_key: &KeyRotationWorkerKey, users: Vec<UserGroupPublicKeyData>) -
 	for user in users {
 		//encrypt with sdk -> import public key data from string
 
-		let encrypted_ephemeral_key = sentc_crypto::util_server::encrypt_ephemeral_group_key_with_public_key(
+		let encrypted_ephemeral_key = sentc_crypto::util::server::encrypt_ephemeral_group_key_with_public_key(
 			user.public_key.as_str(),
 			user.public_key_alg.as_str(),
 			eph_key.encrypted_ephemeral_key.as_str(),

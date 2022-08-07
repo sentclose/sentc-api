@@ -1,6 +1,6 @@
 use std::ptr;
 
-use sentc_crypto::util_pub::HashedAuthenticationKey;
+use sentc_crypto::util::public::HashedAuthenticationKey;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
 	DoneLoginLightServerOutput,
@@ -263,7 +263,7 @@ async fn create_salt(app_id: &str, user_identifier: &str) -> Result<PrepareLogin
 		},
 	};
 
-	let salt_string = sentc_crypto::util_server::generate_salt_from_base64_to_string(client_random_value.as_str(), alg.as_str(), add_str)
+	let salt_string = sentc_crypto::util::server::generate_salt_from_base64_to_string(client_random_value.as_str(), alg.as_str(), add_str)
 		.map_err(|_e| HttpErr::new(401, ApiErrorCodes::SaltError, "Can't create salt".to_owned(), None))?;
 
 	let out = PrepareLoginSaltServerOutput {
@@ -293,7 +293,7 @@ async fn auth_user(app_id: AppId, user_identifier: &str, auth_key: String) -> Re
 
 	//hash the auth key and use the first 16 bytes
 	let (server_hashed_auth_key, hashed_client_key) =
-		sentc_crypto::util_server::get_auth_keys_from_base64(auth_key.as_str(), hashed_user_auth_key.as_str(), alg.as_str()).map_err(|_e| {
+		sentc_crypto::util::server::get_auth_keys_from_base64(auth_key.as_str(), hashed_user_auth_key.as_str(), alg.as_str()).map_err(|_e| {
 			HttpErr::new(
 				401,
 				ApiErrorCodes::AuthKeyFormat,
