@@ -116,6 +116,12 @@ pub(crate) fn routes() -> Router
 		r(crate::user::done_login).add(app_token::app_token_transform),
 	);
 	router.put(
+		"/api/v1/refresh",
+		r(crate::user::refresh_jwt)
+			.add(jwt::jwt_expire_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.put(
 		"/api/v1/user",
 		r(crate::user::update)
 			.add(jwt::jwt_transform)

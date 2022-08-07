@@ -62,6 +62,11 @@ routes:
               - post: {p: "/register", s: crate::user::register}
               - post: {p: "/prepare_login", s: crate::user::prepare_login}
               - post: {p: "/done_login", s: crate::user::done_login}
+              - put:
+                  p: "/refresh"
+                  s: crate::user::refresh_jwt
+                  mw:
+                    - jwt::jwt_expire_transform
         #_______________________________________________________________________________________________________________
         # routes which needed jwt check with a valid jwt
         - group:

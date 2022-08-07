@@ -49,6 +49,7 @@ pub enum ApiErrorCodes
 	WrongJwtAction,
 	AuthKeyFormat,
 	SaltError,
+	RefreshToken,
 
 	AppTokenNotFound,
 	AppTokenWrongFormat,
@@ -113,6 +114,7 @@ impl ApiErrorCodes
 			ApiErrorCodes::AuthKeyFormat => 111,
 			ApiErrorCodes::Login => 112,
 			ApiErrorCodes::WrongJwtAction => 113,
+			ApiErrorCodes::RefreshToken => 114,
 
 			ApiErrorCodes::AppTokenNotFound => 200,
 			ApiErrorCodes::AppTokenWrongFormat => 201,

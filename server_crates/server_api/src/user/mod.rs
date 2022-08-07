@@ -7,8 +7,10 @@ use rustgram::Request;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
+	DoneLoginLightServerOutput,
 	DoneLoginServerInput,
 	DoneLoginServerKeysOutput,
+	JwtRefreshInput,
 	PrepareLoginSaltServerOutput,
 	PrepareLoginServerInput,
 	RegisterData,
@@ -85,7 +87,67 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerKeysOutp
 }
 
 //__________________________________________________________________________________________________
+
+pub(crate) async fn get(req: Request) -> JRes<UserPublicData>
+{
+	let app_data = get_app_data_from_req(&req)?;
+
+	check_endpoint_with_app_options(app_data, Endpoint::UserPublicData)?;
+
+	let user_id = get_name_param_from_req(&req, "user_id")?;
+
+	let data = user_model::get_public_data(app_data.app_data.app_id.to_string(), user_id.to_string()).await?;
+
+	echo(data.into())
+}
+
+pub(crate) async fn get_public_key_data(req: Request) -> JRes<UserPublicKeyDataServerOutput>
+{
+	let app_data = get_app_data_from_req(&req)?;
+
+	check_endpoint_with_app_options(app_data, Endpoint::UserPublicData)?;
+
+	let user_id = get_name_param_from_req(&req, "user_id")?;
+
+	let data = user_model::get_public_key_data(app_data.app_data.app_id.to_string(), user_id.to_string()).await?;
+
+	echo(data.into())
+}
+
+pub(crate) async fn get_verify_key_data(req: Request) -> JRes<UserVerifyKeyDataServerOutput>
+{
+	let app_data = get_app_data_from_req(&req)?;
+
+	check_endpoint_with_app_options(app_data, Endpoint::UserPublicData)?;
+
+	let user_id = get_name_param_from_req(&req, "user_id")?;
+
+	let data = user_model::get_verify_key_data(app_data.app_data.app_id.to_string(), user_id.to_string()).await?;
+
+	echo(data.into())
+}
+
+//__________________________________________________________________________________________________
 // user fn with jwt
+
+pub(crate) async fn refresh_jwt(mut req: Request) -> JRes<DoneLoginLightServerOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+	let input: JwtRefreshInput = bytes_to_json(&body)?;
+
+	let app_data = get_app_data_from_req(&req)?;
+
+	//TODO use other endpoint
+	check_endpoint_with_app_options(app_data, Endpoint::UserPublicData)?;
+
+	//this can be an expired jwt, but the app id must be valid
+	//to get the old token in the client when init the user client -> save the old jwt in the client like the keys
+	let user = get_jwt_data_from_param(&req)?;
+
+	let out = user_service::refresh_jwt(app_data, user.id.to_string(), input, "user").await?;
+
+	echo(out)
+}
 
 pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 {
@@ -135,43 +197,4 @@ pub(crate) async fn reset_password(mut req: Request) -> JRes<ServerSuccessOutput
 	user_service::reset_password(user.id.as_str(), input).await?;
 
 	echo_success()
-}
-
-pub(crate) async fn get(req: Request) -> JRes<UserPublicData>
-{
-	check_endpoint_with_req(&req, Endpoint::UserPublicData)?;
-
-	let app_data = get_app_data_from_req(&req)?;
-
-	let user_id = get_name_param_from_req(&req, "user_id")?;
-
-	let data = user_model::get_public_data(app_data.app_data.app_id.to_string(), user_id.to_string()).await?;
-
-	echo(data.into())
-}
-
-pub(crate) async fn get_public_key_data(req: Request) -> JRes<UserPublicKeyDataServerOutput>
-{
-	check_endpoint_with_req(&req, Endpoint::UserPublicData)?;
-
-	let app_data = get_app_data_from_req(&req)?;
-
-	let user_id = get_name_param_from_req(&req, "user_id")?;
-
-	let data = user_model::get_public_key_data(app_data.app_data.app_id.to_string(), user_id.to_string()).await?;
-
-	echo(data.into())
-}
-
-pub(crate) async fn get_verify_key_data(req: Request) -> JRes<UserVerifyKeyDataServerOutput>
-{
-	check_endpoint_with_req(&req, Endpoint::UserPublicData)?;
-
-	let app_data = get_app_data_from_req(&req)?;
-
-	let user_id = get_name_param_from_req(&req, "user_id")?;
-
-	let data = user_model::get_verify_key_data(app_data.app_data.app_id.to_string(), user_id.to_string()).await?;
-
-	echo(data.into())
 }

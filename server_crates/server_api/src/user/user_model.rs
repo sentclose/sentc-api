@@ -135,6 +135,36 @@ pub(super) async fn get_done_login_light_data(app_id: &str, user_identifier: &st
 	Ok(data)
 }
 
+pub(super) async fn insert_refresh_token(app_id: AppId, user_id: UserId, refresh_token: String) -> AppRes<()>
+{
+	let time = get_time()?;
+
+	//language=SQL
+	let sql = "INSERT INTO sentc_user_token (user_id, token, app_id, time) VALUES (?,?,?,?)";
+
+	exec(sql, set_params!(user_id, refresh_token, app_id, time.to_string())).await?;
+
+	Ok(())
+}
+
+pub(super) async fn check_refresh_token(app_id: AppId, user_id: UserId, refresh_token: String) -> AppRes<Option<UserKeyFistRow>>
+{
+	//language=SQL
+	let sql = r"
+SELECT identifier 
+FROM 
+    sentc_user_token ut,
+    user u 
+WHERE ut.app_id = ? AND 
+      user_id = ? AND 
+      token = ? AND 
+      user_id = u.id";
+
+	let exists: Option<UserKeyFistRow> = query_first(sql, set_params!(app_id, user_id, refresh_token)).await?;
+
+	Ok(exists)
+}
+
 //__________________________________________________________________________________________________
 
 /**
