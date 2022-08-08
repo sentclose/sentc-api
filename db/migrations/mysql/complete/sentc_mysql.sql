@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 08. Aug 2022 um 13:29
+-- Erstellungszeit: 08. Aug 2022 um 18:59
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -61,18 +61,6 @@ DELIMITER $$
 CREATE TRIGGER `delete_user` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_user WHERE app_id = OLD.id
 $$
 DELIMITER ;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `sentc_app_active_log`
---
-
-CREATE TABLE `sentc_app_active_log` (
-  `app_id` varchar(36) NOT NULL,
-  `time` bigint(20) NOT NULL,
-  `action_id` int(11) NOT NULL COMMENT 'what was done. internal id'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -325,6 +313,19 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
+-- Tabellenstruktur für Tabelle `sentc_user_action_log`
+--
+
+CREATE TABLE `sentc_user_action_log` (
+  `user_id` varchar(36) NOT NULL,
+  `time` bigint(20) NOT NULL,
+  `action_id` int(11) NOT NULL COMMENT '0 = done login; 1 = refresh token or init client',
+  `app_id` varchar(36) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Tabellenstruktur für Tabelle `sentc_user_keys`
 --
 
@@ -382,12 +383,6 @@ ALTER TABLE `sentc_app`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `hashed_secret_token` (`hashed_secret_token`),
   ADD UNIQUE KEY `hashed_public_token` (`hashed_public_token`);
-
---
--- Indizes für die Tabelle `sentc_app_active_log`
---
-ALTER TABLE `sentc_app_active_log`
-  ADD PRIMARY KEY (`app_id`,`time`);
 
 --
 -- Indizes für die Tabelle `sentc_app_jwt_keys`
@@ -467,6 +462,12 @@ ALTER TABLE `sentc_sym_key_management`
 ALTER TABLE `sentc_user`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `app_id` (`app_id`,`identifier`);
+
+--
+-- Indizes für die Tabelle `sentc_user_action_log`
+--
+ALTER TABLE `sentc_user_action_log`
+  ADD PRIMARY KEY (`user_id`,`time`,`app_id`);
 
 --
 -- Indizes für die Tabelle `sentc_user_keys`
