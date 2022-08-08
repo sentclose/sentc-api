@@ -127,6 +127,18 @@ pub(crate) fn routes() -> Router
 			.add(jwt::jwt_expire_transform)
 			.add(app_token::app_token_transform),
 	);
+	router.post(
+		"/api/v1/keys/sym_key",
+		r(crate::key_management::register_sym_key).add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/keys/sym_key/master_key/:master_key_id/:last_fetched_time/:last_key_id",
+		r(crate::key_management::get_all_sym_keys_to_master_key).add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/keys/sym_key/:key_id",
+		r(crate::key_management::get_sym_key_by_id).add(app_token::app_token_transform),
+	);
 	router.put(
 		"/api/v1/user",
 		r(crate::user::update)

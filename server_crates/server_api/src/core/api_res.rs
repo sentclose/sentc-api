@@ -70,6 +70,8 @@ pub enum ApiErrorCodes
 	GroupKeyRotationThread,
 	GroupKeyRotationUserEncrypt,
 	GroupUserRankUpdate,
+
+	KeyNotFound,
 }
 
 impl ApiErrorCodes
@@ -135,6 +137,8 @@ impl ApiErrorCodes
 			ApiErrorCodes::GroupKeyRotationThread => 311,
 			ApiErrorCodes::GroupKeyRotationUserEncrypt => 312,
 			ApiErrorCodes::GroupUserRankUpdate => 313,
+
+			ApiErrorCodes::KeyNotFound => 400,
 		}
 	}
 }
