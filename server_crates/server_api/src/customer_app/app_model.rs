@@ -18,7 +18,7 @@ pub(crate) async fn get_app_data(hashed_token: &str) -> AppRes<AppData>
 	//language=SQL
 	let sql = r"
 SELECT id as app_id, customer_id, hashed_secret_token, hashed_public_token, hash_alg 
-FROM app 
+FROM sentc_app 
 WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 
 	let app_data: Option<AppDataGeneral> = query_first(sql, set_params!(hashed_token.to_string(), hashed_token.to_string())).await?;
@@ -36,7 +36,7 @@ WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 	};
 
 	//language=SQL
-	let sql = "SELECT id, alg, time FROM app_jwt_keys WHERE app_id = ? ORDER BY time DESC LIMIT 10";
+	let sql = "SELECT id, alg, time FROM sentc_app_jwt_keys WHERE app_id = ? ORDER BY time DESC LIMIT 10";
 
 	let jwt_data: Vec<AppJwt> = query(sql, set_params!(app_data.app_id.to_string())).await?;
 
@@ -80,7 +80,7 @@ SELECT
     user_done_login,
     user_public_data,
     user_refresh
-FROM app_options 
+FROM sentc_app_options 
 WHERE 
     app_id = ?";
 
@@ -118,7 +118,7 @@ pub(super) async fn get_app_general_data(customer_id: CustomerId, app_id: AppId)
 	//language=SQL
 	let sql = r"
 SELECT id as app_id, customer_id, hashed_secret_token, hashed_public_token, hash_alg 
-FROM app 
+FROM sentc_app 
 WHERE customer_id = ? AND id = ? LIMIT 1";
 
 	let app_data: Option<AppDataGeneral> = query_first(sql, set_params!(customer_id, app_id)).await?;
@@ -146,7 +146,7 @@ pub(super) async fn get_jwt_data(customer_id: CustomerId, app_id: AppId) -> AppR
 	//language=SQL
 	let sql = r"
 SELECT ak.id, alg, ak.time, sign_key, verify_key 
-FROM app a, app_jwt_keys ak 
+FROM sentc_app a, sentc_app_jwt_keys ak 
 WHERE 
     app_id = ? AND 
     customer_id = ? AND 
@@ -174,7 +174,7 @@ pub(super) async fn create_app(
 
 	//language=SQL
 	let sql_app = r"
-INSERT INTO app 
+INSERT INTO sentc_app 
     (id, 
      customer_id, 
      identifier, 
@@ -203,7 +203,7 @@ VALUES (?,?,?,?,?,?,?)";
 	let jwt_key_id = Uuid::new_v4().to_string();
 
 	//language=SQL
-	let sql_jwt = "INSERT INTO app_jwt_keys (id, app_id, sign_key, verify_key, alg, time) VALUES (?,?,?,?,?,?)";
+	let sql_jwt = "INSERT INTO sentc_app_jwt_keys (id, app_id, sign_key, verify_key, alg, time) VALUES (?,?,?,?,?,?)";
 	let params_jwt = set_params!(
 		jwt_key_id.to_string(),
 		app_id.to_string(),
@@ -217,7 +217,7 @@ VALUES (?,?,?,?,?,?,?)";
 
 	//language=SQL
 	let sql_options = r"
-INSERT INTO app_options 
+INSERT INTO sentc_app_options 
     (
      app_id, 
      group_create, 
@@ -300,7 +300,7 @@ pub(super) async fn token_renew(
 ) -> AppRes<()>
 {
 	//language=SQL
-	let sql = "UPDATE app SET hashed_secret_token = ?, hashed_public_token = ?, hash_alg = ? WHERE id = ? AND customer_id = ?";
+	let sql = "UPDATE sentc_app SET hashed_secret_token = ?, hashed_public_token = ?, hash_alg = ? WHERE id = ? AND customer_id = ?";
 
 	exec(
 		sql,
@@ -331,7 +331,7 @@ pub(super) async fn add_jwt_keys(
 	let jwt_key_id = Uuid::new_v4().to_string();
 
 	//language=SQL
-	let sql = "INSERT INTO app_jwt_keys (id, app_id, sign_key, verify_key, alg, time) VALUES (?,?,?,?,?,?)";
+	let sql = "INSERT INTO sentc_app_jwt_keys (id, app_id, sign_key, verify_key, alg, time) VALUES (?,?,?,?,?,?)";
 
 	exec(
 		sql,
@@ -354,7 +354,7 @@ pub(super) async fn delete_jwt_keys(customer_id: CustomerId, app_id: AppId, jwt_
 	check_app_exists(customer_id, app_id.to_string()).await?;
 
 	//language=SQL
-	let sql = "DELETE FROM app_jwt_keys WHERE id = ? AND app_id = ?";
+	let sql = "DELETE FROM sentc_app_jwt_keys WHERE id = ? AND app_id = ?";
 
 	exec(sql, set_params!(jwt_key_id, app_id)).await?;
 
@@ -364,7 +364,7 @@ pub(super) async fn delete_jwt_keys(customer_id: CustomerId, app_id: AppId, jwt_
 pub(super) async fn update(customer_id: CustomerId, app_id: AppId, identifier: Option<String>) -> AppRes<()>
 {
 	//language=SQL
-	let sql = "UPDATE app SET identifier = ? WHERE customer_id = ? AND id = ?";
+	let sql = "UPDATE sentc_app SET identifier = ? WHERE customer_id = ? AND id = ?";
 
 	let identifier = match identifier {
 		Some(i) => i,
@@ -383,13 +383,13 @@ pub(super) async fn update_options(customer_id: CustomerId, app_id: AppId, app_o
 	//delete the old options
 
 	//language=SQL
-	let sql = "DELETE FROM app_options WHERE app_id = ?";
+	let sql = "DELETE FROM sentc_app_options WHERE app_id = ?";
 
 	exec(sql, set_params!(app_id.to_string())).await?;
 
 	//language=SQL
 	let sql_options = r"
-INSERT INTO app_options 
+INSERT INTO sentc_app_options 
     (
      app_id, 
      group_create, 
@@ -454,7 +454,7 @@ pub(super) async fn delete(customer_id: CustomerId, app_id: AppId) -> AppRes<()>
 	//use the double check with the customer id to check if this app really belongs to the customer!
 
 	//language=SQL
-	let sql = "DELETE FROM app WHERE customer_id = ? AND id = ?";
+	let sql = "DELETE FROM sentc_app WHERE customer_id = ? AND id = ?";
 
 	exec(sql, set_params!(customer_id, app_id)).await?;
 
@@ -467,7 +467,7 @@ async fn check_app_exists(customer_id: CustomerId, app_id: AppId) -> AppRes<()>
 {
 	//check if this app belongs to this customer
 	//language=SQL
-	let sql = "SELECT 1 FROM app WHERE id = ? AND customer_id = ?";
+	let sql = "SELECT 1 FROM sentc_app WHERE id = ? AND customer_id = ?";
 	let app_exists: Option<AppExistsEntity> = query_first(sql, set_params!(app_id, customer_id)).await?;
 
 	match app_exists {
