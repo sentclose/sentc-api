@@ -129,7 +129,15 @@ pub(crate) fn routes() -> Router
 	);
 	router.post(
 		"/api/v1/keys/sym_key",
-		r(crate::key_management::register_sym_key).add(app_token::app_token_transform),
+		r(crate::key_management::register_sym_key)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.delete(
+		"/api/v1/keys/sym_key/:key_id",
+		r(crate::key_management::delete_sym_key)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
 	);
 	router.get(
 		"/api/v1/keys/sym_key/master_key/:master_key_id/:last_fetched_time/:last_key_id",

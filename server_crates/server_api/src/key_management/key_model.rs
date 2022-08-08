@@ -1,5 +1,5 @@
 use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerInput;
-use sentc_crypto_common::{AppId, SymKeyId};
+use sentc_crypto_common::{AppId, SymKeyId, UserId};
 use uuid::Uuid;
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
@@ -8,7 +8,7 @@ use crate::core::get_time;
 use crate::key_management::key_entity::SymKeyEntity;
 use crate::set_params;
 
-pub(super) async fn register_sym_key(app_id: AppId, input: GeneratedSymKeyHeadServerInput) -> AppRes<SymKeyId>
+pub(super) async fn register_sym_key(app_id: AppId, creator_id: UserId, input: GeneratedSymKeyHeadServerInput) -> AppRes<SymKeyId>
 {
 	let key_id = Uuid::new_v4().to_string();
 	let time = get_time()?;
@@ -20,11 +20,12 @@ INSERT INTO sentc_sym_key_management
      id, 
      app_id, 
      master_key_id, 
+     creator_id,
      encrypted_key, 
      master_key_alg, 
      time
      ) 
-VALUES (?,?,?,?,?,?)";
+VALUES (?,?,?,?,?,?,?)";
 
 	exec(
 		sql,
@@ -32,6 +33,7 @@ VALUES (?,?,?,?,?,?)";
 			key_id.to_string(),
 			app_id,
 			input.master_key_id,
+			creator_id,
 			input.encrypted_key_string,
 			input.alg,
 			time.to_string()
@@ -40,6 +42,16 @@ VALUES (?,?,?,?,?,?)";
 	.await?;
 
 	Ok(key_id)
+}
+
+pub(super) async fn delete_sym_key(app_id: AppId, creator_id: UserId, key_id: SymKeyId) -> AppRes<()>
+{
+	//language=SQL
+	let sql = "DELETE FROM sentc_sym_key_management WHERE app_id = ? AND creator_id = ? AND id = ?";
+
+	exec(sql, set_params!(app_id, creator_id, key_id)).await?;
+
+	Ok(())
 }
 
 pub(super) async fn get_sym_key_by_id(app_id: AppId, key_id: SymKeyId) -> AppRes<SymKeyEntity>
