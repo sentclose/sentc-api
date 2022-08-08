@@ -40,6 +40,9 @@ pub struct AppOptions
 	pub user_done_login: i32,
 	pub user_public_data: i32,
 	pub user_refresh: i32,
+
+	pub key_register: i32,
+	pub key_get: i32,
 }
 
 impl Default for AppOptions
@@ -70,6 +73,8 @@ impl Default for AppOptions
 			user_done_login: 1,
 			user_public_data: 1,
 			user_refresh: 1,
+			key_register: 1,
+			key_get: 1,
 		}
 	}
 }
@@ -102,6 +107,8 @@ impl AppOptions
 			user_done_login: 1,
 			user_public_data: 1,
 			user_refresh: 1,
+			key_register: 1,
+			key_get: 1,
 		}
 	}
 }

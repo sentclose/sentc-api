@@ -79,7 +79,9 @@ SELECT
     user_prepare_login,
     user_done_login,
     user_public_data,
-    user_refresh
+    user_refresh,
+    key_register,
+    key_get
 FROM sentc_app_options 
 WHERE 
     app_id = ?";
@@ -402,8 +404,10 @@ INSERT INTO sentc_app_options
      user_prepare_login, 
      user_done_login,
      user_public_data,
-     user_refresh
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+     user_refresh,
+     key_register,
+     key_get
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let params_options = set_params!(
 		app_id.to_string(),
@@ -429,7 +433,9 @@ INSERT INTO sentc_app_options
 		app_options.user_prepare_login,
 		app_options.user_done_login,
 		app_options.user_public_data,
-		app_options.user_refresh
+		app_options.user_refresh,
+		app_options.key_register,
+		app_options.key_get
 	);
 
 	(sql, params_options)
