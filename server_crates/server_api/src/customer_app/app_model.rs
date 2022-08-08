@@ -3,7 +3,7 @@ use server_api_common::app::{AppOptions, AppRegisterInput};
 use uuid::Uuid;
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
-use crate::core::db::{exec, exec_transaction, query, query_first, TransactionData};
+use crate::core::db::{exec, exec_transaction, query, query_first, Params, TransactionData};
 use crate::core::get_time;
 use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppExistsEntity, AppJwt, AppJwtData, AuthWithToken};
 use crate::{set_params, AppOptionsEntity};
@@ -213,64 +213,7 @@ VALUES (?,?,?,?,?,?,?)";
 		time.to_string()
 	);
 
-	let app_options = input.options;
-
-	//language=SQL
-	let sql_options = r"
-INSERT INTO sentc_app_options 
-    (
-     app_id, 
-     group_create, 
-     group_get, 
-     group_invite, 
-     group_reject_invite, 
-     group_accept_invite, 
-     group_join_req, 
-     group_accept_join_req, 
-     group_reject_join_req, 
-     group_key_rotation, 
-     group_user_delete, 
-     group_change_rank, 
-     group_delete, 
-     group_leave, 
-     user_exists, 
-     user_register, 
-     user_delete, 
-     user_update, 
-     user_change_password, 
-     user_reset_password, 
-     user_prepare_login, 
-     user_done_login,
-     user_public_data,
-     user_refresh
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-
-	let params_options = set_params!(
-		app_id.to_string(),
-		app_options.group_create,
-		app_options.group_get,
-		app_options.group_invite,
-		app_options.group_reject_invite,
-		app_options.group_accept_invite,
-		app_options.group_join_req,
-		app_options.group_accept_join_req,
-		app_options.group_reject_join_req,
-		app_options.group_key_rotation,
-		app_options.group_user_delete,
-		app_options.group_change_rank,
-		app_options.group_delete,
-		app_options.group_leave,
-		app_options.user_exists,
-		app_options.user_register,
-		app_options.user_delete,
-		app_options.user_update,
-		app_options.user_change_password,
-		app_options.user_reset_password,
-		app_options.user_prepare_login,
-		app_options.user_done_login,
-		app_options.user_public_data,
-		app_options.user_refresh
-	);
+	let (sql_options, params_options) = prepare_options_insert(app_id.to_string(), input.options);
 
 	exec_transaction(vec![
 		TransactionData {
@@ -387,8 +330,53 @@ pub(super) async fn update_options(customer_id: CustomerId, app_id: AppId, app_o
 
 	exec(sql, set_params!(app_id.to_string())).await?;
 
+	let (sql_options, params_options) = prepare_options_insert(app_id, app_options);
+
+	exec(sql_options, params_options).await?;
+
+	Ok(())
+}
+
+pub(super) async fn delete(customer_id: CustomerId, app_id: AppId) -> AppRes<()>
+{
+	//use the double check with the customer id to check if this app really belongs to the customer!
+
 	//language=SQL
-	let sql_options = r"
+	let sql = "DELETE FROM sentc_app WHERE customer_id = ? AND id = ?";
+
+	exec(sql, set_params!(customer_id, app_id)).await?;
+
+	Ok(())
+}
+
+//__________________________________________________________________________________________________
+
+async fn check_app_exists(customer_id: CustomerId, app_id: AppId) -> AppRes<()>
+{
+	//check if this app belongs to this customer
+	//language=SQL
+	let sql = "SELECT 1 FROM sentc_app WHERE id = ? AND customer_id = ?";
+	let app_exists: Option<AppExistsEntity> = query_first(sql, set_params!(app_id, customer_id)).await?;
+
+	match app_exists {
+		Some(_) => {},
+		None => {
+			return Err(HttpErr::new(
+				400,
+				ApiErrorCodes::AppNotFound,
+				"App not found in this user space".to_string(),
+				None,
+			))
+		},
+	}
+
+	Ok(())
+}
+
+fn prepare_options_insert(app_id: AppId, app_options: AppOptions) -> (&'static str, Params)
+{
+	//language=SQL
+	let sql = r"
 INSERT INTO sentc_app_options 
     (
      app_id, 
@@ -444,43 +432,5 @@ INSERT INTO sentc_app_options
 		app_options.user_refresh
 	);
 
-	exec(sql_options, params_options).await?;
-
-	Ok(())
-}
-
-pub(super) async fn delete(customer_id: CustomerId, app_id: AppId) -> AppRes<()>
-{
-	//use the double check with the customer id to check if this app really belongs to the customer!
-
-	//language=SQL
-	let sql = "DELETE FROM sentc_app WHERE customer_id = ? AND id = ?";
-
-	exec(sql, set_params!(customer_id, app_id)).await?;
-
-	Ok(())
-}
-
-//__________________________________________________________________________________________________
-
-async fn check_app_exists(customer_id: CustomerId, app_id: AppId) -> AppRes<()>
-{
-	//check if this app belongs to this customer
-	//language=SQL
-	let sql = "SELECT 1 FROM sentc_app WHERE id = ? AND customer_id = ?";
-	let app_exists: Option<AppExistsEntity> = query_first(sql, set_params!(app_id, customer_id)).await?;
-
-	match app_exists {
-		Some(_) => {},
-		None => {
-			return Err(HttpErr::new(
-				400,
-				ApiErrorCodes::AppNotFound,
-				"App not found in this user space".to_string(),
-				None,
-			))
-		},
-	}
-
-	Ok(())
+	(sql, params_options)
 }
