@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 08. Aug 2022 um 07:43
+-- Erstellungszeit: 08. Aug 2022 um 13:29
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -54,6 +54,10 @@ $$
 DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `delete_group` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_group WHERE app_id = OLD.id
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `delete_keys` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_sym_key_management WHERE app_id = OLD.id
 $$
 DELIMITER ;
 DELIMITER $$
@@ -129,15 +133,17 @@ CREATE TABLE `sentc_app_options` (
   `user_prepare_login` int(11) NOT NULL,
   `user_done_login` int(11) NOT NULL,
   `user_public_data` int(11) NOT NULL,
-  `user_refresh` int(11) NOT NULL
+  `user_refresh` int(11) NOT NULL,
+  `key_register` int(11) NOT NULL,
+  `key_get` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='option: 0 = not allowed,  1 = public token, 2 = secret token';
 
 --
 -- Daten für Tabelle `sentc_app_options`
 --
 
-INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`) VALUES
-('1665eb92-4513-469f-81d8-b72a62e0134c', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`, `key_register`, `key_get`) VALUES
+('1665eb92-4513-469f-81d8-b72a62e0134c', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -299,6 +305,22 @@ CREATE TABLE `sentc_internally_db_version` (
 -- --------------------------------------------------------
 
 --
+-- Tabellenstruktur für Tabelle `sentc_sym_key_management`
+--
+
+CREATE TABLE `sentc_sym_key_management` (
+  `id` varchar(36) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
+  `master_key_id` varchar(36) NOT NULL COMMENT 'the key which encrypted this key (e.g. a group key)',
+  `creator_id` varchar(36) NOT NULL,
+  `encrypted_key` text NOT NULL,
+  `master_key_alg` text NOT NULL,
+  `time` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Symmetric key created by the sdk';
+
+-- --------------------------------------------------------
+
+--
 -- Tabellenstruktur für Tabelle `sentc_user`
 --
 
@@ -451,6 +473,14 @@ ALTER TABLE `sentc_group_user_key_rotation`
 --
 ALTER TABLE `sentc_internally_db_version`
   ADD PRIMARY KEY (`version`);
+
+--
+-- Indizes für die Tabelle `sentc_sym_key_management`
+--
+ALTER TABLE `sentc_sym_key_management`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `master_key` (`master_key_id`,`app_id`) USING BTREE,
+  ADD KEY `by_user` (`app_id`,`creator_id`);
 
 --
 -- Indizes für die Tabelle `sentc_user`

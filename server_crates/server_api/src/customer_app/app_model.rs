@@ -3,7 +3,7 @@ use server_api_common::app::{AppOptions, AppRegisterInput};
 use uuid::Uuid;
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
-use crate::core::db::{exec, exec_transaction, query, query_first, TransactionData};
+use crate::core::db::{exec, exec_transaction, query, query_first, Params, TransactionData};
 use crate::core::get_time;
 use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppExistsEntity, AppJwt, AppJwtData, AuthWithToken};
 use crate::{set_params, AppOptionsEntity};
@@ -79,7 +79,9 @@ SELECT
     user_prepare_login,
     user_done_login,
     user_public_data,
-    user_refresh
+    user_refresh,
+    key_register,
+    key_get
 FROM sentc_app_options 
 WHERE 
     app_id = ?";
@@ -213,64 +215,7 @@ VALUES (?,?,?,?,?,?,?)";
 		time.to_string()
 	);
 
-	let app_options = input.options;
-
-	//language=SQL
-	let sql_options = r"
-INSERT INTO sentc_app_options 
-    (
-     app_id, 
-     group_create, 
-     group_get, 
-     group_invite, 
-     group_reject_invite, 
-     group_accept_invite, 
-     group_join_req, 
-     group_accept_join_req, 
-     group_reject_join_req, 
-     group_key_rotation, 
-     group_user_delete, 
-     group_change_rank, 
-     group_delete, 
-     group_leave, 
-     user_exists, 
-     user_register, 
-     user_delete, 
-     user_update, 
-     user_change_password, 
-     user_reset_password, 
-     user_prepare_login, 
-     user_done_login,
-     user_public_data,
-     user_refresh
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-
-	let params_options = set_params!(
-		app_id.to_string(),
-		app_options.group_create,
-		app_options.group_get,
-		app_options.group_invite,
-		app_options.group_reject_invite,
-		app_options.group_accept_invite,
-		app_options.group_join_req,
-		app_options.group_accept_join_req,
-		app_options.group_reject_join_req,
-		app_options.group_key_rotation,
-		app_options.group_user_delete,
-		app_options.group_change_rank,
-		app_options.group_delete,
-		app_options.group_leave,
-		app_options.user_exists,
-		app_options.user_register,
-		app_options.user_delete,
-		app_options.user_update,
-		app_options.user_change_password,
-		app_options.user_reset_password,
-		app_options.user_prepare_login,
-		app_options.user_done_login,
-		app_options.user_public_data,
-		app_options.user_refresh
-	);
+	let (sql_options, params_options) = prepare_options_insert(app_id.to_string(), input.options);
 
 	exec_transaction(vec![
 		TransactionData {
@@ -387,62 +332,7 @@ pub(super) async fn update_options(customer_id: CustomerId, app_id: AppId, app_o
 
 	exec(sql, set_params!(app_id.to_string())).await?;
 
-	//language=SQL
-	let sql_options = r"
-INSERT INTO sentc_app_options 
-    (
-     app_id, 
-     group_create, 
-     group_get, 
-     group_invite, 
-     group_reject_invite, 
-     group_accept_invite, 
-     group_join_req, 
-     group_accept_join_req, 
-     group_reject_join_req, 
-     group_key_rotation, 
-     group_user_delete, 
-     group_change_rank, 
-     group_delete, 
-     group_leave, 
-     user_exists, 
-     user_register, 
-     user_delete, 
-     user_update, 
-     user_change_password, 
-     user_reset_password, 
-     user_prepare_login, 
-     user_done_login,
-     user_public_data,
-     user_refresh
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-
-	let params_options = set_params!(
-		app_id.to_string(),
-		app_options.group_create,
-		app_options.group_get,
-		app_options.group_invite,
-		app_options.group_reject_invite,
-		app_options.group_accept_invite,
-		app_options.group_join_req,
-		app_options.group_accept_join_req,
-		app_options.group_reject_join_req,
-		app_options.group_key_rotation,
-		app_options.group_user_delete,
-		app_options.group_change_rank,
-		app_options.group_delete,
-		app_options.group_leave,
-		app_options.user_exists,
-		app_options.user_register,
-		app_options.user_delete,
-		app_options.user_update,
-		app_options.user_change_password,
-		app_options.user_reset_password,
-		app_options.user_prepare_login,
-		app_options.user_done_login,
-		app_options.user_public_data,
-		app_options.user_refresh
-	);
+	let (sql_options, params_options) = prepare_options_insert(app_id, app_options);
 
 	exec(sql_options, params_options).await?;
 
@@ -483,4 +373,70 @@ async fn check_app_exists(customer_id: CustomerId, app_id: AppId) -> AppRes<()>
 	}
 
 	Ok(())
+}
+
+fn prepare_options_insert(app_id: AppId, app_options: AppOptions) -> (&'static str, Params)
+{
+	//language=SQL
+	let sql = r"
+INSERT INTO sentc_app_options 
+    (
+     app_id, 
+     group_create, 
+     group_get, 
+     group_invite, 
+     group_reject_invite, 
+     group_accept_invite, 
+     group_join_req, 
+     group_accept_join_req, 
+     group_reject_join_req, 
+     group_key_rotation, 
+     group_user_delete, 
+     group_change_rank, 
+     group_delete, 
+     group_leave, 
+     user_exists, 
+     user_register, 
+     user_delete, 
+     user_update, 
+     user_change_password, 
+     user_reset_password, 
+     user_prepare_login, 
+     user_done_login,
+     user_public_data,
+     user_refresh,
+     key_register,
+     key_get
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+	let params_options = set_params!(
+		app_id.to_string(),
+		app_options.group_create,
+		app_options.group_get,
+		app_options.group_invite,
+		app_options.group_reject_invite,
+		app_options.group_accept_invite,
+		app_options.group_join_req,
+		app_options.group_accept_join_req,
+		app_options.group_reject_join_req,
+		app_options.group_key_rotation,
+		app_options.group_user_delete,
+		app_options.group_change_rank,
+		app_options.group_delete,
+		app_options.group_leave,
+		app_options.user_exists,
+		app_options.user_register,
+		app_options.user_delete,
+		app_options.user_update,
+		app_options.user_change_password,
+		app_options.user_reset_password,
+		app_options.user_prepare_login,
+		app_options.user_done_login,
+		app_options.user_public_data,
+		app_options.user_refresh,
+		app_options.key_register,
+		app_options.key_get
+	);
+
+	(sql, params_options)
 }

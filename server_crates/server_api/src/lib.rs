@@ -10,6 +10,7 @@ mod middleware;
 mod routes;
 mod user;
 mod util;
+mod key_management;
 
 pub use customer_app::app_entities::*;
 

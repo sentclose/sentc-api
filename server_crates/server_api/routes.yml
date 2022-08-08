@@ -72,6 +72,23 @@ routes:
                   s: crate::user::refresh_jwt
                   mw:
                     - jwt::jwt_expire_transform
+              #_________________________________________________________________________________________________________
+              - group:
+                  p: "/keys"
+                  gr:
+                    - post:
+                        p: "/sym_key"
+                        s: crate::key_management::register_sym_key
+                        mw:
+                          - jwt::jwt_transform
+                    - delete:
+                        p: "/sym_key/:key_id"
+                        s: crate::key_management::delete_sym_key
+                        mw:
+                          - jwt::jwt_transform
+
+                    - get: {p: "/sym_key/master_key/:master_key_id/:last_fetched_time/:last_key_id", s: crate::key_management::get_all_sym_keys_to_master_key}
+                    - get: {p: "/sym_key/:key_id", s: crate::key_management::get_sym_key_by_id}
         #_______________________________________________________________________________________________________________
         # routes which needed jwt check with a valid jwt
         - group:

@@ -36,6 +36,9 @@ pub enum Endpoint
 	GroupLeave,
 	GroupChangeRank,
 	GroupUserDelete,
+
+	KeyRegister,
+	KeyGet,
 }
 
 pub(crate) fn get_app_data_from_req(req: &Request) -> AppRes<&AppData>
@@ -126,6 +129,9 @@ pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endp
 		Endpoint::GroupLeave => options.group_leave,
 		Endpoint::GroupChangeRank => options.group_change_rank,
 		Endpoint::GroupUserDelete => options.group_user_delete,
+
+		Endpoint::KeyRegister => options.key_register,
+		Endpoint::KeyGet => options.key_get,
 	};
 
 	let token_needed = match token_needed {
