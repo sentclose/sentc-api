@@ -32,6 +32,12 @@ static SQLITE_DB_CONN: OnceCell<deadpool_sqlite::Pool> = OnceCell::const_new();
 #[cfg(feature = "mysql")]
 static MARIA_DB_COMM: OnceCell<mysql_async::Pool> = OnceCell::const_new();
 
+#[cfg(feature = "mysql")]
+pub type Params = mysql_common::params::Params;
+
+#[cfg(feature = "sqlite")]
+pub type Params = Vec<rusqlite::types::Value>;
+
 pub async fn init_db()
 {
 	#[cfg(feature = "sqlite")]
