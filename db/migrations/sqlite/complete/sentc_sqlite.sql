@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 1:33pm on August 8, 2022 (UTC)
+-- Exported: 7:10pm on August 8, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -170,6 +170,19 @@ CREATE TABLE "sentc_user_token"
 CREATE TABLE 'sentc_sym_key_management' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'master_key_id' TEXT, 'creator_id' TEXT, 'encrypted_key' TEXT, 'master_key_alg' TEXT,'time' TEXT);
 
 ----
+-- Table structure for sentc_user_action_log
+----
+CREATE TABLE "sentc_user_action_log"
+(
+	user_id   TEXT,
+	time      TEXT,
+	action_id INTEGER,
+	app_id    TEXT,
+	constraint sentc_user_action_log_pk
+		primary key (user_id, app_id, time)
+);
+
+----
 -- structure for index sqlite_autoindex_test_1 on table test
 ----
 ;
@@ -293,6 +306,11 @@ CREATE INDEX 'get_group' ON "sentc_group_keys" ("group_id" ASC, "app_id" ASC);
 -- structure for index by_user on table sentc_sym_key_management
 ----
 CREATE INDEX 'by_user' ON "sentc_sym_key_management" ("creator_id" ASC, "app_id" ASC);
+
+----
+-- structure for index sqlite_autoindex_sentc_user_action_log_1 on table sentc_user_action_log
+----
+;
 
 ----
 -- structure for trigger group_delete_invites on table sentc_group

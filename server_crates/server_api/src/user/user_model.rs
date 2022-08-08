@@ -454,3 +454,36 @@ WHERE
 
 	Ok(())
 }
+
+//__________________________________________________________________________________________________
+
+pub(super) enum UserAction
+{
+	Login,
+	Refresh,
+	ChangePassword,
+	ResetPassword,
+	Delete,
+}
+
+pub(super) async fn save_user_action(app_id: AppId, user_id: UserId, action: UserAction) -> AppRes<()>
+{
+	let time = get_time()?;
+
+	//language=SQL
+	let sql = "INSERT INTO sentc_user_action_log (user_id, time, action_id, app_id) VALUES (?,?,?,?)";
+
+	let action = match action {
+		UserAction::Login => 0,
+		UserAction::Refresh => 1,
+		UserAction::ChangePassword => 2,
+		UserAction::ResetPassword => 3,
+		UserAction::Delete => 4,
+	};
+
+	exec(sql, set_params!(user_id, time.to_string(), action, app_id)).await?;
+
+	Ok(())
+}
+
+//__________________________________________________________________________________________________

@@ -30,6 +30,7 @@ use crate::core::input_helper::{bytes_to_json, get_raw_body};
 use crate::core::url_helper::get_name_param_from_req;
 use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use crate::user::jwt::get_jwt_data_from_param;
+use crate::user::user_model::UserAction;
 
 pub(crate) async fn exists(mut req: Request) -> JRes<UserIdentifierAvailableServerOutput>
 {
@@ -82,6 +83,14 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerKeysOutp
 	check_endpoint_with_app_options(app_data, Endpoint::UserDoneLogin)?;
 
 	let out = user_service::done_login(app_data, done_login).await?;
+
+	//save the action, only in controller not service because this just not belongs to other controller
+	user_model::save_user_action(
+		app_data.app_data.app_id.to_string(),
+		out.user_id.to_string(),
+		UserAction::Login,
+	)
+	.await?;
 
 	echo(out)
 }
@@ -145,6 +154,13 @@ pub(crate) async fn refresh_jwt(mut req: Request) -> JRes<DoneLoginLightServerOu
 
 	let out = user_service::refresh_jwt(app_data, user.id.to_string(), input, "user").await?;
 
+	user_model::save_user_action(
+		app_data.app_data.app_id.to_string(),
+		out.user_id.to_string(),
+		UserAction::Refresh,
+	)
+	.await?;
+
 	echo(out)
 }
 
@@ -155,6 +171,8 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 	let user = get_jwt_data_from_param(&req)?;
 
 	user_service::delete(user).await?;
+
+	user_model::save_user_action(user.sub.to_string(), user.id.to_string(), UserAction::Delete).await?;
 
 	echo_success()
 }
@@ -182,6 +200,8 @@ pub(crate) async fn change_password(mut req: Request) -> JRes<ServerSuccessOutpu
 
 	user_service::change_password(user, input).await?;
 
+	user_model::save_user_action(user.sub.to_string(), user.id.to_string(), UserAction::ChangePassword).await?;
+
 	echo_success()
 }
 
@@ -194,6 +214,8 @@ pub(crate) async fn reset_password(mut req: Request) -> JRes<ServerSuccessOutput
 	check_endpoint_with_req(&req, Endpoint::UserResetPassword)?;
 
 	user_service::reset_password(user.id.as_str(), input).await?;
+
+	user_model::save_user_action(user.sub.to_string(), user.id.to_string(), UserAction::ResetPassword).await?;
 
 	echo_success()
 }
