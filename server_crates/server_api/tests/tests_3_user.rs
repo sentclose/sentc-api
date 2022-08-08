@@ -797,8 +797,6 @@ async fn test_22_refresh_jwt()
 
 	let body = res.text().await.unwrap();
 
-	println!("{}", body);
-
 	let out = ServerOutput::<DoneLoginLightServerOutput>::from_string(body.as_str()).unwrap();
 
 	assert_eq!(out.status, true);

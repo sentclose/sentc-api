@@ -190,7 +190,7 @@ pub(super) async fn get_user_and_public_key(
 	//language=SQL
 	let sql = r"
 SELECT gu.user_id, id, public_key, keypair_encrypt_alg, gu.time 
-FROM sentc_group_user gu, user_keys uk 
+FROM sentc_group_user gu, sentc_user_keys uk 
 WHERE 
     gu.user_id = uk.user_id AND 
     group_id = ? AND 

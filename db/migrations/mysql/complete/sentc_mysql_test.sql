@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 07. Aug 2022 um 12:36
+-- Erstellungszeit: 08. Aug 2022 um 07:43
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -25,10 +25,10 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `app`
+-- Tabellenstruktur für Tabelle `sentc_app`
 --
 
-CREATE TABLE `app` (
+CREATE TABLE `sentc_app` (
   `id` varchar(36) NOT NULL,
   `customer_id` varchar(36) NOT NULL,
   `identifier` text NOT NULL,
@@ -39,39 +39,39 @@ CREATE TABLE `app` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
--- Daten für Tabelle `app`
+-- Daten für Tabelle `sentc_app`
 --
 
-INSERT INTO `app` (`id`, `customer_id`, `identifier`, `hashed_secret_token`, `hashed_public_token`, `hash_alg`, `time`) VALUES
+INSERT INTO `sentc_app` (`id`, `customer_id`, `identifier`, `hashed_secret_token`, `hashed_public_token`, `hash_alg`, `time`) VALUES
 ('1665eb92-4513-469f-81d8-b72a62e0134c', 'sentc_int', '', 'cmzOt+BnyErJKsF2qNaiJ/YqsXJymnGQSdvJi5FpeOo=', 'b/t88y7h0zwqOXAtR/UqE4qsPL11PLFvo1e+8PNP8LU=', 'SHA256', 1659606752935);
 
 --
--- Trigger `app`
+-- Trigger `sentc_app`
 --
 DELIMITER $$
-CREATE TRIGGER `delete_app_jwt` AFTER DELETE ON `app` FOR EACH ROW DELETE FROM app_jwt_keys WHERE app_id = OLD.id
+CREATE TRIGGER `delete_app_jwt` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_app_jwt_keys WHERE app_id = OLD.id
 $$
 DELIMITER ;
 DELIMITER $$
-CREATE TRIGGER `delete_group` AFTER DELETE ON `app` FOR EACH ROW DELETE FROM sentc_group WHERE app_id = OLD.id
+CREATE TRIGGER `delete_group` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_group WHERE app_id = OLD.id
 $$
 DELIMITER ;
 DELIMITER $$
-CREATE TRIGGER `delete_options` AFTER DELETE ON `app` FOR EACH ROW DELETE FROM app_options WHERE app_id = OLD.id
+CREATE TRIGGER `delete_options` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_app_options WHERE app_id = OLD.id
 $$
 DELIMITER ;
 DELIMITER $$
-CREATE TRIGGER `delete_user` AFTER DELETE ON `app` FOR EACH ROW DELETE FROM user WHERE app_id = OLD.id
+CREATE TRIGGER `delete_user` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_user WHERE app_id = OLD.id
 $$
 DELIMITER ;
 
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `app_active_log`
+-- Tabellenstruktur für Tabelle `sentc_app_active_log`
 --
 
-CREATE TABLE `app_active_log` (
+CREATE TABLE `sentc_app_active_log` (
   `app_id` varchar(36) NOT NULL,
   `time` bigint(20) NOT NULL,
   `action_id` int(11) NOT NULL COMMENT 'what was done. internal id'
@@ -80,10 +80,10 @@ CREATE TABLE `app_active_log` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `app_jwt_keys`
+-- Tabellenstruktur für Tabelle `sentc_app_jwt_keys`
 --
 
-CREATE TABLE `app_jwt_keys` (
+CREATE TABLE `sentc_app_jwt_keys` (
   `id` varchar(36) NOT NULL,
   `app_id` varchar(36) NOT NULL,
   `sign_key` text NOT NULL,
@@ -93,19 +93,19 @@ CREATE TABLE `app_jwt_keys` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='multiple per app';
 
 --
--- Daten für Tabelle `app_jwt_keys`
+-- Daten für Tabelle `sentc_app_jwt_keys`
 --
 
-INSERT INTO `app_jwt_keys` (`id`, `app_id`, `sign_key`, `verify_key`, `alg`, `time`) VALUES
+INSERT INTO `sentc_app_jwt_keys` (`id`, `app_id`, `sign_key`, `verify_key`, `alg`, `time`) VALUES
 ('174b531f-8814-42a2-94ab-3c17036183a5', '1665eb92-4513-469f-81d8-b72a62e0134c', 'MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDAhH0kMPR68V4jaSECXKgz6hEV+7iHqyOFAAv0Y6EXf7Db3T3rwuwuIfHyD41Rgy0ihZANiAARUyndUd/523UjG1Q5cChBHuntfYiQ5wRUIbONlT78ZrU6eUbncTdaWN72pLYTVIyjmpqgCtszZYKQNMw5I1V4c0mEddOe8bMSmic0egcVxmCCjgQVau8xU4bccdyrllFI=', 'BFTKd1R3/nbdSMbVDlwKEEe6e19iJDnBFQhs42VPvxmtTp5RudxN1pY3vakthNUjKOamqAK2zNlgpA0zDkjVXhzSYR1057xsxKaJzR6BxXGYIKOBBVq7zFThtxx3KuWUUg==', 'ES384', 1659606752935);
 
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `app_options`
+-- Tabellenstruktur für Tabelle `sentc_app_options`
 --
 
-CREATE TABLE `app_options` (
+CREATE TABLE `sentc_app_options` (
   `app_id` varchar(36) NOT NULL,
   `group_create` int(11) NOT NULL COMMENT 'create a group',
   `group_get` int(11) NOT NULL COMMENT 'get the group keys',
@@ -133,22 +133,11 @@ CREATE TABLE `app_options` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='option: 0 = not allowed,  1 = public token, 2 = secret token';
 
 --
--- Daten für Tabelle `app_options`
+-- Daten für Tabelle `sentc_app_options`
 --
 
-INSERT INTO `app_options` (`app_id`, `group_create`, `group_get`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`) VALUES
+INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`) VALUES
 ('1665eb92-4513-469f-81d8-b72a62e0134c', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `internally_db_version`
---
-
-CREATE TABLE `internally_db_version` (
-  `version` varchar(36) NOT NULL,
-  `time` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='for migration';
 
 -- --------------------------------------------------------
 
@@ -170,7 +159,7 @@ CREATE TABLE `sentc_customer` (
 -- Trigger `sentc_customer`
 --
 DELIMITER $$
-CREATE TRIGGER `delete_app` AFTER DELETE ON `sentc_customer` FOR EACH ROW DELETE FROM app WHERE customer_id = OLD.id
+CREATE TRIGGER `delete_app` AFTER DELETE ON `sentc_customer` FOR EACH ROW DELETE FROM sentc_app WHERE customer_id = OLD.id
 $$
 DELIMITER ;
 
@@ -299,6 +288,66 @@ CREATE TABLE `sentc_group_user_key_rotation` (
 -- --------------------------------------------------------
 
 --
+-- Tabellenstruktur für Tabelle `sentc_internally_db_version`
+--
+
+CREATE TABLE `sentc_internally_db_version` (
+  `version` varchar(36) NOT NULL,
+  `time` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='for migration';
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_user`
+--
+
+CREATE TABLE `sentc_user` (
+  `id` varchar(36) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
+  `identifier` varchar(200) NOT NULL,
+  `time` bigint(20) NOT NULL COMMENT 'registered at'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Trigger `sentc_user`
+--
+DELIMITER $$
+CREATE TRIGGER `user_delete_jwt_refresh` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_token WHERE user_id = OLD.id
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `user_delete_user_keys` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_keys WHERE user_id = OLD.id
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_user_keys`
+--
+
+CREATE TABLE `sentc_user_keys` (
+  `id` varchar(36) NOT NULL,
+  `user_id` varchar(36) NOT NULL,
+  `client_random_value` text NOT NULL,
+  `public_key` text NOT NULL,
+  `encrypted_private_key` text NOT NULL,
+  `keypair_encrypt_alg` text NOT NULL,
+  `encrypted_sign_key` text NOT NULL,
+  `verify_key` text NOT NULL,
+  `keypair_sign_alg` text NOT NULL,
+  `derived_alg` text NOT NULL,
+  `encrypted_master_key` text NOT NULL,
+  `master_key_alg` text NOT NULL,
+  `encrypted_master_key_alg` text NOT NULL,
+  `hashed_auth_key` text NOT NULL,
+  `time` bigint(20) NOT NULL COMMENT 'active since'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='multiple keys per user';
+
+-- --------------------------------------------------------
+
+--
 -- Tabellenstruktur für Tabelle `sentc_user_token`
 --
 
@@ -321,91 +370,36 @@ CREATE TABLE `test` (
   `time` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `user`
---
-
-CREATE TABLE `user` (
-  `id` varchar(36) NOT NULL,
-  `app_id` varchar(36) NOT NULL,
-  `identifier` varchar(200) NOT NULL,
-  `time` bigint(20) NOT NULL COMMENT 'registered at'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Trigger `user`
---
-DELIMITER $$
-CREATE TRIGGER `user_delete_jwt_refresh` AFTER DELETE ON `user` FOR EACH ROW DELETE FROM sentc_user_token WHERE user_id = OLD.id
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `user_delete_user_keys` AFTER DELETE ON `user` FOR EACH ROW DELETE FROM user_keys WHERE user_id = OLD.id
-$$
-DELIMITER ;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `user_keys`
---
-
-CREATE TABLE `user_keys` (
-  `id` varchar(36) NOT NULL,
-  `user_id` varchar(36) NOT NULL,
-  `client_random_value` text NOT NULL,
-  `public_key` text NOT NULL,
-  `encrypted_private_key` text NOT NULL,
-  `keypair_encrypt_alg` text NOT NULL,
-  `encrypted_sign_key` text NOT NULL,
-  `verify_key` text NOT NULL,
-  `keypair_sign_alg` text NOT NULL,
-  `derived_alg` text NOT NULL,
-  `encrypted_master_key` text NOT NULL,
-  `master_key_alg` text NOT NULL,
-  `encrypted_master_key_alg` text NOT NULL,
-  `hashed_auth_key` text NOT NULL,
-  `time` bigint(20) NOT NULL COMMENT 'active since'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='multiple keys per user';
-
 --
 -- Indizes der exportierten Tabellen
 --
 
 --
--- Indizes für die Tabelle `app`
+-- Indizes für die Tabelle `sentc_app`
 --
-ALTER TABLE `app`
+ALTER TABLE `sentc_app`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `hashed_secret_token` (`hashed_secret_token`),
   ADD UNIQUE KEY `hashed_public_token` (`hashed_public_token`);
 
 --
--- Indizes für die Tabelle `app_active_log`
+-- Indizes für die Tabelle `sentc_app_active_log`
 --
-ALTER TABLE `app_active_log`
+ALTER TABLE `sentc_app_active_log`
   ADD PRIMARY KEY (`app_id`,`time`);
 
 --
--- Indizes für die Tabelle `app_jwt_keys`
+-- Indizes für die Tabelle `sentc_app_jwt_keys`
 --
-ALTER TABLE `app_jwt_keys`
+ALTER TABLE `sentc_app_jwt_keys`
   ADD PRIMARY KEY (`id`),
   ADD KEY `app_id` (`app_id`);
 
 --
--- Indizes für die Tabelle `app_options`
+-- Indizes für die Tabelle `sentc_app_options`
 --
-ALTER TABLE `app_options`
+ALTER TABLE `sentc_app_options`
   ADD PRIMARY KEY (`app_id`);
-
---
--- Indizes für die Tabelle `internally_db_version`
---
-ALTER TABLE `internally_db_version`
-  ADD PRIMARY KEY (`version`);
 
 --
 -- Indizes für die Tabelle `sentc_customer`
@@ -453,6 +447,26 @@ ALTER TABLE `sentc_group_user_key_rotation`
   ADD PRIMARY KEY (`key_id`,`user_id`) USING BTREE;
 
 --
+-- Indizes für die Tabelle `sentc_internally_db_version`
+--
+ALTER TABLE `sentc_internally_db_version`
+  ADD PRIMARY KEY (`version`);
+
+--
+-- Indizes für die Tabelle `sentc_user`
+--
+ALTER TABLE `sentc_user`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `app_id` (`app_id`,`identifier`);
+
+--
+-- Indizes für die Tabelle `sentc_user_keys`
+--
+ALTER TABLE `sentc_user_keys`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
 -- Indizes für die Tabelle `sentc_user_token`
 --
 ALTER TABLE `sentc_user_token`
@@ -463,20 +477,6 @@ ALTER TABLE `sentc_user_token`
 --
 ALTER TABLE `test`
   ADD PRIMARY KEY (`id`);
-
---
--- Indizes für die Tabelle `user`
---
-ALTER TABLE `user`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `app_id` (`app_id`,`identifier`);
-
---
--- Indizes für die Tabelle `user_keys`
---
-ALTER TABLE `user_keys`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

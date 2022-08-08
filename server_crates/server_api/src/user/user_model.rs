@@ -21,7 +21,7 @@ use crate::user::user_entities::{
 pub(super) async fn get_jwt_sign_key(kid: &str) -> AppRes<String>
 {
 	//language=SQL
-	let sql = "SELECT sign_key FROM app_jwt_keys WHERE id = ?";
+	let sql = "SELECT sign_key FROM sentc_app_jwt_keys WHERE id = ?";
 
 	let sign_key: Option<JwtSignKey> = query_first(sql, set_params!(kid.to_string())).await?;
 
@@ -41,7 +41,7 @@ pub(super) async fn get_jwt_sign_key(kid: &str) -> AppRes<String>
 pub(super) async fn get_jwt_verify_key(kid: &str) -> AppRes<String>
 {
 	//language=SQL
-	let sql = "SELECT verify_key FROM app_jwt_keys WHERE id = ?";
+	let sql = "SELECT verify_key FROM sentc_app_jwt_keys WHERE id = ?";
 
 	let sign_key: Option<JwtVerifyKey> = query_first(sql, set_params!(kid.to_string())).await?;
 
@@ -64,7 +64,7 @@ pub(super) async fn get_jwt_verify_key(kid: &str) -> AppRes<String>
 pub(super) async fn check_user_exists(app_id: &str, user_identifier: &str) -> AppRes<bool>
 {
 	//language=SQL
-	let sql = "SELECT 1 FROM user WHERE identifier = ? AND app_id = ? LIMIT 1";
+	let sql = "SELECT 1 FROM sentc_user WHERE identifier = ? AND app_id = ? LIMIT 1";
 
 	let exists: Option<UserExistsEntity> = query_first(sql, set_params!(user_identifier.to_string(), app_id.to_string())).await?;
 
@@ -90,7 +90,7 @@ pub(super) async fn get_user_login_data(app_id: AppId, user_identifier: &str) ->
 	//language=SQL
 	let sql = r"
 SELECT client_random_value,hashed_auth_key, derived_alg 
-FROM user u,user_keys uk 
+FROM sentc_user u, sentc_user_keys uk 
 WHERE u.identifier = ? AND user_id = u.id AND u.app_id = ? ORDER BY uk.time DESC";
 
 	let login_data: Option<UserLoginDataEntity> = query_first(sql, set_params!(user_identifier.to_string(), app_id)).await?;
@@ -117,7 +117,7 @@ SELECT
     keypair_sign_alg,
     uk.id as k_id,
     u.id
-FROM user u,user_keys uk
+FROM sentc_user u, sentc_user_keys uk
 WHERE user_id = u.id AND u.identifier = ? AND u.app_id = ? ORDER BY uk.time DESC";
 
 	let data: Option<DoneLoginServerKeysOutputEntity> = query_first(sql, set_params!(user_identifier.to_string(), app_id.to_string())).await?;
@@ -128,7 +128,7 @@ WHERE user_id = u.id AND u.identifier = ? AND u.app_id = ? ORDER BY uk.time DESC
 pub(super) async fn get_done_login_light_data(app_id: &str, user_identifier: &str) -> AppRes<Option<UserKeyFistRow>>
 {
 	//language=SQL
-	let sql = "SELECT id FROM user WHERE identifier = ? AND app_id = ?";
+	let sql = "SELECT id FROM sentc_user WHERE identifier = ? AND app_id = ?";
 
 	let data: Option<UserKeyFistRow> = query_first(sql, set_params!(user_identifier.to_string(), app_id.to_string())).await?;
 
@@ -154,7 +154,7 @@ pub(super) async fn check_refresh_token(app_id: AppId, user_id: UserId, refresh_
 SELECT identifier 
 FROM 
     sentc_user_token ut,
-    user u 
+    sentc_user u 
 WHERE ut.app_id = ? AND 
       user_id = ? AND 
       token = ? AND 
@@ -175,7 +175,7 @@ pub(super) async fn get_public_data(app_id: AppId, user_id: UserId) -> AppRes<Us
 	//language=SQL
 	let sql = r"
 SELECT uk.id, public_key, keypair_encrypt_alg, verify_key, keypair_sign_alg
-FROM user u,user_keys uk 
+FROM sentc_user u, sentc_user_keys uk 
 WHERE
     user_id = ? AND app_id = ? AND user_id = u.id
 ORDER BY uk.time LIMIT 1";
@@ -203,7 +203,7 @@ pub(super) async fn get_public_key_data(app_id: AppId, user_id: UserId) -> AppRe
 	//language=SQL
 	let sql = r"
 SELECT uk.id, public_key, keypair_encrypt_alg
-FROM user u,user_keys uk 
+FROM sentc_user u, sentc_user_keys uk 
 WHERE
     user_id = ? AND app_id = ? AND user_id = u.id
 ORDER BY uk.time LIMIT 1";
@@ -231,7 +231,7 @@ pub(super) async fn get_verify_key_data(app_id: AppId, user_id: UserId) -> AppRe
 	//language=SQL
 	let sql = r"
 SELECT uk.id, verify_key, keypair_sign_alg
-FROM user u,user_keys uk 
+FROM sentc_user u, sentc_user_keys uk 
 WHERE
     user_id = ? AND app_id = ? AND user_id = u.id
 ORDER BY uk.time LIMIT 1";
@@ -270,7 +270,7 @@ pub(super) async fn register(app_id: &str, register_data: RegisterData) -> AppRe
 
 	//data for the user table
 	//language=SQL
-	let sql_user = "INSERT INTO user (id, app_id, identifier, time) VALUES (?,?,?,?)";
+	let sql_user = "INSERT INTO sentc_user (id, app_id, identifier, time) VALUES (?,?,?,?)";
 	let user_id = Uuid::new_v4().to_string();
 	let time = get_time()?;
 	let user_params = set_params!(
@@ -283,7 +283,7 @@ pub(super) async fn register(app_id: &str, register_data: RegisterData) -> AppRe
 	//data for the user key table
 	//language=SQL
 	let sql_keys = r"
-INSERT INTO user_keys 
+INSERT INTO sentc_user_keys 
     (id, 
      user_id, 
      client_random_value, 
@@ -342,7 +342,7 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 pub(super) async fn delete(user_id: &str, app_id: AppId) -> AppRes<()>
 {
 	//language=SQL
-	let sql = "DELETE FROM user WHERE id = ? AND app_id = ?";
+	let sql = "DELETE FROM sentc_user WHERE id = ? AND app_id = ?";
 
 	exec(sql, set_params!(user_id.to_owned(), app_id)).await?;
 
@@ -352,7 +352,7 @@ pub(super) async fn delete(user_id: &str, app_id: AppId) -> AppRes<()>
 pub(super) async fn update(user_id: &str, app_id: AppId, user_identifier: &str) -> AppRes<()>
 {
 	//language=SQL
-	let sql = "UPDATE user SET identifier = ? WHERE id = ? AND app_id = ?";
+	let sql = "UPDATE sentc_user SET identifier = ? WHERE id = ? AND app_id = ?";
 
 	exec(
 		sql,
@@ -370,7 +370,7 @@ pub(super) async fn change_password(user_id: &str, data: ChangePasswordData, old
 
 	//language=SQL
 	let sql = r"
-UPDATE user_keys 
+UPDATE sentc_user_keys 
 SET client_random_value = ?,
     hashed_auth_key = ?, 
     encrypted_master_key = ?, 
@@ -404,7 +404,7 @@ pub(super) async fn reset_password(user_id: &str, data: ResetPasswordData) -> Ap
 	//get the first row (the key id) which we are updating
 
 	//language=SQL
-	let sql = "SELECT id FROM user_keys WHERE user_id = ? ORDER BY time DESC LIMIT 1";
+	let sql = "SELECT id FROM sentc_user_keys WHERE user_id = ? ORDER BY time DESC LIMIT 1";
 
 	let row: Option<UserKeyFistRow> = query_first(sql, set_params!(user_id.to_string())).await?;
 
@@ -422,7 +422,7 @@ pub(super) async fn reset_password(user_id: &str, data: ResetPasswordData) -> Ap
 
 	//language=SQL
 	let sql = r"
-UPDATE user_keys
+UPDATE sentc_user_keys
 SET client_random_value = ?,
     hashed_auth_key = ?,
     encrypted_master_key = ?,
