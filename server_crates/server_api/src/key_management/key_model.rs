@@ -57,7 +57,7 @@ pub(super) async fn delete_sym_key(app_id: AppId, creator_id: UserId, key_id: Sy
 pub(super) async fn get_sym_key_by_id(app_id: AppId, key_id: SymKeyId) -> AppRes<SymKeyEntity>
 {
 	//language=SQL
-	let sql = "SELECT * FROM sentc_sym_key_management WHERE app_id = ? AND id = ?";
+	let sql = "SELECT id, master_key_id, encrypted_key, master_key_alg, time FROM sentc_sym_key_management WHERE app_id = ? AND id = ?";
 
 	let key: Option<SymKeyEntity> = query_first(sql, set_params!(app_id, key_id)).await?;
 
@@ -82,7 +82,8 @@ pub(super) async fn get_all_sym_keys_to_master_key(
 ) -> AppRes<Vec<SymKeyEntity>>
 {
 	//language=SQL
-	let sql = "SELECT * FROM sentc_sym_key_management WHERE app_id = ? AND master_key_id = ?".to_string();
+	let sql = "SELECT id, master_key_id, encrypted_key, master_key_alg, time FROM sentc_sym_key_management WHERE app_id = ? AND master_key_id = ?"
+		.to_string();
 
 	let (sql, params) = if last_fetched_time > 0 {
 		let sql = sql + " AND time <= ? AND (time < ? OR (time = ? AND id > ?)) ORDER BY time DESC, id LIMIT 50";
