@@ -3,7 +3,7 @@ use sentc_crypto_common::{AppId, GroupId, UserId};
 use uuid::Uuid;
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
-use crate::core::db::{bulk_insert, exec, exec_transaction, query, query_first, query_string, TransactionData};
+use crate::core::db::{bulk_insert, exec, exec_transaction, query_first, query_string, TransactionData};
 use crate::core::get_time;
 use crate::group::group_entities::{
 	GroupInviteReq,
@@ -345,18 +345,37 @@ pub(super) async fn accept_join_req(
 	Ok(session_id)
 }
 
-pub(super) async fn get_join_req(group_id: GroupId, last_fetched_time: u128, admin_rank: i32) -> AppRes<Vec<GroupJoinReq>>
+pub(super) async fn get_join_req(group_id: GroupId, last_fetched_time: u128, last_id: UserId, admin_rank: i32) -> AppRes<Vec<GroupJoinReq>>
 {
 	check_group_rank(admin_rank, 2)?;
 
-	//fetch the user with public key in a separate req, when the user decided to accept a join req
 	//language=SQL
-	let sql = "SELECT user_id, time FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND time >= ? AND type = ? LIMIT 50";
-	let join_req: Vec<GroupJoinReq> = query(
-		sql,
-		set_params!(group_id, last_fetched_time.to_string(), GROUP_INVITE_TYPE_JOIN_REQ),
-	)
-	.await?;
+	let sql = r"
+SELECT user_id, time 
+FROM sentc_group_user_invites_and_join_req 
+WHERE group_id = ? AND type = ?"
+		.to_string();
+
+	let (sql, params) = if last_fetched_time > 0 {
+		let sql = sql + " AND time >= ? AND (time > ? OR (time = ? AND user_id > ?)) ORDER BY time, user_id LIMIT 50";
+		(
+			sql,
+			set_params!(
+				group_id,
+				GROUP_INVITE_TYPE_JOIN_REQ,
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_id
+			),
+		)
+	} else {
+		let sql = sql + " ORDER BY time, user_id LIMIT 50";
+		(sql, set_params!(group_id, GROUP_INVITE_TYPE_JOIN_REQ))
+	};
+
+	//fetch the user with public key in a separate req, when the user decided to accept a join req
+	let join_req: Vec<GroupJoinReq> = query_string(sql, params).await?;
 
 	Ok(join_req)
 }
