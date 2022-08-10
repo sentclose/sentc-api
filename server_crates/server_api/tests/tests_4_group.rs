@@ -621,7 +621,7 @@ async fn test_21_get_join_req()
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 
 	//get the first page
-	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req/" + "0");
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req/" + "0/abc");
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
@@ -644,6 +644,28 @@ async fn test_21_get_join_req()
 
 	assert_eq!(out.len(), 1);
 	assert_eq!(out[0].user_id.to_string(), users[1].user_id.to_string());
+
+	//should get the 2nd page without any join req
+	let url = get_url(
+		"api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req/" + out[0].time.to_string().as_str() + "/" + out[0].user_id.as_str(),
+	);
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<Vec<GroupJoinReqList>>::from_string(body.as_str()).unwrap();
+	let out = out.result.unwrap();
+
+	assert_eq!(out.len(), 0);
 }
 
 #[tokio::test]
@@ -677,7 +699,7 @@ async fn test_22_send_join_req_aging()
 
 	//should still be this one join req
 	//get the first page
-	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req/" + "0");
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req/" + "0/none");
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
@@ -738,7 +760,7 @@ async fn test_24_get_not_join_req_after_reject()
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 
 	//get the first page
-	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req/" + "0");
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req/" + "0/none");
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
