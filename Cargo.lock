@@ -1988,6 +1988,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "server_api_init"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "server_api",
+ "server_api_common",
+ "tokio",
+]
+
+[[package]]
 name = "server_api_route_builder"
 version = "0.1.0"
 dependencies = [
