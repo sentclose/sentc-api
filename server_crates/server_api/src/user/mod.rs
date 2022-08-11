@@ -1,7 +1,7 @@
 pub mod jwt;
 pub(crate) mod user_entities;
 mod user_model;
-pub(crate) mod user_service;
+pub mod user_service;
 
 use rustgram::Request;
 use sentc_crypto_common::server_default::ServerSuccessOutput;

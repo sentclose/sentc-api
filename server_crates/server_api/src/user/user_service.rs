@@ -1,7 +1,6 @@
 use std::ptr;
 
 use rand::RngCore;
-use sentc_crypto::sdk_common::UserId;
 use sentc_crypto::util::public::HashedAuthenticationKey;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
@@ -19,7 +18,7 @@ use sentc_crypto_common::user::{
 	UserUpdateServerInput,
 	UserUpdateServerOut,
 };
-use sentc_crypto_common::AppId;
+use sentc_crypto_common::{AppId, UserId};
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::user::jwt::create_jwt;

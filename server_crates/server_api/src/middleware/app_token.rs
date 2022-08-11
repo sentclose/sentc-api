@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use rustgram::service::Service;
 use rustgram::{GramHttpErr, Request, Response};
-use sentc_crypto::sdk_common::AppId;
+use sentc_crypto_common::AppId;
 
 use crate::core::api_res::{ApiErrorCodes, HttpErr};
 use crate::core::cache;

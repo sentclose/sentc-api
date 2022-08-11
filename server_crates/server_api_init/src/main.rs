@@ -1,40 +1,53 @@
-use std::env;
-
-use sentc_crypto_common::ServerOutput;
-use server_api_common::app::{AppRegisterInput, AppRegisterOutput};
+use server_api_common::app::{AppOptions, AppRegisterInput};
 
 /**
 Creates new tokens for the base sentc app, to manage the customer mod.
 
 Only works with running api server.
 */
-fn main()
-{
-	//load the env
-	dotenv::dotenv().ok();
 
+#[tokio::main]
+async fn main()
+{
+	server_api::start().await;
+
+	//strict app options -> only to create the customer register app
 	let input = AppRegisterInput {
 		identifier: None,
+		options: AppOptions {
+			group_create: 0,
+			group_get: 0,
+			group_invite: 0,
+			group_reject_invite: 0,
+			group_accept_invite: 0,
+			group_join_req: 0,
+			group_accept_join_req: 0,
+			group_reject_join_req: 0,
+			group_key_rotation: 0,
+			group_user_delete: 0,
+			group_delete: 0,
+			group_leave: 0,
+			group_change_rank: 0,
+			user_exists: 0,
+			user_register: 0,
+			user_delete: 0,
+			user_update: 0,
+			user_change_password: 0,
+			user_reset_password: 0,
+			user_prepare_login: 0,
+			user_done_login: 0,
+			user_public_data: 0,
+			user_refresh: 0,
+			key_register: 0,
+			key_get: 0,
+		},
 	};
 
-	let url = env::var("PUBLIC_URL").unwrap() + "/api/v1/customer/app";
-
-	let client = reqwest::blocking::Client::new();
-	let res = client
-		.post(url)
-		.body(input.to_string().unwrap())
-		.send()
+	let app_data = server_api::sentc_customer_app_service::create_app(input, "sentc_init".to_string())
+		.await
 		.unwrap();
 
-	let body = res.text().unwrap();
-
-	let out = ServerOutput::<AppRegisterOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
-
-	let app_data = out.result.unwrap();
-
+	println!("app id: {}", app_data.app_id);
 	println!("secret_token: {}", app_data.secret_token);
 	println!("public_token: {}", app_data.public_token);
 }
