@@ -216,8 +216,6 @@ async fn test_13_get_key_from_master_key()
 
 	let body = res.text().await.unwrap();
 
-	println!("{}", body);
-
 	let out = ServerOutput::<Vec<GeneratedSymKeyHeadServerOutput>>::from_string(body.as_str()).unwrap();
 	let out = out.result.unwrap();
 
