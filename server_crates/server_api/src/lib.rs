@@ -6,13 +6,17 @@ pub mod core;
 mod customer;
 mod customer_app;
 mod group;
+mod key_management;
 mod middleware;
 mod routes;
 mod user;
 mod util;
-mod key_management;
 
 pub use customer_app::app_entities::*;
+#[cfg(feature = "embedded")]
+pub use customer_app::app_service as sentc_customer_app_service;
+#[cfg(feature = "embedded")]
+pub use user::user_service as sentc_user_service;
 
 async fn not_found_handler(_req: Request) -> core::api_res::JRes<String>
 {

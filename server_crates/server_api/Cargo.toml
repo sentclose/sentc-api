@@ -83,5 +83,7 @@ default = ["mysql"]
 mysql = ["mysql_async","mysql_common"]
 sqlite = ["deadpool-sqlite","rusqlite"]
 
+embedded = []
+
 # When enabled send the custumor resgistration mail
 send_mail = ["lettre"]
