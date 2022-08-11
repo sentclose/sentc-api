@@ -408,7 +408,7 @@ pub(super) async fn user_leave_group(group_id: GroupId, user_id: UserId, rank: i
 
 pub(super) async fn kick_user_from_group(group_id: GroupId, user_id: UserId, rank: i32) -> AppRes<()>
 {
-	check_group_rank(rank, 1)?;
+	check_group_rank(rank, 2)?;
 
 	//check the rank of the member -> if it is the creator => don't kick
 
@@ -433,8 +433,18 @@ pub(super) async fn kick_user_from_group(group_id: GroupId, user_id: UserId, ran
 		//changed user is creator
 		return Err(HttpErr::new(
 			400,
-			ApiErrorCodes::GroupUserRankUpdate,
+			ApiErrorCodes::GroupUserKick,
 			"Can't delete the group creator".to_string(),
+			None,
+		));
+	}
+
+	if check < rank {
+		//changed user has a higher rank
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::GroupUserKickRank,
+			"Can't delete a higher rank.".to_string(),
 			None,
 		));
 	}
