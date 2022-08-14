@@ -130,7 +130,7 @@ impl crate::core::db::FromSqliteRow for InternalUserGroupData
 			}
 		})?;
 
-		let user_id = take_or_err!(row, 0, String);
+		let user_id: String = take_or_err!(row, 0);
 
 		Ok(Self {
 			real_user_id: user_id.to_string(),
