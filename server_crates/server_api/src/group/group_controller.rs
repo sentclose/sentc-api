@@ -131,10 +131,7 @@ pub(crate) async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupKeyServer
 	check_endpoint_with_req(&req, Endpoint::GroupUserDataGet)?;
 
 	//don't get the group data from mw cache, this is done by the model fetch
-
-	let user = get_jwt_data_from_param(&req)?;
-	let req_params = get_params(&req)?;
-	let group_id = get_name_param_from_params(req_params, "group_id")?;
+	let group_data = get_group_user_data_from_req(&req)?;
 
 	let params = get_params(&req)?;
 	let last_k_id = get_name_param_from_params(&params, "last_k_id")?;
@@ -149,9 +146,9 @@ pub(crate) async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupKeyServer
 	})?;
 
 	let user_keys = group_model::get_user_group_keys(
-		user.sub.to_string(),
-		group_id.to_string(),
-		user.id.to_string(),
+		group_data.group_data.app_id.to_string(),
+		group_data.group_data.id.to_string(),
+		group_data.user_data.user_id.to_string(),
 		last_fetched_time,
 		last_k_id.to_string(),
 	)
