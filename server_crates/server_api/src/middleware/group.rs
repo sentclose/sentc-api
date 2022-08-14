@@ -168,7 +168,8 @@ async fn get_group_user(app_id: &str, group_id: &str, user_id: &str) -> AppRes<(
 					let parent_ref = get_user_from_parent(group_id, user_id).await?;
 
 					let d = InternalUserGroupData {
-						user_id: user_id.to_string(),
+						user_id: parent_ref.get_values_from_parent.to_string(), //the the parent group id as user id when user comes from parent
+						real_user_id: user_id.to_string(),
 						joined_time: parent_ref.joined_time,
 						rank: parent_ref.rank,
 						//only set the ref to parent group here

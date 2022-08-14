@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 7:10pm on August 8, 2022 (UTC)
+-- Exported: 9:32am on August 14, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -173,21 +173,6 @@ CREATE TABLE sentc_group_user_key_rotation
 ----
 
 ----
--- Table structure for sentc_group_user
-----
-CREATE TABLE 'sentc_group_user' (
-	user_id  text,
-	group_id text,
-	time     text,'rank' INTEGER, 'key_upload_session_id' TEXT, 'type' TEXT DEFAULT NULL,
-	constraint sentc_group_user_pk
-		primary key (user_id, group_id)
-);
-
-----
--- Data dump for sentc_group_user, a total of 0 rows
-----
-
-----
 -- Table structure for sentc_customer
 ----
 CREATE TABLE 'sentc_customer' ('id' TEXT PRIMARY KEY NOT NULL, 'email' TEXT, 'email_validate_sent' TEXT, 'email_validate' BOOLEAN, 'email_status' INTEGER, 'email_error_msg' TEXT, 'email_token' TEXT);
@@ -250,6 +235,21 @@ CREATE TABLE "sentc_user_action_log"
 ----
 
 ----
+-- Table structure for sentc_group_user
+----
+CREATE TABLE 'sentc_group_user' (
+	user_id  text,
+	group_id text,
+	time     text,'rank' INTEGER, 'key_upload_session_id' TEXT,'type' INTEGER DEFAULT NULL,
+	constraint sentc_group_user_pk
+		primary key (user_id, group_id)
+);
+
+----
+-- Data dump for sentc_group_user, a total of 0 rows
+----
+
+----
 -- structure for index sqlite_autoindex_test_1 on table test
 ----
 ;
@@ -296,11 +296,6 @@ CREATE TABLE "sentc_user_action_log"
 
 ----
 -- structure for index sqlite_autoindex_sentc_group_user_key_rotation_1 on table sentc_group_user_key_rotation
-----
-;
-
-----
--- structure for index sqlite_autoindex_sentc_group_user_1 on table sentc_group_user
 ----
 ;
 
@@ -380,6 +375,11 @@ CREATE INDEX 'by_user' ON "sentc_sym_key_management" ("creator_id" ASC, "app_id"
 ;
 
 ----
+-- structure for index sqlite_autoindex_sentc_group_user_1 on table sentc_group_user
+----
+;
+
+----
 -- structure for trigger group_delete_invites on table sentc_group
 ----
 CREATE TRIGGER 'group_delete_invites' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = OLD.id; END;
@@ -393,16 +393,6 @@ CREATE TRIGGER 'group_delete_keys' AFTER DELETE ON "sentc_group" FOR EACH ROW BE
 -- structure for trigger group_delete_user on table sentc_group
 ----
 CREATE TRIGGER 'group_delete_user' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_user WHERE group_id = OLD.id; END;
-
-----
--- structure for trigger  group_user_delete_key_rotation_keys on table sentc_group_user
-----
-CREATE TRIGGER ' group_user_delete_key_rotation_keys' AFTER DELETE ON "sentc_group_user" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_key_rotation WHERE user_id = OLD.user_id AND group_id = OLD.group_id; END;
-
-----
--- structure for trigger group_user_delete_user_keys on table sentc_group_user
-----
-CREATE TRIGGER 'group_user_delete_user_keys' AFTER DELETE ON "sentc_group_user" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_keys WHERE user_id = OLD.user_id AND group_id = OLD.group_id; END;
 
 ----
 -- structure for trigger delete_app on table sentc_customer
@@ -443,4 +433,14 @@ CREATE TRIGGER 'user_delete_user_keys' AFTER DELETE ON "sentc_user" FOR EACH ROW
 -- structure for trigger delete_keys on table sentc_app
 ----
 CREATE TRIGGER 'delete_keys' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_sym_key_management WHERE app_id = OLD.id; END;
+
+----
+-- structure for trigger  group_user_delete_key_rotation_keys on table sentc_group_user
+----
+CREATE TRIGGER ' group_user_delete_key_rotation_keys' AFTER DELETE ON "sentc_group_user" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_key_rotation WHERE user_id = OLD.user_id AND group_id = OLD.group_id; END;
+
+----
+-- structure for trigger group_user_delete_user_keys on table sentc_group_user
+----
+CREATE TRIGGER 'group_user_delete_user_keys' AFTER DELETE ON "sentc_group_user" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_keys WHERE user_id = OLD.user_id AND group_id = OLD.group_id; END;
 COMMIT;

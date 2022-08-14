@@ -186,7 +186,7 @@ pub(super) async fn accept_invite(group_id: GroupId, user_id: UserId) -> AppRes<
 	let time = get_time()?;
 
 	//language=SQL
-	let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`) VALUES (?,?,?,?)";
+	let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,0)";
 	let params_in = set_params!(user_id, group_id, time.to_string(), 4);
 
 	exec_transaction(vec![
@@ -310,7 +310,7 @@ pub(super) async fn accept_join_req(
 		let session_id = Uuid::new_v4().to_string();
 
 		//language=SQL
-		let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, key_upload_session_id) VALUES (?,?,?,?,?)";
+		let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, key_upload_session_id, type) VALUES (?,?,?,?,?,0)";
 		let params_in = set_params!(
 			user_id.to_string(),
 			group_id.to_string(),
@@ -322,7 +322,7 @@ pub(super) async fn accept_join_req(
 		(sql_in, params_in, Some(session_id))
 	} else {
 		//language=SQL
-		let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`) VALUES (?,?,?,?)";
+		let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,0)";
 		let params_in = set_params!(user_id.to_string(), group_id.to_string(), time.to_string(), 4);
 
 		(sql_in, params_in, None)

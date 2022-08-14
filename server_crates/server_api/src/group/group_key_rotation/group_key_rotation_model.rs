@@ -194,6 +194,7 @@ FROM sentc_group_user gu, sentc_user_keys uk
 WHERE 
     gu.user_id = uk.user_id AND 
     group_id = ? AND 
+    type = 0 AND -- only real user
     NOT EXISTS(
         -- this user is already done -> skip
         SELECT 1 
@@ -237,6 +238,38 @@ WHERE
 	let users: Vec<UserGroupPublicKeyData> = query_string(sql1, params).await?;
 
 	Ok(users)
+}
+
+pub(super) async fn get_parent_group_and_public_key(group_id: GroupId, key_id: SymKeyId) -> AppRes<Option<UserGroupPublicKeyData>>
+{
+	//no pagination needed because there is only one parent group
+
+	//language=SQL
+	let sql = r"
+SELECT parent, k.id, public_key, private_key_pair_alg, 0 
+FROM sentc_group g, sentc_group_keys k
+WHERE 
+    parent = group_id AND 
+    g.id = ? AND 
+    NOT EXISTS(
+        SELECT 1
+        FROM sentc_group_user_keys gk
+        WHERE 
+            gk.k_id = ? AND 
+            user_id = parent
+    ) AND 
+    NOT EXISTS(
+        SELECT 1
+        FROM sentc_group_user_key_rotation grk
+        WHERE 
+            key_id = ? AND 
+            user_id = parent
+    )
+";
+
+	let keys: Option<UserGroupPublicKeyData> = query_first(sql, set_params!(group_id, key_id.to_string(), key_id)).await?;
+
+	Ok(keys)
 }
 
 pub(super) async fn save_user_eph_keys(group_id: GroupId, key_id: EncryptionKeyPairId, keys: Vec<UserEphKeyOut>) -> AppRes<()>
