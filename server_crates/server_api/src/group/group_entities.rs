@@ -90,7 +90,8 @@ internally used in cache to check every user
 #[derive(Serialize, Deserialize)]
 pub struct InternalUserGroupData
 {
-	pub user_id: UserId,
+	pub user_id: UserId,      //can be the parent group id (which is a user in this case)
+	pub real_user_id: UserId, //the real user
 	pub joined_time: u128,
 	pub rank: i32,
 	pub get_values_from_parent: Option<GroupId>, //if the user is in a parent group -> get the user data of this parent to get the rank
@@ -103,8 +104,11 @@ impl mysql_async::prelude::FromRow for InternalUserGroupData
 	where
 		Self: Sized,
 	{
+		let user_id = take_or_err!(row, 0, String);
+
 		Ok(Self {
-			user_id: take_or_err!(row, 0, String),
+			real_user_id: user_id.to_string(),
+			user_id,
 			joined_time: take_or_err!(row, 1, u128),
 			rank: take_or_err!(row, 2, i32),
 			get_values_from_parent: None,
@@ -126,8 +130,11 @@ impl crate::core::db::FromSqliteRow for InternalUserGroupData
 			}
 		})?;
 
+		let user_id = take_or_err!(row, 0, String);
+
 		Ok(Self {
-			user_id: take_or_err!(row, 0),
+			real_user_id: user_id.to_string(),
+			user_id,
 			joined_time: time,
 			rank: take_or_err!(row, 2),
 			get_values_from_parent: None,
