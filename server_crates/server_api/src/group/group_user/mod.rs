@@ -9,6 +9,7 @@ use sentc_crypto_common::group::{
 	GroupJoinReqList,
 	GroupKeysForNewMember,
 	GroupKeysForNewMemberServerInput,
+	GroupUserListItem,
 };
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 
@@ -24,6 +25,40 @@ use crate::util::get_group_user_cache_key;
 
 mod group_user_model;
 pub mod group_user_service;
+
+pub(crate) async fn get_group_member(req: Request) -> JRes<Vec<GroupUserListItem>>
+{
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let params = get_params(&req)?;
+	let last_user_id = get_name_param_from_params(&params, "last_user_id")?;
+	let last_fetched_time = get_name_param_from_params(&params, "last_fetched_time")?;
+	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
+		HttpErr::new(
+			400,
+			ApiErrorCodes::UnexpectedTime,
+			"last fetched time is wrong".to_string(),
+			None,
+		)
+	})?;
+
+	let list_fetch = group_user_model::get_group_member(
+		group_data.group_data.id.to_string(),
+		group_data.user_data.user_id.to_string(),
+		last_fetched_time,
+		last_user_id.to_string(),
+	)
+	.await?;
+
+	let mut list_out: Vec<GroupUserListItem> = Vec::with_capacity(list_fetch.len());
+	for item in list_fetch {
+		list_out.push(item.into())
+	}
+
+	echo(list_out)
+}
+
+//__________________________________________________________________________________________________
 
 pub(crate) async fn invite_request(mut req: Request) -> JRes<GroupInviteServerOutput>
 {

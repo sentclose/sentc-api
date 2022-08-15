@@ -9,12 +9,55 @@ use crate::group::group_entities::{
 	GroupInviteReq,
 	GroupJoinReq,
 	GroupKeySession,
+	GroupUserListItem,
 	UserInGroupCheck,
 	GROUP_INVITE_TYPE_INVITE_REQ,
 	GROUP_INVITE_TYPE_JOIN_REQ,
 };
 use crate::group::group_model::check_group_rank;
 use crate::set_params;
+
+pub(super) async fn get_group_member(
+	group_id: GroupId,
+	user_id: UserId,
+	last_fetched_time: u128,
+	last_fetched_id: UserId,
+) -> AppRes<Vec<GroupUserListItem>>
+{
+	//language=SQL
+	let sql = r"
+SELECT user_id, `rank`, time
+FROM 
+    sentc_group_user
+WHERE 
+    user_id NOT LIKE ? AND 
+    group_id = ?"
+		.to_string();
+
+	let (sql, params) = if last_fetched_time > 0 {
+		let sql = sql + " AND time >= ? AND (time > ?  OR (time = ? AND user_id > ?)) ORDER BY time, user_id LIMIT 50";
+		(
+			sql,
+			set_params!(
+				user_id,
+				group_id,
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_id
+			),
+		)
+	} else {
+		let sql = sql + "ORDER BY time, user_id LIMIT 50";
+		(sql, set_params!(user_id, group_id,))
+	};
+
+	let list: Vec<GroupUserListItem> = query_string(sql, params).await?;
+
+	Ok(list)
+}
+
+//__________________________________________________________________________________________________
 
 pub(super) async fn invite_request(
 	group_id: GroupId,
