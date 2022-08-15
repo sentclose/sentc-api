@@ -1951,6 +1951,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "server-core"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "deadpool-sqlite",
+ "dotenv",
+ "futures",
+ "hyper",
+ "lettre",
+ "mysql_async",
+ "mysql_common",
+ "regex",
+ "rusqlite",
+ "rustgram",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-util",
+ "uuid",
+]
+
+[[package]]
 name = "server_all"
 version = "0.1.0"
 dependencies = [
@@ -1967,16 +1990,13 @@ dependencies = [
  "async-trait",
  "base64",
  "bytes",
- "deadpool-sqlite",
  "dotenv",
  "futures",
  "hyper",
  "jsonwebtoken",
- "lettre",
  "mysql_async",
  "mysql_common",
  "rand",
- "regex",
  "reqwest",
  "ring",
  "rusqlite",
@@ -1986,6 +2006,7 @@ dependencies = [
  "sentc-crypto-full",
  "serde",
  "serde_json",
+ "server-core",
  "server_api_common",
  "tokio",
  "tokio-util",
@@ -1996,9 +2017,12 @@ dependencies = [
 name = "server_api_common"
 version = "0.1.0"
 dependencies = [
+ "mysql_async",
+ "rusqlite",
  "sentc-crypto-common 0.1.0",
  "serde",
  "serde_json",
+ "server-core",
 ]
 
 [[package]]
