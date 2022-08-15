@@ -1,5 +1,5 @@
 use reqwest::header::AUTHORIZATION;
-use sentc_crypto::group::GroupOutData;
+use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::sdk_common::crypto::GeneratedSymKeyHeadServerOutput;
 use sentc_crypto::sdk_common::ServerOutput;
 use sentc_crypto::{KeyData, SymKeyFormat};
@@ -27,7 +27,7 @@ pub struct KeyState
 	pub user_pw: String,
 	pub app_data: AppRegisterOutput,
 	pub customer_data: CustomerDoneLoginOutput,
-	pub group_keys: GroupOutData,
+	pub group_keys: Vec<GroupKeyData>,
 	pub keys: Vec<SymKeyData>,
 }
 
@@ -68,7 +68,8 @@ async fn aaa_init_global_state()
 		&key_data.private_key,
 		false,
 	)
-	.await;
+	.await
+	.1;
 
 	KEY_TEST_STATE
 		.get_or_init(|| {
@@ -92,7 +93,7 @@ async fn test_10_create_key()
 {
 	let mut state = KEY_TEST_STATE.get().unwrap().write().await;
 
-	let key_data = sentc_crypto::crypto::prepare_register_sym_key(&state.group_keys.keys[0].group_key).unwrap();
+	let key_data = sentc_crypto::crypto::prepare_register_sym_key(&state.group_keys[0].group_key).unwrap();
 
 	let url = get_url("api/v1/keys/sym_key".to_owned());
 
@@ -142,10 +143,10 @@ async fn test_11_get_key_by_id()
 	let out = ServerOutput::<GeneratedSymKeyHeadServerOutput>::from_string(body.as_str()).unwrap();
 	let out = out.result.unwrap();
 
-	let sym_key = sentc_crypto::crypto::done_fetch_sym_key(&state.group_keys.keys[0].group_key, body.as_str()).unwrap();
+	let sym_key = sentc_crypto::crypto::done_fetch_sym_key(&state.group_keys[0].group_key, body.as_str()).unwrap();
 
 	//test the key
-	let text = "hello".as_bytes();
+	let text = "hello";
 
 	let encrypted = sentc_crypto::crypto::encrypt_string_symmetric(&sym_key, text, None).unwrap();
 
@@ -167,7 +168,7 @@ async fn test_12_create_second_key_for_pagination()
 {
 	let mut state = KEY_TEST_STATE.get().unwrap().write().await;
 
-	let key_data = sentc_crypto::crypto::prepare_register_sym_key(&state.group_keys.keys[0].group_key).unwrap();
+	let key_data = sentc_crypto::crypto::prepare_register_sym_key(&state.group_keys[0].group_key).unwrap();
 
 	let url = get_url("api/v1/keys/sym_key".to_owned());
 
@@ -202,7 +203,7 @@ async fn test_13_get_key_from_master_key()
 {
 	let state = KEY_TEST_STATE.get().unwrap().read().await;
 
-	let master_key = &state.group_keys.keys[0].group_key;
+	let master_key = &state.group_keys[0].group_key;
 
 	let url = get_url("api/v1/keys/sym_key/master_key/".to_owned() + master_key.key_id.as_str() + "/0" + "/none");
 
@@ -225,12 +226,12 @@ async fn test_13_get_key_from_master_key()
 	assert_eq!(out[0].key_id.to_string(), state.keys[1].id.to_string());
 	assert_eq!(out[1].key_id.to_string(), state.keys[0].id.to_string());
 
-	let sym_keys = sentc_crypto::crypto::done_fetch_sym_keys(&state.group_keys.keys[0].group_key, body.as_str()).unwrap();
+	let sym_keys = sentc_crypto::crypto::done_fetch_sym_keys(&state.group_keys[0].group_key, body.as_str()).unwrap();
 
 	//test the key
-	let text = "hello".as_bytes();
+	let text = "hello";
 
-	for sym_key in sym_keys {
+	for sym_key in sym_keys.0 {
 		let encrypted = sentc_crypto::crypto::encrypt_string_symmetric(&sym_key, text, None).unwrap();
 
 		let decrypted = sentc_crypto::crypto::decrypt_string_symmetric(&sym_key, &encrypted, None).unwrap();

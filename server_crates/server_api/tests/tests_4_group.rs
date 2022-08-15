@@ -189,14 +189,16 @@ async fn test_11_get_group_data()
 	//check if result is there
 	let _out = out.result.unwrap();
 
-	let data = sentc_crypto::group::get_group_data(&creator.key_data.private_key, body.as_str()).unwrap();
+	let data = sentc_crypto::group::get_group_data(body.as_str()).unwrap();
+
+	let data_key = sentc_crypto::group::get_group_keys(&creator.key_data.private_key, &data.keys[0]).unwrap();
 
 	//user is the creator
 	assert_eq!(data.rank, 0);
 
 	group
 		.decrypted_group_keys
-		.insert(creator.user_id.to_string(), data.keys);
+		.insert(creator.user_id.to_string(), vec![data_key]);
 }
 
 #[tokio::test]
@@ -237,9 +239,9 @@ async fn test_12_create_child_group()
 	)
 	.await;
 
-	assert_eq!(data.rank, 0);
-	assert_eq!(data.group_id, child_id);
-	assert_eq!(data.parent_group_id.unwrap(), group.group_id.to_string());
+	assert_eq!(data.0.rank, 0);
+	assert_eq!(data.0.group_id, child_id);
+	assert_eq!(data.0.parent_group_id.unwrap(), group.group_id.to_string());
 
 	//don't delete the child group to test if parent group delete deletes all. delete the child
 }
@@ -407,11 +409,11 @@ async fn test_16_accept_invite()
 	.await;
 
 	//should be normal user rank
-	assert_eq!(data.rank, 4);
+	assert_eq!(data.0.rank, 4);
 
 	group
 		.decrypted_group_keys
-		.insert(user_to_invite.user_id.to_string(), data.keys);
+		.insert(user_to_invite.user_id.to_string(), data.1);
 
 	group.group_member.push(user_to_invite.user_id.to_string());
 }
@@ -912,11 +914,11 @@ async fn test_26_start_key_rotation()
 	)
 	.await;
 
-	assert_eq!(data_user_0.keys.len(), 2);
+	assert_eq!(data_user_0.0.keys.len(), 2);
 
 	group
 		.decrypted_group_keys
-		.insert(user.user_id.to_string(), data_user_0.keys);
+		.insert(user.user_id.to_string(), data_user_0.1);
 }
 
 #[tokio::test]
@@ -940,8 +942,8 @@ async fn test_27_done_key_rotation_for_other_user()
 	.await;
 
 	//still one key
-	assert_eq!(data_user.keys.len(), 1);
-	assert_eq!(data_user.key_update, true); //notify the user that there is a key update
+	assert_eq!(data_user.0.keys.len(), 1);
+	assert_eq!(data_user.0.key_update, true); //notify the user that there is a key update
 
 	//get the data for the rotation
 
@@ -1003,11 +1005,11 @@ async fn test_27_done_key_rotation_for_other_user()
 	.await;
 
 	//now both keys must be there
-	assert_eq!(data_user_1.keys.len(), 2);
+	assert_eq!(data_user_1.0.keys.len(), 2);
 
 	group
 		.decrypted_group_keys
-		.insert(user.user_id.to_string(), data_user_1.keys);
+		.insert(user.user_id.to_string(), data_user_1.1);
 }
 
 #[tokio::test]
@@ -1038,7 +1040,13 @@ async fn test_28_get_key_with_pagination()
 	let out = out.result.unwrap();
 	assert_eq!(out.len(), 2);
 
-	let group_keys = sentc_crypto::group::get_group_keys_from_pagination(&user.key_data.private_key, body.as_str()).unwrap();
+	let group_keys_fetch = sentc_crypto::group::get_group_keys_from_server_output(body.as_str()).unwrap();
+
+	let mut group_keys = Vec::with_capacity(group_keys_fetch.len());
+
+	for group_keys_fetch in group_keys_fetch {
+		group_keys.push(sentc_crypto::group::get_group_keys(&user.key_data.private_key, &group_keys_fetch).unwrap());
+	}
 
 	//normally use len() - 1 but this time we wont fake a pagination, so we don't use the last item
 	let latest_fetched_id = group_keys[group_keys.len() - 2].group_key.key_id.as_str();
@@ -1096,11 +1104,11 @@ async fn test_29_invite_user_with_two_keys()
 	.await;
 
 	//should get all keys
-	assert_eq!(user_group_data_2.keys.len(), 2);
+	assert_eq!(user_group_data_2.1.len(), 2);
 
 	group
 		.decrypted_group_keys
-		.insert(user_to_invite.user_id.to_string(), user_group_data_2.keys);
+		.insert(user_to_invite.user_id.to_string(), user_group_data_2.1);
 }
 
 //__________________________________________________________________________________________________
@@ -1146,7 +1154,7 @@ async fn test_30_update_rank()
 	)
 	.await;
 
-	assert_eq!(data.rank, 2);
+	assert_eq!(data.0.rank, 2);
 }
 
 #[tokio::test]
