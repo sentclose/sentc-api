@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "sdk-common",
+    "server_crates/core",
     "server_crates/server_all",
     "server_crates/server_api",
     "server_crates/server_api_common",

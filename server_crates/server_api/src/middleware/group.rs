@@ -4,15 +4,15 @@ use std::sync::Arc;
 
 use rustgram::service::Service;
 use rustgram::{GramHttpErr, Request, Response};
+use server_core::cache;
+use server_core::cache::{CacheVariant, LONG_TTL, SHORT_TTL};
+use server_core::input_helper::{bytes_to_json, json_to_string};
+use server_core::url_helper::get_name_param_from_req;
 
-use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
-use crate::core::cache;
-use crate::core::cache::{CacheVariant, LONG_TTL, SHORT_TTL};
-use crate::core::input_helper::{bytes_to_json, json_to_string};
-use crate::core::url_helper::get_name_param_from_req;
 use crate::group::group_entities::{InternalGroupData, InternalGroupDataComplete, InternalUserGroupData, InternalUserGroupDataFromParent};
 use crate::group::group_model;
 use crate::user::jwt::get_jwt_data_from_param;
+use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::util::{get_group_cache_key, get_group_user_cache_key, get_group_user_parent_ref_key};
 
 pub struct GroupMiddleware<S>
@@ -34,7 +34,7 @@ where
 		Box::pin(async move {
 			match get_group_from_req(&mut req).await {
 				Ok(_) => {},
-				Err(e) => return e.get_res(),
+				Err(e) => return Into::<HttpErr>::into(e).get_res(),
 			}
 
 			next.call(req).await

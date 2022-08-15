@@ -6,7 +6,7 @@ use lettre::transport::smtp::authentication::Credentials;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 use tokio::sync::OnceCell;
 
-use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::error::{CoreError, CoreErrorCodes};
 
 static EMAIL_SENDER_REGISTER: OnceCell<Email> = OnceCell::const_new();
 
@@ -24,7 +24,7 @@ pub async fn init_email_register()
 		.await;
 }
 
-pub fn send_mail_registration<'a>(to: &'a str, subject: &'a str, body: String) -> impl Future<Output = AppRes<()>> + 'a
+pub fn send_mail_registration<'a>(to: &'a str, subject: &'a str, body: String) -> impl Future<Output = Result<(), CoreError>> + 'a
 {
 	let email = EMAIL_SENDER_REGISTER.get().unwrap();
 
@@ -60,7 +60,7 @@ impl Email
 		}
 	}
 
-	pub async fn send_email_smpt(&self, to: &str, subject: &str, body: String) -> AppRes<()>
+	pub async fn send_email_smpt(&self, to: &str, subject: &str, body: String) -> Result<(), CoreError>
 	{
 		let smtp_credentials = Credentials::new(self.user.to_string(), self.pw.to_string());
 		let mailer = AsyncSmtpTransport::<Tokio1Executor>::relay(self.server.as_str())
@@ -70,9 +70,9 @@ impl Email
 			.build();
 
 		let to = to.parse().map_err(|_e| {
-			HttpErr::new(
+			CoreError::new(
 				400,
-				ApiErrorCodes::EmailMessage,
+				CoreErrorCodes::EmailMessage,
 				"Error in email message".to_string(),
 				None,
 			)
@@ -84,18 +84,18 @@ impl Email
 			.subject(subject)
 			.body(body)
 			.map_err(|_e| {
-				HttpErr::new(
+				CoreError::new(
 					400,
-					ApiErrorCodes::EmailMessage,
+					CoreErrorCodes::EmailMessage,
 					"Error in email message".to_string(),
 					None,
 				)
 			})?;
 
 		mailer.send(email).await.map_err(|e| {
-			HttpErr::new(
+			CoreError::new(
 				400,
-				ApiErrorCodes::EmailSend,
+				CoreErrorCodes::EmailSend,
 				format!("Error in email send: {}", e),
 				None,
 			)

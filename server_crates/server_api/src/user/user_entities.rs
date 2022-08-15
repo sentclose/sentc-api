@@ -1,8 +1,7 @@
 use sentc_crypto_common::user::{UserPublicKeyDataServerOutput, UserVerifyKeyDataServerOutput};
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, UserId};
 use serde::{Deserialize, Serialize};
-
-use crate::take_or_err;
+use server_core::take_or_err;
 
 //generated with browser console: btoa(String.fromCharCode.apply(null, window.crypto.getRandomValues(new Uint8Array(128/8))));
 //the value with the used alg
@@ -25,9 +24,9 @@ impl mysql_async::prelude::FromRow for JwtSignKey
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for JwtSignKey
+impl server_core::db::FromSqliteRow for JwtSignKey
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
@@ -49,9 +48,9 @@ impl mysql_async::prelude::FromRow for JwtVerifyKey
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for JwtVerifyKey
+impl server_core::db::FromSqliteRow for JwtVerifyKey
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
@@ -88,9 +87,9 @@ impl mysql_async::prelude::FromRow for UserExistsEntity
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for UserExistsEntity
+impl server_core::db::FromSqliteRow for UserExistsEntity
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
@@ -125,9 +124,9 @@ impl mysql_async::prelude::FromRow for UserLoginDataEntity
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for UserLoginDataEntity
+impl server_core::db::FromSqliteRow for UserLoginDataEntity
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
@@ -183,9 +182,9 @@ impl mysql_async::prelude::FromRow for DoneLoginServerKeysOutputEntity
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for DoneLoginServerKeysOutputEntity
+impl server_core::db::FromSqliteRow for DoneLoginServerKeysOutputEntity
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
@@ -224,9 +223,9 @@ impl mysql_async::prelude::FromRow for UserKeyFistRow
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for UserKeyFistRow
+impl server_core::db::FromSqliteRow for UserKeyFistRow
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
@@ -284,9 +283,9 @@ impl mysql_async::prelude::FromRow for UserPublicData
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for UserPublicData
+impl server_core::db::FromSqliteRow for UserPublicData
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
@@ -341,9 +340,9 @@ impl mysql_async::prelude::FromRow for UserPublicKeyDataEntity
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for UserPublicKeyDataEntity
+impl server_core::db::FromSqliteRow for UserPublicKeyDataEntity
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
@@ -392,9 +391,9 @@ impl mysql_async::prelude::FromRow for UserVerifyKeyDataEntity
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for UserVerifyKeyDataEntity
+impl server_core::db::FromSqliteRow for UserVerifyKeyDataEntity
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{

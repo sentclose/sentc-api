@@ -1,20 +1,18 @@
 use sentc_crypto_common::{AppId, CustomerId};
-use server_api_common::customer::CustomerUpdateInput;
+use server_api_common::customer::{CustomerAppList, CustomerUpdateInput};
+use server_core::db::{exec, query_first, query_string};
+use server_core::{get_time, set_params};
 
-use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
-use crate::core::db::{exec, query_first, query_string};
-use crate::core::get_time;
 #[cfg(feature = "send_mail")]
 use crate::customer::customer_entities::RegisterEmailStatus;
 use crate::customer::customer_entities::{
-	CustomerAppList,
 	CustomerDataByEmailEntity,
 	CustomerDataEntity,
 	CustomerEmailByToken,
 	CustomerEmailToken,
 	CustomerEmailValid,
 };
-use crate::set_params;
+use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 pub(super) async fn check_customer_valid(customer_id: CustomerId) -> AppRes<CustomerEmailValid>
 {

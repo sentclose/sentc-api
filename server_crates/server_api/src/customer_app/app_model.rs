@@ -1,12 +1,11 @@
 use sentc_crypto_common::{AppId, CustomerId, JwtKeyId, UserId};
-use server_api_common::app::{AppOptions, AppRegisterInput};
+use server_api_common::app::{AppJwtData, AppOptions, AppRegisterInput};
+use server_core::db::{exec, exec_transaction, query, query_first, Params, TransactionData};
+use server_core::{get_time, set_params};
 use uuid::Uuid;
 
-use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
-use crate::core::db::{exec, exec_transaction, query, query_first, Params, TransactionData};
-use crate::core::get_time;
-use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppExistsEntity, AppJwt, AppJwtData, AuthWithToken};
-use crate::{set_params, AppOptionsEntity};
+use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppExistsEntity, AppJwt, AuthWithToken};
+use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 /**
 # Internal app data
@@ -86,7 +85,7 @@ FROM sentc_app_options
 WHERE 
     app_id = ?";
 
-	let options: Option<AppOptionsEntity> = query_first(sql, set_params!(app_data.app_id.to_string())).await?;
+	let options: Option<AppOptions> = query_first(sql, set_params!(app_data.app_id.to_string())).await?;
 
 	let options = match options {
 		Some(o) => o,
@@ -433,7 +432,7 @@ INSERT INTO sentc_app_options
 		app_options.user_prepare_login,
 		app_options.user_done_login,
 		app_options.user_public_data,
-		app_options.user_refresh,
+		app_options.user_jwt_refresh,
 		app_options.key_register,
 		app_options.key_get
 	);

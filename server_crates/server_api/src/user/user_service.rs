@@ -22,11 +22,11 @@ use sentc_crypto_common::user::{
 };
 use sentc_crypto_common::{AppId, UserId};
 
-use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::group::group_user_service;
 use crate::user::jwt::create_jwt;
 use crate::user::user_entities::{UserJwtEntity, SERVER_RANDOM_VALUE};
 use crate::user::user_model;
+use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::AppData;
 
 pub async fn exists(app_data: &AppData, data: UserIdentifierAvailableServerInput) -> AppRes<UserIdentifierAvailableServerOutput>

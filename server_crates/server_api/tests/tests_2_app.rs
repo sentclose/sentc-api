@@ -5,7 +5,7 @@ use reqwest::StatusCode;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::RegisterServerOutput;
 use sentc_crypto_common::ServerOutput;
-use server_api::core::api_res::ApiErrorCodes;
+use server_api::util::api_res::ApiErrorCodes;
 use server_api_common::app::{
 	AppJwtData,
 	AppJwtRegisterOutput,

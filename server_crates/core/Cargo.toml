@@ -1,24 +1,16 @@
 [package]
-name = "server_api"
+name = "server-core"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# the server outputs for the frontend to handle
-sentc-crypto-common = {version = "0.1.0", path = "../../sdk-common" }
+rustgram = "0.1.5"
 
-server_api_common = {version = "0.1.0", path = "../server_api_common", default-features = false, features = ["server"]}
-
-server-core = {version = "0.1.0", path = "../core", default-features = false}
-
-# server impl
 hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
 tokio-util = "0.7.2"
-
-rustgram = "0.1.5"
 
 # dotenv vars
 dotenv = "0.15.0"
@@ -42,42 +34,28 @@ mysql_async = { version = "0.30.0", optional = true }
 mysql_common = { version="0.29.0", optional = true }
 
 # sqlite
+deadpool-sqlite = { version= "0.5.0", optional = true }
 rusqlite = { version = "0.28.0", features = ["bundled"], optional = true }
 
-# id
-uuid = {version="1.1.2", features= ["v4", "fast-rng"]}
+#_______________________________________________________________________________________________________________________
+#send emails
+lettre = { version = "0.10.0-rc.6", default-features = false, features = ["smtp-transport", "tokio1-rustls-tls", "hostname", "builder"], optional = true }
 
 #_______________________________________________________________________________________________________________________
-# jwt handling
-jsonwebtoken = { version = "8.1.1", default-features = false }
-# ring crypto to crate jwt keys
-ring = { version = "0.16.5", features = ["std"] }
-# base64 to encode and decode the jwt key
-base64 = "0.13.0"
-
-rand = "0.8.5"
-
-#_______________________________________________________________________________________________________________________
-# salt creation on server
-# to get it from ssh: write this in your ~/.cargo/config.toml:
-# [net]
-# git-fetch-with-cli = true
-sentc-crypto = {version = "0.1.0", git = "ssh://git@gitlab.com/sentclose/sentc/sdk.git", default-features = false, features = ["rust", "server"]}
+#regex
+regex = "1.6.0"
 
 #_______________________________________________________________________________________________________________________
 
 [dev-dependencies]
-# for making req for integration tests
-reqwest = { version = "0.11.11", features = ["json"] }
-sentc-crypto = {version = "0.1.0", git = "ssh://git@gitlab.com/sentclose/sentc/sdk.git", default-features = false, features = ["rust", "server", "server_test"]}
-sentc-crypto-full = {version = "0.1.0", git = "ssh://git@gitlab.com/sentclose/sentc/sdk.git", default-features = false, features = ["rust"]}
+# id
+uuid = {version="1.1.2", features= ["v4", "fast-rng"]}
 
 [features]
 default = ["mysql"]
-mysql = ["server-core/mysql","server_api_common/mysql","mysql_async","mysql_common"]
-sqlite = ["server-core/sqlite","server_api_common/sqlite","rusqlite"]
 
-embedded = []
+mysql = ["mysql_async","mysql_common"]
+sqlite = ["deadpool-sqlite","rusqlite"]
 
 # When enabled send the custumor resgistration mail
-send_mail = ["server-core/send_mail"]
+send_mail = ["lettre"]

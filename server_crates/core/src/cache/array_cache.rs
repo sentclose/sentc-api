@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use async_trait::async_trait;
 use tokio::sync::RwLock;
 
-use crate::core::cache::Cache;
-use crate::core::get_time_in_sec;
+use crate::cache::Cache;
+use crate::get_time_in_sec;
 
 pub struct CacheData<T: 'static + Clone>
 {

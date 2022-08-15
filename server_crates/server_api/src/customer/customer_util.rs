@@ -1,7 +1,7 @@
 use sentc_crypto_common::CustomerId;
 
-use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::customer::customer_model;
+use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 pub(crate) async fn check_customer_valid(customer_id: CustomerId) -> AppRes<()>
 {

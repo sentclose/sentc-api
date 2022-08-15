@@ -10,7 +10,7 @@ use sentc_crypto_common::user::{
 	RegisterData,
 };
 use sentc_crypto_common::ServerOutput;
-use server_api::core::api_res::ApiErrorCodes;
+use server_api::util::api_res::ApiErrorCodes;
 use server_api_common::customer::{CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput, CustomerUpdateInput};
 use tokio::sync::{OnceCell, RwLock};
 
@@ -667,7 +667,7 @@ async fn test_16_reset_customer_password()
 	//language=SQL
 	let sql = "SELECT email_token FROM sentc_customer WHERE id = ?";
 
-	let token: Option<CustomerEmailToken> = server_api::core::db::query_first(sql, server_api::set_params!(id))
+	let token: Option<CustomerEmailToken> = server_core::db::query_first(sql, server_core::set_params!(id))
 		.await
 		.unwrap();
 	let token = token.unwrap().email_token;
@@ -766,7 +766,7 @@ impl mysql_async::prelude::FromRow for CustomerEmailToken
 		Self: Sized,
 	{
 		Ok(Self {
-			email_token: server_api::take_or_err!(row, 0, String),
+			email_token: server_core::take_or_err!(row, 0, String),
 		})
 	}
 }

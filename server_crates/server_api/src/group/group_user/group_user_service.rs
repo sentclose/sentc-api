@@ -1,8 +1,8 @@
 use sentc_crypto_common::group::GroupInviteReqList;
 use sentc_crypto_common::{AppId, GroupId, UserId};
 
-use crate::core::api_res::AppRes;
 use crate::group::group_user::group_user_model;
+use crate::util::api_res::AppRes;
 
 pub async fn get_invite_req(app_id: AppId, user_id: UserId, last_fetched_time: u128, last_id: GroupId) -> AppRes<Vec<GroupInviteReqList>>
 {
