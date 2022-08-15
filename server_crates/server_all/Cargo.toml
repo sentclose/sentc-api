@@ -18,4 +18,4 @@ default = ["mysql"]
 mysql = ["server_api/mysql"]
 sqlite = ["server_api/sqlite"]
 
-send_mail = ["server_api/lettre"]
+send_mail = ["server_api/send_mail"]
