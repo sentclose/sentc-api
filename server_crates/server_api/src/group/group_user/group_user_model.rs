@@ -48,7 +48,7 @@ WHERE
 			),
 		)
 	} else {
-		let sql = sql + "ORDER BY time, user_id LIMIT 50";
+		let sql = sql + " ORDER BY time, user_id LIMIT 50";
 		(sql, set_params!(user_id, group_id,))
 	};
 
