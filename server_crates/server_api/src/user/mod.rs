@@ -9,7 +9,7 @@ use sentc_crypto_common::user::{
 	ChangePasswordData,
 	DoneLoginLightServerOutput,
 	DoneLoginServerInput,
-	DoneLoginServerKeysOutput,
+	DoneLoginServerOutput,
 	JwtRefreshInput,
 	PrepareLoginSaltServerOutput,
 	PrepareLoginServerInput,
@@ -74,7 +74,7 @@ pub(crate) async fn prepare_login(mut req: Request) -> JRes<PrepareLoginSaltServ
 	echo(out)
 }
 
-pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerKeysOutput>
+pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerOutput>
 {
 	let body = get_raw_body(&mut req).await?;
 	let done_login: DoneLoginServerInput = bytes_to_json(&body)?;

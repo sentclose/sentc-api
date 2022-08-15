@@ -7,6 +7,7 @@ use sentc_crypto_common::user::{
 	DoneLoginLightServerOutput,
 	DoneLoginServerInput,
 	DoneLoginServerKeysOutput,
+	DoneLoginServerOutput,
 	JwtRefreshInput,
 	PrepareLoginSaltServerOutput,
 	PrepareLoginServerInput,
@@ -109,7 +110,7 @@ pub async fn done_login_light(app_data: &AppData, done_login: DoneLoginServerInp
 /**
 After successful login return the user keys so they can be decrypted in the client
 */
-pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) -> AppRes<DoneLoginServerKeysOutput>
+pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) -> AppRes<DoneLoginServerOutput>
 {
 	auth_user(
 		app_data.app_data.app_id.to_string(),
@@ -154,7 +155,15 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 	)
 	.await?;
 
-	let out = DoneLoginServerKeysOutput {
+	let group_invites = group_user_service::get_invite_req(
+		app_data.app_data.app_id.to_string(),
+		user_data.user_id.to_string(),
+		0,
+		"none".to_string(),
+	)
+	.await?;
+
+	let keys = DoneLoginServerKeysOutput {
 		encrypted_master_key: user_data.encrypted_master_key,
 		encrypted_private_key: user_data.encrypted_private_key,
 		public_key_string: user_data.public_key_string,
@@ -164,9 +173,14 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 		keypair_sign_alg: user_data.keypair_sign_alg,
 		keypair_encrypt_id: user_data.keypair_encrypt_id,
 		keypair_sign_id: user_data.keypair_sign_id,
+	};
+
+	let out = DoneLoginServerOutput {
+		keys,
 		jwt,
 		refresh_token,
 		user_id: user_data.user_id,
+		group_invites,
 	};
 
 	Ok(out)
