@@ -67,11 +67,15 @@ routes:
               - post: {p: "/register", s: crate::user::register}
               - post: {p: "/prepare_login", s: crate::user::prepare_login}
               - post: {p: "/done_login", s: crate::user::done_login}
-              - put:
-                  p: "/refresh"
-                  s: crate::user::refresh_jwt
+              #_________________________________________________________________________________________________________
+              # group with exp jwt mw -> the jwt can be exp for this routes
+              - group:
+                  p: ""
                   mw:
                     - jwt::jwt_expire_transform
+                  gr:
+                    - put: {p: "/refresh", s: crate::user::refresh_jwt}
+                    - post: {p: "/init", s: crate::user::init_user}
               #_________________________________________________________________________________________________________
               - group:
                   p: "/keys"
