@@ -6,7 +6,7 @@ use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::group::{GroupKeyData, GroupOutData};
 use sentc_crypto::sdk_common::group::GroupAcceptJoinReqServerOutput;
-use sentc_crypto::{KeyData, PrivateKeyFormat, PublicKeyFormat};
+use sentc_crypto::{PrivateKeyFormat, PublicKeyFormat, UserData};
 use sentc_crypto_common::group::GroupCreateOutput;
 use sentc_crypto_common::user::{RegisterData, UserInitServerOutput};
 use sentc_crypto_common::{CustomerId, GroupId, ServerOutput, UserId};
@@ -271,7 +271,7 @@ pub async fn delete_user(app_secret_token: &str, jwt: &str)
 	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 }
 
-pub async fn login_user(public_token: &str, username: &str, pw: &str) -> KeyData
+pub async fn login_user(public_token: &str, username: &str, pw: &str) -> UserData
 {
 	let url = get_url("api/v1/prepare_login".to_owned());
 
@@ -338,7 +338,7 @@ pub async fn init_user(app_secret_token: &str, jwt: &str, refresh_token: &str) -
 	out
 }
 
-pub async fn create_test_user(secret_token: &str, public_token: &str, username: &str, pw: &str) -> (UserId, KeyData)
+pub async fn create_test_user(secret_token: &str, public_token: &str, username: &str, pw: &str) -> (UserId, UserData)
 {
 	//create test user
 	let user_id = register_user(secret_token, username, pw).await;

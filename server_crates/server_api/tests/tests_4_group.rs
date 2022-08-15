@@ -4,7 +4,7 @@ use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupInviteServerOutput};
-use sentc_crypto::KeyData;
+use sentc_crypto::UserData;
 use sentc_crypto_common::group::{
 	GroupChangeRankServerInput,
 	GroupCreateOutput,
@@ -44,7 +44,7 @@ pub struct UserState
 	pub username: String,
 	pub pw: String,
 	pub user_id: UserId,
-	pub key_data: KeyData,
+	pub user_data: UserData,
 }
 
 pub struct GroupState
@@ -98,7 +98,7 @@ async fn aaa_init_global_test()
 			username,
 			pw: user_pw.to_string(),
 			user_id,
-			key_data,
+			user_data: key_data,
 		};
 
 		users.push(user);
@@ -133,13 +133,13 @@ async fn test_10_create_group()
 	let creator = USERS_TEST_STATE.get().unwrap().read().await;
 	let creator = &creator[0];
 
-	let group_input = sentc_crypto::group::prepare_create(&creator.key_data.public_key).unwrap();
+	let group_input = sentc_crypto::group::prepare_create(&creator.user_data.keys.public_key).unwrap();
 
 	let url = get_url("api/v1/group".to_owned());
 	let client = reqwest::Client::new();
 	let res = client
 		.post(url)
-		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.body(group_input)
 		.send()
@@ -172,7 +172,7 @@ async fn test_11_get_group_data()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
-		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -192,7 +192,7 @@ async fn test_11_get_group_data()
 
 	let data = sentc_crypto::group::get_group_data(body.as_str()).unwrap();
 
-	let data_key = sentc_crypto::group::get_group_keys(&creator.key_data.private_key, &data.keys[0]).unwrap();
+	let data_key = sentc_crypto::group::get_group_keys(&creator.user_data.keys.private_key, &data.keys[0]).unwrap();
 
 	//user is the creator
 	assert_eq!(data.rank, 0);
@@ -227,13 +227,13 @@ async fn test_12_create_child_group()
 		secret_token,
 		group_public_key,
 		Some(group.group_id.to_string()),
-		creator.key_data.jwt.as_str(),
+		creator.user_data.jwt.as_str(),
 	)
 	.await;
 
 	let data = get_group(
 		secret_token,
-		creator.key_data.jwt.as_str(),
+		creator.user_data.jwt.as_str(),
 		child_id.as_str(),
 		group_private_key,
 		false,
@@ -272,15 +272,19 @@ async fn test_13_invite_user()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite =
-		sentc_crypto::group::prepare_group_keys_for_new_member(&user_to_invite.key_data.exported_public_key, &group_keys_ref, false).unwrap();
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(
+		&user_to_invite.user_data.keys.exported_public_key,
+		&group_keys_ref,
+		false,
+	)
+	.unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/invite/" + user_to_invite.user_id.as_str());
 
 	let client = reqwest::Client::new();
 	let res = client
 		.put(url)
-		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.body(invite)
 		.send()
@@ -327,7 +331,7 @@ async fn test_14_not_invite_user_without_keys()
 	let client = reqwest::Client::new();
 	let res = client
 		.put(url)
-		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.body(input.to_string().unwrap())
 		.send()
@@ -356,7 +360,7 @@ async fn test_15_get_invite_for_user()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
-		.header(AUTHORIZATION, auth_header(user_to_invite.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(user_to_invite.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -383,8 +387,8 @@ async fn test_16_user_init_with_invites()
 
 	let out = init_user(
 		secret_token,
-		user_to_invite.key_data.jwt.as_str(),
-		user_to_invite.key_data.refresh_token.as_str(),
+		user_to_invite.user_data.jwt.as_str(),
+		user_to_invite.user_data.refresh_token.as_str(),
 	)
 	.await;
 
@@ -406,7 +410,7 @@ async fn test_17_accept_invite()
 	let client = reqwest::Client::new();
 	let res = client
 		.patch(url)
-		.header(AUTHORIZATION, auth_header(user_to_invite.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(user_to_invite.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -419,9 +423,9 @@ async fn test_17_accept_invite()
 	//test get group as new user
 	let data = get_group(
 		secret_token,
-		user_to_invite.key_data.jwt.as_str(),
+		user_to_invite.user_data.jwt.as_str(),
 		group.group_id.as_str(),
-		&user_to_invite.key_data.private_key,
+		&user_to_invite.user_data.keys.private_key,
 		false,
 	)
 	.await;
@@ -458,15 +462,19 @@ async fn test_18_invite_user_an_reject_invite()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite =
-		sentc_crypto::group::prepare_group_keys_for_new_member(&user_to_invite.key_data.exported_public_key, &group_keys_ref, false).unwrap();
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(
+		&user_to_invite.user_data.keys.exported_public_key,
+		&group_keys_ref,
+		false,
+	)
+	.unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/invite/" + user_to_invite.user_id.as_str());
 
 	let client = reqwest::Client::new();
 	let res = client
 		.put(url)
-		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.body(invite)
 		.send()
@@ -486,7 +494,7 @@ async fn test_18_invite_user_an_reject_invite()
 	let client = reqwest::Client::new();
 	let res = client
 		.delete(url)
-		.header(AUTHORIZATION, auth_header(user_to_invite.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(user_to_invite.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -502,7 +510,7 @@ async fn test_18_invite_user_an_reject_invite()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
-		.header(AUTHORIZATION, auth_header(user_to_invite.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(user_to_invite.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -534,7 +542,7 @@ async fn test_19_not_leave_group_when_user_is_the_only_admin()
 	let client = reqwest::Client::new();
 	let res = client
 		.delete(url)
-		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -550,9 +558,9 @@ async fn test_19_not_leave_group_when_user_is_the_only_admin()
 	//should get the data without error
 	let _data = get_group(
 		secret_token,
-		creator.key_data.jwt.as_str(),
+		creator.user_data.jwt.as_str(),
 		group.group_id.as_str(),
-		&creator.key_data.private_key,
+		&creator.user_data.keys.private_key,
 		false,
 	)
 	.await;
@@ -571,7 +579,7 @@ async fn test_20_leave_group()
 	let client = reqwest::Client::new();
 	let res = client
 		.delete(url)
-		.header(AUTHORIZATION, auth_header(user.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -587,7 +595,7 @@ async fn test_20_leave_group()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
-		.header(AUTHORIZATION, auth_header(user.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -619,7 +627,7 @@ async fn test_21_join_req()
 	let client = reqwest::Client::new();
 	let res = client
 		.patch(url)
-		.header(AUTHORIZATION, auth_header(user.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -645,7 +653,7 @@ async fn test_22_get_join_req()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
-		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -672,7 +680,7 @@ async fn test_22_get_join_req()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
-		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -703,7 +711,7 @@ async fn test_23_send_join_req_aging()
 	let client = reqwest::Client::new();
 	let res = client
 		.patch(url)
-		.header(AUTHORIZATION, auth_header(user.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -723,7 +731,7 @@ async fn test_23_send_join_req_aging()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
-		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -758,7 +766,7 @@ async fn test_24_reject_join_req()
 	let client = reqwest::Client::new();
 	let res = client
 		.delete(url)
-		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -784,7 +792,7 @@ async fn test_25_get_not_join_req_after_reject()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
-		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -818,7 +826,7 @@ async fn test_26_accept_join_req()
 	let client = reqwest::Client::new();
 	let res = client
 		.patch(url)
-		.header(AUTHORIZATION, auth_header(user.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -846,14 +854,19 @@ async fn test_26_accept_join_req()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let join = sentc_crypto::group::prepare_group_keys_for_new_member(&user_to_accept.key_data.exported_public_key, &group_keys_ref, false).unwrap();
+	let join = sentc_crypto::group::prepare_group_keys_for_new_member(
+		&user_to_accept.user_data.keys.exported_public_key,
+		&group_keys_ref,
+		false,
+	)
+	.unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req/" + user_to_accept.user_id.as_str());
 
 	let client = reqwest::Client::new();
 	let res = client
 		.put(url)
-		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.body(join)
 		.send()
@@ -870,9 +883,9 @@ async fn test_26_accept_join_req()
 	//3. should get the group data
 	let _data = get_group(
 		secret_token,
-		user.key_data.jwt.as_str(),
+		user.user_data.jwt.as_str(),
 		group.group_id.as_str(),
-		&user.key_data.private_key,
+		&user.user_data.keys.private_key,
 		false,
 	);
 }
@@ -895,7 +908,7 @@ async fn test_27_start_key_rotation()
 		.get(user.user_id.as_str())
 		.unwrap()[0]
 		.group_key;
-	let invoker_public_key = &user.key_data.public_key;
+	let invoker_public_key = &user.user_data.keys.public_key;
 
 	let input = sentc_crypto::group::key_rotation(pre_group_key, invoker_public_key).unwrap();
 
@@ -903,7 +916,7 @@ async fn test_27_start_key_rotation()
 	let client = reqwest::Client::new();
 	let res = client
 		.post(url)
-		.header(AUTHORIZATION, auth_header(user.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.body(input)
 		.send()
@@ -925,9 +938,9 @@ async fn test_27_start_key_rotation()
 
 	let data_user_0 = get_group(
 		secret_token,
-		user.key_data.jwt.as_str(),
+		user.user_data.jwt.as_str(),
 		out.group_id.as_str(),
-		&user.key_data.private_key,
+		&user.user_data.keys.private_key,
 		false,
 	)
 	.await;
@@ -952,9 +965,9 @@ async fn test_28_done_key_rotation_for_other_user()
 	//should not have the new group key before done key rotation
 	let data_user = get_group(
 		secret_token,
-		user.key_data.jwt.as_str(),
+		user.user_data.jwt.as_str(),
 		group.group_id.as_str(),
-		&user.key_data.private_key,
+		&user.user_data.keys.private_key,
 		true,
 	)
 	.await;
@@ -969,7 +982,7 @@ async fn test_28_done_key_rotation_for_other_user()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
-		.header(AUTHORIZATION, auth_header(user.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -986,8 +999,8 @@ async fn test_28_done_key_rotation_for_other_user()
 	//done it for each key
 	for key in out {
 		let rotation_out = sentc_crypto::group::done_key_rotation(
-			&user.key_data.private_key,
-			&user.key_data.public_key,
+			&user.user_data.keys.private_key,
+			&user.user_data.keys.public_key,
 			&group
 				.decrypted_group_keys
 				.get(user.user_id.as_str())
@@ -1002,7 +1015,7 @@ async fn test_28_done_key_rotation_for_other_user()
 		let client = reqwest::Client::new();
 		let res = client
 			.put(url)
-			.header(AUTHORIZATION, auth_header(user.key_data.jwt.as_str()))
+			.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
 			.header("x-sentc-app-token", secret_token)
 			.body(rotation_out)
 			.send()
@@ -1015,9 +1028,9 @@ async fn test_28_done_key_rotation_for_other_user()
 
 	let data_user_1 = get_group(
 		secret_token,
-		user.key_data.jwt.as_str(),
+		user.user_data.jwt.as_str(),
 		group.group_id.as_str(),
-		&user.key_data.private_key,
+		&user.user_data.keys.private_key,
 		false,
 	)
 	.await;
@@ -1044,7 +1057,7 @@ async fn test_29_get_key_with_pagination()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
-		.header(AUTHORIZATION, auth_header(user.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -1063,7 +1076,7 @@ async fn test_29_get_key_with_pagination()
 	let mut group_keys = Vec::with_capacity(group_keys_fetch.len());
 
 	for group_keys_fetch in group_keys_fetch {
-		group_keys.push(sentc_crypto::group::get_group_keys(&user.key_data.private_key, &group_keys_fetch).unwrap());
+		group_keys.push(sentc_crypto::group::get_group_keys(&user.user_data.keys.private_key, &group_keys_fetch).unwrap());
 	}
 
 	//normally use len() - 1 but this time we wont fake a pagination, so we don't use the last item
@@ -1076,7 +1089,7 @@ async fn test_29_get_key_with_pagination()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
-		.header(AUTHORIZATION, auth_header(user.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -1111,13 +1124,13 @@ async fn test_30_invite_user_with_two_keys()
 
 	let user_group_data_2 = add_user_by_invite(
 		secret_token,
-		creator.key_data.jwt.as_str(),
+		creator.user_data.jwt.as_str(),
 		group.group_id.as_str(),
 		user_keys,
 		user_to_invite.user_id.as_str(),
-		user_to_invite.key_data.jwt.as_str(),
-		&user_to_invite.key_data.exported_public_key,
-		&user_to_invite.key_data.private_key,
+		user_to_invite.user_data.jwt.as_str(),
+		&user_to_invite.user_data.keys.exported_public_key,
+		&user_to_invite.user_data.keys.private_key,
 	)
 	.await;
 
@@ -1152,7 +1165,7 @@ async fn test_31_update_rank()
 	let client = reqwest::Client::new();
 	let res = client
 		.put(url)
-		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.body(input.to_string().unwrap())
 		.send()
@@ -1165,9 +1178,9 @@ async fn test_31_update_rank()
 	//get the group data with the new rank
 	let data = get_group(
 		secret_token,
-		user_to_change.key_data.jwt.as_str(),
+		user_to_change.user_data.jwt.as_str(),
 		group.group_id.as_str(),
-		&user_to_change.key_data.private_key,
+		&user_to_change.user_data.keys.private_key,
 		false,
 	)
 	.await;
@@ -1195,7 +1208,7 @@ async fn test_32_no_rank_change_without_permission()
 		.put(url)
 		.header(
 			AUTHORIZATION,
-			auth_header(user_without_permission.key_data.jwt.as_str()),
+			auth_header(user_without_permission.user_data.jwt.as_str()),
 		)
 		.header("x-sentc-app-token", secret_token)
 		.body(input.to_string().unwrap())
@@ -1224,7 +1237,7 @@ async fn test_33_kick_user_from_group()
 	let client = reqwest::Client::new();
 	let res = client
 		.delete(url)
-		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -1238,7 +1251,7 @@ async fn test_33_kick_user_from_group()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
-		.header(AUTHORIZATION, auth_header(user_to_kick.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(user_to_kick.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -1267,7 +1280,7 @@ async fn test_34_delete_group()
 	let client = reqwest::Client::new();
 	let res = client
 		.delete(url)
-		.header(AUTHORIZATION, auth_header(creator.key_data.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -1299,7 +1312,7 @@ async fn zzz_clean_up()
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 
 	for user in users.iter() {
-		delete_user(secret_token, user.key_data.jwt.as_str()).await;
+		delete_user(secret_token, user.user_data.jwt.as_str()).await;
 	}
 
 	let customer_jwt = &CUSTOMER_TEST_STATE
