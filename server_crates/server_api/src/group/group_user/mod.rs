@@ -23,6 +23,7 @@ use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::get_group_user_cache_key;
 
 mod group_user_model;
+pub mod group_user_service;
 
 pub(crate) async fn invite_request(mut req: Request) -> JRes<GroupInviteServerOutput>
 {
@@ -93,18 +94,13 @@ pub(crate) async fn get_invite_req(req: Request) -> JRes<Vec<GroupInviteReqList>
 		)
 	})?;
 
-	let reqs = group_user_model::get_invite_req_to_user(
+	let out = group_user_service::get_invite_req(
 		user.sub.to_string(),
 		user.id.to_string(),
 		last_fetched_time,
 		last_group_id.to_string(),
 	)
 	.await?;
-
-	let mut out: Vec<GroupInviteReqList> = Vec::with_capacity(reqs.len());
-	for item in reqs {
-		out.push(item.into());
-	}
 
 	echo(out)
 }
