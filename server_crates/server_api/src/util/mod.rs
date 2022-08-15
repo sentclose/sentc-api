@@ -1,3 +1,5 @@
+pub mod api_res;
+
 pub static JWT_CACHE: &'static str = "jwtcache_";
 pub static APP_TOKEN_CACHE: &'static str = "apptokencache_";
 pub static INTERNAL_GROUP_DATA_CACHE: &'static str = "internalgroupdatacache_";

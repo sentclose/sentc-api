@@ -1,7 +1,6 @@
 use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerOutput;
 use sentc_crypto_common::SymKeyId;
-
-use crate::take_or_err;
+use server_core::take_or_err;
 
 pub struct SymKeyEntity
 {
@@ -44,15 +43,15 @@ impl mysql_async::prelude::FromRow for SymKeyEntity
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for SymKeyEntity
+impl server_core::db::FromSqliteRow for SymKeyEntity
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		let time: String = take_or_err!(row, 4);
 		let time: u128 = time.parse().map_err(|e| {
-			crate::core::db::FormSqliteRowError {
+			server_core::db::FormSqliteRowError {
 				msg: format!("err in db fetch: {:?}", e),
 			}
 		})?;

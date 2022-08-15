@@ -1,8 +1,7 @@
 use sentc_crypto_common::group::{GroupInviteReqList, GroupJoinReqList, GroupKeyServerOutput, KeyRotationInput};
 use sentc_crypto_common::{AppId, EncryptionKeyPairId, GroupId, SymKeyId, UserId};
 use serde::{Deserialize, Serialize};
-
-use crate::take_or_err;
+use server_core::take_or_err;
 
 pub type GroupNewUserType = u16;
 
@@ -60,15 +59,15 @@ impl mysql_async::prelude::FromRow for InternalGroupData
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for InternalGroupData
+impl server_core::db::FromSqliteRow for InternalGroupData
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		let time: String = take_or_err!(row, 3);
 		let time: u128 = time.parse().map_err(|e| {
-			crate::core::db::FormSqliteRowError {
+			server_core::db::FormSqliteRowError {
 				msg: format!("err in db fetch: {:?}", e),
 			}
 		})?;
@@ -117,15 +116,15 @@ impl mysql_async::prelude::FromRow for InternalUserGroupData
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for InternalUserGroupData
+impl server_core::db::FromSqliteRow for InternalUserGroupData
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		let time: String = take_or_err!(row, 1);
 		let time: u128 = time.parse().map_err(|e| {
-			crate::core::db::FormSqliteRowError {
+			server_core::db::FormSqliteRowError {
 				msg: format!("err in db fetch: {:?}", e),
 			}
 		})?;
@@ -173,15 +172,15 @@ impl mysql_async::prelude::FromRow for InternalUserGroupDataFromParent
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for InternalUserGroupDataFromParent
+impl server_core::db::FromSqliteRow for InternalUserGroupDataFromParent
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		let time: String = take_or_err!(row, 1);
 		let time: u128 = time.parse().map_err(|e| {
-			crate::core::db::FormSqliteRowError {
+			server_core::db::FormSqliteRowError {
 				msg: format!("err in db fetch: {:?}", e),
 			}
 		})?;
@@ -221,9 +220,9 @@ impl mysql_async::prelude::FromRow for UserInGroupCheck
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for UserInGroupCheck
+impl server_core::db::FromSqliteRow for UserInGroupCheck
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
@@ -247,9 +246,9 @@ impl mysql_async::prelude::FromRow for GroupKeyUpdateReady
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for GroupKeyUpdateReady
+impl server_core::db::FromSqliteRow for GroupKeyUpdateReady
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
@@ -273,9 +272,9 @@ impl mysql_async::prelude::FromRow for GroupChildren
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for GroupChildren
+impl server_core::db::FromSqliteRow for GroupChildren
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
@@ -336,16 +335,16 @@ impl mysql_async::prelude::FromRow for GroupUserKeys
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for GroupUserKeys
+impl server_core::db::FromSqliteRow for GroupUserKeys
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		//time needs to parse from string to the value
 		let time: String = take_or_err!(row, 7);
 		let time: u128 = time.parse().map_err(|e| {
-			crate::core::db::FormSqliteRowError {
+			server_core::db::FormSqliteRowError {
 				msg: format!("err in db fetch: {:?}", e),
 			}
 		})?;
@@ -397,15 +396,15 @@ impl mysql_async::prelude::FromRow for GroupJoinReq
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for GroupJoinReq
+impl server_core::db::FromSqliteRow for GroupJoinReq
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		let time: String = take_or_err!(row, 1);
 		let time: u128 = time.parse().map_err(|e| {
-			crate::core::db::FormSqliteRowError {
+			server_core::db::FormSqliteRowError {
 				msg: format!("err in db fetch: {:?}", e),
 			}
 		})?;
@@ -451,15 +450,15 @@ impl mysql_async::prelude::FromRow for GroupInviteReq
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for GroupInviteReq
+impl server_core::db::FromSqliteRow for GroupInviteReq
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		let time: String = take_or_err!(row, 1);
 		let time: u128 = time.parse().map_err(|e| {
-			crate::core::db::FormSqliteRowError {
+			server_core::db::FormSqliteRowError {
 				msg: format!("err in db fetch: {:?}", e),
 			}
 		})?;
@@ -520,15 +519,15 @@ impl mysql_async::prelude::FromRow for GroupKeyUpdate
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for GroupKeyUpdate
+impl server_core::db::FromSqliteRow for GroupKeyUpdate
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		let time: String = take_or_err!(row, 6);
 		let time: u128 = time.parse().map_err(|e| {
-			crate::core::db::FormSqliteRowError {
+			server_core::db::FormSqliteRowError {
 				msg: format!("err in db fetch: {:?}", e),
 			}
 		})?;
@@ -568,9 +567,9 @@ impl mysql_async::prelude::FromRow for KeyRotationWorkerKey
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for KeyRotationWorkerKey
+impl server_core::db::FromSqliteRow for KeyRotationWorkerKey
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
@@ -622,15 +621,15 @@ impl mysql_async::prelude::FromRow for UserGroupPublicKeyData
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for UserGroupPublicKeyData
+impl server_core::db::FromSqliteRow for UserGroupPublicKeyData
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		let time: String = take_or_err!(row, 4);
 		let time: u128 = time.parse().map_err(|e| {
-			crate::core::db::FormSqliteRowError {
+			server_core::db::FormSqliteRowError {
 				msg: format!("err in db fetch: {:?}", e),
 			}
 		})?;
@@ -661,9 +660,9 @@ impl mysql_async::prelude::FromRow for GroupKeySession
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for GroupKeySession
+impl server_core::db::FromSqliteRow for GroupKeySession
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
@@ -708,15 +707,15 @@ impl mysql_async::prelude::FromRow for GroupUserListItem
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for GroupUserListItem
+impl server_core::db::FromSqliteRow for GroupUserListItem
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		let joined_time: String = take_or_err!(row, 2);
 		let joined_time: u128 = joined_time.parse().map_err(|e| {
-			crate::core::db::FormSqliteRowError {
+			server_core::db::FormSqliteRowError {
 				msg: format!("err in db fetch: {:?}", e),
 			}
 		})?;

@@ -7,12 +7,12 @@ use ring::signature::{self, KeyPair};
 use rustgram::Request;
 use sentc_crypto_common::UserId;
 use serde::{Deserialize, Serialize};
+use server_core::get_time_in_sec;
 
-use crate::core::api_res::{ApiErrorCodes, HttpErr};
-use crate::core::get_time_in_sec;
 use crate::customer_app::app_entities::AppJwt;
 use crate::user::user_entities::UserJwtEntity;
 use crate::user::user_model;
+use crate::util::api_res::{ApiErrorCodes, HttpErr};
 
 pub static JWT_ALG: &'static str = "ES384";
 

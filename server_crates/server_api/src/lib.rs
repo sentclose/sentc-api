@@ -2,7 +2,6 @@ use rustgram::{r, Request, Router};
 
 use crate::routes::routes;
 
-pub mod core;
 mod customer;
 mod customer_app;
 mod group;
@@ -10,7 +9,7 @@ mod key_management;
 mod middleware;
 mod routes;
 mod user;
-mod util;
+pub mod util;
 
 pub use customer_app::app_entities::*;
 #[cfg(feature = "embedded")]
@@ -20,11 +19,11 @@ pub use group::group_user_service as sentc_group_user_service;
 #[cfg(feature = "embedded")]
 pub use user::user_service as sentc_user_service;
 
-async fn not_found_handler(_req: Request) -> core::api_res::JRes<String>
+async fn not_found_handler(_req: Request) -> util::api_res::JRes<String>
 {
-	Err(core::api_res::HttpErr::new(
+	Err(util::api_res::HttpErr::new(
 		404,
-		core::api_res::ApiErrorCodes::PageNotFound,
+		util::api_res::ApiErrorCodes::PageNotFound,
 		"Not found".into(),
 		None,
 	))
@@ -40,12 +39,12 @@ pub async fn start()
 	//load the env
 	dotenv::dotenv().ok();
 
-	core::db::init_db().await;
-	core::cache::init_cache().await;
+	server_core::db::init_db().await;
+	server_core::cache::init_cache().await;
 
-	core::email::init_email_checker().await;
+	server_core::email::init_email_checker().await;
 	#[cfg(feature = "send_mail")]
-	core::email::send_mail::init_email_register().await;
+	server_core::email::send_mail::init_email_register().await;
 }
 
 /**

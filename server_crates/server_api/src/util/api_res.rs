@@ -4,12 +4,14 @@ use rustgram::{GramHttpErr, Response};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::ServerOutput;
 use serde::Serialize;
-
-use crate::core::input_helper::json_to_string;
+use server_core::error::{CoreError, CoreErrorCodes};
+use server_core::input_helper::json_to_string;
 
 #[derive(Debug)]
 pub enum ApiErrorCodes
 {
+	Core(CoreErrorCodes),
+
 	PageNotFound,
 
 	JsonToString,
@@ -76,11 +78,39 @@ pub enum ApiErrorCodes
 	KeyNotFound,
 }
 
+impl From<CoreErrorCodes> for ApiErrorCodes
+{
+	fn from(e: CoreErrorCodes) -> Self
+	{
+		Self::Core(e)
+	}
+}
+
 impl ApiErrorCodes
 {
 	pub fn get_int_code(&self) -> u32
 	{
 		match self {
+			ApiErrorCodes::Core(core) => {
+				match core {
+					CoreErrorCodes::JsonToString => 10,
+					CoreErrorCodes::JsonParse => 11,
+					CoreErrorCodes::InputTooBig => 12,
+					CoreErrorCodes::UnexpectedTime => 13,
+
+					CoreErrorCodes::NoDbConnection => 20,
+					CoreErrorCodes::DbQuery => 21,
+					CoreErrorCodes::DbExecute => 22,
+					CoreErrorCodes::DbBulkInsert => 23,
+					CoreErrorCodes::DbTx => 24,
+
+					CoreErrorCodes::NoParameter => 40,
+
+					CoreErrorCodes::EmailSend => 50,
+					CoreErrorCodes::EmailMessage => 51,
+				}
+			},
+
 			ApiErrorCodes::PageNotFound => 404,
 
 			ApiErrorCodes::JsonToString => 10,
@@ -156,6 +186,19 @@ pub struct HttpErr
 	debug_msg: Option<String>,
 }
 
+impl From<CoreError> for HttpErr
+{
+	fn from(e: CoreError) -> Self
+	{
+		Self {
+			http_status_code: e.http_status_code,
+			api_error_code: e.error_code.into(),
+			msg: e.msg,
+			debug_msg: e.debug_msg,
+		}
+	}
+}
+
 impl HttpErr
 {
 	pub fn new(http_status_code: u16, api_error_code: ApiErrorCodes, msg: String, debug_msg: Option<String>) -> Self
@@ -226,7 +269,7 @@ impl<T: Serialize> HttpResult<Response> for JsonRes<T>
 
 		let string = match json_to_string(&out) {
 			Ok(s) => s,
-			Err(e) => return e.get_res(),
+			Err(e) => return Into::<HttpErr>::into(e).get_res(),
 		};
 
 		hyper::Response::builder()

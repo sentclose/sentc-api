@@ -10,8 +10,8 @@ pub(crate) use group_user::*;
 use rustgram::Request;
 
 pub use self::group_user::group_user_service;
-use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::group::group_entities::InternalGroupDataComplete;
+use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 fn get_group_user_data_from_req(req: &Request) -> AppRes<&InternalGroupDataComplete>
 {
