@@ -1,10 +1,10 @@
 use sentc_crypto_common::CustomerId;
 use server_api_common::app::{AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput};
 
-use crate::core::api_res::AppRes;
 use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
 use crate::customer_app::{app_model, generate_tokens};
 use crate::user::jwt::create_jwt_keys;
+use crate::util::api_res::AppRes;
 
 pub async fn create_app(input: AppRegisterInput, customer_id: CustomerId) -> AppRes<AppRegisterOutput>
 {
