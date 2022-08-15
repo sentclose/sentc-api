@@ -136,6 +136,7 @@ routes:
                         gr:
                           - get: { p: "", s: crate::group::get_user_group_data }
                           - get: { p: "/keys/:last_fetched_time/:last_k_id", s: crate::group::get_user_group_keys }
+                          - get: {p: "/member/:last_fetched_time/:last_user_id", s: crate::group::get_group_member}
                           - post: {p: "/child", s: crate::group::create_child_group}
                           - delete: {p: "", s: crate::group::delete}
                           - delete: {p: "/leave", s: crate::group::leave_group}
