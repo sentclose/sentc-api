@@ -21,18 +21,18 @@ use server_api_common::customer::{
 	CustomerResetPasswordInput,
 	CustomerUpdateInput,
 };
-
-use crate::core::api_res::{echo, echo_success, ApiErrorCodes, AppRes, HttpErr, JRes};
-use crate::core::email;
+use server_core::email;
 #[cfg(feature = "send_mail")]
-use crate::core::email::send_mail::send_mail_registration;
-use crate::core::input_helper::{bytes_to_json, get_raw_body};
-use crate::core::url_helper::{get_name_param_from_params, get_params};
+use server_core::email::send_mail::send_mail_registration;
+use server_core::input_helper::{bytes_to_json, get_raw_body};
+use server_core::url_helper::{get_name_param_from_params, get_params};
+
 #[cfg(feature = "send_mail")]
 use crate::customer::customer_entities::RegisterEmailStatus;
 use crate::customer_app::app_util::get_app_data_from_req;
 use crate::user;
 use crate::user::jwt::get_jwt_data_from_param;
+use crate::util::api_res::{echo, echo_success, ApiErrorCodes, AppRes, HttpErr, JRes};
 
 pub mod customer_entities;
 pub(crate) mod customer_model;
@@ -342,12 +342,7 @@ pub(crate) async fn get_all_apps(req: Request) -> JRes<Vec<CustomerAppList>>
 
 	let list = customer_model::get_all_apps(user.id.to_string(), last_fetched_time, last_app_id.to_string()).await?;
 
-	let mut out: Vec<CustomerAppList> = Vec::with_capacity(list.len());
-	for item in list {
-		out.push(item.into());
-	}
-
-	echo(out)
+	echo(list)
 }
 
 //__________________________________________________________________________________________________
@@ -391,10 +386,12 @@ async fn process_send_mail(email: String, text: String, customer_id: sentc_crypt
 	let status = match send_mail_registration(email.as_str(), "Validate email address for sentc", text).await {
 		Ok(_) => RegisterEmailStatus::Success,
 		Err(e) => {
-			match e.api_error_code {
-				ApiErrorCodes::EmailMessage => RegisterEmailStatus::FailedMessage(e.msg),
-				ApiErrorCodes::EmailSend => RegisterEmailStatus::FailedSend(e.msg),
-				_ => RegisterEmailStatus::Other(e.msg),
+			let err: HttpErr = e.into();
+
+			match err.api_error_code {
+				ApiErrorCodes::EmailMessage => RegisterEmailStatus::FailedMessage(err.msg),
+				ApiErrorCodes::EmailSend => RegisterEmailStatus::FailedSend(err.msg),
+				_ => RegisterEmailStatus::Other(err.msg),
 			}
 		},
 	};

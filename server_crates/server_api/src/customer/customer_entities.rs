@@ -1,8 +1,7 @@
 #![allow(dead_code)]
 
-use sentc_crypto_common::{AppId, CustomerId};
-
-use crate::take_or_err;
+use sentc_crypto_common::CustomerId;
+use server_core::take_or_err;
 
 #[cfg(feature = "send_mail")]
 pub(crate) enum RegisterEmailStatus
@@ -29,9 +28,9 @@ impl mysql_async::prelude::FromRow for CustomerEmailValid
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for CustomerEmailValid
+impl server_core::db::FromSqliteRow for CustomerEmailValid
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
@@ -66,15 +65,15 @@ impl mysql_async::prelude::FromRow for CustomerDataEntity
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for CustomerDataEntity
+impl server_core::db::FromSqliteRow for CustomerDataEntity
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		let time: String = take_or_err!(row, 2);
 		let time: u128 = time.parse().map_err(|e| {
-			crate::core::db::FormSqliteRowError {
+			server_core::db::FormSqliteRowError {
 				msg: format!("err in db fetch: {:?}", e),
 			}
 		})?;
@@ -115,15 +114,15 @@ impl mysql_async::prelude::FromRow for CustomerDataByEmailEntity
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for CustomerDataByEmailEntity
+impl server_core::db::FromSqliteRow for CustomerDataByEmailEntity
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		let time: String = take_or_err!(row, 2);
 		let time: u128 = time.parse().map_err(|e| {
-			crate::core::db::FormSqliteRowError {
+			server_core::db::FormSqliteRowError {
 				msg: format!("err in db fetch: {:?}", e),
 			}
 		})?;
@@ -160,9 +159,9 @@ impl mysql_async::prelude::FromRow for CustomerEmailToken
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for CustomerEmailToken
+impl server_core::db::FromSqliteRow for CustomerEmailToken
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
@@ -196,73 +195,15 @@ impl mysql_async::prelude::FromRow for CustomerEmailByToken
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for CustomerEmailByToken
+impl server_core::db::FromSqliteRow for CustomerEmailByToken
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		Ok(Self {
 			email: take_or_err!(row, 0),
 			id: take_or_err!(row, 1),
-		})
-	}
-}
-
-//__________________________________________________________________________________________________
-
-pub(crate) struct CustomerAppList
-{
-	pub id: AppId,
-	pub identifier: String,
-	pub time: u128,
-}
-
-impl Into<server_api_common::customer::CustomerAppList> for CustomerAppList
-{
-	fn into(self) -> server_api_common::customer::CustomerAppList
-	{
-		server_api_common::customer::CustomerAppList {
-			id: self.id,
-			identifier: self.identifier,
-			time: self.time,
-		}
-	}
-}
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for CustomerAppList
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			id: take_or_err!(row, 0, String),
-			identifier: take_or_err!(row, 1, String),
-			time: take_or_err!(row, 2, u128),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl crate::core::db::FromSqliteRow for CustomerAppList
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		let time: String = take_or_err!(row, 2);
-		let time: u128 = time.parse().map_err(|e| {
-			crate::core::db::FormSqliteRowError {
-				msg: format!("err in db fetch: {:?}", e),
-			}
-		})?;
-
-		Ok(Self {
-			id: take_or_err!(row, 0),
-			identifier: take_or_err!(row, 1),
-			time,
 		})
 	}
 }
