@@ -2,7 +2,7 @@ use reqwest::header::AUTHORIZATION;
 use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::sdk_common::crypto::GeneratedSymKeyHeadServerOutput;
 use sentc_crypto::sdk_common::ServerOutput;
-use sentc_crypto::{KeyData, SymKeyFormat};
+use sentc_crypto::{SymKeyFormat, UserData};
 use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerRegisterOutput;
 use sentc_crypto_common::SymKeyId;
 use server_api_common::app::AppRegisterOutput;
@@ -22,7 +22,7 @@ pub struct SymKeyData
 
 pub struct KeyState
 {
-	pub user_data: KeyData,
+	pub user_data: UserData,
 	pub username: String,
 	pub user_pw: String,
 	pub app_data: AppRegisterOutput,
@@ -55,7 +55,7 @@ async fn aaa_init_global_state()
 
 	let group_id = create_group(
 		secret_token.as_str(),
-		&key_data.public_key,
+		&key_data.keys.public_key,
 		None,
 		key_data.jwt.as_str(),
 	)
@@ -65,7 +65,7 @@ async fn aaa_init_global_state()
 		secret_token.as_str(),
 		key_data.jwt.as_str(),
 		group_id.as_str(),
-		&key_data.private_key,
+		&key_data.keys.private_key,
 		false,
 	)
 	.await

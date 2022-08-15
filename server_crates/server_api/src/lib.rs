@@ -16,6 +16,8 @@ pub use customer_app::app_entities::*;
 #[cfg(feature = "embedded")]
 pub use customer_app::app_service as sentc_customer_app_service;
 #[cfg(feature = "embedded")]
+pub use group::group_user_service as sentc_group_user_service;
+#[cfg(feature = "embedded")]
 pub use user::user_service as sentc_user_service;
 
 async fn not_found_handler(_req: Request) -> core::api_res::JRes<String>

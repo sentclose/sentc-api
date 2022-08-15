@@ -461,6 +461,7 @@ pub(super) enum UserAction
 {
 	Login,
 	Refresh,
+	Init,
 	ChangePassword,
 	ResetPassword,
 	Delete,
@@ -479,6 +480,7 @@ pub(super) async fn save_user_action(app_id: AppId, user_id: UserId, action: Use
 		UserAction::ChangePassword => 2,
 		UserAction::ResetPassword => 3,
 		UserAction::Delete => 4,
+		UserAction::Init => 5,
 	};
 
 	exec(sql, set_params!(user_id, time.to_string(), action, app_id)).await?;

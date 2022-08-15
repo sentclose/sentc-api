@@ -1,7 +1,14 @@
 use std::env;
 
 use reqwest::header::AUTHORIZATION;
-use sentc_crypto_common::user::{ChangePasswordData, DoneLoginServerInput, DoneLoginServerKeysOutput, PrepareLoginSaltServerOutput, RegisterData};
+use sentc_crypto_common::user::{
+	ChangePasswordData,
+	DoneLoginServerInput,
+	DoneLoginServerKeysOutput,
+	DoneLoginServerOutput,
+	PrepareLoginSaltServerOutput,
+	RegisterData,
+};
 use sentc_crypto_common::ServerOutput;
 use server_api::core::api_res::ApiErrorCodes;
 use server_api_common::customer::{CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput, CustomerUpdateInput};
@@ -556,7 +563,7 @@ fn get_fake_login_data(old_pw: &str) -> (String, String)
 		derived_encryption_key_alg: fake_key_data.derived.derived_alg.to_string(),
 	};
 
-	let done_login_user_data = DoneLoginServerKeysOutput {
+	let keys = DoneLoginServerKeysOutput {
 		encrypted_master_key: fake_key_data.master_key.encrypted_master_key,
 		encrypted_private_key: fake_key_data.derived.encrypted_private_key,
 		public_key_string: fake_key_data.derived.public_key,
@@ -566,6 +573,10 @@ fn get_fake_login_data(old_pw: &str) -> (String, String)
 		keypair_sign_alg: fake_key_data.derived.keypair_sign_alg,
 		keypair_encrypt_id: "abc".to_string(),
 		keypair_sign_id: "abc".to_string(),
+	};
+
+	let done_login_user_data = DoneLoginServerOutput {
+		keys,
 		jwt: "abc".to_string(),
 		refresh_token: "abc".to_string(),
 		user_id: "abc".to_string(),
@@ -670,7 +681,7 @@ async fn test_16_reset_customer_password()
 
 	let user_key_data = sentc_crypto::user::done_login(&derived_master_key, done_login_user_data.as_str()).unwrap();
 
-	let pw_reset_out = sentc_crypto::user::reset_password(new_pw, &user_key_data.private_key, &user_key_data.sign_key).unwrap();
+	let pw_reset_out = sentc_crypto::user::reset_password(new_pw, &user_key_data.keys.private_key, &user_key_data.keys.sign_key).unwrap();
 	let reset_password_data = sentc_crypto_common::user::ResetPasswordData::from_string(pw_reset_out.as_str()).unwrap();
 
 	let input = server_api_common::customer::CustomerDonePasswordResetInput {

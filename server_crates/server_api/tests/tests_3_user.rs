@@ -1,14 +1,15 @@
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
-use sentc_crypto::KeyData;
+use sentc_crypto::UserData;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{
 	DoneLoginLightServerOutput,
-	DoneLoginServerKeysOutput,
+	DoneLoginServerOutput,
 	MasterKey,
 	RegisterServerOutput,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
+	UserInitServerOutput,
 	UserPublicData,
 	UserPublicKeyDataServerOutput,
 	UserUpdateServerInput,
@@ -44,7 +45,7 @@ pub struct UserState
 	pub username: String,
 	pub pw: String,
 	pub user_id: UserId,
-	pub key_data: Option<KeyData>,
+	pub user_data: Option<UserData>,
 	pub app_data: AppRegisterOutput,
 	pub customer_data: CustomerDoneLoginOutput,
 }
@@ -71,7 +72,7 @@ async fn aaa_init_global_test()
 					username: "admin_test".to_string(),
 					pw: "12345".to_string(),
 					user_id: "".to_string(),
-					key_data: None,
+					user_data: None,
 					app_data,
 					customer_data,
 				})
@@ -289,7 +290,7 @@ async fn test_14_login()
 
 	let done_login = sentc_crypto::user::done_login(&derived_master_key, body.as_str()).unwrap();
 
-	user.key_data = Some(done_login);
+	user.user_data = Some(done_login);
 }
 
 #[tokio::test]
@@ -330,7 +331,7 @@ async fn test_15_login_with_wrong_password()
 		.unwrap();
 
 	let body = res.text().await.unwrap();
-	let login_output = ServerOutput::<DoneLoginServerKeysOutput>::from_string(body.as_str()).unwrap();
+	let login_output = ServerOutput::<DoneLoginServerOutput>::from_string(body.as_str()).unwrap();
 
 	assert_eq!(login_output.status, false);
 	assert_eq!(login_output.result.is_none(), true);
@@ -362,7 +363,7 @@ async fn test_16_user_delete_with_wrong_jwt()
 	//create new jwt keys for the app
 	let mut user = USER_TEST_STATE.get().unwrap().write().await;
 
-	let old_jwt = &user.key_data.as_ref().unwrap().jwt;
+	let old_jwt = &user.user_data.as_ref().unwrap().jwt;
 	let old_jwt_data = &user.app_data.jwt_data;
 
 	let customer_jwt = &user.customer_data.user_keys.jwt;
@@ -402,7 +403,7 @@ async fn test_16_user_delete_with_wrong_jwt()
 	let login = login_user(public_token, username, pw).await;
 
 	user.app_data.jwt_data = new_keys; //save the new jwt for other tests
-	user.key_data = Some(login);
+	user.user_data = Some(login);
 }
 
 #[tokio::test]
@@ -509,7 +510,7 @@ async fn test_17_change_user_pw()
 		.unwrap();
 
 	let body = res.text().await.unwrap();
-	let login_output = ServerOutput::<DoneLoginServerKeysOutput>::from_string(body.as_str()).unwrap();
+	let login_output = ServerOutput::<DoneLoginServerOutput>::from_string(body.as_str()).unwrap();
 
 	assert_eq!(login_output.status, false);
 	assert_eq!(login_output.result.is_none(), true);
@@ -520,7 +521,7 @@ async fn test_17_change_user_pw()
 	let login = login_user(public_token, username, new_pw).await;
 
 	//the the new key data
-	user.key_data = Some(login);
+	user.user_data = Some(login);
 	user.pw = new_pw.to_string();
 }
 
@@ -534,10 +535,10 @@ async fn test_18_reset_password()
 	let username = &user.username;
 	let old_pw = &user.pw;
 	let new_pw = "a_new_password";
-	let key_data = user.key_data.as_ref().unwrap();
+	let key_data = user.user_data.as_ref().unwrap();
 	let public_token = &user.app_data.public_token;
 
-	let input = sentc_crypto::user::reset_password(new_pw, &key_data.private_key, &key_data.sign_key).unwrap();
+	let input = sentc_crypto::user::reset_password(new_pw, &key_data.keys.private_key, &key_data.keys.sign_key).unwrap();
 
 	let url = get_url("api/v1/user/reset_pw".to_owned());
 	let client = reqwest::Client::new();
@@ -589,7 +590,7 @@ async fn test_18_reset_password()
 		.unwrap();
 
 	let body = res.text().await.unwrap();
-	let login_output = ServerOutput::<DoneLoginServerKeysOutput>::from_string(body.as_str()).unwrap();
+	let login_output = ServerOutput::<DoneLoginServerOutput>::from_string(body.as_str()).unwrap();
 
 	assert_eq!(login_output.status, false);
 	assert_eq!(login_output.result.is_none(), true);
@@ -600,7 +601,7 @@ async fn test_18_reset_password()
 	let login = login_user(public_token, username, new_pw).await;
 
 	//the the new key data
-	user.key_data = Some(login);
+	user.user_data = Some(login);
 	user.pw = new_pw.to_string();
 }
 
@@ -609,7 +610,7 @@ async fn test_19_user_update()
 {
 	let mut user = USER_TEST_STATE.get().unwrap().write().await;
 	let old_username = &user.username;
-	let jwt = &user.key_data.as_ref().unwrap().jwt;
+	let jwt = &user.user_data.as_ref().unwrap().jwt;
 
 	let new_username = "bla".to_string();
 
@@ -648,7 +649,7 @@ async fn test_19_user_update()
 async fn test_20_user_not_update_when_identifier_exists()
 {
 	let user = USER_TEST_STATE.get().unwrap().read().await;
-	let jwt = &user.key_data.as_ref().unwrap().jwt;
+	let jwt = &user.user_data.as_ref().unwrap().jwt;
 
 	let new_username = "bla".to_string();
 
@@ -701,9 +702,10 @@ async fn test_21_get_user_public_data()
 
 	assert_eq!(
 		out.public_key_id,
-		user.key_data
+		user.user_data
 			.as_ref()
 			.unwrap()
+			.keys
 			.public_key
 			.key_id
 			.to_string()
@@ -711,9 +713,10 @@ async fn test_21_get_user_public_data()
 
 	assert_eq!(
 		out.verify_key_id,
-		user.key_data
+		user.user_data
 			.as_ref()
 			.unwrap()
+			.keys
 			.verify_key
 			.key_id
 			.to_string()
@@ -739,9 +742,10 @@ async fn test_21_get_user_public_data()
 
 	assert_eq!(
 		out.public_key_id,
-		user.key_data
+		user.user_data
 			.as_ref()
 			.unwrap()
+			.keys
 			.public_key
 			.key_id
 			.to_string()
@@ -767,9 +771,10 @@ async fn test_21_get_user_public_data()
 
 	assert_eq!(
 		out.verify_key_id,
-		user.key_data
+		user.user_data
 			.as_ref()
 			.unwrap()
+			.keys
 			.verify_key
 			.key_id
 			.to_string()
@@ -780,9 +785,9 @@ async fn test_21_get_user_public_data()
 async fn test_22_refresh_jwt()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
-	let jwt = &user.key_data.as_ref().unwrap().jwt;
+	let jwt = &user.user_data.as_ref().unwrap().jwt;
 
-	let input = sentc_crypto::user::prepare_refresh_jwt(&user.key_data.as_ref().unwrap().refresh_token).unwrap();
+	let input = sentc_crypto::user::prepare_refresh_jwt(&user.user_data.as_ref().unwrap().refresh_token).unwrap();
 
 	let url = get_url("api/v1/refresh".to_owned());
 	let client = reqwest::Client::new();
@@ -857,13 +862,49 @@ async fn test_22_refresh_jwt()
 	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::WrongJwtAction.get_int_code());
 }
 
+#[tokio::test]
+async fn test_23_user_normal_init()
+{
+	//no group invite here at this point
+
+	let user = &USER_TEST_STATE.get().unwrap().read().await;
+	let jwt = &user.user_data.as_ref().unwrap().jwt;
+
+	let url = get_url("api/v1/init".to_owned());
+
+	let input = sentc_crypto::user::prepare_refresh_jwt(&user.user_data.as_ref().unwrap().refresh_token).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<UserInitServerOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+
+	let out = out.result.unwrap();
+
+	//don't save the jwt because we need a fresh jwt
+	assert_eq!(out.invites.len(), 0);
+}
+
 //do user tests before this one!
 
 #[tokio::test]
-async fn test_23_user_delete()
+async fn test_24_user_delete()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
-	let jwt = &user.key_data.as_ref().unwrap().jwt;
+	let jwt = &user.user_data.as_ref().unwrap().jwt;
 
 	let url = get_url("api/v1/user".to_owned());
 	let client = reqwest::Client::new();
@@ -902,7 +943,7 @@ impl WrongRegisterData
 }
 
 #[tokio::test]
-async fn test_24_not_register_user_with_wrong_input()
+async fn test_25_not_register_user_with_wrong_input()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 
@@ -956,7 +997,7 @@ async fn test_24_not_register_user_with_wrong_input()
 }
 
 #[tokio::test]
-async fn test_25_register_and_login_user_via_test_fn()
+async fn test_26_register_and_login_user_via_test_fn()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let secret_token = &user.app_data.secret_token;

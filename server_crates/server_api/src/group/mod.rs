@@ -9,6 +9,7 @@ pub(crate) use group_key_rotation::*;
 pub(crate) use group_user::*;
 use rustgram::Request;
 
+pub use self::group_user::group_user_service;
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::group::group_entities::InternalGroupDataComplete;
 

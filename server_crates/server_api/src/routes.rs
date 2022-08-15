@@ -128,6 +128,12 @@ pub(crate) fn routes() -> Router
 			.add(app_token::app_token_transform),
 	);
 	router.post(
+		"/api/v1/init",
+		r(crate::user::init_user)
+			.add(jwt::jwt_expire_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.post(
 		"/api/v1/keys/sym_key",
 		r(crate::key_management::register_sym_key)
 			.add(jwt::jwt_transform)

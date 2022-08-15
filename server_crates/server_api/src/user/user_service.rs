@@ -7,6 +7,7 @@ use sentc_crypto_common::user::{
 	DoneLoginLightServerOutput,
 	DoneLoginServerInput,
 	DoneLoginServerKeysOutput,
+	DoneLoginServerOutput,
 	JwtRefreshInput,
 	PrepareLoginSaltServerOutput,
 	PrepareLoginServerInput,
@@ -15,12 +16,14 @@ use sentc_crypto_common::user::{
 	ResetPasswordData,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
+	UserInitServerOutput,
 	UserUpdateServerInput,
 	UserUpdateServerOut,
 };
 use sentc_crypto_common::{AppId, UserId};
 
 use crate::core::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::group::group_user_service;
 use crate::user::jwt::create_jwt;
 use crate::user::user_entities::{UserJwtEntity, SERVER_RANDOM_VALUE};
 use crate::user::user_model;
@@ -107,7 +110,7 @@ pub async fn done_login_light(app_data: &AppData, done_login: DoneLoginServerInp
 /**
 After successful login return the user keys so they can be decrypted in the client
 */
-pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) -> AppRes<DoneLoginServerKeysOutput>
+pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) -> AppRes<DoneLoginServerOutput>
 {
 	auth_user(
 		app_data.app_data.app_id.to_string(),
@@ -152,7 +155,7 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 	)
 	.await?;
 
-	let out = DoneLoginServerKeysOutput {
+	let keys = DoneLoginServerKeysOutput {
 		encrypted_master_key: user_data.encrypted_master_key,
 		encrypted_private_key: user_data.encrypted_private_key,
 		public_key_string: user_data.public_key_string,
@@ -162,6 +165,10 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 		keypair_sign_alg: user_data.keypair_sign_alg,
 		keypair_encrypt_id: user_data.keypair_encrypt_id,
 		keypair_sign_id: user_data.keypair_sign_id,
+	};
+
+	let out = DoneLoginServerOutput {
+		keys,
 		jwt,
 		refresh_token,
 		user_id: user_data.user_id,
@@ -172,6 +179,22 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 
 //__________________________________________________________________________________________________
 // user fn with jwt
+
+pub async fn init_user(app_data: &AppData, user_id: UserId, input: JwtRefreshInput) -> AppRes<UserInitServerOutput>
+{
+	//first refresh the user
+	let jwt = refresh_jwt(app_data, user_id.to_string(), input, "user")
+		.await?
+		.jwt;
+
+	//2nd get all group invites
+	let invites = group_user_service::get_invite_req(app_data.app_data.app_id.to_string(), user_id, 0, "none".to_string()).await?;
+
+	Ok(UserInitServerOutput {
+		jwt,
+		invites,
+	})
+}
 
 pub async fn refresh_jwt(app_data: &AppData, user_id: UserId, input: JwtRefreshInput, aud: &str) -> AppRes<DoneLoginLightServerOutput>
 {

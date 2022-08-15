@@ -9,7 +9,7 @@ use sentc_crypto_common::user::{
 	ChangePasswordData,
 	DoneLoginLightServerOutput,
 	DoneLoginServerInput,
-	DoneLoginServerKeysOutput,
+	DoneLoginServerOutput,
 	JwtRefreshInput,
 	PrepareLoginSaltServerOutput,
 	PrepareLoginServerInput,
@@ -18,6 +18,7 @@ use sentc_crypto_common::user::{
 	ResetPasswordData,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
+	UserInitServerOutput,
 	UserPublicData,
 	UserPublicKeyDataServerOutput,
 	UserUpdateServerInput,
@@ -73,7 +74,7 @@ pub(crate) async fn prepare_login(mut req: Request) -> JRes<PrepareLoginSaltServ
 	echo(out)
 }
 
-pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerKeysOutput>
+pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerOutput>
 {
 	let body = get_raw_body(&mut req).await?;
 	let done_login: DoneLoginServerInput = bytes_to_json(&body)?;
@@ -138,6 +139,30 @@ pub(crate) async fn get_verify_key_data(req: Request) -> JRes<UserVerifyKeyDataS
 
 //__________________________________________________________________________________________________
 // user fn with jwt
+
+pub(crate) async fn init_user(mut req: Request) -> JRes<UserInitServerOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+	let input: JwtRefreshInput = bytes_to_json(&body)?;
+
+	let app_data = get_app_data_from_req(&req)?;
+
+	check_endpoint_with_app_options(app_data, Endpoint::UserRefreshJwt)?;
+
+	//this can be an expired jwt, but the app id must be valid
+	let user = get_jwt_data_from_param(&req)?;
+
+	let out = user_service::init_user(app_data, user.id.to_string(), input).await?;
+
+	user_model::save_user_action(
+		app_data.app_data.app_id.to_string(),
+		user.id.to_string(),
+		UserAction::Init,
+	)
+	.await?;
+
+	echo(out)
+}
 
 pub(crate) async fn refresh_jwt(mut req: Request) -> JRes<DoneLoginLightServerOutput>
 {
