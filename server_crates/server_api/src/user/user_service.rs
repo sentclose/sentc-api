@@ -155,14 +155,6 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 	)
 	.await?;
 
-	let group_invites = group_user_service::get_invite_req(
-		app_data.app_data.app_id.to_string(),
-		user_data.user_id.to_string(),
-		0,
-		"none".to_string(),
-	)
-	.await?;
-
 	let keys = DoneLoginServerKeysOutput {
 		encrypted_master_key: user_data.encrypted_master_key,
 		encrypted_private_key: user_data.encrypted_private_key,
@@ -180,7 +172,6 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 		jwt,
 		refresh_token,
 		user_id: user_data.user_id,
-		group_invites,
 	};
 
 	Ok(out)
