@@ -37,7 +37,7 @@ async fn main()
 			user_prepare_login: 0,
 			user_done_login: 0,
 			user_public_data: 0,
-			user_refresh: 0,
+			user_jwt_refresh: 0,
 			key_register: 0,
 			key_get: 0,
 		},
