@@ -350,7 +350,13 @@ pub async fn create_group(secret_token: &str, creator_public_key: &PublicKeyForm
 	out.group_id
 }
 
-pub async fn get_group(secret_token: &str, jwt: &str, group_id: &str, private_key: &PrivateKeyFormat, key_update: bool) -> GroupOutData
+pub async fn get_group(
+	secret_token: &str,
+	jwt: &str,
+	group_id: &str,
+	private_key: &PrivateKeyFormat,
+	key_update: bool,
+) -> (GroupOutData, Vec<GroupKeyData>)
 {
 	let url = get_url("api/v1/group/".to_owned() + group_id);
 	let client = reqwest::Client::new();
@@ -364,11 +370,17 @@ pub async fn get_group(secret_token: &str, jwt: &str, group_id: &str, private_ke
 
 	let body = res.text().await.unwrap();
 
-	let data = sentc_crypto::group::get_group_data(private_key, body.as_str()).unwrap();
+	let data = sentc_crypto::group::get_group_data(body.as_str()).unwrap();
+
+	let mut data_keys = Vec::with_capacity(data.keys.len());
+
+	for key in &data.keys {
+		data_keys.push(sentc_crypto::group::get_group_keys(private_key, key).unwrap());
+	}
 
 	assert_eq!(data.key_update, key_update);
 
-	data
+	(data, data_keys)
 }
 
 pub async fn add_user_by_invite(
@@ -380,7 +392,7 @@ pub async fn add_user_by_invite(
 	user_to_invite_jwt: &str,
 	user_to_add_public_key: &sentc_crypto::sdk_common::user::UserPublicKeyData,
 	user_to_add_private_key: &PrivateKeyFormat,
-) -> GroupOutData
+) -> (GroupOutData, Vec<GroupKeyData>)
 {
 	let mut group_keys_ref = vec![];
 
@@ -432,7 +444,7 @@ pub async fn add_user_by_invite(
 	)
 	.await;
 
-	assert_eq!(data.rank, 4);
+	assert_eq!(data.0.rank, 4);
 
 	data
 }
