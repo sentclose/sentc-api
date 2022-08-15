@@ -13,6 +13,7 @@ use sentc_crypto_common::group::{
 	GroupJoinReqList,
 	GroupKeysForNewMemberServerInput,
 	GroupServerData,
+	GroupUserListItem,
 	KeyRotationStartServerOutput,
 };
 use sentc_crypto_common::server_default::ServerSuccessOutput;
@@ -1220,6 +1221,90 @@ async fn test_32_no_rank_change_without_permission()
 	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
 	assert_eq!(out.status, false);
+}
+
+#[tokio::test]
+async fn test_33_get_group_user()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+	let user_2 = &users[2];
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/member/0/none");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let res: Vec<GroupUserListItem> = sentc_crypto::util::public::handle_server_response(body.as_str()).unwrap();
+
+	assert_eq!(res.len(), 2);
+
+	//the caller id should not be in this arr
+	assert_ne!(res[0].user_id, creator.user_id);
+	assert_ne!(res[1].user_id, creator.user_id);
+
+	//______________________________________________________________________________________________
+	//should get the 2nd page
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+
+	let url = get_url(
+		"api/v1/group/".to_owned() + group.group_id.as_str() + "/member/" + res[0].joined_time.to_string().as_str() + "/" + res[0].user_id.as_str(),
+	);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let res: Vec<GroupUserListItem> = sentc_crypto::util::public::handle_server_response(body.as_str()).unwrap();
+
+	assert_eq!(res.len(), 1);
+	assert_ne!(res[0].user_id, creator.user_id);
+
+	//______________________________________________________________________________________________
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/member/0/none");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user_2.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let res: Vec<GroupUserListItem> = sentc_crypto::util::public::handle_server_response(body.as_str()).unwrap();
+
+	assert_eq!(res.len(), 2);
+
+	//the caller id should not be in this arr
+	assert_ne!(res[0].user_id, user_2.user_id);
+	assert_ne!(res[1].user_id, user_2.user_id);
 }
 
 #[tokio::test]
