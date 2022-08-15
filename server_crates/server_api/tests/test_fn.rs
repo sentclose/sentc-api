@@ -8,7 +8,7 @@ use sentc_crypto::group::{GroupKeyData, GroupOutData};
 use sentc_crypto::sdk_common::group::GroupAcceptJoinReqServerOutput;
 use sentc_crypto::{KeyData, PrivateKeyFormat, PublicKeyFormat};
 use sentc_crypto_common::group::GroupCreateOutput;
-use sentc_crypto_common::user::RegisterData;
+use sentc_crypto_common::user::{RegisterData, UserInitServerOutput};
 use sentc_crypto_common::{CustomerId, GroupId, ServerOutput, UserId};
 use server_api_common::app::{AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
 use server_api_common::customer::{CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput};
@@ -307,6 +307,35 @@ pub async fn login_user(public_token: &str, username: &str, pw: &str) -> KeyData
 	let done_login = sentc_crypto::user::done_login(&derived_master_key, body.as_str()).unwrap();
 
 	done_login
+}
+
+pub async fn init_user(app_secret_token: &str, jwt: &str, refresh_token: &str) -> UserInitServerOutput
+{
+	let url = get_url("api/v1/init".to_owned());
+
+	let input = sentc_crypto::user::prepare_refresh_jwt(refresh_token).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", app_secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<UserInitServerOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+
+	let out = out.result.unwrap();
+
+	out
 }
 
 pub async fn create_test_user(secret_token: &str, public_token: &str, username: &str, pw: &str) -> (UserId, KeyData)

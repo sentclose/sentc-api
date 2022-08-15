@@ -9,6 +9,7 @@ use sentc_crypto_common::user::{
 	RegisterServerOutput,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
+	UserInitServerOutput,
 	UserPublicData,
 	UserPublicKeyDataServerOutput,
 	UserUpdateServerInput,
@@ -857,10 +858,46 @@ async fn test_22_refresh_jwt()
 	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::WrongJwtAction.get_int_code());
 }
 
+#[tokio::test]
+async fn test_23_user_normal_init()
+{
+	//no group invite here at this point
+
+	let user = &USER_TEST_STATE.get().unwrap().read().await;
+	let jwt = &user.key_data.as_ref().unwrap().jwt;
+
+	let url = get_url("api/v1/init".to_owned());
+
+	let input = sentc_crypto::user::prepare_refresh_jwt(&user.key_data.as_ref().unwrap().refresh_token).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<UserInitServerOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+
+	let out = out.result.unwrap();
+
+	//don't save the jwt because we need a fresh jwt
+	assert_eq!(out.invites.len(), 0);
+}
+
 //do user tests before this one!
 
 #[tokio::test]
-async fn test_23_user_delete()
+async fn test_24_user_delete()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let jwt = &user.key_data.as_ref().unwrap().jwt;
@@ -902,7 +939,7 @@ impl WrongRegisterData
 }
 
 #[tokio::test]
-async fn test_24_not_register_user_with_wrong_input()
+async fn test_25_not_register_user_with_wrong_input()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 
@@ -956,7 +993,7 @@ async fn test_24_not_register_user_with_wrong_input()
 }
 
 #[tokio::test]
-async fn test_25_register_and_login_user_via_test_fn()
+async fn test_26_register_and_login_user_via_test_fn()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let secret_token = &user.app_data.secret_token;

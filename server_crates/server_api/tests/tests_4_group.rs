@@ -34,6 +34,7 @@ use crate::test_fn::{
 	delete_user,
 	get_group,
 	get_url,
+	init_user,
 };
 
 mod test_fn;
@@ -374,7 +375,24 @@ async fn test_15_get_invite_for_user()
 }
 
 #[tokio::test]
-async fn test_16_accept_invite()
+async fn test_16_user_init_with_invites()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let user_to_invite = &users[1];
+
+	let out = init_user(
+		secret_token,
+		user_to_invite.key_data.jwt.as_str(),
+		user_to_invite.key_data.refresh_token.as_str(),
+	)
+	.await;
+
+	assert_eq!(out.invites.len(), 1);
+}
+
+#[tokio::test]
+async fn test_17_accept_invite()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let mut group = GROUP_TEST_STATE.get().unwrap().write().await;
@@ -419,7 +437,7 @@ async fn test_16_accept_invite()
 }
 
 #[tokio::test]
-async fn test_17_invite_user_an_reject_invite()
+async fn test_18_invite_user_an_reject_invite()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -504,7 +522,7 @@ async fn test_17_invite_user_an_reject_invite()
 //leave group
 
 #[tokio::test]
-async fn test_18_not_leave_group_when_user_is_the_only_admin()
+async fn test_19_not_leave_group_when_user_is_the_only_admin()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -541,7 +559,7 @@ async fn test_18_not_leave_group_when_user_is_the_only_admin()
 }
 
 #[tokio::test]
-async fn test_19_leave_group()
+async fn test_20_leave_group()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -589,7 +607,7 @@ async fn test_19_leave_group()
 //join req
 
 #[tokio::test]
-async fn test_20_join_req()
+async fn test_21_join_req()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -614,7 +632,7 @@ async fn test_20_join_req()
 }
 
 #[tokio::test]
-async fn test_21_get_join_req()
+async fn test_22_get_join_req()
 {
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
 
@@ -671,7 +689,7 @@ async fn test_21_get_join_req()
 }
 
 #[tokio::test]
-async fn test_22_send_join_req_aging()
+async fn test_23_send_join_req_aging()
 {
 	//this should not err because of insert ignore
 
@@ -727,7 +745,7 @@ async fn test_22_send_join_req_aging()
 }
 
 #[tokio::test]
-async fn test_23_reject_join_req()
+async fn test_24_reject_join_req()
 {
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
 
@@ -753,7 +771,7 @@ async fn test_23_reject_join_req()
 }
 
 #[tokio::test]
-async fn test_24_get_not_join_req_after_reject()
+async fn test_25_get_not_join_req_after_reject()
 {
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
 
@@ -787,7 +805,7 @@ async fn test_24_get_not_join_req_after_reject()
 }
 
 #[tokio::test]
-async fn test_25_accept_join_req()
+async fn test_26_accept_join_req()
 {
 	//1. send the join req again, because we were rejecting the last one
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
@@ -863,7 +881,7 @@ async fn test_25_accept_join_req()
 //key rotation
 
 #[tokio::test]
-async fn test_26_start_key_rotation()
+async fn test_27_start_key_rotation()
 {
 	//
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
@@ -922,7 +940,7 @@ async fn test_26_start_key_rotation()
 }
 
 #[tokio::test]
-async fn test_27_done_key_rotation_for_other_user()
+async fn test_28_done_key_rotation_for_other_user()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let mut group = GROUP_TEST_STATE.get().unwrap().write().await;
@@ -1013,7 +1031,7 @@ async fn test_27_done_key_rotation_for_other_user()
 }
 
 #[tokio::test]
-async fn test_28_get_key_with_pagination()
+async fn test_29_get_key_with_pagination()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -1076,7 +1094,7 @@ async fn test_28_get_key_with_pagination()
 }
 
 #[tokio::test]
-async fn test_29_invite_user_with_two_keys()
+async fn test_30_invite_user_with_two_keys()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let mut group = GROUP_TEST_STATE.get().unwrap().write().await;
@@ -1114,7 +1132,7 @@ async fn test_29_invite_user_with_two_keys()
 //__________________________________________________________________________________________________
 
 #[tokio::test]
-async fn test_30_update_rank()
+async fn test_31_update_rank()
 {
 	//update the rank of a user and check if the rank for the child group is also updated
 
@@ -1158,7 +1176,7 @@ async fn test_30_update_rank()
 }
 
 #[tokio::test]
-async fn test_31_no_rank_change_without_permission()
+async fn test_32_no_rank_change_without_permission()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -1192,7 +1210,7 @@ async fn test_31_no_rank_change_without_permission()
 }
 
 #[tokio::test]
-async fn test_32_kick_user_from_group()
+async fn test_33_kick_user_from_group()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -1237,7 +1255,7 @@ async fn test_32_kick_user_from_group()
 //delete group
 
 #[tokio::test]
-async fn test_33_delete_group()
+async fn test_34_delete_group()
 {
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
 
