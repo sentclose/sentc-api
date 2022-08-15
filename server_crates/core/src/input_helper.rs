@@ -4,11 +4,11 @@ use rustgram::Request;
 use serde::{de, Serialize};
 use serde_json::{from_slice, to_string};
 
-use crate::core::api_res::{ApiErrorCodes, HttpErr};
+use crate::error::{CoreError, CoreErrorCodes};
 
 const MAX_SIZE_JSON: usize = 262_144; // max payload size is 256k
 
-pub async fn get_raw_body(req: &mut Request) -> Result<BytesMut, HttpErr>
+pub async fn get_raw_body(req: &mut Request) -> Result<BytesMut, CoreError>
 {
 	//read the json to memory
 	let req_body = req.body_mut();
@@ -18,9 +18,9 @@ pub async fn get_raw_body(req: &mut Request) -> Result<BytesMut, HttpErr>
 		match bytes {
 			Ok(chunk) => {
 				if (body.len() + chunk.len()) > MAX_SIZE_JSON {
-					return Err(HttpErr::new(
+					return Err(CoreError::new(
 						413,
-						ApiErrorCodes::InputTooBig,
+						CoreErrorCodes::InputTooBig,
 						"Input was too big to handle".to_owned(),
 						None,
 					));
@@ -37,16 +37,16 @@ pub async fn get_raw_body(req: &mut Request) -> Result<BytesMut, HttpErr>
 	Ok(body)
 }
 
-pub fn json_to_string<T>(value: &T) -> Result<String, HttpErr>
+pub fn json_to_string<T>(value: &T) -> Result<String, CoreError>
 where
 	T: ?Sized + Serialize,
 {
 	match to_string(value) {
 		Ok(o) => Ok(o),
 		Err(e) => {
-			Err(HttpErr::new(
+			Err(CoreError::new(
 				422,
-				ApiErrorCodes::JsonToString,
+				CoreErrorCodes::JsonToString,
 				format!("json parse err: {:?}", e),
 				None,
 			))
@@ -54,16 +54,16 @@ where
 	}
 }
 
-pub fn bytes_to_json<'a, T>(v: &'a [u8]) -> Result<T, HttpErr>
+pub fn bytes_to_json<'a, T>(v: &'a [u8]) -> Result<T, CoreError>
 where
 	T: de::Deserialize<'a>,
 {
 	match from_slice::<T>(v) {
 		Ok(o) => Ok(o),
 		Err(e) => {
-			Err(HttpErr::new(
+			Err(CoreError::new(
 				422,
-				ApiErrorCodes::JsonParse,
+				CoreErrorCodes::JsonParse,
 				format!("Wrong input: {:?}", e),
 				None,
 			))
