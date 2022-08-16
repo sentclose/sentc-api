@@ -18,18 +18,15 @@ use sentc_crypto_common::user::{
 	ResetPasswordData,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
-	UserInitServerOutput,
-	UserPublicData,
-	UserPublicKeyDataServerOutput,
 	UserUpdateServerInput,
 	UserUpdateServerOut,
-	UserVerifyKeyDataServerOutput,
 };
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::get_name_param_from_req;
 
 use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use crate::user::jwt::get_jwt_data_from_param;
+use crate::user::user_entities::{UserInitEntity, UserPublicData, UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
 use crate::user::user_model::UserAction;
 use crate::util::api_res::{echo, echo_success, JRes};
 
@@ -108,10 +105,10 @@ pub(crate) async fn get(req: Request) -> JRes<UserPublicData>
 
 	let data = user_model::get_public_data(app_data.app_data.app_id.to_string(), user_id.to_string()).await?;
 
-	echo(data.into())
+	echo(data)
 }
 
-pub(crate) async fn get_public_key_data(req: Request) -> JRes<UserPublicKeyDataServerOutput>
+pub(crate) async fn get_public_key_data(req: Request) -> JRes<UserPublicKeyDataEntity>
 {
 	let app_data = get_app_data_from_req(&req)?;
 
@@ -121,10 +118,10 @@ pub(crate) async fn get_public_key_data(req: Request) -> JRes<UserPublicKeyDataS
 
 	let data = user_model::get_public_key_data(app_data.app_data.app_id.to_string(), user_id.to_string()).await?;
 
-	echo(data.into())
+	echo(data)
 }
 
-pub(crate) async fn get_verify_key_data(req: Request) -> JRes<UserVerifyKeyDataServerOutput>
+pub(crate) async fn get_verify_key_data(req: Request) -> JRes<UserVerifyKeyDataEntity>
 {
 	let app_data = get_app_data_from_req(&req)?;
 
@@ -134,13 +131,13 @@ pub(crate) async fn get_verify_key_data(req: Request) -> JRes<UserVerifyKeyDataS
 
 	let data = user_model::get_verify_key_data(app_data.app_data.app_id.to_string(), user_id.to_string()).await?;
 
-	echo(data.into())
+	echo(data)
 }
 
 //__________________________________________________________________________________________________
 // user fn with jwt
 
-pub(crate) async fn init_user(mut req: Request) -> JRes<UserInitServerOutput>
+pub(crate) async fn init_user(mut req: Request) -> JRes<UserInitEntity>
 {
 	let body = get_raw_body(&mut req).await?;
 	let input: JwtRefreshInput = bytes_to_json(&body)?;

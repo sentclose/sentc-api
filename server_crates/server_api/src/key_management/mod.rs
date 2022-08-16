@@ -1,10 +1,11 @@
 use rustgram::Request;
-use sentc_crypto_common::crypto::{GeneratedSymKeyHeadServerInput, GeneratedSymKeyHeadServerOutput, GeneratedSymKeyHeadServerRegisterOutput};
+use sentc_crypto_common::crypto::{GeneratedSymKeyHeadServerInput, GeneratedSymKeyHeadServerRegisterOutput};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 
 use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
+use crate::key_management::key_entity::SymKeyEntity;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 
@@ -40,7 +41,7 @@ pub(crate) async fn delete_sym_key(req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
-pub(crate) async fn get_sym_key_by_id(req: Request) -> JRes<GeneratedSymKeyHeadServerOutput>
+pub(crate) async fn get_sym_key_by_id(req: Request) -> JRes<SymKeyEntity>
 {
 	let app_data = get_app_data_from_req(&req)?;
 	check_endpoint_with_app_options(app_data, Endpoint::KeyGet)?;
@@ -49,10 +50,10 @@ pub(crate) async fn get_sym_key_by_id(req: Request) -> JRes<GeneratedSymKeyHeadS
 
 	let key = key_model::get_sym_key_by_id(app_data.app_data.app_id.to_string(), key_id.to_string()).await?;
 
-	echo(key.into())
+	echo(key)
 }
 
-pub(crate) async fn get_all_sym_keys_to_master_key(req: Request) -> JRes<Vec<GeneratedSymKeyHeadServerOutput>>
+pub(crate) async fn get_all_sym_keys_to_master_key(req: Request) -> JRes<Vec<SymKeyEntity>>
 {
 	let app_data = get_app_data_from_req(&req)?;
 	check_endpoint_with_app_options(app_data, Endpoint::KeyGet)?;
@@ -79,10 +80,5 @@ pub(crate) async fn get_all_sym_keys_to_master_key(req: Request) -> JRes<Vec<Gen
 	)
 	.await?;
 
-	let mut out: Vec<GeneratedSymKeyHeadServerOutput> = Vec::with_capacity(keys.len());
-	for key in keys {
-		out.push(key.into());
-	}
-
-	echo(out)
+	echo(keys)
 }

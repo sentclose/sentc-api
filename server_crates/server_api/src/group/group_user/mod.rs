@@ -4,12 +4,9 @@ use rustgram::Request;
 use sentc_crypto_common::group::{
 	GroupAcceptJoinReqServerOutput,
 	GroupChangeRankServerInput,
-	GroupInviteReqList,
 	GroupInviteServerOutput,
-	GroupJoinReqList,
 	GroupKeysForNewMember,
 	GroupKeysForNewMemberServerInput,
-	GroupUserListItem,
 };
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use server_core::cache;
@@ -18,6 +15,7 @@ use server_core::url_helper::{get_name_param_from_params, get_name_param_from_re
 
 use crate::customer_app::app_util::{check_endpoint_with_req, Endpoint};
 use crate::group::get_group_user_data_from_req;
+use crate::group::group_entities::{GroupInviteReq, GroupJoinReq, GroupUserListItem};
 use crate::group::group_user::group_user_model::InsertNewUserType;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
@@ -50,12 +48,7 @@ pub(crate) async fn get_group_member(req: Request) -> JRes<Vec<GroupUserListItem
 	)
 	.await?;
 
-	let mut list_out: Vec<GroupUserListItem> = Vec::with_capacity(list_fetch.len());
-	for item in list_fetch {
-		list_out.push(item.into())
-	}
-
-	echo(list_out)
+	echo(list_fetch)
 }
 
 //__________________________________________________________________________________________________
@@ -110,7 +103,7 @@ pub(crate) async fn invite_request(mut req: Request) -> JRes<GroupInviteServerOu
 	echo(out)
 }
 
-pub(crate) async fn get_invite_req(req: Request) -> JRes<Vec<GroupInviteReqList>>
+pub(crate) async fn get_invite_req(req: Request) -> JRes<Vec<GroupInviteReq>>
 {
 	check_endpoint_with_req(&req, Endpoint::GroupInvite)?;
 
@@ -183,7 +176,7 @@ pub(crate) async fn join_req(req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
-pub(crate) async fn get_join_req(req: Request) -> JRes<Vec<GroupJoinReqList>>
+pub(crate) async fn get_join_req(req: Request) -> JRes<Vec<GroupJoinReq>>
 {
 	check_endpoint_with_req(&req, Endpoint::GroupJoinReq)?;
 
@@ -209,12 +202,7 @@ pub(crate) async fn get_join_req(req: Request) -> JRes<Vec<GroupJoinReqList>>
 	)
 	.await?;
 
-	let mut req_out: Vec<GroupJoinReqList> = Vec::with_capacity(reqs.len());
-	for item in reqs {
-		req_out.push(item.into());
-	}
-
-	echo(req_out)
+	echo(reqs)
 }
 
 pub(crate) async fn reject_join_req(req: Request) -> JRes<ServerSuccessOutput>

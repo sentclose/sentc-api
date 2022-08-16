@@ -1,13 +1,14 @@
 use std::future::Future;
 
 use rustgram::Request;
-use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDeleteServerOutput, GroupKeyServerOutput, GroupServerData};
+use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDeleteServerOutput};
 use sentc_crypto_common::GroupId;
 use server_core::cache;
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_params};
 
 use crate::customer_app::app_util::{check_endpoint_with_req, Endpoint};
+use crate::group::group_entities::{GroupServerData, GroupUserKeys};
 use crate::group::{get_group_user_data_from_req, group_model};
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::{echo, ApiErrorCodes, HttpErr, JRes};
@@ -91,7 +92,7 @@ pub(crate) async fn get_user_group_data(req: Request) -> JRes<GroupServerData>
 	let group_id = &group_data.group_data.id;
 	let user_id = &group_data.user_data.user_id;
 
-	let user_keys = group_model::get_user_group_keys(
+	let keys = group_model::get_user_group_keys(
 		app_id.to_string(),
 		group_id.to_string(),
 		user_id.to_string(),
@@ -99,12 +100,6 @@ pub(crate) async fn get_user_group_data(req: Request) -> JRes<GroupServerData>
 		"".to_string(),
 	)
 	.await?;
-
-	let mut keys: Vec<GroupKeyServerOutput> = Vec::with_capacity(user_keys.len());
-
-	for user_key in user_keys {
-		keys.push(user_key.into());
-	}
 
 	let key_update = group_model::check_for_key_update(app_id.to_string(), user_id.to_string(), group_id.to_string()).await?;
 
@@ -126,7 +121,7 @@ pub(crate) async fn get_user_group_data(req: Request) -> JRes<GroupServerData>
 	echo(out)
 }
 
-pub(crate) async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupKeyServerOutput>>
+pub(crate) async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupUserKeys>>
 {
 	check_endpoint_with_req(&req, Endpoint::GroupUserDataGet)?;
 
@@ -154,10 +149,5 @@ pub(crate) async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupKeyServer
 	)
 	.await?;
 
-	let mut keys: Vec<GroupKeyServerOutput> = Vec::with_capacity(user_keys.len());
-	for user_key in user_keys {
-		keys.push(user_key.into());
-	}
-
-	echo(keys)
+	echo(user_keys)
 }

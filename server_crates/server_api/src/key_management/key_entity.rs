@@ -1,13 +1,15 @@
 use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerOutput;
 use sentc_crypto_common::SymKeyId;
+use serde::Serialize;
 use server_core::take_or_err;
 
+#[derive(Serialize)]
 pub struct SymKeyEntity
 {
 	key_id: SymKeyId,
 	master_key_id: SymKeyId,
-	encrypted_key: String,
-	master_key_alg: String,
+	encrypted_key_string: String,
+	alg: String,
 	time: u128,
 }
 
@@ -16,8 +18,8 @@ impl Into<GeneratedSymKeyHeadServerOutput> for SymKeyEntity
 	fn into(self) -> GeneratedSymKeyHeadServerOutput
 	{
 		GeneratedSymKeyHeadServerOutput {
-			alg: self.master_key_alg,
-			encrypted_key_string: self.encrypted_key,
+			alg: self.alg,
+			encrypted_key_string: self.encrypted_key_string,
 			master_key_id: self.master_key_id,
 			key_id: self.key_id,
 			time: self.time,
@@ -35,8 +37,8 @@ impl mysql_async::prelude::FromRow for SymKeyEntity
 		Ok(Self {
 			key_id: take_or_err!(row, 0, String),
 			master_key_id: take_or_err!(row, 1, String),
-			encrypted_key: take_or_err!(row, 2, String),
-			master_key_alg: take_or_err!(row, 3, String),
+			encrypted_key_string: take_or_err!(row, 2, String),
+			alg: take_or_err!(row, 3, String),
 			time: take_or_err!(row, 4, u128),
 		})
 	}
@@ -59,8 +61,8 @@ impl server_core::db::FromSqliteRow for SymKeyEntity
 		Ok(Self {
 			key_id: take_or_err!(row, 0),
 			master_key_id: take_or_err!(row, 1),
-			encrypted_key: take_or_err!(row, 2),
-			master_key_alg: take_or_err!(row, 3),
+			encrypted_key_string: take_or_err!(row, 2),
+			alg: take_or_err!(row, 3),
 			time,
 		})
 	}
