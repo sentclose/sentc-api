@@ -66,3 +66,10 @@ cargo test --features=sqlite --no-default-features -- --test-threads=1
    1. insert it in the db table: `app_options`
    2. add new endpoint in select app options and create app / update app options in `server_crates/server_api/src/customer_app/app_model.rs`
    3. add to the AppOptions input incl. the default fn in: `server_crates/server_api_common/src/app.rs`
+
+## Entity and common data
+
+When creating a new return entity which should returned to the client via json, then create an entity struct in the entity mod.
+After this, create a data struct in the common data mod. Make sure both are sync. 
+
+A Tip: use into trait for the entity but don't use the actual into. When the data struct or the entity struct changed, rust compiler will err.
