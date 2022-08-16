@@ -65,5 +65,4 @@ cargo test --features=sqlite --no-default-features -- --test-threads=1
 3. add the endpoint to the app options:
    1. insert it in the db table: `app_options`
    2. add new endpoint in select app options and create app / update app options in `server_crates/server_api/src/customer_app/app_model.rs`
-   3. add to the AppOptionsEntity in `server_crates/server_api/src/customer_app/app_entities.rs`
-   4. add to the AppOptions input incl. the default fn in: `server_crates/server_api_common/src/app.rs`
+   3. add to the AppOptions input incl. the default fn in: `server_crates/server_api_common/src/app.rs`
