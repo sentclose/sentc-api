@@ -284,15 +284,56 @@ impl server_core::db::FromSqliteRow for GroupChildren
 
 //__________________________________________________________________________________________________
 
+/**
+Gets build by the controller
+*/
+#[derive(Serialize)]
+pub struct GroupServerData
+{
+	pub group_id: GroupId,
+	pub parent_group_id: Option<GroupId>,
+	pub keys: Vec<GroupUserKeys>,
+	pub key_update: bool,
+	pub rank: i32,
+	pub created_time: u128,
+	pub joined_time: u128,
+}
+
+impl Into<sentc_crypto_common::group::GroupServerData> for GroupServerData
+{
+	fn into(self) -> sentc_crypto_common::group::GroupServerData
+	{
+		let mut keys = Vec::with_capacity(self.keys.len());
+
+		for key in self.keys {
+			keys.push(key.into());
+		}
+
+		sentc_crypto_common::group::GroupServerData {
+			group_id: self.group_id,
+			parent_group_id: self.parent_group_id,
+			keys,
+			key_update: self.key_update,
+			rank: self.rank,
+			created_time: self.created_time,
+			joined_time: self.joined_time,
+		}
+	}
+}
+
+//__________________________________________________________________________________________________
+
+#[derive(Serialize)]
 pub struct GroupUserKeys
 {
-	pub k_id: String,
+	pub key_pair_id: EncryptionKeyPairId,
+	pub group_key_id: SymKeyId,
 	pub encrypted_group_key: String,
 	pub group_key_alg: String,
-	pub encrypted_private_key: String,
-	pub public_key: String,
-	pub private_key_pair_alg: String,
-	pub encrypted_group_key_key_id: String,
+	pub encrypted_private_group_key: String,
+	pub public_group_key: String,
+	pub keypair_encrypt_alg: String,
+	pub user_public_key_id: EncryptionKeyPairId,
 	pub time: u128,
 }
 
@@ -303,12 +344,12 @@ impl Into<GroupKeyServerOutput> for GroupUserKeys
 		GroupKeyServerOutput {
 			encrypted_group_key: self.encrypted_group_key,
 			group_key_alg: self.group_key_alg,
-			group_key_id: self.k_id.to_string(),
-			encrypted_private_group_key: self.encrypted_private_key,
-			public_group_key: self.public_key,
-			keypair_encrypt_alg: self.private_key_pair_alg,
-			key_pair_id: self.k_id,
-			user_public_key_id: self.encrypted_group_key_key_id,
+			group_key_id: self.group_key_id,
+			encrypted_private_group_key: self.encrypted_private_group_key,
+			public_group_key: self.public_group_key,
+			keypair_encrypt_alg: self.keypair_encrypt_alg,
+			key_pair_id: self.key_pair_id,
+			user_public_key_id: self.user_public_key_id,
 			time: self.time,
 		}
 	}
@@ -321,14 +362,17 @@ impl mysql_async::prelude::FromRow for GroupUserKeys
 	where
 		Self: Sized,
 	{
+		let k_id = take_or_err!(row, 0, String);
+
 		Ok(Self {
-			k_id: take_or_err!(row, 0, String),
+			key_pair_id: k_id.to_string(),
+			group_key_id: k_id,
 			encrypted_group_key: take_or_err!(row, 1, String),
 			group_key_alg: take_or_err!(row, 2, String),
-			encrypted_private_key: take_or_err!(row, 3, String),
-			public_key: take_or_err!(row, 4, String),
-			private_key_pair_alg: take_or_err!(row, 5, String),
-			encrypted_group_key_key_id: take_or_err!(row, 6, String),
+			encrypted_private_group_key: take_or_err!(row, 3, String),
+			public_group_key: take_or_err!(row, 4, String),
+			keypair_encrypt_alg: take_or_err!(row, 5, String),
+			user_public_key_id: take_or_err!(row, 6, String),
 			time: take_or_err!(row, 7, u128),
 		})
 	}
@@ -349,14 +393,17 @@ impl server_core::db::FromSqliteRow for GroupUserKeys
 			}
 		})?;
 
+		let k_id: String = take_or_err!(row, 0);
+
 		Ok(Self {
-			k_id: take_or_err!(row, 0),
+			key_pair_id: k_id.to_string(),
+			group_key_id: k_id,
 			encrypted_group_key: take_or_err!(row, 1),
 			group_key_alg: take_or_err!(row, 2),
-			encrypted_private_key: take_or_err!(row, 3),
-			public_key: take_or_err!(row, 4),
-			private_key_pair_alg: take_or_err!(row, 5),
-			encrypted_group_key_key_id: take_or_err!(row, 6),
+			encrypted_private_group_key: take_or_err!(row, 3),
+			public_group_key: take_or_err!(row, 4),
+			keypair_encrypt_alg: take_or_err!(row, 5),
+			user_public_key_id: take_or_err!(row, 6),
 			time,
 		})
 	}
@@ -364,6 +411,7 @@ impl server_core::db::FromSqliteRow for GroupUserKeys
 
 //__________________________________________________________________________________________________
 
+#[derive(Serialize)]
 pub struct GroupJoinReq
 {
 	pub user_id: UserId,
@@ -418,6 +466,7 @@ impl server_core::db::FromSqliteRow for GroupJoinReq
 
 //__________________________________________________________________________________________________
 
+#[derive(Serialize)]
 pub struct GroupInviteReq
 {
 	pub group_id: GroupId,
@@ -472,11 +521,12 @@ impl server_core::db::FromSqliteRow for GroupInviteReq
 
 //__________________________________________________________________________________________________
 
+#[derive(Serialize)]
 pub struct GroupKeyUpdate
 {
-	pub encrypted_ephemeral_key: String,
+	pub encrypted_ephemeral_key_by_group_key_and_public_key: String,
 	pub encrypted_eph_key_key_id: String,
-	pub encrypted_group_key_by_eph_key: EncryptionKeyPairId,
+	pub encrypted_group_key_by_ephemeral: EncryptionKeyPairId,
 	pub previous_group_key_id: SymKeyId,
 	pub ephemeral_alg: String,
 	pub time: u128,
@@ -488,8 +538,8 @@ impl Into<KeyRotationInput> for GroupKeyUpdate
 	fn into(self) -> KeyRotationInput
 	{
 		KeyRotationInput {
-			encrypted_ephemeral_key_by_group_key_and_public_key: self.encrypted_ephemeral_key,
-			encrypted_group_key_by_ephemeral: self.encrypted_group_key_by_eph_key,
+			encrypted_ephemeral_key_by_group_key_and_public_key: self.encrypted_ephemeral_key_by_group_key_and_public_key,
+			encrypted_group_key_by_ephemeral: self.encrypted_group_key_by_ephemeral,
 			ephemeral_alg: self.ephemeral_alg,
 			previous_group_key_id: self.previous_group_key_id,
 			encrypted_eph_key_key_id: self.encrypted_eph_key_key_id,
@@ -508,9 +558,9 @@ impl mysql_async::prelude::FromRow for GroupKeyUpdate
 	{
 		Ok(Self {
 			new_group_key_id: take_or_err!(row, 0, String),
-			encrypted_ephemeral_key: take_or_err!(row, 1, String),
+			encrypted_ephemeral_key_by_group_key_and_public_key: take_or_err!(row, 1, String),
 			encrypted_eph_key_key_id: take_or_err!(row, 2, String),
-			encrypted_group_key_by_eph_key: take_or_err!(row, 3, String),
+			encrypted_group_key_by_ephemeral: take_or_err!(row, 3, String),
 			previous_group_key_id: take_or_err!(row, 4, String),
 			ephemeral_alg: take_or_err!(row, 5, String),
 			time: take_or_err!(row, 6, u128),
@@ -534,9 +584,9 @@ impl server_core::db::FromSqliteRow for GroupKeyUpdate
 
 		Ok(Self {
 			new_group_key_id: take_or_err!(row, 0),
-			encrypted_ephemeral_key: take_or_err!(row, 1),
+			encrypted_ephemeral_key_by_group_key_and_public_key: take_or_err!(row, 1),
 			encrypted_eph_key_key_id: take_or_err!(row, 2),
-			encrypted_group_key_by_eph_key: take_or_err!(row, 3),
+			encrypted_group_key_by_ephemeral: take_or_err!(row, 3),
 			previous_group_key_id: take_or_err!(row, 4),
 			ephemeral_alg: take_or_err!(row, 5),
 			time,
@@ -672,7 +722,7 @@ impl server_core::db::FromSqliteRow for GroupKeySession
 
 //__________________________________________________________________________________________________
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct GroupUserListItem
 {
 	pub user_id: UserId,

@@ -2,13 +2,14 @@ mod group_key_rotation_model;
 pub(crate) mod group_key_rotation_worker;
 
 use rustgram::Request;
-use sentc_crypto_common::group::{DoneKeyRotationData, KeyRotationData, KeyRotationInput, KeyRotationStartServerOutput};
+use sentc_crypto_common::group::{DoneKeyRotationData, KeyRotationData, KeyRotationStartServerOutput};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::get_name_param_from_req;
 
 use crate::customer_app::app_util::{check_endpoint_with_req, Endpoint};
 use crate::group::get_group_user_data_from_req;
+use crate::group::group_entities::GroupKeyUpdate;
 use crate::util::api_res::{echo, echo_success, JRes};
 
 pub(crate) async fn start_key_rotation(mut req: Request) -> JRes<KeyRotationStartServerOutput>
@@ -40,7 +41,7 @@ pub(crate) async fn start_key_rotation(mut req: Request) -> JRes<KeyRotationStar
 	echo(out)
 }
 
-pub(crate) async fn get_keys_for_update(req: Request) -> JRes<Vec<KeyRotationInput>>
+pub(crate) async fn get_keys_for_update(req: Request) -> JRes<Vec<GroupKeyUpdate>>
 {
 	check_endpoint_with_req(&req, Endpoint::GroupUserDataGet)?;
 
@@ -53,13 +54,7 @@ pub(crate) async fn get_keys_for_update(req: Request) -> JRes<Vec<KeyRotationInp
 	)
 	.await?;
 
-	let mut out: Vec<KeyRotationInput> = Vec::with_capacity(update.len());
-
-	for keys in update {
-		out.push(keys.into());
-	}
-
-	echo(out)
+	echo(update)
 }
 
 pub(crate) async fn done_key_rotation_for_user(mut req: Request) -> JRes<ServerSuccessOutput>
