@@ -34,7 +34,7 @@ where
 		Box::pin(async move {
 			match get_group_from_req(&mut req).await {
 				Ok(_) => {},
-				Err(e) => return Into::<HttpErr>::into(e).get_res(),
+				Err(e) => return e.get_res(),
 			}
 
 			next.call(req).await
