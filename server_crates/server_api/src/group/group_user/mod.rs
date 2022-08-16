@@ -9,7 +9,6 @@ use sentc_crypto_common::group::{
 	GroupJoinReqList,
 	GroupKeysForNewMember,
 	GroupKeysForNewMemberServerInput,
-	GroupUserListItem,
 };
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use server_core::cache;
@@ -18,6 +17,7 @@ use server_core::url_helper::{get_name_param_from_params, get_name_param_from_re
 
 use crate::customer_app::app_util::{check_endpoint_with_req, Endpoint};
 use crate::group::get_group_user_data_from_req;
+use crate::group::group_entities::GroupUserListItem;
 use crate::group::group_user::group_user_model::InsertNewUserType;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
@@ -50,12 +50,7 @@ pub(crate) async fn get_group_member(req: Request) -> JRes<Vec<GroupUserListItem
 	)
 	.await?;
 
-	let mut list_out: Vec<GroupUserListItem> = Vec::with_capacity(list_fetch.len());
-	for item in list_fetch {
-		list_out.push(item.into())
-	}
-
-	echo(list_out)
+	echo(list_fetch)
 }
 
 //__________________________________________________________________________________________________

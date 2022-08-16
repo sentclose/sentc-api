@@ -672,6 +672,7 @@ impl server_core::db::FromSqliteRow for GroupKeySession
 
 //__________________________________________________________________________________________________
 
+#[derive(Serialize, Deserialize)]
 pub struct GroupUserListItem
 {
 	pub user_id: UserId,
