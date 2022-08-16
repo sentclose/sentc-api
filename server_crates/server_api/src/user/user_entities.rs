@@ -1,7 +1,9 @@
-use sentc_crypto_common::user::{UserPublicKeyDataServerOutput, UserVerifyKeyDataServerOutput};
+use sentc_crypto_common::user::{UserInitServerOutput, UserPublicKeyDataServerOutput, UserVerifyKeyDataServerOutput};
 use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, UserId};
 use serde::{Deserialize, Serialize};
 use server_core::take_or_err;
+
+use crate::group::group_entities::GroupInviteReq;
 
 //generated with browser console: btoa(String.fromCharCode.apply(null, window.crypto.getRandomValues(new Uint8Array(128/8))));
 //the value with the used alg
@@ -235,6 +237,7 @@ impl server_core::db::FromSqliteRow for UserKeyFistRow
 
 //__________________________________________________________________________________________________
 
+#[derive(Serialize)]
 pub struct UserPublicData
 {
 	pub public_key_id: EncryptionKeyPairId,
@@ -305,6 +308,7 @@ impl server_core::db::FromSqliteRow for UserPublicData
 
 //__________________________________________________________________________________________________
 
+#[derive(Serialize)]
 pub struct UserPublicKeyDataEntity
 {
 	pub public_key_id: EncryptionKeyPairId,
@@ -356,6 +360,7 @@ impl server_core::db::FromSqliteRow for UserPublicKeyDataEntity
 
 //__________________________________________________________________________________________________
 
+#[derive(Serialize)]
 pub struct UserVerifyKeyDataEntity
 {
 	pub verify_key_id: EncryptionKeyPairId,
@@ -404,3 +409,34 @@ impl server_core::db::FromSqliteRow for UserVerifyKeyDataEntity
 		})
 	}
 }
+
+//__________________________________________________________________________________________________
+
+/**
+Only used int he controller
+*/
+#[derive(Serialize)]
+pub struct UserInitEntity
+{
+	pub jwt: String,
+	pub invites: Vec<GroupInviteReq>,
+}
+
+impl Into<UserInitServerOutput> for UserInitEntity
+{
+	fn into(self) -> UserInitServerOutput
+	{
+		let mut invites = Vec::with_capacity(self.invites.len());
+
+		for invite in self.invites {
+			invites.push(invite.into());
+		}
+
+		UserInitServerOutput {
+			jwt: self.jwt,
+			invites,
+		}
+	}
+}
+
+//__________________________________________________________________________________________________
