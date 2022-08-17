@@ -16,6 +16,10 @@ pub struct AppOptions
 {
 	pub group_create: i32,
 	pub group_get: i32,
+
+	pub group_user_keys: i32,
+	pub group_user_update_check: i32,
+
 	pub group_invite: i32,
 	pub group_reject_invite: i32,
 	pub group_accept_invite: i32,
@@ -54,6 +58,8 @@ impl Default for AppOptions
 		Self {
 			group_create: 2,
 			group_get: 1,
+			group_user_keys: 1,
+			group_user_update_check: 1,
 			group_invite: 1,
 			group_reject_invite: 1,
 			group_accept_invite: 1,
@@ -88,6 +94,8 @@ impl AppOptions
 		Self {
 			group_create: 1,
 			group_get: 1,
+			group_user_keys: 1,
+			group_user_update_check: 1,
 			group_invite: 1,
 			group_reject_invite: 1,
 			group_accept_invite: 1,
@@ -126,37 +134,39 @@ impl mysql_async::prelude::FromRow for AppOptions
 		Ok(Self {
 			group_create: take_or_err!(row, 0, i32),
 			group_get: take_or_err!(row, 1, i32),
+			group_user_keys: take_or_err!(row, 2, i32),
+			group_user_update_check: take_or_err!(row, 3, i32),
 
-			group_invite: take_or_err!(row, 2, i32),
-			group_reject_invite: take_or_err!(row, 3, i32),
-			group_accept_invite: take_or_err!(row, 4, i32),
+			group_invite: take_or_err!(row, 4, i32),
+			group_reject_invite: take_or_err!(row, 5, i32),
+			group_accept_invite: take_or_err!(row, 6, i32),
 
-			group_join_req: take_or_err!(row, 5, i32),
-			group_accept_join_req: take_or_err!(row, 6, i32),
-			group_reject_join_req: take_or_err!(row, 7, i32),
+			group_join_req: take_or_err!(row, 7, i32),
+			group_accept_join_req: take_or_err!(row, 8, i32),
+			group_reject_join_req: take_or_err!(row, 9, i32),
 
-			group_key_rotation: take_or_err!(row, 8, i32),
+			group_key_rotation: take_or_err!(row, 10, i32),
 
-			group_user_delete: take_or_err!(row, 9, i32),
+			group_user_delete: take_or_err!(row, 11, i32),
 
-			group_delete: take_or_err!(row, 10, i32),
+			group_delete: take_or_err!(row, 12, i32),
 
-			group_leave: take_or_err!(row, 11, i32),
-			group_change_rank: take_or_err!(row, 12, i32),
+			group_leave: take_or_err!(row, 13, i32),
+			group_change_rank: take_or_err!(row, 14, i32),
 
-			user_exists: take_or_err!(row, 13, i32),
-			user_register: take_or_err!(row, 14, i32),
-			user_delete: take_or_err!(row, 15, i32),
-			user_update: take_or_err!(row, 16, i32),
-			user_change_password: take_or_err!(row, 17, i32),
-			user_reset_password: take_or_err!(row, 18, i32),
-			user_prepare_login: take_or_err!(row, 19, i32),
-			user_done_login: take_or_err!(row, 20, i32),
-			user_public_data: take_or_err!(row, 21, i32),
-			user_jwt_refresh: take_or_err!(row, 22, i32),
+			user_exists: take_or_err!(row, 15, i32),
+			user_register: take_or_err!(row, 16, i32),
+			user_delete: take_or_err!(row, 17, i32),
+			user_update: take_or_err!(row, 18, i32),
+			user_change_password: take_or_err!(row, 19, i32),
+			user_reset_password: take_or_err!(row, 20, i32),
+			user_prepare_login: take_or_err!(row, 21, i32),
+			user_done_login: take_or_err!(row, 22, i32),
+			user_public_data: take_or_err!(row, 23, i32),
+			user_jwt_refresh: take_or_err!(row, 24, i32),
 
-			key_register: take_or_err!(row, 23, i32),
-			key_get: take_or_err!(row, 24, i32),
+			key_register: take_or_err!(row, 25, i32),
+			key_get: take_or_err!(row, 26, i32),
 		})
 	}
 }
@@ -172,37 +182,39 @@ impl server_core::db::FromSqliteRow for AppOptions
 		Ok(Self {
 			group_create: take_or_err!(row, 0),
 			group_get: take_or_err!(row, 1),
+			group_user_keys: take_or_err!(row, 2),
+			group_user_update_check: take_or_err!(row, 3),
 
-			group_invite: take_or_err!(row, 2),
-			group_reject_invite: take_or_err!(row, 3),
-			group_accept_invite: take_or_err!(row, 4),
+			group_invite: take_or_err!(row, 4),
+			group_reject_invite: take_or_err!(row, 5),
+			group_accept_invite: take_or_err!(row, 6),
 
-			group_join_req: take_or_err!(row, 5),
-			group_accept_join_req: take_or_err!(row, 6),
-			group_reject_join_req: take_or_err!(row, 7),
+			group_join_req: take_or_err!(row, 7),
+			group_accept_join_req: take_or_err!(row, 8),
+			group_reject_join_req: take_or_err!(row, 9),
 
-			group_key_rotation: take_or_err!(row, 8),
+			group_key_rotation: take_or_err!(row, 10),
 
-			group_user_delete: take_or_err!(row, 9),
+			group_user_delete: take_or_err!(row, 11),
 
-			group_delete: take_or_err!(row, 10),
+			group_delete: take_or_err!(row, 12),
 
-			group_leave: take_or_err!(row, 11),
-			group_change_rank: take_or_err!(row, 12),
+			group_leave: take_or_err!(row, 13),
+			group_change_rank: take_or_err!(row, 14),
 
-			user_exists: take_or_err!(row, 13),
-			user_register: take_or_err!(row, 14),
-			user_delete: take_or_err!(row, 15),
-			user_update: take_or_err!(row, 16),
-			user_change_password: take_or_err!(row, 17),
-			user_reset_password: take_or_err!(row, 18),
-			user_prepare_login: take_or_err!(row, 19),
-			user_done_login: take_or_err!(row, 20),
-			user_public_data: take_or_err!(row, 21),
-			user_jwt_refresh: take_or_err!(row, 22),
+			user_exists: take_or_err!(row, 15),
+			user_register: take_or_err!(row, 16),
+			user_delete: take_or_err!(row, 17),
+			user_update: take_or_err!(row, 18),
+			user_change_password: take_or_err!(row, 19),
+			user_reset_password: take_or_err!(row, 20),
+			user_prepare_login: take_or_err!(row, 21),
+			user_done_login: take_or_err!(row, 22),
+			user_public_data: take_or_err!(row, 23),
+			user_jwt_refresh: take_or_err!(row, 24),
 
-			key_register: take_or_err!(row, 23),
-			key_get: take_or_err!(row, 24),
+			key_register: take_or_err!(row, 25),
+			key_get: take_or_err!(row, 26),
 		})
 	}
 }
