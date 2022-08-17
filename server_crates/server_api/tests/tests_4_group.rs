@@ -59,6 +59,7 @@ static CUSTOMER_TEST_STATE: OnceCell<RwLock<CustomerDoneLoginOutput>> = OnceCell
 static APP_TEST_STATE: OnceCell<RwLock<AppRegisterOutput>> = OnceCell::const_new();
 static USERS_TEST_STATE: OnceCell<RwLock<Vec<UserState>>> = OnceCell::const_new();
 static GROUP_TEST_STATE: OnceCell<RwLock<GroupState>> = OnceCell::const_new();
+static CHILD_GROUP_TEST_STATE: OnceCell<RwLock<GroupState>> = OnceCell::const_new();
 
 #[tokio::test]
 async fn aaa_init_global_test()
@@ -110,6 +111,18 @@ async fn aaa_init_global_test()
 		.await;
 
 	GROUP_TEST_STATE
+		.get_or_init(|| {
+			async move {
+				RwLock::new(GroupState {
+					group_id: "".to_string(),
+					group_member: vec![],
+					decrypted_group_keys: HashMap::new(),
+				})
+			}
+		})
+		.await;
+
+	CHILD_GROUP_TEST_STATE
 		.get_or_init(|| {
 			async move {
 				RwLock::new(GroupState {
@@ -208,6 +221,7 @@ async fn test_12_create_child_group()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+	let mut child_group = CHILD_GROUP_TEST_STATE.get().unwrap().write().await;
 
 	let creator = USERS_TEST_STATE.get().unwrap().read().await;
 	let creator = &creator[0];
@@ -232,7 +246,7 @@ async fn test_12_create_child_group()
 	)
 	.await;
 
-	let data = get_group(
+	let (data, keys) = get_group(
 		secret_token,
 		creator.user_data.jwt.as_str(),
 		child_id.as_str(),
@@ -241,9 +255,15 @@ async fn test_12_create_child_group()
 	)
 	.await;
 
-	assert_eq!(data.0.rank, 0);
-	assert_eq!(data.0.group_id, child_id);
-	assert_eq!(data.0.parent_group_id.unwrap(), group.group_id.to_string());
+	assert_eq!(data.rank, 0);
+	assert_eq!(data.group_id, child_id);
+	assert_eq!(data.parent_group_id.unwrap(), group.group_id.to_string());
+
+	child_group
+		.decrypted_group_keys
+		.insert(creator.user_id.to_string(), keys);
+
+	child_group.group_id = child_id;
 
 	//don't delete the child group to test if parent group delete deletes all. delete the child
 }
@@ -811,6 +831,47 @@ async fn test_25_get_not_join_req_after_reject()
 	let out = out.result.unwrap();
 
 	assert_eq!(out.len(), 0);
+}
+
+#[tokio::test]
+async fn test_25_no_join_req_when_user_is_in_parent_group()
+{
+	//it should not make a join req from the creator of the parent group because he is in the parent as member
+	let group = CHILD_GROUP_TEST_STATE.get().unwrap().read().await;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let creator = &users[0];
+
+	let user_keys = group
+		.decrypted_group_keys
+		.get(creator.user_id.as_str())
+		.unwrap();
+
+	let mut group_keys_ref = vec![];
+
+	for decrypted_group_key in user_keys {
+		group_keys_ref.push(&decrypted_group_key.group_key);
+	}
+
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(&creator.user_data.keys.exported_public_key, &group_keys_ref, false).unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/invite/" + creator.user_id.as_str());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(invite)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<GroupAcceptJoinReqServerOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, false);
 }
 
 #[tokio::test]

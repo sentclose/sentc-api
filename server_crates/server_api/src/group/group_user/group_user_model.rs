@@ -13,6 +13,7 @@ use crate::group::group_entities::{
 	GROUP_INVITE_TYPE_INVITE_REQ,
 	GROUP_INVITE_TYPE_JOIN_REQ,
 };
+use crate::group::group_model;
 use crate::group::group_model::check_group_rank;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
@@ -648,11 +649,26 @@ async fn check_user_in_group(group_id: GroupId, user_id: UserId) -> AppRes<bool>
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group_user WHERE user_id = ? AND group_id = ? LIMIT 1";
 
-	let exists: Option<UserInGroupCheck> = query_first(sql, set_params!(user_id, group_id)).await?;
+	let exists: Option<UserInGroupCheck> = query_first(sql, set_params!(user_id.to_string(), group_id.to_string())).await?;
+
+	if exists.is_some() {
+		return Ok(true);
+	}
+
+	//check if the user is in a parent group
+	//this fn will return err if the user is not in the group
+	let exists = group_model::get_user_from_parent_groups(group_id, user_id).await;
 
 	match exists {
-		Some(_) => Ok(true),
-		None => Ok(false),
+		Ok(_) => Ok(true),
+		Err(e) => {
+			match e.api_error_code {
+				//if this is just group access error then suer is not in the group
+				//if not then it is a db error and must be thrown
+				ApiErrorCodes::GroupAccess => Ok(false),
+				_ => Err(e),
+			}
+		},
 	}
 }
 
