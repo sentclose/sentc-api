@@ -58,6 +58,8 @@ WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 SELECT 
     group_create,
     group_get,
+    group_user_keys,
+    group_user_update_check,
     group_invite,
     group_reject_invite,
     group_accept_invite,
@@ -383,6 +385,8 @@ INSERT INTO sentc_app_options
      app_id, 
      group_create, 
      group_get, 
+     group_user_keys,
+     group_user_update_check,
      group_invite, 
      group_reject_invite, 
      group_accept_invite, 
@@ -406,12 +410,14 @@ INSERT INTO sentc_app_options
      user_refresh,
      key_register,
      key_get
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let params_options = set_params!(
 		app_id.to_string(),
 		app_options.group_create,
 		app_options.group_get,
+		app_options.group_user_keys,
+		app_options.group_user_update_check,
 		app_options.group_invite,
 		app_options.group_reject_invite,
 		app_options.group_accept_invite,
