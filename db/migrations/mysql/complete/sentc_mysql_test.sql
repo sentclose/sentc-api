@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 08. Aug 2022 um 18:59
+-- Erstellungszeit: 17. Aug 2022 um 11:14
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -101,6 +101,8 @@ CREATE TABLE `sentc_app_options` (
   `app_id` varchar(36) NOT NULL,
   `group_create` int(11) NOT NULL COMMENT 'create a group',
   `group_get` int(11) NOT NULL COMMENT 'get the group keys',
+  `group_user_keys` int(11) NOT NULL,
+  `group_user_update_check` int(11) NOT NULL,
   `group_invite` int(11) NOT NULL COMMENT 'sending invites',
   `group_reject_invite` int(11) NOT NULL,
   `group_accept_invite` int(11) NOT NULL,
@@ -130,8 +132,8 @@ CREATE TABLE `sentc_app_options` (
 -- Daten für Tabelle `sentc_app_options`
 --
 
-INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`, `key_register`, `key_get`) VALUES
-('1665eb92-4513-469f-81d8-b72a62e0134c', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_user_keys`, `group_user_update_check`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`, `key_register`, `key_get`) VALUES
+('1665eb92-4513-469f-81d8-b72a62e0134c', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
 -- --------------------------------------------------------
 

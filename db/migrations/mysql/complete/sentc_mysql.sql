@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 08. Aug 2022 um 18:59
+-- Erstellungszeit: 17. Aug 2022 um 11:13
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -87,6 +87,8 @@ CREATE TABLE `sentc_app_options` (
   `app_id` varchar(36) NOT NULL,
   `group_create` int(11) NOT NULL COMMENT 'create a group',
   `group_get` int(11) NOT NULL COMMENT 'get the group keys',
+  `group_user_keys` int(11) NOT NULL,
+  `group_user_update_check` int(11) NOT NULL,
   `group_invite` int(11) NOT NULL COMMENT 'sending invites',
   `group_reject_invite` int(11) NOT NULL,
   `group_accept_invite` int(11) NOT NULL,

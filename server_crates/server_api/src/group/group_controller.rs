@@ -1,7 +1,7 @@
 use std::future::Future;
 
 use rustgram::Request;
-use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDeleteServerOutput};
+use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDataCheckUpdateServerOutput, GroupDeleteServerOutput};
 use sentc_crypto_common::GroupId;
 use server_core::cache;
 use server_core::input_helper::{bytes_to_json, get_raw_body};
@@ -121,9 +121,39 @@ pub(crate) async fn get_user_group_data(req: Request) -> JRes<GroupServerData>
 	echo(out)
 }
 
+/**
+Check with this fn if:
+- the user is still in the group (via mw)
+- the rank of the user
+- if there is a key update
+
+This is used in the client, when the group data is cached in the client
+and the data gets fetched from the cache.
+*/
+pub(crate) async fn get_key_update_for_user(req: Request) -> JRes<GroupDataCheckUpdateServerOutput>
+{
+	check_endpoint_with_req(&req, Endpoint::GroupUserUpdateCheck)?;
+
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let key_update = group_model::check_for_key_update(
+		group_data.group_data.app_id.to_string(),
+		group_data.user_data.user_id.to_string(),
+		group_data.group_data.id.to_string(),
+	)
+	.await?;
+
+	let out = GroupDataCheckUpdateServerOutput {
+		key_update,
+		rank: group_data.user_data.rank,
+	};
+
+	echo(out)
+}
+
 pub(crate) async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupUserKeys>>
 {
-	check_endpoint_with_req(&req, Endpoint::GroupUserDataGet)?;
+	check_endpoint_with_req(&req, Endpoint::GroupUserKeys)?;
 
 	//don't get the group data from mw cache, this is done by the model fetch
 	let group_data = get_group_user_data_from_req(&req)?;
