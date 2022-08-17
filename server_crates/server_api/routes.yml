@@ -80,19 +80,22 @@ routes:
               - group:
                   p: "/keys"
                   gr:
-                    - post:
+                    - group:
                         p: "/sym_key"
-                        s: crate::key_management::register_sym_key
-                        mw:
-                          - jwt::jwt_transform
-                    - delete:
-                        p: "/sym_key/:key_id"
-                        s: crate::key_management::delete_sym_key
-                        mw:
-                          - jwt::jwt_transform
+                        gr:
+                          - post:
+                              p: ""
+                              s: crate::key_management::register_sym_key
+                              mw:
+                                - jwt::jwt_transform
+                          - delete:
+                              p: "/:key_id"
+                              s: crate::key_management::delete_sym_key
+                              mw:
+                                - jwt::jwt_transform
 
-                    - get: {p: "/sym_key/master_key/:master_key_id/:last_fetched_time/:last_key_id", s: crate::key_management::get_all_sym_keys_to_master_key}
-                    - get: {p: "/sym_key/:key_id", s: crate::key_management::get_sym_key_by_id}
+                          - get: { p: "/master_key/:master_key_id/:last_fetched_time/:last_key_id", s: crate::key_management::get_all_sym_keys_to_master_key }
+                          - get: { p: "/:key_id", s: crate::key_management::get_sym_key_by_id }
         #_______________________________________________________________________________________________________________
         # routes which needed jwt check with a valid jwt
         - group:
@@ -135,6 +138,7 @@ routes:
                           - group::group_transform
                         gr:
                           - get: { p: "", s: crate::group::get_user_group_data }
+                          - get: {p: "/update_check", s: crate::group::get_key_update_for_user}
                           - get: { p: "/keys/:last_fetched_time/:last_k_id", s: crate::group::get_user_group_keys }
                           - get: {p: "/member/:last_fetched_time/:last_user_id", s: crate::group::get_group_member}
                           - post: {p: "/child", s: crate::group::create_child_group}
