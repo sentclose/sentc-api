@@ -264,6 +264,8 @@ WHERE
             key_id = ? AND 
             user_id = parent
     )
+ORDER BY k.time DESC 
+LIMIT 1
 ";
 
 	let keys: Option<UserGroupPublicKeyData> = query_first(sql, set_params!(group_id, key_id.to_string(), key_id)).await?;
