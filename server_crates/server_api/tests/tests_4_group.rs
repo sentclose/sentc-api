@@ -34,9 +34,11 @@ use crate::test_fn::{
 	customer_delete,
 	delete_app,
 	delete_user,
+	done_key_rotation,
 	get_group,
 	get_url,
 	init_user,
+	key_rotation,
 };
 
 mod test_fn;
@@ -1440,11 +1442,172 @@ async fn test_33_kick_user_from_group()
 	assert_eq!(out.status, false);
 }
 
+#[tokio::test]
+async fn test_34_key_rotation_in_child_group_by_parent()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+	let mut child_group = CHILD_GROUP_TEST_STATE.get().unwrap().write().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+	let user_for_child_group = &users[3];
+
+	//______________________________________________________________________________________________
+	//invite the user to the child group
+
+	let user_keys = child_group
+		.decrypted_group_keys
+		.get(creator.user_id.as_str())
+		.unwrap();
+
+	let user_group_data_2 = add_user_by_invite(
+		secret_token,
+		creator.user_data.jwt.as_str(),
+		child_group.group_id.as_str(),
+		user_keys,
+		user_for_child_group.user_id.as_str(),
+		user_for_child_group.user_data.jwt.as_str(),
+		&user_for_child_group.user_data.keys.exported_public_key,
+		&user_for_child_group.user_data.keys.private_key,
+	)
+	.await;
+
+	child_group
+		.decrypted_group_keys
+		.insert(user_for_child_group.user_id.to_string(), user_group_data_2.1);
+
+	//______________________________________________________________________________________________
+	//do key rotation in child group, triggered by parent group
+
+	let pre_group_key = &child_group
+		.decrypted_group_keys
+		.get(creator.user_id.as_str())
+		.unwrap()[0]
+		.group_key;
+
+	//get the right key for the child group from index 1 because the key rotation (in the parent) changes the index
+	let group_public_key = &group
+		.decrypted_group_keys
+		.get(creator.user_id.as_str())
+		.unwrap()[1]
+		.public_group_key;
+	let group_private_key = &group
+		.decrypted_group_keys
+		.get(creator.user_id.as_str())
+		.unwrap()[1]
+		.private_group_key;
+
+	let new_group_data = key_rotation(
+		secret_token,
+		creator.user_data.jwt.as_str(),
+		child_group.group_id.as_str(),
+		pre_group_key,
+		group_public_key,
+		group_private_key,
+	)
+	.await;
+
+	//______________________________________________________________________________________________
+	//done key rotation for the direct group member
+
+	let new_group_data_for_new_user = done_key_rotation(
+		secret_token,
+		user_for_child_group.user_data.jwt.as_str(),
+		child_group.group_id.as_str(),
+		pre_group_key,
+		&user_for_child_group.user_data.keys.public_key,
+		&user_for_child_group.user_data.keys.private_key,
+	)
+	.await;
+
+	child_group
+		.decrypted_group_keys
+		.insert(creator.user_id.to_string(), new_group_data.1);
+
+	let keys = child_group
+		.decrypted_group_keys
+		.get_mut(&user_for_child_group.user_id)
+		.unwrap();
+
+	for key in new_group_data_for_new_user {
+		keys.push(key)
+	}
+}
+
+#[tokio::test]
+async fn test_35_key_rotation_in_child_group_by_user()
+{
+	//this time start the key rotation from a group user and check if the parent got the keys too
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+	let mut child_group = CHILD_GROUP_TEST_STATE.get().unwrap().write().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+	let user_for_child_group = &users[3];
+
+	//this should be the newest key because the keys are ordered by time
+	let pre_group_key = &child_group
+		.decrypted_group_keys
+		.get(user_for_child_group.user_id.as_str())
+		.unwrap()[0]
+		.group_key;
+
+	//the newest group public key was used to do the key rotation
+	let group_public_key = &group
+		.decrypted_group_keys
+		.get(creator.user_id.as_str())
+		.unwrap()[0]
+		.public_group_key;
+	let group_private_key = &group
+		.decrypted_group_keys
+		.get(creator.user_id.as_str())
+		.unwrap()[0]
+		.private_group_key;
+
+	let new_group_data = key_rotation(
+		secret_token,
+		user_for_child_group.user_data.jwt.as_str(),
+		child_group.group_id.as_str(),
+		pre_group_key,
+		&user_for_child_group.user_data.keys.public_key,
+		&user_for_child_group.user_data.keys.private_key,
+	)
+	.await;
+
+	//______________________________________________________________________________________________
+	//done key rotation for the parent group member, should used the newest group keys for key rotation
+	let new_group_data_for_parent = done_key_rotation(
+		secret_token,
+		creator.user_data.jwt.as_str(),
+		child_group.group_id.as_str(),
+		pre_group_key,
+		group_public_key,
+		group_private_key,
+	)
+	.await;
+
+	child_group
+		.decrypted_group_keys
+		.insert(creator.user_id.to_string(), new_group_data.1);
+
+	let keys = child_group
+		.decrypted_group_keys
+		.get_mut(&user_for_child_group.user_id)
+		.unwrap();
+
+	for key in new_group_data_for_parent {
+		keys.push(key)
+	}
+}
+
 //__________________________________________________________________________________________________
 //delete group
 
 #[tokio::test]
-async fn test_34_delete_group()
+async fn test_36_delete_group()
 {
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
 

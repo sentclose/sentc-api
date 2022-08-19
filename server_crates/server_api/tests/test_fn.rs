@@ -4,10 +4,10 @@ use std::env;
 
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
-use sentc_crypto::group::{GroupKeyData, GroupOutData};
+use sentc_crypto::group::{DoneGettingGroupKeysOutput, GroupKeyData, GroupOutData};
 use sentc_crypto::sdk_common::group::GroupAcceptJoinReqServerOutput;
-use sentc_crypto::{PrivateKeyFormat, PublicKeyFormat, UserData};
-use sentc_crypto_common::group::GroupCreateOutput;
+use sentc_crypto::{PrivateKeyFormat, PublicKeyFormat, SymKeyFormat, UserData};
+use sentc_crypto_common::group::{GroupCreateOutput, KeyRotationStartServerOutput};
 use sentc_crypto_common::user::{RegisterData, UserInitServerOutput};
 use sentc_crypto_common::{CustomerId, GroupId, ServerOutput, UserId};
 use server_api_common::app::{AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
@@ -476,4 +476,117 @@ pub async fn add_user_by_invite(
 	assert_eq!(data.0.rank, 4);
 
 	data
+}
+
+pub async fn key_rotation(
+	secret_token: &str,
+	jwt: &str,
+	group_id: &str,
+	pre_group_key: &SymKeyFormat,
+	invoker_public_key: &PublicKeyFormat,
+	invoker_private_key: &PrivateKeyFormat,
+) -> (GroupOutData, Vec<DoneGettingGroupKeysOutput>)
+{
+	let input = sentc_crypto::group::key_rotation(pre_group_key, invoker_public_key).unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + group_id + "/key_rotation");
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let out = ServerOutput::<KeyRotationStartServerOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	let out = out.result.unwrap();
+
+	get_group(secret_token, jwt, out.group_id.as_str(), invoker_private_key, false).await
+}
+
+pub async fn done_key_rotation(
+	secret_token: &str,
+	jwt: &str,
+	group_id: &str,
+	pre_group_key: &SymKeyFormat,
+	public_key: &PublicKeyFormat,
+	private_key: &PrivateKeyFormat,
+) -> Vec<DoneGettingGroupKeysOutput>
+{
+	//get the data for the rotation
+
+	let url = get_url("api/v1/group/".to_owned() + group_id + "/key_rotation");
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<Vec<sentc_crypto::sdk_common::group::KeyRotationInput>>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	let out = out.result.unwrap();
+
+	let mut new_keys = vec![];
+
+	//done it for each key
+	for key in out {
+		let rotation_out = sentc_crypto::group::done_key_rotation(private_key, public_key, pre_group_key, &key).unwrap();
+
+		//done the key rotation to save the new key
+		let url = get_url("api/v1/group/".to_owned() + group_id + "/key_rotation/" + key.new_group_key_id.as_str());
+		let client = reqwest::Client::new();
+		let res = client
+			.put(url)
+			.header(AUTHORIZATION, auth_header(jwt))
+			.header("x-sentc-app-token", secret_token)
+			.body(rotation_out)
+			.send()
+			.await
+			.unwrap();
+
+		let body = res.text().await.unwrap();
+		sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+
+		//fetch just the new keys
+		let url = get_url("api/v1/group/".to_owned() + group_id + "/keys/0/none");
+
+		let client = reqwest::Client::new();
+		let res = client
+			.get(url)
+			.header(AUTHORIZATION, auth_header(jwt))
+			.header("x-sentc-app-token", secret_token)
+			.send()
+			.await
+			.unwrap();
+
+		let body = res.text().await.unwrap();
+
+		let group_keys_fetch = sentc_crypto::group::get_group_keys_from_server_output(body.as_str()).unwrap();
+
+		for group_keys_fetch in group_keys_fetch {
+			if group_keys_fetch.group_key_id != key.new_group_key_id {
+				//only save the new key
+				continue;
+			}
+
+			new_keys.push(sentc_crypto::group::get_group_keys(private_key, &group_keys_fetch).unwrap());
+		}
+	}
+
+	new_keys
 }
