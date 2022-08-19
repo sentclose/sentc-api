@@ -431,7 +431,7 @@ pub async fn add_user_by_invite(
 
 	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(user_to_add_public_key, &group_keys_ref, false).unwrap();
 
-	let url = get_url("api/v1/group/".to_owned() + group_id + "/invite/" + user_to_invite_id);
+	let url = get_url("api/v1/group/".to_owned() + group_id + "/invite_auto/" + user_to_invite_id);
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -448,21 +448,7 @@ pub async fn add_user_by_invite(
 	let join_res: GroupAcceptJoinReqServerOutput = sentc_crypto::util::public::handle_server_response(body.as_str()).unwrap();
 	assert_eq!(join_res.session_id, None);
 
-	//accept the invite
-	let url = get_url("api/v1/group/".to_owned() + group_id + "/invite");
-
-	let client = reqwest::Client::new();
-	let res = client
-		.patch(url)
-		.header(AUTHORIZATION, auth_header(user_to_invite_jwt))
-		.header("x-sentc-app-token", secret_token)
-		.send()
-		.await
-		.unwrap();
-
-	let body = res.text().await.unwrap();
-
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	//accept the invite, no need to accept the invite -> we using auto invite here
 
 	let data = get_group(
 		secret_token,
