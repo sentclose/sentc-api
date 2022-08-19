@@ -242,10 +242,11 @@ WHERE
 pub(super) async fn get_parent_group_and_public_key(group_id: GroupId, key_id: SymKeyId) -> AppRes<Option<UserGroupPublicKeyData>>
 {
 	//no pagination needed because there is only one parent group
+	//k.time is not needed here for parent but is needed for the entity (which is also needed for the key rotation fn)
 
 	//language=SQL
 	let sql = r"
-SELECT parent, k.id, public_key, private_key_pair_alg, 0 
+SELECT parent, k.id, public_key, private_key_pair_alg, k.time 
 FROM sentc_group g, sentc_group_keys k
 WHERE 
     parent = group_id AND 
@@ -264,6 +265,8 @@ WHERE
             key_id = ? AND 
             user_id = parent
     )
+ORDER BY k.time DESC 
+LIMIT 1
 ";
 
 	let keys: Option<UserGroupPublicKeyData> = query_first(sql, set_params!(group_id, key_id.to_string(), key_id)).await?;
