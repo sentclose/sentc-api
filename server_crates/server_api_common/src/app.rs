@@ -21,6 +21,7 @@ pub struct AppOptions
 	pub group_user_update_check: i32,
 
 	pub group_invite: i32,
+	pub group_auto_invite: i32,
 	pub group_reject_invite: i32,
 	pub group_accept_invite: i32,
 
@@ -61,6 +62,7 @@ impl Default for AppOptions
 			group_user_keys: 1,
 			group_user_update_check: 1,
 			group_invite: 1,
+			group_auto_invite: 1,
 			group_reject_invite: 1,
 			group_accept_invite: 1,
 			group_join_req: 1,
@@ -97,6 +99,7 @@ impl AppOptions
 			group_user_keys: 1,
 			group_user_update_check: 1,
 			group_invite: 1,
+			group_auto_invite: 1,
 			group_reject_invite: 1,
 			group_accept_invite: 1,
 			group_join_req: 1,
@@ -167,6 +170,8 @@ impl mysql_async::prelude::FromRow for AppOptions
 
 			key_register: take_or_err!(row, 25, i32),
 			key_get: take_or_err!(row, 26, i32),
+
+			group_auto_invite: take_or_err!(row, 27, i32),
 		})
 	}
 }
@@ -215,6 +220,8 @@ impl server_core::db::FromSqliteRow for AppOptions
 
 			key_register: take_or_err!(row, 25),
 			key_get: take_or_err!(row, 26),
+
+			group_auto_invite: take_or_err!(row, 27),
 		})
 	}
 }

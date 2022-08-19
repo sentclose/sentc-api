@@ -20,6 +20,7 @@ async fn main()
 			group_user_keys: 0,
 			group_user_update_check: 0,
 			group_invite: 0,
+			group_auto_invite: 0,
 			group_reject_invite: 0,
 			group_accept_invite: 0,
 			group_join_req: 0,

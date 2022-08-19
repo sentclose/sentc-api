@@ -53,6 +53,28 @@ pub(crate) async fn get_group_member(req: Request) -> JRes<Vec<GroupUserListItem
 
 //__________________________________________________________________________________________________
 
+pub(crate) async fn invite_auto(mut req: Request) -> JRes<GroupInviteServerOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+
+	check_endpoint_with_req(&req, Endpoint::GroupAutoInvite)?;
+
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let invited_user = get_name_param_from_req(&req, "invited_user")?;
+
+	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
+
+	let session_id = group_user_service::invite_auto(group_data, input, invited_user.to_string()).await?;
+
+	let out = GroupInviteServerOutput {
+		session_id,
+		message: "User was invited. Please wait until the user accepts the invite.".to_string(),
+	};
+
+	echo(out)
+}
+
 pub(crate) async fn invite_request(mut req: Request) -> JRes<GroupInviteServerOutput>
 {
 	//no the accept invite, but the keys are prepared for the invited user
@@ -68,32 +90,7 @@ pub(crate) async fn invite_request(mut req: Request) -> JRes<GroupInviteServerOu
 
 	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
 
-	if input.keys.len() == 0 {
-		return Err(HttpErr::new(
-			400,
-			ApiErrorCodes::GroupNoKeys,
-			"No group keys for the user".to_string(),
-			None,
-		));
-	}
-
-	if input.keys.len() > 100 {
-		return Err(HttpErr::new(
-			400,
-			ApiErrorCodes::GroupTooManyKeys,
-			"Too many group keys for the user. Split the keys and use pagination".to_string(),
-			None,
-		));
-	}
-
-	let session_id = group_user_model::invite_request(
-		group_data.group_data.id.to_string(),
-		invited_user.to_string(),
-		input.keys,
-		input.key_session,
-		group_data.user_data.rank,
-	)
-	.await?;
+	let session_id = group_user_service::invite_request(group_data, input, invited_user.to_string()).await?;
 
 	let out = GroupInviteServerOutput {
 		session_id,
