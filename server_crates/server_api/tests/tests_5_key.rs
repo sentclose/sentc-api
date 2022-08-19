@@ -102,7 +102,7 @@ async fn test_10_create_key()
 		.post(url)
 		.header(AUTHORIZATION, auth_header(state.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", state.app_data.secret_token.as_str())
-		.body(key_data)
+		.body(key_data.0)
 		.send()
 		.await
 		.unwrap();
@@ -177,7 +177,7 @@ async fn test_12_create_second_key_for_pagination()
 		.post(url)
 		.header(AUTHORIZATION, auth_header(state.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", state.app_data.secret_token.as_str())
-		.body(key_data)
+		.body(key_data.0)
 		.send()
 		.await
 		.unwrap();
