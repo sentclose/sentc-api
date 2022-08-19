@@ -147,6 +147,7 @@ routes:
                           - delete: {p: "/kick/:user_id", s: crate::group::kick_user_from_group}
 
                           - put: {p: "/invite/:invited_user", s: crate::group::invite_request}
+                          - put: {p: "/invite_auto/:invited_user", s: crate::group::invite_auto}
                           - put: {p: "/invite/session/:key_session_id", s: crate::group::insert_user_keys_via_session_invite}
 
                           - put: {p: "/change_rank", s: crate::group::change_rank}
