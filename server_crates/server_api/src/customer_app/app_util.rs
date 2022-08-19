@@ -29,6 +29,7 @@ pub enum Endpoint
 	GroupKeyRotation,
 
 	GroupInvite,
+	GroupAutoInvite,
 	GroupAcceptInvite,
 	GroupRejectInvite,
 	GroupJoinReq,
@@ -125,6 +126,7 @@ pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endp
 
 		Endpoint::GroupKeyRotation => options.group_key_rotation,
 		Endpoint::GroupInvite => options.group_invite,
+		Endpoint::GroupAutoInvite => options.group_auto_invite,
 		Endpoint::GroupAcceptInvite => options.group_accept_invite,
 		Endpoint::GroupRejectInvite => options.group_reject_invite,
 		Endpoint::GroupJoinReq => options.group_join_req,

@@ -82,7 +82,8 @@ SELECT
     user_public_data,
     user_refresh,
     key_register,
-    key_get
+    key_get,
+    group_auto_invite
 FROM sentc_app_options 
 WHERE 
     app_id = ?";
@@ -388,6 +389,7 @@ INSERT INTO sentc_app_options
      group_user_keys,
      group_user_update_check,
      group_invite, 
+     group_auto_invite,
      group_reject_invite, 
      group_accept_invite, 
      group_join_req, 
@@ -410,7 +412,7 @@ INSERT INTO sentc_app_options
      user_refresh,
      key_register,
      key_get
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let params_options = set_params!(
 		app_id.to_string(),
@@ -419,6 +421,7 @@ INSERT INTO sentc_app_options
 		app_options.group_user_keys,
 		app_options.group_user_update_check,
 		app_options.group_invite,
+		app_options.group_auto_invite,
 		app_options.group_reject_invite,
 		app_options.group_accept_invite,
 		app_options.group_join_req,
