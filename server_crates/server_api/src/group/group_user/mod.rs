@@ -57,8 +57,7 @@ pub(crate) async fn invite_auto(mut req: Request) -> JRes<GroupInviteServerOutpu
 {
 	let body = get_raw_body(&mut req).await?;
 
-	//TODO new endpoint
-	check_endpoint_with_req(&req, Endpoint::GroupInvite)?;
+	check_endpoint_with_req(&req, Endpoint::GroupAutoInvite)?;
 
 	let group_data = get_group_user_data_from_req(&req)?;
 
