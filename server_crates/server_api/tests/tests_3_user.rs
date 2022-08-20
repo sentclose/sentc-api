@@ -118,7 +118,7 @@ async fn test_10_user_exists()
 	};
 
 	assert_eq!(exists.user_identifier, username.to_string());
-	assert_eq!(exists.available, false);
+	assert_eq!(exists.available, true);
 }
 
 #[tokio::test]
@@ -198,7 +198,7 @@ async fn test_12_user_check_after_register()
 	let exists = exists.result.unwrap();
 
 	assert_eq!(exists.user_identifier, username.to_string());
-	assert_eq!(exists.available, true);
+	assert_eq!(exists.available, false);
 }
 
 #[tokio::test]
