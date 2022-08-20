@@ -240,6 +240,7 @@ impl GramHttpErr<Response> for HttpErr
 		hyper::Response::builder()
 			.status(status)
 			.header("Content-Type", "application/json")
+			.header("Access-Control-Allow-Origin", "*")
 			.body(hyper::Body::from(body))
 			.unwrap()
 	}
@@ -274,6 +275,7 @@ impl<T: Serialize> HttpResult<Response> for JsonRes<T>
 
 		hyper::Response::builder()
 			.header("Content-Type", "application/json")
+			.header("Access-Control-Allow-Origin", "*")
 			.body(string.into())
 			.unwrap()
 	}
