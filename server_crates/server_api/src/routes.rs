@@ -229,6 +229,13 @@ pub(crate) fn routes() -> Router
 			.add(app_token::app_token_transform),
 	);
 	router.get(
+		"/api/v1/group/:group_id/key/:key_id",
+		r(crate::group::get_user_group_key)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
 		"/api/v1/group/:group_id/member/:last_fetched_time/:last_user_id",
 		r(crate::group::get_group_member)
 			.add(group::group_transform)
