@@ -9,7 +9,6 @@ use sentc_crypto_common::group::{
 	GroupChangeRankServerInput,
 	GroupCreateOutput,
 	GroupDataCheckUpdateServerOutput,
-	GroupDeleteServerOutput,
 	GroupInviteReqList,
 	GroupJoinReqList,
 	GroupKeysForNewMemberServerInput,
@@ -1628,14 +1627,8 @@ async fn test_36_delete_group()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-	let out = ServerOutput::<GroupDeleteServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
-
-	let out = out.result.unwrap();
-
-	assert_eq!(out.group_id, group.group_id);
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 }
 
 //__________________________________________________________________________________________________
