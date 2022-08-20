@@ -1840,7 +1840,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#4b6f672307b23e10f8c82947637bb09cfa7dc3bf"
+source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#8c288e4cbe7cd87b5aa25ddc06d222d10c1af4fe"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -1861,7 +1861,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-common"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#4b6f672307b23e10f8c82947637bb09cfa7dc3bf"
+source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#8c288e4cbe7cd87b5aa25ddc06d222d10c1af4fe"
 dependencies = [
  "serde",
  "serde_json",
@@ -1870,7 +1870,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-core"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#4b6f672307b23e10f8c82947637bb09cfa7dc3bf"
+source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#8c288e4cbe7cd87b5aa25ddc06d222d10c1af4fe"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -1880,19 +1880,6 @@ dependencies = [
  "rand_core 0.6.3",
  "sha2 0.10.2",
  "x25519-dalek",
-]
-
-[[package]]
-name = "sentc-crypto-full"
-version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#4b6f672307b23e10f8c82947637bb09cfa7dc3bf"
-dependencies = [
- "base64ct",
- "reqwest",
- "sentc-crypto",
- "sentc-crypto-common 0.1.0 (git+ssh://git@gitlab.com/sentclose/sentc/sdk.git)",
- "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -2003,7 +1990,6 @@ dependencies = [
  "rustgram",
  "sentc-crypto",
  "sentc-crypto-common 0.1.0",
- "sentc-crypto-full",
  "serde",
  "serde_json",
  "server-core",
