@@ -34,7 +34,7 @@ pub async fn exists(app_data: &AppData, data: UserIdentifierAvailableServerInput
 
 	let out = UserIdentifierAvailableServerOutput {
 		user_identifier: data.user_identifier,
-		available: exists,
+		available: !exists,
 	};
 
 	Ok(out)
