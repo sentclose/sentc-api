@@ -1090,7 +1090,7 @@ async fn test_28_done_key_rotation_for_other_user()
 	let out = out.result.unwrap();
 
 	//done it for each key
-	for key in out {
+	for key in &out {
 		let rotation_out = sentc_crypto::group::done_key_rotation(
 			&user.user_data.keys.private_key,
 			&user.user_data.keys.public_key,
@@ -1099,7 +1099,7 @@ async fn test_28_done_key_rotation_for_other_user()
 				.get(user.user_id.as_str())
 				.unwrap()[0]
 				.group_key,
-			&key,
+			key,
 		)
 		.unwrap();
 
@@ -1134,6 +1134,22 @@ async fn test_28_done_key_rotation_for_other_user()
 	group
 		.decrypted_group_keys
 		.insert(user.user_id.to_string(), data_user_1.1);
+
+	//get the key via direct fetch
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key/" + out[0].new_group_key_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let new_key: sentc_crypto::sdk_common::group::GroupKeyServerOutput = sentc_crypto::util::public::handle_server_response(body.as_str()).unwrap();
+
+	let _decrypted_key = sentc_crypto::group::get_group_keys(&user.user_data.keys.private_key, &new_key).unwrap();
 }
 
 #[tokio::test]
