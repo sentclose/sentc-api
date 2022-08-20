@@ -159,6 +159,44 @@ WHERE
 	Ok(user_keys)
 }
 
+pub(super) async fn get_user_group_key(app_id: AppId, group_id: GroupId, user_id: UserId, key_id: SymKeyId) -> AppRes<GroupUserKeys>
+{
+	//language=SQL
+	let sql = r"
+SELECT 
+    k_id,
+    encrypted_group_key, 
+    group_key_alg, 
+    encrypted_private_key,
+    public_key,
+    private_key_pair_alg,
+    uk.encrypted_group_key_key_id,
+    uk.time
+FROM 
+    sentc_group_keys k, 
+    sentc_group_user_keys uk
+WHERE 
+    user_id = ? AND 
+    k.group_id = ? AND 
+    k_id = ? AND
+    k.id = k_id AND 
+    app_id = ?";
+
+	let key: Option<GroupUserKeys> = query_first(sql, set_params!(user_id, group_id, key_id, app_id)).await?;
+
+	match key {
+		Some(k) => Ok(k),
+		None => {
+			Err(HttpErr::new(
+				200,
+				ApiErrorCodes::GroupKeyNotFound,
+				"Group key not found".to_string(),
+				None,
+			))
+		},
+	}
+}
+
 /**
 Get the info if there was a key update in the mean time
 

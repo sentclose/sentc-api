@@ -1,17 +1,18 @@
 use std::future::Future;
 
 use rustgram::Request;
-use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDataCheckUpdateServerOutput, GroupDeleteServerOutput};
+use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDataCheckUpdateServerOutput};
+use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::GroupId;
 use server_core::cache;
 use server_core::input_helper::{bytes_to_json, get_raw_body};
-use server_core::url_helper::{get_name_param_from_params, get_params};
+use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 
 use crate::customer_app::app_util::{check_endpoint_with_req, Endpoint};
 use crate::group::group_entities::{GroupServerData, GroupUserKeys};
 use crate::group::{get_group_user_data_from_req, group_model};
 use crate::user::jwt::get_jwt_data_from_param;
-use crate::util::api_res::{echo, ApiErrorCodes, HttpErr, JRes};
+use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 use crate::util::get_group_cache_key;
 
 pub(crate) fn create(req: Request) -> impl Future<Output = JRes<GroupCreateOutput>>
@@ -55,7 +56,7 @@ async fn create_group(mut req: Request, parent_group_id: Option<GroupId>, user_r
 	echo(out)
 }
 
-pub(crate) async fn delete(req: Request) -> JRes<GroupDeleteServerOutput>
+pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 {
 	check_endpoint_with_req(&req, Endpoint::GroupDelete)?;
 
@@ -75,11 +76,7 @@ pub(crate) async fn delete(req: Request) -> JRes<GroupDeleteServerOutput>
 	);
 	cache::delete(key_group.as_str()).await;
 
-	let out = GroupDeleteServerOutput {
-		group_id: group_data.group_data.id.to_string(),
-	};
-
-	echo(out)
+	echo_success()
 }
 
 pub(crate) async fn get_user_group_data(req: Request) -> JRes<GroupServerData>
@@ -180,4 +177,23 @@ pub(crate) async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupUserKeys>
 	.await?;
 
 	echo(user_keys)
+}
+
+pub(crate) async fn get_user_group_key(req: Request) -> JRes<GroupUserKeys>
+{
+	check_endpoint_with_req(&req, Endpoint::GroupUserKeys)?;
+
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let key_id = get_name_param_from_req(&req, "key_id")?;
+
+	let key = group_model::get_user_group_key(
+		group_data.group_data.app_id.to_string(),
+		group_data.group_data.id.to_string(),
+		group_data.user_data.user_id.to_string(),
+		key_id.to_string(),
+	)
+	.await?;
+
+	echo(key)
 }

@@ -404,7 +404,7 @@ pub async fn get_group(
 	let mut data_keys = Vec::with_capacity(data.keys.len());
 
 	for key in &data.keys {
-		data_keys.push(sentc_crypto::group::get_group_keys(private_key, key).unwrap());
+		data_keys.push(sentc_crypto::group::decrypt_group_keys(private_key, key).unwrap());
 	}
 
 	assert_eq!(data.key_update, key_update);
@@ -548,8 +548,8 @@ pub async fn done_key_rotation(
 		let body = res.text().await.unwrap();
 		sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
-		//fetch just the new keys
-		let url = get_url("api/v1/group/".to_owned() + group_id + "/keys/0/none");
+		//fetch just the new key
+		let url = get_url("api/v1/group/".to_owned() + group_id + "/key/" + key.new_group_key_id.as_str());
 
 		let client = reqwest::Client::new();
 		let res = client
@@ -562,16 +562,9 @@ pub async fn done_key_rotation(
 
 		let body = res.text().await.unwrap();
 
-		let group_keys_fetch = sentc_crypto::group::get_group_keys_from_server_output(body.as_str()).unwrap();
+		let group_key_fetch = sentc_crypto::group::get_group_key_from_server_output(body.as_str()).unwrap();
 
-		for group_keys_fetch in group_keys_fetch {
-			if group_keys_fetch.group_key_id != key.new_group_key_id {
-				//only save the new key
-				continue;
-			}
-
-			new_keys.push(sentc_crypto::group::get_group_keys(private_key, &group_keys_fetch).unwrap());
-		}
+		new_keys.push(sentc_crypto::group::decrypt_group_keys(private_key, &group_key_fetch).unwrap());
 	}
 
 	new_keys

@@ -9,7 +9,6 @@ use sentc_crypto_common::group::{
 	GroupChangeRankServerInput,
 	GroupCreateOutput,
 	GroupDataCheckUpdateServerOutput,
-	GroupDeleteServerOutput,
 	GroupInviteReqList,
 	GroupJoinReqList,
 	GroupKeysForNewMemberServerInput,
@@ -209,7 +208,7 @@ async fn test_11_get_group_data()
 
 	let data = sentc_crypto::group::get_group_data(body.as_str()).unwrap();
 
-	let data_key = sentc_crypto::group::get_group_keys(&creator.user_data.keys.private_key, &data.keys[0]).unwrap();
+	let data_key = sentc_crypto::group::decrypt_group_keys(&creator.user_data.keys.private_key, &data.keys[0]).unwrap();
 
 	//user is the creator
 	assert_eq!(data.rank, 0);
@@ -1091,7 +1090,7 @@ async fn test_28_done_key_rotation_for_other_user()
 	let out = out.result.unwrap();
 
 	//done it for each key
-	for key in out {
+	for key in &out {
 		let rotation_out = sentc_crypto::group::done_key_rotation(
 			&user.user_data.keys.private_key,
 			&user.user_data.keys.public_key,
@@ -1100,7 +1099,7 @@ async fn test_28_done_key_rotation_for_other_user()
 				.get(user.user_id.as_str())
 				.unwrap()[0]
 				.group_key,
-			&key,
+			key,
 		)
 		.unwrap();
 
@@ -1135,6 +1134,22 @@ async fn test_28_done_key_rotation_for_other_user()
 	group
 		.decrypted_group_keys
 		.insert(user.user_id.to_string(), data_user_1.1);
+
+	//get the key via direct fetch
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key/" + out[0].new_group_key_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let new_key = sentc_crypto::group::get_group_key_from_server_output(body.as_str()).unwrap();
+
+	let _decrypted_key = sentc_crypto::group::decrypt_group_keys(&user.user_data.keys.private_key, &new_key).unwrap();
 }
 
 #[tokio::test]
@@ -1170,7 +1185,7 @@ async fn test_29_get_key_with_pagination()
 	let mut group_keys = Vec::with_capacity(group_keys_fetch.len());
 
 	for group_keys_fetch in group_keys_fetch {
-		group_keys.push(sentc_crypto::group::get_group_keys(&user.user_data.keys.private_key, &group_keys_fetch).unwrap());
+		group_keys.push(sentc_crypto::group::decrypt_group_keys(&user.user_data.keys.private_key, &group_keys_fetch).unwrap());
 	}
 
 	//normally use len() - 1 but this time we wont fake a pagination, so we don't use the last item
@@ -1628,14 +1643,8 @@ async fn test_36_delete_group()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-	let out = ServerOutput::<GroupDeleteServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
-
-	let out = out.result.unwrap();
-
-	assert_eq!(out.group_id, group.group_id);
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 }
 
 //__________________________________________________________________________________________________
