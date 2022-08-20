@@ -208,7 +208,7 @@ async fn test_11_get_group_data()
 
 	let data = sentc_crypto::group::get_group_data(body.as_str()).unwrap();
 
-	let data_key = sentc_crypto::group::get_group_keys(&creator.user_data.keys.private_key, &data.keys[0]).unwrap();
+	let data_key = sentc_crypto::group::decrypt_group_keys(&creator.user_data.keys.private_key, &data.keys[0]).unwrap();
 
 	//user is the creator
 	assert_eq!(data.rank, 0);
@@ -1147,9 +1147,9 @@ async fn test_28_done_key_rotation_for_other_user()
 		.unwrap();
 
 	let body = res.text().await.unwrap();
-	let new_key: sentc_crypto::sdk_common::group::GroupKeyServerOutput = sentc_crypto::util::public::handle_server_response(body.as_str()).unwrap();
+	let new_key = sentc_crypto::group::get_group_key_from_server_output(body.as_str()).unwrap();
 
-	let _decrypted_key = sentc_crypto::group::get_group_keys(&user.user_data.keys.private_key, &new_key).unwrap();
+	let _decrypted_key = sentc_crypto::group::decrypt_group_keys(&user.user_data.keys.private_key, &new_key).unwrap();
 }
 
 #[tokio::test]
@@ -1185,7 +1185,7 @@ async fn test_29_get_key_with_pagination()
 	let mut group_keys = Vec::with_capacity(group_keys_fetch.len());
 
 	for group_keys_fetch in group_keys_fetch {
-		group_keys.push(sentc_crypto::group::get_group_keys(&user.user_data.keys.private_key, &group_keys_fetch).unwrap());
+		group_keys.push(sentc_crypto::group::decrypt_group_keys(&user.user_data.keys.private_key, &group_keys_fetch).unwrap());
 	}
 
 	//normally use len() - 1 but this time we wont fake a pagination, so we don't use the last item
