@@ -184,7 +184,7 @@ pub(crate) fn routes() -> Router
 			.add(app_token::app_token_transform),
 	);
 	router.get(
-		"/api/v1/group/:last_fetched_time/:last_group_id",
+		"/api/v1/group/all/:last_fetched_time/:last_group_id",
 		r(crate::group::get_all_groups_for_user)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
