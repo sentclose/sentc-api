@@ -15,6 +15,7 @@ use sentc_crypto_common::group::{
 	GroupServerData,
 	GroupUserListItem,
 	KeyRotationStartServerOutput,
+	ListGroups,
 };
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::{GroupId, ServerOutput, UserId};
@@ -1645,6 +1646,91 @@ async fn test_36_delete_group()
 	let body = res.text().await.unwrap();
 
 	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+}
+
+#[tokio::test]
+async fn test_37_get_all_groups_to_user()
+{
+	let creator = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &creator[0];
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+
+	//create more groups for pagination
+	let group_1 = create_group(
+		secret_token,
+		&creator.user_data.keys.public_key,
+		None,
+		creator.user_data.jwt.as_str(),
+	)
+	.await;
+
+	let group_2 = create_group(
+		secret_token,
+		&creator.user_data.keys.public_key,
+		None,
+		creator.user_data.jwt.as_str(),
+	)
+	.await;
+
+	let group_3 = create_group(
+		secret_token,
+		&creator.user_data.keys.public_key,
+		None,
+		creator.user_data.jwt.as_str(),
+	)
+	.await;
+
+	let url = get_url("api/v1/group/all".to_owned() + "/0/none");
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<Vec<ListGroups>>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+
+	let out = out.result.unwrap();
+
+	assert_eq!(out.len(), 3);
+
+	//Order by time
+	assert_eq!(out[0].group_id, group_1);
+	assert_eq!(out[1].group_id, group_2);
+	assert_eq!(out[2].group_id, group_3);
+
+	//test pagination
+
+	let url = get_url("api/v1/group/all".to_owned() + "/" + out[0].time.to_string().as_str() + "/" + out[0].group_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<Vec<ListGroups>>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+
+	let out = out.result.unwrap();
+
+	assert_eq!(out.len(), 2);
+
+	assert_eq!(out[0].group_id, group_2);
+	assert_eq!(out[1].group_id, group_3);
+
+	//test groups are deleted by the clean up fn
 }
 
 //__________________________________________________________________________________________________
