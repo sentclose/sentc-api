@@ -43,6 +43,7 @@ async fn main()
 			user_jwt_refresh: 0,
 			key_register: 0,
 			key_get: 0,
+			group_list: 0,
 		},
 	};
 
