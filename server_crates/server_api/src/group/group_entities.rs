@@ -788,6 +788,7 @@ pub struct ListGroups
 	pub time: u128,
 	pub joined_time: u128,
 	pub rank: i32,
+	pub parent: Option<GroupId>,
 }
 
 impl Into<sentc_crypto_common::group::ListGroups> for ListGroups
@@ -799,6 +800,7 @@ impl Into<sentc_crypto_common::group::ListGroups> for ListGroups
 			time: self.time,
 			joined_time: self.joined_time,
 			rank: self.rank,
+			parent: self.parent,
 		}
 	}
 }
@@ -810,11 +812,24 @@ impl mysql_async::prelude::FromRow for ListGroups
 	where
 		Self: Sized,
 	{
+		let parent = match row.take_opt::<Option<String>, _>(4) {
+			Some(value) => {
+				match value {
+					Ok(ir) => ir,
+					Err(mysql_async::FromValueError(_value)) => {
+						return Err(mysql_async::FromRowError(row));
+					},
+				}
+			},
+			None => return Err(mysql_async::FromRowError(row)),
+		};
+
 		Ok(Self {
 			group_id: take_or_err!(row, 0, String),
 			time: take_or_err!(row, 1, u128),
 			joined_time: take_or_err!(row, 2, u128),
 			rank: take_or_err!(row, 3, i32),
+			parent,
 		})
 	}
 }
@@ -845,6 +860,7 @@ impl server_core::db::FromSqliteRow for ListGroups
 			time,
 			joined_time,
 			rank: take_or_err!(row, 3),
+			parent: take_or_err!(row, 4),
 		})
 	}
 }
