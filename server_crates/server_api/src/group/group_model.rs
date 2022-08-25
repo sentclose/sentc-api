@@ -440,7 +440,7 @@ pub(super) async fn get_all_groups_to_user(app_id: AppId, user_id: UserId, last_
 {
 	//language=SQL
 	let sql = r"
-SELECT id, g.time, gu.time as joined_time, `rank`, parent
+SELECT id, g.time as time, gu.time as joined_time, `rank`, parent
 FROM sentc_group g, sentc_group_user gu
 WHERE 
     app_id = ? AND 
