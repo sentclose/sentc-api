@@ -50,6 +50,8 @@ pub struct AppOptions
 
 	pub key_register: i32,
 	pub key_get: i32,
+
+	pub group_list: i32,
 }
 
 impl Default for AppOptions
@@ -85,6 +87,7 @@ impl Default for AppOptions
 			user_jwt_refresh: 1,
 			key_register: 1,
 			key_get: 1,
+			group_list: 1,
 		}
 	}
 }
@@ -122,6 +125,7 @@ impl AppOptions
 			user_jwt_refresh: 1,
 			key_register: 1,
 			key_get: 1,
+			group_list: 1,
 		}
 	}
 }
@@ -172,6 +176,7 @@ impl mysql_async::prelude::FromRow for AppOptions
 			key_get: take_or_err!(row, 26, i32),
 
 			group_auto_invite: take_or_err!(row, 27, i32),
+			group_list: take_or_err!(row, 28, i32),
 		})
 	}
 }
@@ -222,6 +227,7 @@ impl server_core::db::FromSqliteRow for AppOptions
 			key_get: take_or_err!(row, 26),
 
 			group_auto_invite: take_or_err!(row, 27),
+			group_list: take_or_err!(row, 28),
 		})
 	}
 }

@@ -26,6 +26,8 @@ pub enum Endpoint
 	GroupUserKeys,
 	GroupUserUpdateCheck,
 
+	GroupList,
+
 	GroupKeyRotation,
 
 	GroupInvite,
@@ -119,6 +121,8 @@ pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endp
 
 		Endpoint::GroupCreate => options.group_create,
 		Endpoint::GroupDelete => options.group_delete,
+
+		Endpoint::GroupList => options.group_list,
 
 		Endpoint::GroupUserDataGet => options.group_get,
 		Endpoint::GroupUserKeys => options.group_user_keys,

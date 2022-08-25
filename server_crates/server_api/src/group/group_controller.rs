@@ -202,7 +202,7 @@ pub(crate) async fn get_all_groups_for_user(req: Request) -> JRes<Vec<ListGroups
 {
 	//this is called from the user without a group id
 
-	check_endpoint_with_req(&req, Endpoint::GroupUserKeys)?;
+	check_endpoint_with_req(&req, Endpoint::GroupList)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 	let params = get_params(&req)?;
