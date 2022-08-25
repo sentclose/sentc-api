@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 19. Aug 2022 um 12:42
+-- Erstellungszeit: 25. Aug 2022 um 09:00
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -43,7 +43,8 @@ CREATE TABLE `sentc_app` (
 --
 
 INSERT INTO `sentc_app` (`id`, `customer_id`, `identifier`, `hashed_secret_token`, `hashed_public_token`, `hash_alg`, `time`) VALUES
-('1665eb92-4513-469f-81d8-b72a62e0134c', 'sentc_int', '', 'cmzOt+BnyErJKsF2qNaiJ/YqsXJymnGQSdvJi5FpeOo=', 'b/t88y7h0zwqOXAtR/UqE4qsPL11PLFvo1e+8PNP8LU=', 'SHA256', 1659606752935);
+('1665eb92-4513-469f-81d8-b72a62e0134c', 'sentc_int', '', 'cmzOt+BnyErJKsF2qNaiJ/YqsXJymnGQSdvJi5FpeOo=', 'b/t88y7h0zwqOXAtR/UqE4qsPL11PLFvo1e+8PNP8LU=', 'SHA256', 1659606752935),
+('2a14fdf5-29f9-47eb-8ef3-a6a7067e5827', 'b63d4761-98a5-46f5-bc1d-cefa8ada12f4', 'local test', 'zH2kAAMkCKnLb1zHa/+icZu/3My4wYP9bKR/GUMUyfA=', 'cR3wHjCG8OD2eKF1IEZPtKuIFC4B+JewG4CdoHT1GFg=', 'SHA256', 1660981544954);
 
 --
 -- Trigger `sentc_app`
@@ -89,7 +90,8 @@ CREATE TABLE `sentc_app_jwt_keys` (
 --
 
 INSERT INTO `sentc_app_jwt_keys` (`id`, `app_id`, `sign_key`, `verify_key`, `alg`, `time`) VALUES
-('174b531f-8814-42a2-94ab-3c17036183a5', '1665eb92-4513-469f-81d8-b72a62e0134c', 'MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDAhH0kMPR68V4jaSECXKgz6hEV+7iHqyOFAAv0Y6EXf7Db3T3rwuwuIfHyD41Rgy0ihZANiAARUyndUd/523UjG1Q5cChBHuntfYiQ5wRUIbONlT78ZrU6eUbncTdaWN72pLYTVIyjmpqgCtszZYKQNMw5I1V4c0mEddOe8bMSmic0egcVxmCCjgQVau8xU4bccdyrllFI=', 'BFTKd1R3/nbdSMbVDlwKEEe6e19iJDnBFQhs42VPvxmtTp5RudxN1pY3vakthNUjKOamqAK2zNlgpA0zDkjVXhzSYR1057xsxKaJzR6BxXGYIKOBBVq7zFThtxx3KuWUUg==', 'ES384', 1659606752935);
+('174b531f-8814-42a2-94ab-3c17036183a5', '1665eb92-4513-469f-81d8-b72a62e0134c', 'MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDAhH0kMPR68V4jaSECXKgz6hEV+7iHqyOFAAv0Y6EXf7Db3T3rwuwuIfHyD41Rgy0ihZANiAARUyndUd/523UjG1Q5cChBHuntfYiQ5wRUIbONlT78ZrU6eUbncTdaWN72pLYTVIyjmpqgCtszZYKQNMw5I1V4c0mEddOe8bMSmic0egcVxmCCjgQVau8xU4bccdyrllFI=', 'BFTKd1R3/nbdSMbVDlwKEEe6e19iJDnBFQhs42VPvxmtTp5RudxN1pY3vakthNUjKOamqAK2zNlgpA0zDkjVXhzSYR1057xsxKaJzR6BxXGYIKOBBVq7zFThtxx3KuWUUg==', 'ES384', 1659606752935),
+('6a7c0d75-d029-41af-a4a9-d1c8e2a15ede', '2a14fdf5-29f9-47eb-8ef3-a6a7067e5827', 'MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDAREUug/8gbmMipkSpSduWQBVUh6AHEF1+XpBw2FAoUySYW7hmbIV2CIieiCanfZvihZANiAARuNACs/bm+aLj8CDujNADmbvD/sDkbve6KQV5/Q3gZW7aHHnM924KqYSYKIe8qXyHOYAP0ugH8zHQ6/I5ZN6QckiLA8iizPD3MZLoVx0oVNAm3dQLH5X36BGRNbS3t+Ls=', 'BG40AKz9ub5ouPwIO6M0AOZu8P+wORu97opBXn9DeBlbtocecz3bgqphJgoh7ypfIc5gA/S6AfzMdDr8jlk3pBySIsDyKLM8PcxkuhXHShU0Cbd1AsflffoEZE1tLe34uw==', 'ES384', 1660981546551);
 
 -- --------------------------------------------------------
 
@@ -135,7 +137,8 @@ CREATE TABLE `sentc_app_options` (
 --
 
 INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_user_keys`, `group_user_update_check`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`, `key_register`, `key_get`, `group_auto_invite`, `group_list`) VALUES
-('1665eb92-4513-469f-81d8-b72a62e0134c', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+('1665eb92-4513-469f-81d8-b72a62e0134c', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+('2a14fdf5-29f9-47eb-8ef3-a6a7067e5827', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
 
 -- --------------------------------------------------------
 
@@ -152,6 +155,13 @@ CREATE TABLE `sentc_customer` (
   `email_error_msg` text DEFAULT NULL,
   `email_token` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Daten für Tabelle `sentc_customer`
+--
+
+INSERT INTO `sentc_customer` (`id`, `email`, `email_validate_sent`, `email_validate`, `email_status`, `email_error_msg`, `email_token`) VALUES
+('b63d4761-98a5-46f5-bc1d-cefa8ada12f4', 'hello@local_test.com', 1660981544552, 1, 1, NULL, 'foXXDXtQV1gsvQgN9zFZJCXMatDmAR5BpFZzgAul');
 
 --
 -- Trigger `sentc_customer`
@@ -324,6 +334,13 @@ CREATE TABLE `sentc_user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
+-- Daten für Tabelle `sentc_user`
+--
+
+INSERT INTO `sentc_user` (`id`, `app_id`, `identifier`, `time`) VALUES
+('b63d4761-98a5-46f5-bc1d-cefa8ada12f4', '1665eb92-4513-469f-81d8-b72a62e0134c', 'hello@local_test.com', 1660981544547);
+
+--
 -- Trigger `sentc_user`
 --
 DELIMITER $$
@@ -371,6 +388,13 @@ CREATE TABLE `sentc_user_keys` (
   `hashed_auth_key` text NOT NULL,
   `time` bigint(20) NOT NULL COMMENT 'active since'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='multiple keys per user';
+
+--
+-- Daten für Tabelle `sentc_user_keys`
+--
+
+INSERT INTO `sentc_user_keys` (`id`, `user_id`, `client_random_value`, `public_key`, `encrypted_private_key`, `keypair_encrypt_alg`, `encrypted_sign_key`, `verify_key`, `keypair_sign_alg`, `derived_alg`, `encrypted_master_key`, `master_key_alg`, `encrypted_master_key_alg`, `hashed_auth_key`, `time`) VALUES
+('529fa062-6d95-4cfa-923b-7b357a448346', 'b63d4761-98a5-46f5-bc1d-cefa8ada12f4', 'dVmrQvkgmRwTIGVeTsuoMQ==', '-----BEGIN PUBLIC KEY-----\r\nSDoZ3jBVdMl21PXzQG8jN2LT0G0Vqp5stUCsmV8tR1k=\r\n-----END PUBLIC KEY-----\r\n', 'l18wEJEMfTcpz9fzsudN5wlvX/WuMJ6QgKapH2BEE6kiXdtzG2+NjVNLdSoA60TfbY8QuT+JzulISjd/', 'ECIES-ed25519', 'nA/kp6PcsQwU6qwjoHtA85+nzA9vO/HnzD0LjLtE5uvajh+d3EcaT8tSr0URnDk1+btIamY6rD20jTYs', '-----BEGIN PUBLIC KEY-----\r\n+9n1pBQUWfSaneH6A1ME9Oa4wU4QRxU08pE5xLWpLGc=\r\n-----END PUBLIC KEY-----\r\n', 'ED25519', 'ARGON-2-SHA256', 'UlX86X2X8tiM/g7iBn20m9zm7KzFW/fotRzoeI7C1mJO53e3d1IrH4fVRB3MVStECHo6LFKZF4kOgYTf', 'AES-GCM-256', 'AES-GCM-256', 'iGwgpmvHibErAGhfzgZcKg==', 1660981544547);
 
 -- --------------------------------------------------------
 

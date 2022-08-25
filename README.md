@@ -63,8 +63,8 @@ cargo test --features=sqlite --no-default-features -- --test-threads=1
 1. add to the route file
 2. add to the app endpoint enum in: `server_crates/server_api/src/customer_app/app_util.rs`
 3. add the endpoint to the app options:
-   1. insert it in the db table: `app_options`
-   2. add new endpoint in select app options and create app / update app options in `server_crates/server_api/src/customer_app/app_model.rs`
+   1. insert it / update app options in the db table: `app_options`
+   2. add new endpoint in select app options and create app in `server_crates/server_api/src/customer_app/app_model.rs`
    3. add to the AppOptions input incl. the default fn in: `server_crates/server_api_common/src/app.rs`
 
 ## Entity and common data

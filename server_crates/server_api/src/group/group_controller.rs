@@ -9,7 +9,7 @@ use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 
 use crate::customer_app::app_util::{check_endpoint_with_req, Endpoint};
-use crate::group::group_entities::{GroupServerData, GroupUserKeys};
+use crate::group::group_entities::{GroupServerData, GroupUserKeys, ListGroups};
 use crate::group::{get_group_user_data_from_req, group_model};
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
@@ -196,4 +196,34 @@ pub(crate) async fn get_user_group_key(req: Request) -> JRes<GroupUserKeys>
 	.await?;
 
 	echo(key)
+}
+
+pub(crate) async fn get_all_groups_for_user(req: Request) -> JRes<Vec<ListGroups>>
+{
+	//this is called from the user without a group id
+
+	check_endpoint_with_req(&req, Endpoint::GroupList)?;
+
+	let user = get_jwt_data_from_param(&req)?;
+	let params = get_params(&req)?;
+	let last_group_id = get_name_param_from_params(&params, "last_group_id")?;
+	let last_fetched_time = get_name_param_from_params(&params, "last_fetched_time")?;
+	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
+		HttpErr::new(
+			400,
+			ApiErrorCodes::UnexpectedTime,
+			"last fetched time is wrong".to_string(),
+			None,
+		)
+	})?;
+
+	let list = group_model::get_all_groups_to_user(
+		user.sub.to_string(),
+		user.id.to_string(),
+		last_fetched_time,
+		last_group_id.to_string(),
+	)
+	.await?;
+
+	echo(list)
 }

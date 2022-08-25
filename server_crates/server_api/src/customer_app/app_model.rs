@@ -83,7 +83,8 @@ SELECT
     user_refresh,
     key_register,
     key_get,
-    group_auto_invite
+    group_auto_invite,
+    group_list
 FROM sentc_app_options 
 WHERE 
     app_id = ?";
@@ -411,8 +412,9 @@ INSERT INTO sentc_app_options
      user_public_data,
      user_refresh,
      key_register,
-     key_get
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+     key_get,
+     group_list
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let params_options = set_params!(
 		app_id.to_string(),
@@ -443,7 +445,8 @@ INSERT INTO sentc_app_options
 		app_options.user_public_data,
 		app_options.user_jwt_refresh,
 		app_options.key_register,
-		app_options.key_get
+		app_options.key_get,
+		app_options.group_list
 	);
 
 	(sql, params_options)

@@ -780,3 +780,89 @@ impl server_core::db::FromSqliteRow for GroupUserListItem
 }
 
 //__________________________________________________________________________________________________
+
+#[derive(Serialize)]
+pub struct ListGroups
+{
+	pub group_id: GroupId,
+	pub time: u128,
+	pub joined_time: u128,
+	pub rank: i32,
+	pub parent: Option<GroupId>,
+}
+
+impl Into<sentc_crypto_common::group::ListGroups> for ListGroups
+{
+	fn into(self) -> sentc_crypto_common::group::ListGroups
+	{
+		sentc_crypto_common::group::ListGroups {
+			group_id: self.group_id,
+			time: self.time,
+			joined_time: self.joined_time,
+			rank: self.rank,
+			parent: self.parent,
+		}
+	}
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for ListGroups
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		let parent = match row.take_opt::<Option<String>, _>(4) {
+			Some(value) => {
+				match value {
+					Ok(ir) => ir,
+					Err(mysql_async::FromValueError(_value)) => {
+						return Err(mysql_async::FromRowError(row));
+					},
+				}
+			},
+			None => return Err(mysql_async::FromRowError(row)),
+		};
+
+		Ok(Self {
+			group_id: take_or_err!(row, 0, String),
+			time: take_or_err!(row, 1, u128),
+			joined_time: take_or_err!(row, 2, u128),
+			rank: take_or_err!(row, 3, i32),
+			parent,
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl server_core::db::FromSqliteRow for ListGroups
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		let time: String = take_or_err!(row, 1);
+		let time: u128 = time.parse().map_err(|e| {
+			server_core::db::FormSqliteRowError {
+				msg: format!("err in db fetch: {:?}", e),
+			}
+		})?;
+
+		let joined_time: String = take_or_err!(row, 2);
+		let joined_time: u128 = joined_time.parse().map_err(|e| {
+			server_core::db::FormSqliteRowError {
+				msg: format!("err in db fetch: {:?}", e),
+			}
+		})?;
+
+		Ok(Self {
+			group_id: take_or_err!(row, 0),
+			time,
+			joined_time,
+			rank: take_or_err!(row, 3),
+			parent: take_or_err!(row, 4),
+		})
+	}
+}
+
+//__________________________________________________________________________________________________
