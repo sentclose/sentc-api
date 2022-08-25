@@ -11,6 +11,7 @@ use crate::group::group_entities::{
 	InternalGroupData,
 	InternalUserGroupData,
 	InternalUserGroupDataFromParent,
+	ListGroups,
 };
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
@@ -431,4 +432,42 @@ SELECT * FROM children
 	let children: Vec<GroupChildren> = query(sql, set_params!(group_id, app_id.to_string(), app_id)).await?;
 
 	Ok(children)
+}
+
+//__________________________________________________________________________________________________
+
+pub(super) async fn get_all_groups_to_user(app_id: AppId, user_id: UserId, last_fetched_time: u128, last_id: GroupId) -> AppRes<Vec<ListGroups>>
+{
+	//language=SQL
+	let sql = r"
+SELECT id, g.time, gu.time as joined_time, `rank`
+FROM sentc_group g, sentc_group_user gu
+WHERE 
+    app_id = ? AND 
+    group_id = id AND 
+    user_id = ?"
+		.to_string();
+
+	let (sql, params) = if last_fetched_time > 0 {
+		let sql = sql + " AND g.time >= ? AND (g.time > ? OR (g.time = ? AND id > ?)) ORDER BY time, group_id LIMIT 50";
+		(
+			sql,
+			set_params!(
+				app_id,
+				user_id,
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_id
+			),
+		)
+	} else {
+		let sql = sql + "ORDER BY time, group_id LIMIT 50";
+
+		(sql, set_params!(app_id, user_id))
+	};
+
+	let list: Vec<ListGroups> = query_string(sql, params).await?;
+
+	Ok(list)
 }
