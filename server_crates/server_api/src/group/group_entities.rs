@@ -856,7 +856,7 @@ impl server_core::db::FromSqliteRow for ListGroups
 		})?;
 
 		Ok(Self {
-			user_id: take_or_err!(row, 0),
+			group_id: take_or_err!(row, 0),
 			time,
 			joined_time,
 			rank: take_or_err!(row, 3),
