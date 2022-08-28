@@ -1,10 +1,10 @@
 use sentc_crypto_common::file::FileRegisterInput;
 use sentc_crypto_common::{AppId, FileId, UserId};
-use server_core::db::{exec, exec_transaction, query_first, TransactionData};
+use server_core::db::{exec, exec_transaction, query, query_first, TransactionData};
 use server_core::{get_time, set_params};
 use uuid::Uuid;
 
-use crate::file::file_entities::FileSessionCheck;
+use crate::file::file_entities::{FileMetaData, FilePartListItem, FileSessionCheck};
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 static MAX_CHUNK_SIZE: usize = 5 * 1024 * 1024;
@@ -18,13 +18,14 @@ pub(super) async fn register_file(input: FileRegisterInput, belongs_to_type: i32
 	let time = get_time()?;
 
 	//language=SQL
-	let sql = "INSERT INTO sentc_file (id, owner, belongs_to, belongs_to_type, app_id, time) VALUES (?,?,?,?,?,?)";
+	let sql = "INSERT INTO sentc_file (id, owner, belongs_to, belongs_to_type, app_id, key_id, time) VALUES (?,?,?,?,?,?,?)";
 	let params = set_params!(
 		file_id.to_string(),
 		user_id,
 		input.belongs_to_id,
 		belongs_to_type,
 		app_id.to_string(),
+		input.key_id,
 		time.to_string()
 	);
 
@@ -54,7 +55,7 @@ pub(super) async fn register_file(input: FileRegisterInput, belongs_to_type: i32
 	Ok((file_id, session_id))
 }
 
-pub async fn check_session(app_id: AppId, session_id: String, user_id: UserId) -> AppRes<(FileId, usize)>
+pub(super) async fn check_session(app_id: AppId, session_id: String, user_id: UserId) -> AppRes<(FileId, usize)>
 {
 	//language=SQL
 	let sql = r"
@@ -100,12 +101,12 @@ WHERE
 	Ok((check.file_id, check.max_chunk_size))
 }
 
-pub async fn save_part(app_id: AppId, file_id: FileId, size: usize, sequence: i32, end: bool) -> AppRes<()>
+pub(super) async fn save_part(app_id: AppId, file_id: FileId, size: usize, sequence: i32, end: bool, extern_storage: bool) -> AppRes<()>
 {
 	let part_id = Uuid::new_v4().to_string();
 
 	//language=SQL
-	let sql = "INSERT INTO sentc_file_part (id, file_id, app_id, size, sequence) VALUES (?,?,?,?,?)";
+	let sql = "INSERT INTO sentc_file_part (id, file_id, app_id, size, sequence, extern) VALUES (?,?,?,?,?,?)";
 
 	exec(
 		sql,
@@ -114,7 +115,8 @@ pub async fn save_part(app_id: AppId, file_id: FileId, size: usize, sequence: i3
 			file_id.to_string(),
 			app_id.to_string(),
 			size.to_string(),
-			sequence
+			sequence,
+			extern_storage
 		),
 	)
 	.await?;
@@ -128,7 +130,7 @@ pub async fn save_part(app_id: AppId, file_id: FileId, size: usize, sequence: i3
 	Ok(())
 }
 
-pub async fn delete_session(session_id: String, app_id: AppId) -> AppRes<()>
+pub(super) async fn delete_session(session_id: String, app_id: AppId) -> AppRes<()>
 {
 	//language=SQL
 	let sql = "DELETE FROM sentc_file_session WHERE id = ? AND app_id = ?";
@@ -136,4 +138,44 @@ pub async fn delete_session(session_id: String, app_id: AppId) -> AppRes<()>
 	exec(sql, set_params!(session_id, app_id)).await?;
 
 	Ok(())
+}
+
+pub(super) async fn get_file(app_id: AppId, file_id: FileId) -> AppRes<FileMetaData>
+{
+	//language=SQL
+	let sql = "SELECT id, owner, belongs_to, belongs_to_type, key_id, time FROM sentc_file WHERE app_id = ? AND id = ?";
+
+	let file: Option<FileMetaData> = query_first(sql, set_params!(app_id, file_id)).await?;
+
+	match file {
+		Some(f) => Ok(f),
+		None => {
+			Err(HttpErr::new(
+				400,
+				ApiErrorCodes::FileNotFound,
+				"File not found".to_string(),
+				None,
+			))
+		},
+	}
+}
+
+pub(super) async fn get_file_parts(app_id: AppId, file_id: FileId) -> AppRes<Vec<FilePartListItem>>
+{
+	//get the file parts
+	//language=SQL
+	let sql = "SELECT id FROM sentc_file_part WHERE app_id = ? AND file_id = ? ORDER BY sequence";
+
+	let file_parts: Vec<FilePartListItem> = query(sql, set_params!(app_id, file_id)).await?;
+
+	if file_parts.len() == 0 {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::FileNotFound,
+			"File not found".to_string(),
+			None,
+		));
+	}
+
+	Ok(file_parts)
 }

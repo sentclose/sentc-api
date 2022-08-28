@@ -1,22 +1,52 @@
 use sentc_crypto_common::file::{BelongsToType, FileRegisterInput, FileRegisterOutput};
-use sentc_crypto_common::{AppId, UserId};
+use sentc_crypto_common::{AppId, FileId, GroupId, UserId};
 
+use crate::file::file_entities::FileMetaData;
 use crate::file::file_model;
-use crate::util::api_res::AppRes;
+use crate::user::user_service;
+use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
-pub async fn register_file(input: FileRegisterInput, app_id: AppId, user_id: UserId) -> AppRes<FileRegisterOutput>
+//same values as in file entity
+pub(super) static FILE_BELONGS_TO_TYPE_NONE: i32 = 0;
+pub(super) static FILE_BELONGS_TO_TYPE_GROUP: i32 = 1;
+pub(super) static FILE_BELONGS_TO_TYPE_USER: i32 = 2;
+
+pub async fn register_file(mut input: FileRegisterInput, app_id: AppId, user_id: UserId, group_id: Option<GroupId>) -> AppRes<FileRegisterOutput>
 {
 	//check first if belongs to is set
 
 	let belongs_to_type = match input.belongs_to_type {
-		BelongsToType::None => 0,
+		BelongsToType::None => FILE_BELONGS_TO_TYPE_NONE,
 		BelongsToType::Group => {
 			//check if the user got access to this group
-			1
+			match group_id {
+				None => FILE_BELONGS_TO_TYPE_NONE,
+				Some(_) => {
+					input.belongs_to_id = group_id;
+
+					FILE_BELONGS_TO_TYPE_GROUP
+				},
+			}
 		},
 		BelongsToType::User => {
 			//check if the other user is in this app
-			2
+			match &input.belongs_to_id {
+				None => FILE_BELONGS_TO_TYPE_NONE,
+				Some(id) => {
+					let check = user_service::check_user_in_app_by_user_id(app_id.to_string(), id.to_string()).await?;
+
+					if !check {
+						return Err(HttpErr::new(
+							400,
+							ApiErrorCodes::FileNotFound,
+							"User not found".to_string(),
+							None,
+						));
+					}
+
+					FILE_BELONGS_TO_TYPE_USER
+				},
+			}
 		},
 	};
 
@@ -26,4 +56,67 @@ pub async fn register_file(input: FileRegisterInput, app_id: AppId, user_id: Use
 		file_id,
 		session_id,
 	})
+}
+
+pub async fn get_file(app_id: AppId, user_id: UserId, file_id: FileId, group_id: Option<GroupId>) -> AppRes<FileMetaData>
+{
+	let mut file = file_model::get_file(app_id.to_string(), file_id.to_string()).await?;
+
+	match &file.belongs_to_type {
+		BelongsToType::None => {},
+		BelongsToType::Group => {
+			//check if the user got access to this group
+			match &file.belongs_to {
+				//no group id set for register file
+				None => {},
+				//check group access
+				Some(id) => {
+					match group_id {
+						None => {
+							//user tries to access the file outside of the group routes
+							return Err(HttpErr::new(
+								400,
+								ApiErrorCodes::AppAction,
+								"No access to this file".to_string(),
+								None,
+							));
+						},
+						Some(g_id) => {
+							//user tires to access the file from another group (where he got access in this group)
+							if g_id.as_str() != id {
+								return Err(HttpErr::new(
+									400,
+									ApiErrorCodes::AppAction,
+									"No access to this file".to_string(),
+									None,
+								));
+							}
+						},
+					}
+				},
+			}
+		},
+		BelongsToType::User => {
+			//check if this user is the actual user
+			match &file.belongs_to {
+				None => {},
+				Some(id) => {
+					if user_id != id.to_string() && user_id != file.owner {
+						return Err(HttpErr::new(
+							400,
+							ApiErrorCodes::AppAction,
+							"No access to this file".to_string(),
+							None,
+						));
+					}
+				},
+			};
+		},
+	}
+
+	let file_parts = file_model::get_file_parts(app_id, file_id).await?;
+
+	file.part_list = file_parts;
+
+	Ok(file)
 }
