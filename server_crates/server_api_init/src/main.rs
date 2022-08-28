@@ -44,6 +44,10 @@ async fn main()
 			key_register: 0,
 			key_get: 0,
 			group_list: 0,
+			file_register: 0,
+			file_part_upload: 0,
+			file_get: 0,
+			file_part_download: 0,
 		},
 	};
 

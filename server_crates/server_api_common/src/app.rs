@@ -52,6 +52,11 @@ pub struct AppOptions
 	pub key_get: i32,
 
 	pub group_list: i32,
+
+	pub file_register: i32,
+	pub file_part_upload: i32,
+	pub file_get: i32,
+	pub file_part_download: i32,
 }
 
 impl Default for AppOptions
@@ -88,6 +93,10 @@ impl Default for AppOptions
 			key_register: 1,
 			key_get: 1,
 			group_list: 1,
+			file_register: 1,
+			file_part_upload: 1,
+			file_get: 1,
+			file_part_download: 1,
 		}
 	}
 }
@@ -126,6 +135,10 @@ impl AppOptions
 			key_register: 1,
 			key_get: 1,
 			group_list: 1,
+			file_register: 1,
+			file_part_upload: 1,
+			file_get: 1,
+			file_part_download: 1,
 		}
 	}
 }
@@ -177,6 +190,11 @@ impl mysql_async::prelude::FromRow for AppOptions
 
 			group_auto_invite: take_or_err!(row, 27, i32),
 			group_list: take_or_err!(row, 28, i32),
+
+			file_register: take_or_err!(row, 29, i32),
+			file_part_upload: take_or_err!(row, 30, i32),
+			file_get: take_or_err!(row, 31, i32),
+			file_part_download: take_or_err!(row, 32, i32),
 		})
 	}
 }
@@ -228,6 +246,11 @@ impl server_core::db::FromSqliteRow for AppOptions
 
 			group_auto_invite: take_or_err!(row, 27),
 			group_list: take_or_err!(row, 28),
+
+			file_register: take_or_err!(row, 29),
+			file_part_upload: take_or_err!(row, 30),
+			file_get: take_or_err!(row, 31),
+			file_part_download: take_or_err!(row, 32),
 		})
 	}
 }
@@ -355,6 +378,18 @@ impl server_core::db::FromSqliteRow for AppJwtData
 			verify_key: take_or_err!(row, 4),
 		})
 	}
+}
+
+//__________________________________________________________________________________________________
+
+pub static FILE_STORAGE_SENTC: i32 = 0;
+pub static FILE_STORAGE_OWN: i32 = 1;
+
+#[derive(Serialize, Deserialize)]
+pub struct AppFileOptions
+{
+	pub file_storage: i32,
+	pub storage_url: Option<String>,
 }
 
 //__________________________________________________________________________________________________

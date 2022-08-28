@@ -44,6 +44,11 @@ pub enum Endpoint
 
 	KeyRegister,
 	KeyGet,
+
+	FileRegister,
+	FilePartUpload,
+	FileGet,
+	FilePartDownload,
 }
 
 pub(crate) fn get_app_data_from_req(req: &Request) -> AppRes<&AppData>
@@ -143,6 +148,11 @@ pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endp
 
 		Endpoint::KeyRegister => options.key_register,
 		Endpoint::KeyGet => options.key_get,
+
+		Endpoint::FileRegister => options.key_get,
+		Endpoint::FilePartUpload => options.key_get,
+		Endpoint::FileGet => options.key_get,
+		Endpoint::FilePartDownload => options.key_get,
 	};
 
 	let token_needed = match token_needed {
