@@ -8,9 +8,8 @@ use rustgram::{r, Router};
 
 use crate::middleware::*;
 
-pub(crate) fn routes() -> Router
+pub(crate) fn routes(router: &mut Router)
 {
-	let mut router = Router::new(crate::not_found_handler);
 	router.post(
 		"/api/v1/customer/register",
 		r(crate::customer::register).add(app_token::app_token_base_app_transform),
@@ -353,6 +352,4 @@ pub(crate) fn routes() -> Router
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
-
-	router
 }

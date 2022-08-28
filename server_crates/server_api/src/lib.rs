@@ -76,7 +76,9 @@ The other crates can use this router
  */
 pub fn rest_routes() -> Router
 {
-	let mut router = routes();
+	let mut router = Router::new(not_found_handler);
+
+	routes(&mut router);
 
 	router.get("/", r(index_handler));
 
