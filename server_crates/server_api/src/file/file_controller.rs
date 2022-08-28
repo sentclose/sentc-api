@@ -5,8 +5,8 @@ use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_params};
 use uuid::Uuid;
 
+use crate::customer_app::app_util::{check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use crate::file::{file_model, file_service};
-use crate::sentc_customer_app_util::{check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 
