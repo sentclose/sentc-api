@@ -4,6 +4,7 @@ pub mod cache;
 pub mod db;
 pub mod email;
 pub mod error;
+pub mod file;
 pub mod input_helper;
 pub mod url_helper;
 

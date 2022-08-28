@@ -18,6 +18,11 @@ pub enum CoreErrorCodes
 	EmailSend,
 
 	NoParameter,
+
+	FileLocalOpen,
+	FileRemove,
+	FileSave,
+	FileDownload,
 }
 
 #[derive(Debug)]
