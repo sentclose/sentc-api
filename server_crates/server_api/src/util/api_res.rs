@@ -81,6 +81,7 @@ pub enum ApiErrorCodes
 
 	FileSessionNotFound,
 	FileSessionExpired,
+	FileNotFound,
 }
 
 impl From<CoreErrorCodes> for ApiErrorCodes
@@ -186,8 +187,9 @@ impl ApiErrorCodes
 
 			ApiErrorCodes::KeyNotFound => 400,
 
-			ApiErrorCodes::FileSessionNotFound => 504,
-			ApiErrorCodes::FileSessionExpired => 505,
+			ApiErrorCodes::FileSessionNotFound => 510,
+			ApiErrorCodes::FileSessionExpired => 511,
+			ApiErrorCodes::FileNotFound => 512,
 		}
 	}
 }
