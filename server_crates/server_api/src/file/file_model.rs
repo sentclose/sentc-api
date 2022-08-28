@@ -1,5 +1,4 @@
-use sentc_crypto_common::file::FileRegisterInput;
-use sentc_crypto_common::{AppId, FileId, UserId};
+use sentc_crypto_common::{AppId, FileId, SymKeyId, UserId};
 use server_core::db::{exec, exec_transaction, query, query_first, TransactionData};
 use server_core::{get_time, set_params};
 use uuid::Uuid;
@@ -10,7 +9,13 @@ use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 static MAX_CHUNK_SIZE: usize = 5 * 1024 * 1024;
 static MAX_SESSION_ALIVE_TIME: u128 = 24 * 60 * 60 * 1000;
 
-pub(super) async fn register_file(input: FileRegisterInput, belongs_to_type: i32, app_id: AppId, user_id: UserId) -> AppRes<(String, String)>
+pub(super) async fn register_file(
+	key_id: SymKeyId,
+	belongs_to_id: Option<String>,
+	belongs_to_type: i32,
+	app_id: AppId,
+	user_id: UserId,
+) -> AppRes<(String, String)>
 {
 	let file_id = Uuid::new_v4().to_string();
 	let session_id = Uuid::new_v4().to_string();
@@ -22,10 +27,10 @@ pub(super) async fn register_file(input: FileRegisterInput, belongs_to_type: i32
 	let params = set_params!(
 		file_id.to_string(),
 		user_id,
-		input.belongs_to_id,
+		belongs_to_id,
 		belongs_to_type,
 		app_id.to_string(),
-		input.key_id,
+		key_id,
 		time.to_string()
 	);
 

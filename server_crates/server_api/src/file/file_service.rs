@@ -11,27 +11,23 @@ pub(super) static FILE_BELONGS_TO_TYPE_NONE: i32 = 0;
 pub(super) static FILE_BELONGS_TO_TYPE_GROUP: i32 = 1;
 pub(super) static FILE_BELONGS_TO_TYPE_USER: i32 = 2;
 
-pub async fn register_file(mut input: FileRegisterInput, app_id: AppId, user_id: UserId, group_id: Option<GroupId>) -> AppRes<FileRegisterOutput>
+pub async fn register_file(input: FileRegisterInput, app_id: AppId, user_id: UserId, group_id: Option<GroupId>) -> AppRes<FileRegisterOutput>
 {
 	//check first if belongs to is set
 
-	let belongs_to_type = match input.belongs_to_type {
-		BelongsToType::None => FILE_BELONGS_TO_TYPE_NONE,
+	let (belongs_to_type, belongs_to) = match input.belongs_to_type {
+		BelongsToType::None => (FILE_BELONGS_TO_TYPE_NONE, None),
 		BelongsToType::Group => {
 			//check if the user got access to this group
 			match group_id {
-				None => FILE_BELONGS_TO_TYPE_NONE,
-				Some(_) => {
-					input.belongs_to_id = group_id;
-
-					FILE_BELONGS_TO_TYPE_GROUP
-				},
+				None => (FILE_BELONGS_TO_TYPE_NONE, None),
+				Some(id) => (FILE_BELONGS_TO_TYPE_GROUP, Some(id)),
 			}
 		},
 		BelongsToType::User => {
 			//check if the other user is in this app
 			match &input.belongs_to_id {
-				None => FILE_BELONGS_TO_TYPE_NONE,
+				None => (FILE_BELONGS_TO_TYPE_NONE, None),
 				Some(id) => {
 					let check = user_service::check_user_in_app_by_user_id(app_id.to_string(), id.to_string()).await?;
 
@@ -44,13 +40,13 @@ pub async fn register_file(mut input: FileRegisterInput, app_id: AppId, user_id:
 						));
 					}
 
-					FILE_BELONGS_TO_TYPE_USER
+					(FILE_BELONGS_TO_TYPE_USER, Some(id.to_string()))
 				},
 			}
 		},
 	};
 
-	let (file_id, session_id) = file_model::register_file(input, belongs_to_type, app_id, user_id).await?;
+	let (file_id, session_id) = file_model::register_file(input.key_id, belongs_to, belongs_to_type, app_id, user_id).await?;
 
 	Ok(FileRegisterOutput {
 		file_id,
