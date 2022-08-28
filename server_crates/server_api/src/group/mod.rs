@@ -13,7 +13,7 @@ pub use self::group_user::group_user_service;
 use crate::group::group_entities::InternalGroupDataComplete;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
-fn get_group_user_data_from_req(req: &Request) -> AppRes<&InternalGroupDataComplete>
+pub fn get_group_user_data_from_req(req: &Request) -> AppRes<&InternalGroupDataComplete>
 {
 	match req.extensions().get::<InternalGroupDataComplete>() {
 		Some(e) => Ok(e),
