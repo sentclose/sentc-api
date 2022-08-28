@@ -18,18 +18,13 @@ hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
 tokio-util = "0.7.2"
 
-rustgram = "0.1.5"
+rustgram = "0.1.6"
 
 # dotenv vars
 dotenv = "0.15.0"
 
 # for caching trait
 async-trait = "0.1.56"
-
-#_______________________________________________________________________________________________________________________
-# to stream the input body
-bytes = "1.1.0"
-futures = { version = "0.3.6", default-features = false, features = ["async-await"] }
 
 #_______________________________________________________________________________________________________________________
 # json handling

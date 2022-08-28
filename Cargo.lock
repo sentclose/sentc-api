@@ -1743,9 +1743,9 @@ checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "rustgram"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee26f8407092b8a51c4f62c8f6348778fa4a2568cfe69f441fe41ee5541fa929"
+checksum = "a5dccb37e1c51772833edb547eadf0790e331c7ab21a9ab96207f7630282f9d4"
 dependencies = [
  "async-trait",
  "hyper",
@@ -1976,9 +1976,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "base64",
- "bytes",
  "dotenv",
- "futures",
  "hyper",
  "jsonwebtoken",
  "mysql_async",

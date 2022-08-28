@@ -1,5 +1,4 @@
 base_mw: "middleware"
-handler_404: crate::not_found_handler
 prefix: "/api"
 routes:
   # api v1 routes
