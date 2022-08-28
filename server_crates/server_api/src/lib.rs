@@ -25,6 +25,8 @@ pub use group::group_user_service as sentc_group_user_service;
 #[cfg(feature = "embedded")]
 pub use middleware::app_token::app_token_transform as sentc_app_mw;
 #[cfg(feature = "embedded")]
+pub use middleware::group::group_transform as sentc_group_mw;
+#[cfg(feature = "embedded")]
 pub use middleware::jwt::jwt_transform as sentc_jwt_mw;
 #[cfg(feature = "embedded")]
 pub use user::user_service as sentc_user_service;
