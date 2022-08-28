@@ -15,6 +15,8 @@ pub async fn main()
 	//the static files from the dash board
 	server_dashboard::routes(&mut router);
 
+	server_api_file::routes(&mut router);
+
 	let addr = format!(
 		"{}:{}",
 		env::var("SERVER_HOST").unwrap(),

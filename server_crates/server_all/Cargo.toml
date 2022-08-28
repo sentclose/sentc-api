@@ -11,11 +11,12 @@ rustgram = "0.1.5"
 tokio = { version = "1", features = ["full"] }
 
 server_api = {version = "0.1.0", path = "../server_api", default-features = false}
+server_api_file = {version = "0.1.0", path = "../server_api_file", default-features = false}
 server_dashboard = {version = "0.1.0", path = "../server_dashboard"}
 
 [features]
 default = ["mysql"]
-mysql = ["server_api/mysql"]
-sqlite = ["server_api/sqlite"]
+mysql = ["server_api/mysql","server_api_file/mysql"]
+sqlite = ["server_api/sqlite","server_api_file/sqlite"]
 
 send_mail = ["server_api/send_mail"]
