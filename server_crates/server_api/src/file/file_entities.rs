@@ -32,7 +32,7 @@ impl server_core::db::FromSqliteRow for FileSessionCheck
 	where
 		Self: Sized,
 	{
-		let created_at: String = take_or_err!(row, 3);
+		let created_at: String = take_or_err!(row, 1);
 		let created_at: u128 = created_at.parse().map_err(|e| {
 			server_core::db::FormSqliteRowError {
 				msg: format!("err in db fetch: {:?}", e),
