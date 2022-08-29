@@ -52,6 +52,11 @@ pub struct AppOptions
 	pub key_get: i32,
 
 	pub group_list: i32,
+
+	pub file_register: i32,
+	pub file_part_upload: i32,
+	pub file_get: i32,
+	pub file_part_download: i32,
 }
 
 impl Default for AppOptions
@@ -88,6 +93,10 @@ impl Default for AppOptions
 			key_register: 1,
 			key_get: 1,
 			group_list: 1,
+			file_register: 1,
+			file_part_upload: 1,
+			file_get: 1,
+			file_part_download: 1,
 		}
 	}
 }
@@ -126,6 +135,10 @@ impl AppOptions
 			key_register: 1,
 			key_get: 1,
 			group_list: 1,
+			file_register: 1,
+			file_part_upload: 1,
+			file_get: 1,
+			file_part_download: 1,
 		}
 	}
 }
@@ -177,6 +190,11 @@ impl mysql_async::prelude::FromRow for AppOptions
 
 			group_auto_invite: take_or_err!(row, 27, i32),
 			group_list: take_or_err!(row, 28, i32),
+
+			file_register: take_or_err!(row, 29, i32),
+			file_part_upload: take_or_err!(row, 30, i32),
+			file_get: take_or_err!(row, 31, i32),
+			file_part_download: take_or_err!(row, 32, i32),
 		})
 	}
 }
@@ -228,6 +246,11 @@ impl server_core::db::FromSqliteRow for AppOptions
 
 			group_auto_invite: take_or_err!(row, 27),
 			group_list: take_or_err!(row, 28),
+
+			file_register: take_or_err!(row, 29),
+			file_part_upload: take_or_err!(row, 30),
+			file_get: take_or_err!(row, 31),
+			file_part_download: take_or_err!(row, 32),
 		})
 	}
 }
@@ -239,6 +262,7 @@ pub struct AppRegisterInput
 {
 	pub identifier: Option<String>,
 	pub options: AppOptions, //if no options then use the defaults
+	pub file_options: AppFileOptions,
 }
 
 impl AppRegisterInput
@@ -353,6 +377,72 @@ impl server_core::db::FromSqliteRow for AppJwtData
 			time,
 			sign_key: take_or_err!(row, 3),
 			verify_key: take_or_err!(row, 4),
+		})
+	}
+}
+
+//__________________________________________________________________________________________________
+
+pub static FILE_STORAGE_NONE: i32 = -1;
+pub static FILE_STORAGE_SENTC: i32 = 0;
+pub static FILE_STORAGE_OWN: i32 = 1;
+
+#[derive(Serialize, Deserialize)]
+pub struct AppFileOptions
+{
+	pub file_storage: i32,
+	pub storage_url: Option<String>,
+}
+
+impl Default for AppFileOptions
+{
+	fn default() -> Self
+	{
+		Self {
+			file_storage: FILE_STORAGE_SENTC,
+			storage_url: None,
+		}
+	}
+}
+
+#[cfg(feature = "server")]
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for AppFileOptions
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		let storage_url = match row.take_opt::<Option<String>, _>(1) {
+			Some(value) => {
+				match value {
+					Ok(ir) => ir,
+					Err(mysql_async::FromValueError(_value)) => {
+						return Err(mysql_async::FromRowError(row));
+					},
+				}
+			},
+			None => return Err(mysql_async::FromRowError(row)),
+		};
+
+		Ok(Self {
+			file_storage: take_or_err!(row, 0, i32),
+			storage_url,
+		})
+	}
+}
+
+#[cfg(feature = "server")]
+#[cfg(feature = "sqlite")]
+impl server_core::db::FromSqliteRow for AppFileOptions
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			file_storage: take_or_err!(row, 0),
+			storage_url: take_or_err!(row, 1),
 		})
 	}
 }

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 25. Aug 2022 um 09:00
+-- Erstellungszeit: 28. Aug 2022 um 20:06
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -51,6 +51,10 @@ INSERT INTO `sentc_app` (`id`, `customer_id`, `identifier`, `hashed_secret_token
 --
 DELIMITER $$
 CREATE TRIGGER `delete_app_jwt` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_app_jwt_keys WHERE app_id = OLD.id
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `delete_file_options` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_file_options WHERE app_id = OLD.id
 $$
 DELIMITER ;
 DELIMITER $$
@@ -129,16 +133,20 @@ CREATE TABLE `sentc_app_options` (
   `key_register` int(11) NOT NULL,
   `key_get` int(11) NOT NULL,
   `group_auto_invite` int(11) NOT NULL,
-  `group_list` int(11) NOT NULL
+  `group_list` int(11) NOT NULL,
+  `file_register` int(11) NOT NULL,
+  `file_part_upload` int(11) NOT NULL,
+  `file_get` int(11) NOT NULL,
+  `file_part_download` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='option: 0 = not allowed,  1 = public token, 2 = secret token';
 
 --
 -- Daten für Tabelle `sentc_app_options`
 --
 
-INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_user_keys`, `group_user_update_check`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`, `key_register`, `key_get`, `group_auto_invite`, `group_list`) VALUES
-('1665eb92-4513-469f-81d8-b72a62e0134c', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-('2a14fdf5-29f9-47eb-8ef3-a6a7067e5827', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_user_keys`, `group_user_update_check`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`, `key_register`, `key_get`, `group_auto_invite`, `group_list`, `file_register`, `file_part_upload`, `file_get`, `file_part_download`) VALUES
+('1665eb92-4513-469f-81d8-b72a62e0134c', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+('2a14fdf5-29f9-47eb-8ef3-a6a7067e5827', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
 
 -- --------------------------------------------------------
 
@@ -170,6 +178,76 @@ DELIMITER $$
 CREATE TRIGGER `delete_app` AFTER DELETE ON `sentc_customer` FOR EACH ROW DELETE FROM sentc_app WHERE customer_id = OLD.id
 $$
 DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_file`
+--
+
+CREATE TABLE `sentc_file` (
+  `id` varchar(36) NOT NULL,
+  `owner` varchar(36) NOT NULL COMMENT 'user_id',
+  `belongs_to` varchar(36) DEFAULT NULL,
+  `belongs_to_type` int(11) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
+  `key_id` varchar(36) NOT NULL,
+  `time` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Trigger `sentc_file`
+--
+DELIMITER $$
+CREATE TRIGGER `file_delete_parts` AFTER DELETE ON `sentc_file` FOR EACH ROW DELETE FROM sentc_file_part WHERE file_id = OLD.id
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `file_session_delete` AFTER DELETE ON `sentc_file` FOR EACH ROW DELETE FROM sentc_file_session WHERE file_id = OLD.id
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_file_options`
+--
+
+CREATE TABLE `sentc_file_options` (
+  `app_id` varchar(36) NOT NULL,
+  `file_storage` int(11) NOT NULL COMMENT '0 = our backend; 1 = customer backend',
+  `storage_url` text DEFAULT NULL COMMENT 'when file_storage != 0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_file_part`
+--
+
+CREATE TABLE `sentc_file_part` (
+  `id` varchar(36) NOT NULL,
+  `file_id` varchar(36) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
+  `size` bigint(20) NOT NULL COMMENT 'only set when using our backend',
+  `sequence` int(11) NOT NULL,
+  `extern` tinyint(1) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_file_session`
+--
+
+CREATE TABLE `sentc_file_session` (
+  `id` varchar(36) NOT NULL,
+  `file_id` varchar(36) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
+  `created_at` bigint(20) NOT NULL,
+  `expected_size` int(11) NOT NULL,
+  `max_chunk_size` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -450,6 +528,33 @@ ALTER TABLE `sentc_app_options`
 -- Indizes für die Tabelle `sentc_customer`
 --
 ALTER TABLE `sentc_customer`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indizes für die Tabelle `sentc_file`
+--
+ALTER TABLE `sentc_file`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `belongs_to` (`belongs_to`,`belongs_to_type`),
+  ADD KEY `owner` (`owner`,`app_id`);
+
+--
+-- Indizes für die Tabelle `sentc_file_options`
+--
+ALTER TABLE `sentc_file_options`
+  ADD PRIMARY KEY (`app_id`);
+
+--
+-- Indizes für die Tabelle `sentc_file_part`
+--
+ALTER TABLE `sentc_file_part`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `file` (`file_id`,`app_id`);
+
+--
+-- Indizes für die Tabelle `sentc_file_session`
+--
+ALTER TABLE `sentc_file_session`
   ADD PRIMARY KEY (`id`);
 
 --

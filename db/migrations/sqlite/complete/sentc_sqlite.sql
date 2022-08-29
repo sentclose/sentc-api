@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 8:59am on August 25, 2022 (UTC)
+-- Exported: 11:46am on August 29, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -138,7 +138,7 @@ CREATE TABLE 'sentc_customer' ('id' TEXT PRIMARY KEY NOT NULL, 'email' TEXT, 'em
 ----
 -- Table structure for sentc_app_options
 ----
-CREATE TABLE "sentc_app_options" ('app_id' TEXT PRIMARY KEY NOT NULL, 'group_create' INTEGER, 'group_get' INTEGER, 'group_invite' INTEGER, 'group_reject_invite' INTEGER, 'group_accept_invite' INTEGER, 'group_join_req' INTEGER, 'group_accept_join_req' INTEGER, 'group_reject_join_req' INTEGER, 'group_key_rotation' INTEGER, 'group_user_delete' INTEGER, 'group_change_rank' INTEGER, 'group_delete' INTEGER, 'group_leave' INTEGER, 'user_exists' INTEGER, 'user_register' INTEGER, 'user_delete' INTEGER, 'user_update' INTEGER, 'user_change_password' INTEGER, 'user_reset_password' INTEGER, 'user_prepare_login' INTEGER, 'user_done_login' INTEGER, 'user_public_data' INTEGER, 'user_refresh' INTEGER, 'key_register' INTEGER, 'key_get' INTEGER, 'group_user_keys' INTEGER, 'group_user_update_check' INTEGER, 'group_auto_invite' INTEGER, 'group_list' INTEGER);
+CREATE TABLE "sentc_app_options" ('app_id' TEXT PRIMARY KEY NOT NULL, 'group_create' INTEGER, 'group_get' INTEGER, 'group_invite' INTEGER, 'group_reject_invite' INTEGER, 'group_accept_invite' INTEGER, 'group_join_req' INTEGER, 'group_accept_join_req' INTEGER, 'group_reject_join_req' INTEGER, 'group_key_rotation' INTEGER, 'group_user_delete' INTEGER, 'group_change_rank' INTEGER, 'group_delete' INTEGER, 'group_leave' INTEGER, 'user_exists' INTEGER, 'user_register' INTEGER, 'user_delete' INTEGER, 'user_update' INTEGER, 'user_change_password' INTEGER, 'user_reset_password' INTEGER, 'user_prepare_login' INTEGER, 'user_done_login' INTEGER, 'user_public_data' INTEGER, 'user_refresh' INTEGER, 'key_register' INTEGER, 'key_get' INTEGER, 'group_user_keys' INTEGER, 'group_user_update_check' INTEGER, 'group_auto_invite' INTEGER, 'group_list' INTEGER, 'file_register' INTEGER, 'file_part_upload' INTEGER, 'file_get' INTEGER, 'file_part_download' INTEGER);
 
 ----
 -- Table structure for sentc_user_token
@@ -181,6 +181,26 @@ CREATE TABLE 'sentc_group_user' (
 	constraint sentc_group_user_pk
 		primary key (user_id, group_id)
 );
+
+----
+-- Table structure for sentc_file_session
+----
+CREATE TABLE 'sentc_file_session' ('id' TEXT PRIMARY KEY NOT NULL, 'file_id' TEXT, 'app_id' TEXT, 'created_at' TEXT, 'expected_size' INTEGER, 'max_chunk_size' TEXT);
+
+----
+-- Table structure for sentc_file_part
+----
+CREATE TABLE 'sentc_file_part' ('id' TEXT PRIMARY KEY NOT NULL, 'file_id' TEXT, 'app_id' TEXT, 'size' TEXT, 'sequence' INTEGER, 'extern' BOOLEAN);
+
+----
+-- Table structure for sentc_file
+----
+CREATE TABLE 'sentc_file' ('id' TEXT PRIMARY KEY NOT NULL, 'owner' TEXT, 'belongs_to' TEXT, 'belongs_to_type' INTEGER, 'app_id' TEXT, 'key_id' TEXT, 'time' TEXT);
+
+----
+-- Table structure for sentc_file_options
+----
+CREATE TABLE 'sentc_file_options' ('app_id' TEXT PRIMARY KEY NOT NULL, 'file_storage' INTEGER, 'storage_url' TEXT);
 
 ----
 -- structure for index sqlite_autoindex_test_1 on table test
@@ -313,6 +333,26 @@ CREATE INDEX 'by_user' ON "sentc_sym_key_management" ("creator_id" ASC, "app_id"
 ;
 
 ----
+-- structure for index sqlite_autoindex_sentc_file_session_1 on table sentc_file_session
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_file_part_1 on table sentc_file_part
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_file_1 on table sentc_file
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_file_options_1 on table sentc_file_options
+----
+;
+
+----
 -- structure for trigger group_delete_invites on table sentc_group
 ----
 CREATE TRIGGER 'group_delete_invites' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = OLD.id; END;
@@ -376,4 +416,9 @@ CREATE TRIGGER ' group_user_delete_key_rotation_keys' AFTER DELETE ON "sentc_gro
 -- structure for trigger group_user_delete_user_keys on table sentc_group_user
 ----
 CREATE TRIGGER 'group_user_delete_user_keys' AFTER DELETE ON "sentc_group_user" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_keys WHERE user_id = OLD.user_id AND group_id = OLD.group_id; END;
+
+----
+-- structure for trigger delete_file_options on table sentc_app
+----
+CREATE TRIGGER 'delete_file_options' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_file_options WHERE app_id = OLD.id; END;
 COMMIT;

@@ -65,6 +65,7 @@ async fn test_10_create_app()
 	let input = AppRegisterInput {
 		identifier: Some("My app".to_string()),
 		options: AppOptions::default(),
+		file_options: Default::default(),
 	};
 
 	let customer_jwt = &app.customer_data.user_keys.jwt;

@@ -69,6 +69,15 @@ pub fn jwt_expire_transform<S>(inner: S) -> JwtMiddleware<S>
 	}
 }
 
+pub fn jwt_optional_transform<S>(inner: S) -> JwtMiddleware<S>
+{
+	JwtMiddleware {
+		inner: Arc::new(inner),
+		optional: true,
+		check_exp: true,
+	}
+}
+
 /**
 Check here the app id of the sentc base app too in the jwt.
 

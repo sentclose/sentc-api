@@ -60,6 +60,19 @@ pub(super) async fn get_jwt_verify_key(kid: &str) -> AppRes<String>
 //__________________________________________________________________________________________________
 //user
 
+pub(super) async fn check_user_in_app(app_id: AppId, user_id: UserId) -> AppRes<bool>
+{
+	//language=SQL
+	let sql = "SELECT 1 FROM sentc_user WHERE id = ? AND app_id = ? LIMIT 1";
+
+	let exists: Option<UserExistsEntity> = query_first(sql, set_params!(user_id, app_id)).await?;
+
+	match exists {
+		Some(_) => Ok(true),
+		None => Ok(false),
+	}
+}
+
 pub(super) async fn check_user_exists(app_id: &str, user_identifier: &str) -> AppRes<bool>
 {
 	//language=SQL

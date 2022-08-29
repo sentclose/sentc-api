@@ -1966,6 +1966,7 @@ version = "0.1.0"
 dependencies = [
  "rustgram",
  "server_api",
+ "server_api_file",
  "server_dashboard",
  "tokio",
 ]
@@ -1993,7 +1994,6 @@ dependencies = [
  "server-core",
  "server_api_common",
  "tokio",
- "tokio-util",
  "uuid",
 ]
 
@@ -2007,6 +2007,15 @@ dependencies = [
  "serde",
  "serde_json",
  "server-core",
+]
+
+[[package]]
+name = "server_api_file"
+version = "0.1.0"
+dependencies = [
+ "rustgram",
+ "sentc-crypto-common 0.1.0",
+ "server_api",
 ]
 
 [[package]]

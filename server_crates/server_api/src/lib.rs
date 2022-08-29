@@ -5,6 +5,7 @@ use crate::routes::routes;
 
 mod customer;
 mod customer_app;
+mod file;
 mod group;
 mod key_management;
 mod middleware;
@@ -16,7 +17,19 @@ pub use customer_app::app_entities::*;
 #[cfg(feature = "embedded")]
 pub use customer_app::app_service as sentc_customer_app_service;
 #[cfg(feature = "embedded")]
+pub use file::file_controller as sentc_file_controller;
+#[cfg(feature = "embedded")]
+pub use file::file_service as sentc_file_service;
+#[cfg(feature = "embedded")]
 pub use group::group_user_service as sentc_group_user_service;
+#[cfg(feature = "embedded")]
+pub use middleware::app_token::app_token_transform as sentc_app_mw;
+#[cfg(feature = "embedded")]
+pub use middleware::group::group_transform as sentc_group_mw;
+#[cfg(feature = "embedded")]
+pub use middleware::jwt::jwt_optional_transform as sentc_jwt_optional_mw;
+#[cfg(feature = "embedded")]
+pub use middleware::jwt::jwt_transform as sentc_jwt_mw;
 #[cfg(feature = "embedded")]
 pub use user::user_service as sentc_user_service;
 
@@ -61,6 +74,7 @@ pub async fn start()
 
 	server_core::db::init_db().await;
 	server_core::cache::init_cache().await;
+	server_core::file::init_storage().await;
 
 	server_core::email::init_email_checker().await;
 	#[cfg(feature = "send_mail")]

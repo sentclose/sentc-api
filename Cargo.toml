@@ -5,6 +5,7 @@ members = [
     "server_crates/server_all",
     "server_crates/server_api",
     "server_crates/server_api_common",
+    "server_crates/server_api_file",
     "server_crates/server_api_route_builder",
     "server_crates/server_api_init",
     "server_crates/server_dashboard",

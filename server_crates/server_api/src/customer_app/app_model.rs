@@ -1,5 +1,5 @@
 use sentc_crypto_common::{AppId, CustomerId, JwtKeyId, UserId};
-use server_api_common::app::{AppJwtData, AppOptions, AppRegisterInput};
+use server_api_common::app::{AppFileOptions, AppJwtData, AppOptions, AppRegisterInput};
 use server_core::db::{exec, exec_transaction, query, query_first, Params, TransactionData};
 use server_core::{get_time, set_params};
 use uuid::Uuid;
@@ -84,7 +84,11 @@ SELECT
     key_register,
     key_get,
     group_auto_invite,
-    group_list
+    group_list,
+    file_register,
+    file_part_upload,
+    file_get,
+    file_part_download
 FROM sentc_app_options 
 WHERE 
     app_id = ?";
@@ -103,11 +107,29 @@ WHERE
 		},
 	};
 
+	//get app file options
+	//language=SQL
+	let sql = "SELECT file_storage,storage_url FROM sentc_file_options WHERE app_id = ?";
+	let file_options: Option<AppFileOptions> = query_first(sql, set_params!(app_data.app_id.to_string())).await?;
+
+	let file_options = match file_options {
+		Some(o) => o,
+		None => {
+			return Err(HttpErr::new(
+				401,
+				ApiErrorCodes::AppTokenNotFound,
+				"App token not found".to_string(),
+				None,
+			))
+		},
+	};
+
 	Ok(AppData {
 		app_data,
 		jwt_data,
 		auth_with_token,
 		options,
+		file_options,
 	})
 }
 
@@ -220,6 +242,14 @@ VALUES (?,?,?,?,?,?,?)";
 
 	let (sql_options, params_options) = prepare_options_insert(app_id.to_string(), input.options);
 
+	//language=SQL
+	let sql_file_options = "INSERT INTO sentc_file_options (app_id, file_storage, storage_url) VALUES (?,?,?)";
+	let params_file_options = set_params!(
+		app_id.to_string(),
+		input.file_options.file_storage,
+		input.file_options.storage_url
+	);
+
 	exec_transaction(vec![
 		TransactionData {
 			sql: sql_app,
@@ -232,6 +262,10 @@ VALUES (?,?,?,?,?,?,?)";
 		TransactionData {
 			sql: sql_options,
 			params: params_options,
+		},
+		TransactionData {
+			sql: sql_file_options,
+			params: params_file_options,
 		},
 	])
 	.await?;
@@ -342,6 +376,18 @@ pub(super) async fn update_options(customer_id: CustomerId, app_id: AppId, app_o
 	Ok(())
 }
 
+pub(super) async fn update_file_options(customer_id: CustomerId, app_id: AppId, options: AppFileOptions) -> AppRes<()>
+{
+	check_app_exists(customer_id, app_id.to_string()).await?;
+
+	//language=SQL
+	let sql = "UPDATE sentc_file_options SET storage_url = ?, file_storage = ? WHERE app_id = ?";
+
+	exec(sql, set_params!(options.storage_url, options.file_storage, app_id)).await?;
+
+	Ok(())
+}
+
 pub(super) async fn delete(customer_id: CustomerId, app_id: AppId) -> AppRes<()>
 {
 	//use the double check with the customer id to check if this app really belongs to the customer!
@@ -413,8 +459,12 @@ INSERT INTO sentc_app_options
      user_refresh,
      key_register,
      key_get,
-     group_list
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+     group_list,
+     file_register,
+     file_part_upload,
+     file_get,
+     file_part_download
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let params_options = set_params!(
 		app_id.to_string(),
@@ -446,7 +496,11 @@ INSERT INTO sentc_app_options
 		app_options.user_jwt_refresh,
 		app_options.key_register,
 		app_options.key_get,
-		app_options.group_list
+		app_options.group_list,
+		app_options.file_register,
+		app_options.file_part_upload,
+		app_options.file_get,
+		app_options.file_part_download
 	);
 
 	(sql, params_options)

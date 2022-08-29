@@ -78,6 +78,11 @@ pub enum ApiErrorCodes
 	GroupUserKickRank,
 
 	KeyNotFound,
+
+	FileSessionNotFound,
+	FileSessionExpired,
+	FileNotFound,
+	FileUploadAllowed,
 }
 
 impl From<CoreErrorCodes> for ApiErrorCodes
@@ -110,6 +115,11 @@ impl ApiErrorCodes
 
 					CoreErrorCodes::EmailSend => 50,
 					CoreErrorCodes::EmailMessage => 51,
+
+					CoreErrorCodes::FileLocalOpen => 500,
+					CoreErrorCodes::FileRemove => 501,
+					CoreErrorCodes::FileSave => 502,
+					CoreErrorCodes::FileDownload => 503,
 				}
 			},
 
@@ -177,6 +187,11 @@ impl ApiErrorCodes
 			ApiErrorCodes::GroupUserKickRank => 316,
 
 			ApiErrorCodes::KeyNotFound => 400,
+
+			ApiErrorCodes::FileSessionNotFound => 510,
+			ApiErrorCodes::FileSessionExpired => 511,
+			ApiErrorCodes::FileNotFound => 512,
+			ApiErrorCodes::FileUploadAllowed => 520,
 		}
 	}
 }

@@ -1,10 +1,10 @@
 use sentc_crypto_common::CustomerId;
-use server_api_common::app::{AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput};
+use server_api_common::app::{AppFileOptions, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, FILE_STORAGE_OWN};
 
 use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
 use crate::customer_app::{app_model, generate_tokens};
 use crate::user::jwt::create_jwt_keys;
-use crate::util::api_res::AppRes;
+use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 pub async fn create_app(input: AppRegisterInput, customer_id: CustomerId) -> AppRes<AppRegisterOutput>
 {
@@ -16,6 +16,8 @@ pub async fn create_app(input: AppRegisterInput, customer_id: CustomerId) -> App
 
 	//2. create the first jwt keys
 	let (jwt_sign_key, jwt_verify_key, alg) = create_jwt_keys()?;
+
+	check_file_options(&input.file_options)?;
 
 	//3. create an new app (with new secret_token and public_token)
 	//	the str values are used because the real values are exported to the user
@@ -47,4 +49,28 @@ pub async fn create_app(input: AppRegisterInput, customer_id: CustomerId) -> App
 	};
 
 	Ok(customer_app_data)
+}
+
+pub(super) fn check_file_options(input: &AppFileOptions) -> AppRes<()>
+{
+	//check the file option if the right storage is used
+	if input.file_storage > 1 || input.file_storage < -1 {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::AppAction,
+			"Wrong storage selected".to_string(),
+			None,
+		));
+	}
+
+	if input.file_storage == FILE_STORAGE_OWN && input.storage_url.is_none() {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::AppAction,
+			"No external storage selected for files".to_string(),
+			None,
+		));
+	}
+
+	Ok(())
 }
