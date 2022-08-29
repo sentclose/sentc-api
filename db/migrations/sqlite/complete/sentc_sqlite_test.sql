@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 8:06pm on August 28, 2022 (UTC)
+-- Exported: 11:45am on August 29, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -277,6 +277,15 @@ CREATE TABLE 'sentc_file' ('id' TEXT PRIMARY KEY NOT NULL, 'owner' TEXT, 'belong
 ----
 
 ----
+-- Table structure for sentc_file_options
+----
+CREATE TABLE 'sentc_file_options' ('app_id' TEXT PRIMARY KEY NOT NULL, 'file_storage' INTEGER, 'storage_url' TEXT);
+
+----
+-- Data dump for sentc_file_options, a total of 0 rows
+----
+
+----
 -- structure for index sqlite_autoindex_test_1 on table test
 ----
 ;
@@ -422,6 +431,11 @@ CREATE INDEX 'by_user' ON "sentc_sym_key_management" ("creator_id" ASC, "app_id"
 ;
 
 ----
+-- structure for index sqlite_autoindex_sentc_file_options_1 on table sentc_file_options
+----
+;
+
+----
 -- structure for trigger group_delete_invites on table sentc_group
 ----
 CREATE TRIGGER 'group_delete_invites' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = OLD.id; END;
@@ -485,4 +499,9 @@ CREATE TRIGGER ' group_user_delete_key_rotation_keys' AFTER DELETE ON "sentc_gro
 -- structure for trigger group_user_delete_user_keys on table sentc_group_user
 ----
 CREATE TRIGGER 'group_user_delete_user_keys' AFTER DELETE ON "sentc_group_user" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_keys WHERE user_id = OLD.user_id AND group_id = OLD.group_id; END;
+
+----
+-- structure for trigger delete_file_options on table sentc_app
+----
+CREATE TRIGGER 'delete_file_options' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_file_options WHERE app_id = OLD.id; END;
 COMMIT;
