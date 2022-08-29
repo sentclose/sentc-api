@@ -165,13 +165,22 @@ impl server_core::db::FromSqliteRow for FileMetaData
 //__________________________________________________________________________________________________
 
 #[derive(Serialize)]
-pub struct FilePartListItem(pub PartId);
+pub struct FilePartListItem
+{
+	pub part_id: PartId,
+	pub sequence: i32,
+	pub extern_storage: bool,
+}
 
 impl Into<sentc_crypto_common::file::FilePartListItem> for FilePartListItem
 {
 	fn into(self) -> sentc_crypto_common::file::FilePartListItem
 	{
-		sentc_crypto_common::file::FilePartListItem(self.0)
+		sentc_crypto_common::file::FilePartListItem {
+			part_id: self.part_id,
+			sequence: self.sequence,
+			extern_storage: self.extern_storage,
+		}
 	}
 }
 
@@ -182,7 +191,11 @@ impl mysql_async::prelude::FromRow for FilePartListItem
 	where
 		Self: Sized,
 	{
-		Ok(Self(take_or_err!(row, 0, String)))
+		Ok(Self {
+			part_id: take_or_err!(row, 0, String),
+			sequence: take_or_err!(row, 1, i32),
+			extern_storage: take_or_err!(row, 2, bool),
+		})
 	}
 }
 
@@ -193,7 +206,11 @@ impl server_core::db::FromSqliteRow for FilePartListItem
 	where
 		Self: Sized,
 	{
-		Ok(Self(take_or_err!(row, 0)))
+		Ok(Self {
+			part_id: take_or_err!(row, 0),
+			sequence: take_or_err!(row, 1),
+			extern_storage: take_or_err!(row, 2),
+		})
 	}
 }
 

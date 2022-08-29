@@ -169,7 +169,7 @@ pub(super) async fn get_file_parts(app_id: AppId, file_id: FileId) -> AppRes<Vec
 {
 	//get the file parts
 	//language=SQL
-	let sql = "SELECT id FROM sentc_file_part WHERE app_id = ? AND file_id = ? ORDER BY sequence";
+	let sql = "SELECT id,sequence,extern FROM sentc_file_part WHERE app_id = ? AND file_id = ? ORDER BY sequence";
 
 	let file_parts: Vec<FilePartListItem> = query(sql, set_params!(app_id, file_id)).await?;
 
