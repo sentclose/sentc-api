@@ -54,7 +54,7 @@ pub async fn register_file(input: FileRegisterInput, app_id: AppId, user_id: Use
 	})
 }
 
-pub async fn get_file(app_id: AppId, user_id: UserId, file_id: FileId, group_id: Option<GroupId>) -> AppRes<FileMetaData>
+pub async fn get_file(app_id: AppId, user_id: Option<UserId>, file_id: FileId, group_id: Option<GroupId>) -> AppRes<FileMetaData>
 {
 	let mut file = file_model::get_file(app_id.to_string(), file_id.to_string()).await?;
 
@@ -96,14 +96,29 @@ pub async fn get_file(app_id: AppId, user_id: UserId, file_id: FileId, group_id:
 			//check if this user is the actual user
 			match &file.belongs_to {
 				None => {},
+				//user id was set in the file for belongs to
 				Some(id) => {
-					if user_id != id.to_string() && user_id != file.owner {
-						return Err(HttpErr::new(
-							400,
-							ApiErrorCodes::AppAction,
-							"No access to this file".to_string(),
-							None,
-						));
+					match user_id {
+						//no valid jwt to get the user id
+						None => {
+							return Err(HttpErr::new(
+								400,
+								ApiErrorCodes::AppAction,
+								"No access to this file".to_string(),
+								None,
+							));
+						},
+						Some(user_id) => {
+							//valid jwt but user got no access
+							if user_id != id.to_string() && user_id != file.owner {
+								return Err(HttpErr::new(
+									400,
+									ApiErrorCodes::AppAction,
+									"No access to this file".to_string(),
+									None,
+								));
+							}
+						},
 					}
 				},
 			};
