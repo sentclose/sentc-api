@@ -1,4 +1,4 @@
-use server_api_common::app::{AppOptions, AppRegisterInput};
+use server_api_common::app::{AppFileOptions, AppOptions, AppRegisterInput};
 
 /**
 Creates new tokens for the base sentc app, to manage the customer mod.
@@ -49,6 +49,7 @@ async fn main()
 			file_get: 0,
 			file_part_download: 0,
 		},
+		file_options: AppFileOptions::default(),
 	};
 
 	let app_data = server_api::sentc_customer_app_service::create_app(input, "sentc_init".to_string())

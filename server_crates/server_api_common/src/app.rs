@@ -262,6 +262,7 @@ pub struct AppRegisterInput
 {
 	pub identifier: Option<String>,
 	pub options: AppOptions, //if no options then use the defaults
+	pub file_options: AppFileOptions,
 }
 
 impl AppRegisterInput
@@ -382,6 +383,7 @@ impl server_core::db::FromSqliteRow for AppJwtData
 
 //__________________________________________________________________________________________________
 
+pub static FILE_STORAGE_NONE: i32 = -1;
 pub static FILE_STORAGE_SENTC: i32 = 0;
 pub static FILE_STORAGE_OWN: i32 = 1;
 
@@ -389,7 +391,48 @@ pub static FILE_STORAGE_OWN: i32 = 1;
 pub struct AppFileOptions
 {
 	pub file_storage: i32,
-	pub storage_url: Option<String>,
+	pub storage_url: String,
+}
+
+impl Default for AppFileOptions
+{
+	fn default() -> Self
+	{
+		Self {
+			file_storage: FILE_STORAGE_SENTC,
+			storage_url: "".to_string(),
+		}
+	}
+}
+
+#[cfg(feature = "server")]
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for AppFileOptions
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			file_storage: take_or_err!(row, 0, i32),
+			storage_url: take_or_err!(row, 1, String),
+		})
+	}
+}
+
+#[cfg(feature = "server")]
+#[cfg(feature = "sqlite")]
+impl server_core::db::FromSqliteRow for AppFileOptions
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			file_storage: take_or_err!(row, 0),
+			storage_url: take_or_err!(row, 1),
+		})
+	}
 }
 
 //__________________________________________________________________________________________________
