@@ -49,7 +49,10 @@ async fn main()
 			file_get: 0,
 			file_part_download: 0,
 		},
-		file_options: AppFileOptions::default(),
+		file_options: AppFileOptions {
+			file_storage: -1,
+			storage_url: None,
+		},
 	};
 
 	let app_data = server_api::sentc_customer_app_service::create_app(input, "sentc_init".to_string())
