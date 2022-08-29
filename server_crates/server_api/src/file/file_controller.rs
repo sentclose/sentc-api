@@ -1,4 +1,4 @@
-use rustgram::Request;
+use rustgram::{GramHttpErr, Request, Response};
 use sentc_crypto_common::file::{FileRegisterInput, FileRegisterOutput};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use server_api_common::app::{FILE_STORAGE_NONE, FILE_STORAGE_SENTC};
@@ -6,12 +6,12 @@ use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 use uuid::Uuid;
 
-use crate::customer_app::app_util::{check_endpoint_with_req, get_app_data_from_req, Endpoint};
+use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use crate::file::file_entities::FileMetaData;
 use crate::file::{file_model, file_service};
 use crate::group::get_group_user_data_from_req;
 use crate::user::jwt::get_jwt_data_from_param;
-use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
+use crate::util::api_res::{echo, echo_success, ApiErrorCodes, AppRes, HttpErr, JRes};
 
 pub async fn register_file(mut req: Request) -> JRes<FileRegisterOutput>
 {
@@ -51,12 +51,13 @@ pub async fn register_file_in_group(mut req: Request) -> JRes<FileRegisterOutput
 
 pub async fn upload_part(req: Request) -> JRes<ServerSuccessOutput>
 {
-	check_endpoint_with_req(&req, Endpoint::FilePartUpload)?;
+	let app = get_app_data_from_req(&req)?;
+	let file_options = &app.file_options;
+
+	check_endpoint_with_app_options(&app, Endpoint::FilePartUpload)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 	let app_id = user.sub.to_string();
-	let app = get_app_data_from_req(&req)?;
-	let file_options = &app.file_options;
 
 	if file_options.file_storage == FILE_STORAGE_NONE {
 		return Err(HttpErr::new(
@@ -152,11 +153,19 @@ pub async fn get_file_in_group(req: Request) -> JRes<FileMetaData>
 	echo(file)
 }
 
-pub async fn download_part(req: Request) -> JRes<ServerSuccessOutput>
+pub async fn download_part(req: Request) -> Response
+{
+	match download_part_internally(req).await {
+		Ok(res) => res,
+		Err(e) => e.get_res(),
+	}
+}
+
+pub async fn download_part_internally(req: Request) -> AppRes<Response>
 {
 	check_endpoint_with_req(&req, Endpoint::FilePartDownload)?;
 
-	//TODO
+	let part_id = get_name_param_from_req(&req, "part_id")?;
 
-	echo_success()
+	Ok(server_core::file::get_part(part_id).await?)
 }
