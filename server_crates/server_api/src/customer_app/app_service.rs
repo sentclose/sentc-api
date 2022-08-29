@@ -63,7 +63,7 @@ pub(super) fn check_file_options(input: &AppFileOptions) -> AppRes<()>
 		));
 	}
 
-	if input.file_storage == FILE_STORAGE_OWN && input.storage_url == "" {
+	if input.file_storage == FILE_STORAGE_OWN && input.storage_url.is_none() {
 		return Err(HttpErr::new(
 			400,
 			ApiErrorCodes::AppAction,

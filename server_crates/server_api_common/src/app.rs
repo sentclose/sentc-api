@@ -391,7 +391,7 @@ pub static FILE_STORAGE_OWN: i32 = 1;
 pub struct AppFileOptions
 {
 	pub file_storage: i32,
-	pub storage_url: String,
+	pub storage_url: Option<String>,
 }
 
 impl Default for AppFileOptions
@@ -400,7 +400,7 @@ impl Default for AppFileOptions
 	{
 		Self {
 			file_storage: FILE_STORAGE_SENTC,
-			storage_url: "".to_string(),
+			storage_url: None,
 		}
 	}
 }
@@ -413,9 +413,21 @@ impl mysql_async::prelude::FromRow for AppFileOptions
 	where
 		Self: Sized,
 	{
+		let storage_url = match row.take_opt::<Option<String>, _>(1) {
+			Some(value) => {
+				match value {
+					Ok(ir) => ir,
+					Err(mysql_async::FromValueError(_value)) => {
+						return Err(mysql_async::FromRowError(row));
+					},
+				}
+			},
+			None => return Err(mysql_async::FromRowError(row)),
+		};
+
 		Ok(Self {
 			file_storage: take_or_err!(row, 0, i32),
-			storage_url: take_or_err!(row, 1, String),
+			storage_url,
 		})
 	}
 }
