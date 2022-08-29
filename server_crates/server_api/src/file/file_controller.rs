@@ -1,6 +1,7 @@
 use rustgram::Request;
 use sentc_crypto_common::file::{FileRegisterInput, FileRegisterOutput};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
+use server_api_common::app::{FILE_STORAGE_NONE, FILE_STORAGE_SENTC};
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 use uuid::Uuid;
@@ -55,6 +56,16 @@ pub async fn upload_part(req: Request) -> JRes<ServerSuccessOutput>
 	let user = get_jwt_data_from_param(&req)?;
 	let app_id = user.sub.to_string();
 	let app = get_app_data_from_req(&req)?;
+	let file_options = &app.file_options;
+
+	if file_options.file_storage == FILE_STORAGE_NONE {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::FileUploadAllowed,
+			"File upload is not allowed".to_string(),
+			None,
+		));
+	}
 
 	let params = get_params(&req)?;
 	let session_id = get_name_param_from_params(&params, "session_id")?;
@@ -77,16 +88,22 @@ pub async fn upload_part(req: Request) -> JRes<ServerSuccessOutput>
 		)
 	})?;
 
-	//TODO get storage options (from app data) and select if our backend or customer backend
-	//	set the extern flag if customer save it extern
-
 	let (file_id, chunk_size) = file_model::check_session(app_id.to_string(), session_id.to_string(), user.id.to_string()).await?;
 
 	let part_id = Uuid::new_v4().to_string();
 
-	let size = server_core::file::upload_part(req, part_id.as_str(), chunk_size).await?;
+	let (size, extern_storage) = if file_options.file_storage == FILE_STORAGE_SENTC {
+		//when customer uses our backend storage
+		let size = server_core::file::upload_part(req, part_id.as_str(), chunk_size).await?;
 
-	file_model::save_part(app_id, file_id, size, sequence, end, false).await?;
+		(size, false)
+	} else {
+		//use the extern upload for extern storage. We are not saving the size of the part for extern storage.
+		//TODO
+		(0, true)
+	};
+
+	file_model::save_part(app_id, file_id, size, sequence, end, extern_storage).await?;
 
 	echo_success()
 }
