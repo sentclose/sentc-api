@@ -95,10 +95,20 @@ pub async fn get_file(req: Request) -> JRes<FileMetaData>
 {
 	check_endpoint_with_req(&req, Endpoint::FileGet)?;
 
-	let user = get_jwt_data_from_param(&req)?;
+	//use optional user id
+	let (app_id, user_id) = match get_jwt_data_from_param(&req) {
+		Err(_e) => {
+			//only err when jwt was not set -> which is optional here
+			//get app id from app data
+			let app_data = get_app_data_from_req(&req)?;
+			(app_data.app_data.app_id.to_string(), None)
+		},
+		Ok(jwt) => (jwt.sub.to_string(), Some(jwt.id.to_string())),
+	};
+
 	let file_id = get_name_param_from_req(&req, "file_id")?;
 
-	let file = file_service::get_file(user.sub.to_string(), user.id.to_string(), file_id.to_string(), None).await?;
+	let file = file_service::get_file(app_id, user_id, file_id.to_string(), None).await?;
 
 	echo(file)
 }
@@ -116,7 +126,7 @@ pub async fn get_file_in_group(req: Request) -> JRes<FileMetaData>
 
 	let file = file_service::get_file(
 		app_id.to_string(),
-		user_id.to_string(),
+		Some(user_id.to_string()),
 		file_id.to_string(),
 		Some(group_id.to_string()),
 	)

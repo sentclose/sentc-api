@@ -20,14 +20,14 @@ pub fn routes(router: &mut Router)
 	router.get(
 		"/api/v1/file/:file_id",
 		r(get_file)
-			.add(server_api::sentc_jwt_mw)
+			.add(server_api::sentc_jwt_optional_mw)
 			.add(server_api::sentc_app_mw),
 	);
 
 	router.get(
 		"/api/v1/file/part/:part_id",
 		r(download_part)
-			.add(server_api::sentc_jwt_mw)
+			.add(server_api::sentc_jwt_optional_mw)
 			.add(server_api::sentc_app_mw),
 	);
 
