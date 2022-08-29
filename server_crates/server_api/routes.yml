@@ -46,6 +46,7 @@ routes:
                   gr:
                     - put: { p: "", s: crate::customer_app::update }
                     - put: {p: "/options", s: crate::customer_app::update_options}
+                    - put: {p: "/file_options", s: crate::customer_app::update_file_options}
                     - delete: { p: "", s: crate::customer_app::delete }
                     - patch: { p: "/token_renew", s: crate::customer_app::renew_tokens }
                     # jwt keys
