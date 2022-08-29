@@ -1,5 +1,5 @@
 use sentc_crypto_common::CustomerId;
-use server_api_common::app::{AppFileOptions, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput};
+use server_api_common::app::{AppFileOptions, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, FILE_STORAGE_OWN};
 
 use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
 use crate::customer_app::{app_model, generate_tokens};
@@ -63,7 +63,7 @@ pub(super) fn check_file_options(input: &AppFileOptions) -> AppRes<()>
 		));
 	}
 
-	if input.file_storage == 1 && input.storage_url == "" {
+	if input.file_storage == FILE_STORAGE_OWN && input.storage_url == "" {
 		return Err(HttpErr::new(
 			400,
 			ApiErrorCodes::AppAction,
