@@ -7,6 +7,7 @@ use rand::RngCore;
 use rustgram::Request;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use server_api_common::app::{
+	AppFileOptions,
 	AppJwtData,
 	AppJwtRegisterOutput,
 	AppOptions,
@@ -21,6 +22,7 @@ use server_core::url_helper::{get_name_param_from_params, get_name_param_from_re
 
 use crate::customer::customer_util;
 use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
+use crate::sentc_customer_app_service::check_file_options;
 use crate::user::jwt::{create_jwt_keys, get_jwt_data_from_param};
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 use crate::util::APP_TOKEN_CACHE;
@@ -147,6 +149,8 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 
 	app_model::delete(customer_id.to_string(), app_id.to_string()).await?;
 
+	//TODO delete app files
+
 	echo_success()
 }
 
@@ -176,6 +180,31 @@ pub(crate) async fn update_options(mut req: Request) -> JRes<ServerSuccessOutput
 	let app_id = get_name_param_from_req(&req, "app_id")?;
 
 	app_model::update_options(customer_id.to_string(), app_id.to_string(), input).await?;
+
+	//get the public and secret token and delete the app cache because in the cache there are still the old options
+	let app_general_data = app_model::get_app_general_data(customer_id.to_string(), app_id.to_string()).await?;
+
+	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
+	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
+
+	cache::delete(old_hashed_secret.as_str()).await;
+	cache::delete(old_hashed_public_token.as_str()).await;
+
+	echo_success()
+}
+
+pub(crate) async fn update_file_options(mut req: Request) -> JRes<ServerSuccessOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+	let input: AppFileOptions = bytes_to_json(&body)?;
+
+	let app_id = get_name_param_from_req(&req, "app_id")?;
+	let customer = get_jwt_data_from_param(&req)?;
+	let customer_id = &customer.id;
+
+	check_file_options(&input)?;
+
+	app_model::update_file_options(customer_id.to_string(), app_id.to_string(), input).await?;
 
 	//get the public and secret token and delete the app cache because in the cache there are still the old options
 	let app_general_data = app_model::get_app_general_data(customer_id.to_string(), app_id.to_string()).await?;

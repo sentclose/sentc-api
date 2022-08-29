@@ -1,6 +1,6 @@
 use sentc_crypto_common::{AppId, CustomerId, SignKeyPairId};
 use serde::{Deserialize, Serialize};
-use server_api_common::app::AppOptions;
+use server_api_common::app::{AppFileOptions, AppOptions};
 use server_core::take_or_err;
 
 /**
@@ -19,6 +19,7 @@ pub struct AppData
 	pub jwt_data: Vec<AppJwt>, //use the newest jwt data to create a jwt, but use the old one to validate the old jwt.
 	pub auth_with_token: AuthWithToken,
 	pub options: AppOptions,
+	pub file_options: AppFileOptions,
 }
 
 /**
