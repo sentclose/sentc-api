@@ -1,5 +1,6 @@
 use sentc_crypto_common::{AppId, FileId, SymKeyId, UserId};
-use server_core::db::{exec, exec_transaction, query, query_first, TransactionData};
+use server_core::db::{exec, exec_transaction, query, query_first, query_string, TransactionData};
+use server_core::file::FilePartListToDelete;
 use server_core::{get_time, set_params};
 use uuid::Uuid;
 
@@ -165,13 +166,28 @@ pub(super) async fn get_file(app_id: AppId, file_id: FileId) -> AppRes<FileMetaD
 	}
 }
 
-pub(super) async fn get_file_parts(app_id: AppId, file_id: FileId) -> AppRes<Vec<FilePartListItem>>
+pub(super) async fn get_file_parts(app_id: AppId, file_id: FileId, last_sequence: i32) -> AppRes<Vec<FilePartListItem>>
 {
 	//get the file parts
 	//language=SQL
-	let sql = "SELECT id,sequence,extern FROM sentc_file_part WHERE app_id = ? AND file_id = ? ORDER BY sequence";
+	let sql = r"
+SELECT id,sequence,extern 
+FROM 
+    sentc_file_part 
+WHERE 
+    app_id = ? AND 
+    file_id = ?"
+		.to_string();
 
-	let file_parts: Vec<FilePartListItem> = query(sql, set_params!(app_id, file_id)).await?;
+	let (sql, params) = if last_sequence > 0 {
+		let sql = sql + " AND sequence > ? ORDER BY sequence LIMIT 500";
+		(sql, set_params!(app_id, file_id, last_sequence))
+	} else {
+		let sql = sql + " ORDER BY sequence LIMIT 500";
+		(sql, set_params!(app_id, file_id))
+	};
+
+	let file_parts: Vec<FilePartListItem> = query_string(sql, params).await?;
 
 	if file_parts.len() == 0 {
 		return Err(HttpErr::new(
@@ -183,4 +199,51 @@ pub(super) async fn get_file_parts(app_id: AppId, file_id: FileId) -> AppRes<Vec
 	}
 
 	Ok(file_parts)
+}
+
+//__________________________________________________________________________________________________
+
+pub(super) async fn get_file_parts_to_delete(app_id: AppId, file_id: FileId) -> AppRes<(Vec<FilePartListToDelete>, Vec<FilePartListItem>)>
+{
+	//language=SQL
+	let sql = r"
+SELECT 
+    id,
+    extern 
+FROM sentc_file_part 
+WHERE 
+    app_id = ? AND 
+    file_id = ? AND 
+    extern = 0 
+ORDER BY sequence";
+
+	let file_parts: Vec<FilePartListToDelete> = query(sql, set_params!(app_id.to_string(), file_id.to_string())).await?;
+
+	//language=SQL
+	let sql = r"
+SELECT 
+    id,
+    extern 
+FROM sentc_file_part 
+WHERE 
+    app_id = ? AND 
+    file_id = ? AND 
+    extern = 1 
+ORDER BY sequence";
+
+	let extern_file_parts: Vec<FilePartListItem> = query(sql, set_params!(app_id, file_id)).await?;
+
+	Ok((file_parts, extern_file_parts))
+}
+
+pub(super) async fn delete_file(app_id: AppId, file_id: FileId) -> AppRes<()>
+{
+	//make sure to delete the parts first
+
+	//language=SQL
+	let sql = "DELETE FROM sentc_file WHERE id = ? AND app_id = ?";
+
+	exec(sql, set_params!(file_id, app_id)).await?;
+
+	Ok(())
 }

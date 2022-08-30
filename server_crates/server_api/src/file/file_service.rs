@@ -3,6 +3,7 @@ use sentc_crypto_common::{AppId, FileId, GroupId, UserId};
 
 use crate::file::file_entities::FileMetaData;
 use crate::file::file_model;
+use crate::group::group_entities::InternalGroupDataComplete;
 use crate::user::user_service;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
@@ -125,9 +126,71 @@ pub async fn get_file(app_id: AppId, user_id: Option<UserId>, file_id: FileId, g
 		},
 	}
 
-	let file_parts = file_model::get_file_parts(app_id, file_id).await?;
+	let file_parts = file_model::get_file_parts(app_id, file_id, 0).await?;
 
 	file.part_list = file_parts;
 
 	Ok(file)
+}
+
+pub async fn delete_file(file_id: FileId, app_id: AppId, user_id: UserId, group: Option<&InternalGroupDataComplete>) -> AppRes<()>
+{
+	let file = file_model::get_file(app_id.to_string(), file_id.to_string()).await?;
+
+	if file.owner != user_id {
+		match file.belongs_to_type {
+			//just check if the user the file owner
+			BelongsToType::None => {
+				return Err(HttpErr::new(
+					400,
+					ApiErrorCodes::AppAction,
+					"No access to this file".to_string(),
+					None,
+				));
+			},
+			BelongsToType::User => {
+				return Err(HttpErr::new(
+					400,
+					ApiErrorCodes::AppAction,
+					"No access to this file".to_string(),
+					None,
+				));
+			},
+			BelongsToType::Group => {
+				//check the group rank, rank <= 3
+				match group {
+					None => {
+						//user tries to access the file outside of the group routes
+						return Err(HttpErr::new(
+							400,
+							ApiErrorCodes::AppAction,
+							"No access to this file".to_string(),
+							None,
+						));
+					},
+					Some(g) => {
+						if g.user_data.rank > 3 {
+							return Err(HttpErr::new(
+								400,
+								ApiErrorCodes::AppAction,
+								"No access to this file".to_string(),
+								None,
+							));
+						}
+					},
+				}
+			},
+		}
+	}
+
+	//get the file parts, no pagination here
+	let (file_parts, extern_file_parts) = file_model::get_file_parts_to_delete(app_id.to_string(), file_id.to_string()).await?;
+
+	server_core::file::delete_parts(&file_parts).await?;
+
+	//TODO make a req to delete the extern parts
+
+	file_model::delete_file(app_id, file_id).await?;
+
+	Ok(())
 }
