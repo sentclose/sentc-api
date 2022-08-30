@@ -22,6 +22,7 @@ use server_core::url_helper::{get_name_param_from_params, get_name_param_from_re
 
 use crate::customer::customer_util;
 use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
+use crate::file::file_service;
 use crate::sentc_customer_app_service::check_file_options;
 use crate::user::jwt::{create_jwt_keys, get_jwt_data_from_param};
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
@@ -147,9 +148,9 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 
 	let app_id = get_name_param_from_req(&req, "app_id")?;
 
-	app_model::delete(customer_id.to_string(), app_id.to_string()).await?;
+	file_service::delete_file_for_app(app_id.to_string()).await?;
 
-	//TODO delete app files
+	app_model::delete(customer_id.to_string(), app_id.to_string()).await?;
 
 	echo_success()
 }
