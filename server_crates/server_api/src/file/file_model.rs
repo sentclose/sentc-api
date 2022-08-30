@@ -357,9 +357,9 @@ WHERE
 pub(super) async fn delete_file_complete(start_time: u128) -> AppRes<()>
 {
 	//language=SQL
-	let sql = "DELETE FROM sentc_file WHERE delete_at < ?";
+	let sql = "DELETE FROM sentc_file WHERE delete_at < ? AND status = ?";
 
-	exec(sql, set_params!(start_time.to_string())).await?;
+	exec(sql, set_params!(start_time.to_string(), FILE_STATUS_TO_DELETE)).await?;
 
 	Ok(())
 }
