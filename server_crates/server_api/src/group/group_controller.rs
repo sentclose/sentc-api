@@ -9,6 +9,7 @@ use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 
 use crate::customer_app::app_util::{check_endpoint_with_req, Endpoint};
+use crate::file::file_service;
 use crate::group::group_entities::{GroupServerData, GroupUserKeys, ListGroups};
 use crate::group::{get_group_user_data_from_req, group_model};
 use crate::user::jwt::get_jwt_data_from_param;
@@ -62,12 +63,14 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 
 	let group_data = get_group_user_data_from_req(&req)?;
 
-	group_model::delete(
+	let children = group_model::delete(
 		group_data.group_data.app_id.to_string(),
 		group_data.group_data.id.to_string(),
 		group_data.user_data.rank,
 	)
 	.await?;
+
+	file_service::delete_file_for_group(group_data.group_data.app_id.as_str(), &children).await?;
 
 	//don't delete cache for each group user, but for the group
 	let key_group = get_group_cache_key(
