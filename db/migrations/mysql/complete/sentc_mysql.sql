@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 28. Aug 2022 um 20:06
+-- Erstellungszeit: 30. Aug 2022 um 10:02
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -161,6 +161,8 @@ CREATE TABLE `sentc_file` (
   `belongs_to_type` int(11) NOT NULL,
   `app_id` varchar(36) NOT NULL,
   `key_id` varchar(36) NOT NULL,
+  `status` int(11) NOT NULL COMMENT '0 = to delete, 1 = avalible, 2 = disabled',
+  `delete_at` bigint(20) NOT NULL COMMENT '0 = not deleted, time when the file was deleted',
   `time` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
