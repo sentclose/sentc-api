@@ -1,7 +1,9 @@
+use std::future::Future;
+
 use sentc_crypto_common::file::{BelongsToType, FileRegisterInput, FileRegisterOutput};
 use sentc_crypto_common::{AppId, FileId, GroupId, UserId};
 
-use crate::file::file_entities::{FileMetaData, FilePartListItem};
+use crate::file::file_entities::FileMetaData;
 use crate::file::file_model;
 use crate::group::group_entities::InternalGroupDataComplete;
 use crate::user::user_service;
@@ -186,127 +188,17 @@ pub async fn delete_file(file_id: &str, app_id: &str, user_id: UserId, group: Op
 		}
 	}
 
-	//get the file parts
-	let mut last_sequence = 0;
-
-	loop {
-		//parts can return error, if file parts are empty. in this case, don't err but delete the file in the db
-		//other err -> return this error
-		let parts = match file_model::get_file_parts(app_id.to_string(), file_id.to_string(), last_sequence).await {
-			Ok(p) => p,
-			Err(e) => {
-				match e.api_error_code {
-					ApiErrorCodes::FileNotFound => Vec::new(),
-					_ => return Err(e),
-				}
-			},
-		};
-
-		let part_len = parts.len();
-
-		match parts.last() {
-			Some(p) => {
-				last_sequence = p.sequence;
-			},
-			None => {
-				//parts are empty
-				break;
-			},
-		}
-
-		delete_parts(parts).await?;
-
-		if part_len < 500 {
-			break;
-		}
-	}
-
 	file_model::delete_file(app_id.to_string(), file_id.to_string()).await?;
 
 	Ok(())
 }
 
-pub async fn delete_file_for_app(app_id: &str) -> AppRes<()>
+pub fn delete_file_for_app(app_id: &str) -> impl Future<Output = AppRes<()>>
 {
-	//get the file parts
-	let mut last_id = None;
-
-	loop {
-		let parts = file_model::get_parts_to_delete_for_app(app_id.to_string(), last_id).await?;
-		let part_len = parts.len();
-
-		match parts.last() {
-			Some(p) => {
-				last_id = Some(p.part_id.to_string());
-			},
-			None => {
-				//parts are empty
-				break;
-			},
-		}
-
-		delete_parts(parts).await?;
-
-		if part_len < 500 {
-			break;
-		}
-	}
-
-	//TODO delete the file (maybe via trigger)
-
-	Ok(())
+	file_model::delete_files_for_app(app_id.to_string())
 }
 
-pub async fn delete_file_for_group(app_id: &str, group_ids: &Vec<GroupId>) -> AppRes<()>
+pub fn delete_file_for_group(app_id: &str, group_id: &str) -> impl Future<Output = AppRes<()>>
 {
-	for group_id in group_ids {
-		//get the file parts
-		let mut last_id = None;
-
-		loop {
-			let parts = file_model::get_parts_to_delete_for_group(app_id.to_string(), group_id.to_string(), last_id).await?;
-			let part_len = parts.len();
-
-			match parts.last() {
-				Some(p) => {
-					last_id = Some(p.part_id.to_string());
-				},
-				None => {
-					//parts are empty
-					break;
-				},
-			}
-
-			delete_parts(parts).await?;
-
-			if part_len < 500 {
-				break;
-			}
-		}
-	}
-
-	//TODO delete the file (maybe via trigger)
-
-	Ok(())
-}
-
-async fn delete_parts(parts: Vec<FilePartListItem>) -> AppRes<()>
-{
-	//split extern and intern
-	let mut extern_storage = Vec::with_capacity(parts.len());
-	let mut intern_storage = Vec::with_capacity(parts.len());
-
-	for part in parts {
-		if part.extern_storage {
-			extern_storage.push(part.part_id);
-		} else {
-			intern_storage.push(part.part_id);
-		}
-	}
-
-	server_core::file::delete_parts(&intern_storage).await?;
-
-	//TODO make a req to delete the extern parts
-
-	Ok(())
+	file_model::delete_files_for_group(app_id.to_string(), group_id.to_string())
 }
