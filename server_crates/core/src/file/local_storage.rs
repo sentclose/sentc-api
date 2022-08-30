@@ -121,6 +121,18 @@ impl FileHandler for LocalStorage
 
 		self.remove_file(path.as_str()).await
 	}
+
+	async fn delete_parts(&self, parts: &Vec<String>) -> Result<(), CoreError>
+	{
+		//delete every part
+		for part in parts {
+			let path = self.path.to_string() + "/" + part.as_str();
+
+			self.remove_file(path.as_str()).await?;
+		}
+
+		Ok(())
+	}
 }
 
 pub async fn init_storage() -> Box<dyn FileHandler>
