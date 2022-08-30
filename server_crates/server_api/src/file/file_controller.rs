@@ -7,7 +7,7 @@ use server_core::url_helper::{get_name_param_from_params, get_name_param_from_re
 use uuid::Uuid;
 
 use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
-use crate::file::file_entities::FileMetaData;
+use crate::file::file_entities::{FileMetaData, FilePartListItem};
 use crate::file::{file_model, file_service};
 use crate::group::get_group_user_data_from_req;
 use crate::user::jwt::get_jwt_data_from_param;
@@ -153,6 +153,34 @@ pub async fn get_file_in_group(req: Request) -> JRes<FileMetaData>
 	echo(file)
 }
 
+pub async fn get_parts(req: Request) -> JRes<Vec<FilePartListItem>>
+{
+	let app_data = get_app_data_from_req(&req)?;
+
+	check_endpoint_with_app_options(&app_data, Endpoint::FileGet)?;
+
+	let params = get_params(&req)?;
+	let file_id = get_name_param_from_params(&params, "file_id")?;
+	let last_sequence = get_name_param_from_params(&params, "last_sequence")?;
+	let last_sequence: i32 = last_sequence.parse().map_err(|_e| {
+		HttpErr::new(
+			400,
+			ApiErrorCodes::UnexpectedTime,
+			"last fetched sequence is wrong".to_string(),
+			None,
+		)
+	})?;
+
+	let parts = file_model::get_file_parts(
+		app_data.app_data.app_id.to_string(),
+		file_id.to_string(),
+		last_sequence,
+	)
+	.await?;
+
+	echo(parts)
+}
+
 pub async fn download_part(req: Request) -> Response
 {
 	match download_part_internally(req).await {
@@ -168,4 +196,38 @@ pub async fn download_part_internally(req: Request) -> AppRes<Response>
 	let part_id = get_name_param_from_req(&req, "part_id")?;
 
 	Ok(server_core::file::get_part(part_id).await?)
+}
+
+//__________________________________________________________________________________________________
+
+pub async fn delete_file(req: Request) -> JRes<ServerSuccessOutput>
+{
+	check_endpoint_with_req(&req, Endpoint::FilePartDownload)?;
+
+	let user = get_jwt_data_from_param(&req)?;
+
+	let file_id = get_name_param_from_req(&req, "file_id")?;
+
+	file_service::delete_file(file_id, &user.sub, user.id.to_string(), None).await?;
+
+	echo_success()
+}
+
+pub async fn delete_file_in_group(req: Request) -> JRes<ServerSuccessOutput>
+{
+	check_endpoint_with_req(&req, Endpoint::FilePartDownload)?;
+
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let file_id = get_name_param_from_req(&req, "file_id")?;
+
+	file_service::delete_file(
+		&file_id,
+		&group_data.group_data.app_id,
+		group_data.user_data.user_id.to_string(),
+		Some(group_data),
+	)
+	.await?;
+
+	echo_success()
 }

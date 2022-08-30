@@ -1,5 +1,5 @@
 use rustgram::{r, Router};
-use server_api::sentc_file_controller::{download_part, get_file, get_file_in_group, register_file, register_file_in_group, upload_part};
+use server_api::sentc_file_controller::{download_part, get_file, get_file_in_group, get_parts, register_file, register_file_in_group, upload_part};
 
 pub fn routes(router: &mut Router)
 {
@@ -22,6 +22,11 @@ pub fn routes(router: &mut Router)
 		r(get_file)
 			.add(server_api::sentc_jwt_optional_mw)
 			.add(server_api::sentc_app_mw),
+	);
+
+	router.get(
+		"/api/v1/file/:file_id/part_fetch/:last_sequence",
+		r(get_parts).add(server_api::sentc_app_mw),
 	);
 
 	router.get(
