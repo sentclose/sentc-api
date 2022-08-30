@@ -134,6 +134,8 @@ pub async fn get_file(app_id: AppId, user_id: Option<UserId>, file_id: FileId, g
 	Ok(file)
 }
 
+//__________________________________________________________________________________________________
+
 pub async fn delete_file(file_id: FileId, app_id: AppId, user_id: UserId, group: Option<&InternalGroupDataComplete>) -> AppRes<()>
 {
 	let file = file_model::get_file(app_id.to_string(), file_id.to_string()).await?;
@@ -227,15 +229,15 @@ pub async fn delete_file(file_id: FileId, app_id: AppId, user_id: UserId, group:
 pub async fn delete_file_for_app(app_id: AppId) -> AppRes<()>
 {
 	//get the file parts
-	let mut last_sequence = 0;
+	let mut last_id = None;
 
 	loop {
-		let parts = file_model::get_parts_to_delete_for_app(app_id.to_string(), last_sequence).await?;
+		let parts = file_model::get_parts_to_delete_for_app(app_id.to_string(), last_id).await?;
 		let part_len = parts.len();
 
 		match parts.last() {
 			Some(p) => {
-				last_sequence = p.sequence;
+				last_id = Some(p.part_id.to_string());
 			},
 			None => {
 				//parts are empty
@@ -249,6 +251,39 @@ pub async fn delete_file_for_app(app_id: AppId) -> AppRes<()>
 			break;
 		}
 	}
+
+	//TODO delete the file (maybe via trigger)
+
+	Ok(())
+}
+
+pub async fn delete_file_for_group(app_id: AppId, group_id: GroupId) -> AppRes<()>
+{
+	//get the file parts
+	let mut last_id = None;
+
+	loop {
+		let parts = file_model::get_parts_to_delete_for_group(app_id.to_string(), group_id.to_string(), last_id).await?;
+		let part_len = parts.len();
+
+		match parts.last() {
+			Some(p) => {
+				last_id = Some(p.part_id.to_string());
+			},
+			None => {
+				//parts are empty
+				break;
+			},
+		}
+
+		delete_parts(parts).await?;
+
+		if part_len < 500 {
+			break;
+		}
+	}
+
+	//TODO delete the file (maybe via trigger)
 
 	Ok(())
 }

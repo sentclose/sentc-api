@@ -1,9 +1,10 @@
-use sentc_crypto_common::{AppId, FileId, SymKeyId, UserId};
+use sentc_crypto_common::{AppId, FileId, GroupId, SymKeyId, UserId};
 use server_core::db::{exec, exec_transaction, query_first, query_string, TransactionData};
 use server_core::{get_time, set_params};
 use uuid::Uuid;
 
 use crate::file::file_entities::{FileMetaData, FilePartListItem, FileSessionCheck};
+use crate::sentc_file_service::FILE_BELONGS_TO_TYPE_GROUP;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 static MAX_CHUNK_SIZE: usize = 5 * 1024 * 1024;
@@ -202,7 +203,7 @@ WHERE
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn get_parts_to_delete_for_app(app_id: AppId, last_sequence: i32) -> AppRes<Vec<FilePartListItem>>
+pub(super) async fn get_parts_to_delete_for_app(app_id: AppId, last_id: Option<String>) -> AppRes<Vec<FilePartListItem>>
 {
 	//get the file parts
 	//language=SQL
@@ -214,12 +215,44 @@ WHERE
     app_id = ?"
 		.to_string();
 
-	let (sql, params) = if last_sequence > 0 {
-		let sql = sql + " AND id > ? ORDER BY id LIMIT 500";
-		(sql, set_params!(app_id, last_sequence))
-	} else {
-		let sql = sql + " ORDER BY id LIMIT 500";
-		(sql, set_params!(app_id))
+	let (sql, params) = match last_id {
+		None => {
+			let sql = sql + " ORDER BY id LIMIT 500";
+			(sql, set_params!(app_id))
+		},
+		Some(id) => {
+			let sql = sql + " AND id > ? ORDER BY id LIMIT 500";
+			(sql, set_params!(app_id, id))
+		},
+	};
+
+	let file_parts: Vec<FilePartListItem> = query_string(sql, params).await?;
+
+	Ok(file_parts)
+}
+
+pub(super) async fn get_parts_to_delete_for_group(app_id: AppId, group_id: GroupId, last_id: Option<String>) -> AppRes<Vec<FilePartListItem>>
+{
+	//language=SQL
+	let sql = r"
+SELECT fp.id as file_id, sequence, extern 
+FROM sentc_file f,sentc_file_part fp
+WHERE 
+    file_id = f.id AND 
+    f.app_id = ? AND 
+    belongs_to = ? AND 
+    belongs_to_type = ?"
+		.to_string();
+
+	let (sql, params) = match last_id {
+		None => {
+			let sql = sql + " ORDER BY fp.id LIMIT 500";
+			(sql, set_params!(app_id, group_id, FILE_BELONGS_TO_TYPE_GROUP))
+		},
+		Some(id) => {
+			let sql = sql + " AND fp.id > ? ORDER BY fp.id LIMIT 500";
+			(sql, set_params!(app_id, group_id, FILE_BELONGS_TO_TYPE_GROUP, id))
+		},
 	};
 
 	let file_parts: Vec<FilePartListItem> = query_string(sql, params).await?;
