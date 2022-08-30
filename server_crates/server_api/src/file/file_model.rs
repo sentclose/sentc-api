@@ -1,6 +1,5 @@
 use sentc_crypto_common::{AppId, FileId, SymKeyId, UserId};
-use server_core::db::{exec, exec_transaction, query, query_first, query_string, TransactionData};
-use server_core::file::FilePartListToDelete;
+use server_core::db::{exec, exec_transaction, query_first, query_string, TransactionData};
 use server_core::{get_time, set_params};
 use uuid::Uuid;
 
@@ -202,39 +201,6 @@ WHERE
 }
 
 //__________________________________________________________________________________________________
-
-pub(super) async fn get_file_parts_to_delete(app_id: AppId, file_id: FileId) -> AppRes<(Vec<FilePartListToDelete>, Vec<FilePartListItem>)>
-{
-	//language=SQL
-	let sql = r"
-SELECT 
-    id,
-    extern 
-FROM sentc_file_part 
-WHERE 
-    app_id = ? AND 
-    file_id = ? AND 
-    extern = 0 
-ORDER BY sequence";
-
-	let file_parts: Vec<FilePartListToDelete> = query(sql, set_params!(app_id.to_string(), file_id.to_string())).await?;
-
-	//language=SQL
-	let sql = r"
-SELECT 
-    id,
-    extern 
-FROM sentc_file_part 
-WHERE 
-    app_id = ? AND 
-    file_id = ? AND 
-    extern = 1 
-ORDER BY sequence";
-
-	let extern_file_parts: Vec<FilePartListItem> = query(sql, set_params!(app_id, file_id)).await?;
-
-	Ok((file_parts, extern_file_parts))
-}
 
 pub(super) async fn delete_file(app_id: AppId, file_id: FileId) -> AppRes<()>
 {

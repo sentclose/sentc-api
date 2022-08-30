@@ -183,12 +183,43 @@ pub async fn delete_file(file_id: FileId, app_id: AppId, user_id: UserId, group:
 		}
 	}
 
-	//get the file parts, no pagination here
-	let (file_parts, extern_file_parts) = file_model::get_file_parts_to_delete(app_id.to_string(), file_id.to_string()).await?;
+	//get the file parts
+	let mut last_sequence = 0;
 
-	server_core::file::delete_parts(&file_parts).await?;
+	loop {
+		let parts = file_model::get_file_parts(app_id.to_string(), file_id.to_string(), last_sequence).await?;
+		let part_len = parts.len();
 
-	//TODO make a req to delete the extern parts
+		match parts.last() {
+			Some(p) => {
+				last_sequence = p.sequence;
+			},
+			None => {
+				//parts are empty
+				break;
+			},
+		}
+
+		//split extern and intern
+		let mut extern_storage = Vec::with_capacity(parts.len());
+		let mut intern_storage = Vec::with_capacity(parts.len());
+
+		for part in parts {
+			if part.extern_storage {
+				extern_storage.push(part.part_id);
+			} else {
+				intern_storage.push(part.part_id);
+			}
+		}
+
+		server_core::file::delete_parts(&intern_storage).await?;
+
+		//TODO make a req to delete the extern parts
+
+		if part_len < 500 {
+			break;
+		}
+	}
 
 	file_model::delete_file(app_id, file_id).await?;
 
