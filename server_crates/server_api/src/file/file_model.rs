@@ -1,9 +1,10 @@
-use sentc_crypto_common::{AppId, FileId, SymKeyId, UserId};
+use sentc_crypto_common::{AppId, FileId, GroupId, SymKeyId, UserId};
 use server_core::db::{exec, exec_transaction, query_first, query_string, TransactionData};
 use server_core::{get_time, set_params};
 use uuid::Uuid;
 
 use crate::file::file_entities::{FileMetaData, FilePartListItem, FileSessionCheck};
+use crate::sentc_file_service::FILE_BELONGS_TO_TYPE_GROUP;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 static MAX_CHUNK_SIZE: usize = 5 * 1024 * 1024;
@@ -26,7 +27,7 @@ pub(super) async fn register_file(
 	let time = get_time()?;
 
 	//language=SQL
-	let sql = "INSERT INTO sentc_file (id, owner, belongs_to, belongs_to_type, app_id, key_id, time, status) VALUES (?,?,?,?,?,?,?,?)";
+	let sql = "INSERT INTO sentc_file (id, owner, belongs_to, belongs_to_type, app_id, key_id, time, status, delete_at) VALUES (?,?,?,?,?,?,?,?,?)";
 	let params = set_params!(
 		file_id.to_string(),
 		user_id,
@@ -35,7 +36,8 @@ pub(super) async fn register_file(
 		app_id.to_string(),
 		key_id,
 		time.to_string(),
-		FILE_STATUS_AVAILABLE
+		FILE_STATUS_AVAILABLE.to_string(),
+		0.to_string()
 	);
 
 	//language=SQL
@@ -209,39 +211,114 @@ WHERE
 pub(super) async fn delete_file(app_id: AppId, file_id: FileId) -> AppRes<()>
 {
 	//mark the file as to delete
+	let time = get_time()?;
 
 	//language=SQL
-	let sql = "UPDATE sentc_file SET status = ? WHERE id = ? AND app_id = ?";
+	let sql = "UPDATE sentc_file SET status = ?, delete_at = ? WHERE id = ? AND app_id = ?";
 
-	exec(sql, set_params!(FILE_STATUS_TO_DELETE, file_id, app_id)).await?;
+	exec(
+		sql,
+		set_params!(FILE_STATUS_TO_DELETE.to_string(), time.to_string(), file_id, app_id),
+	)
+	.await?;
 
 	Ok(())
 }
 
-pub(super) async fn get_all_files_marked_to_delete(last_part_id: Option<String>) -> AppRes<Vec<FilePartListItem>>
+pub(super) async fn delete_files_for_app(app_id: AppId) -> AppRes<()>
+{
+	let time = get_time()?;
+
+	//language=SQL
+	let sql = "UPDATE sentc_file SET status = ?, delete_at = ? WHERE app_id = ?";
+
+	exec(
+		sql,
+		set_params!(FILE_STATUS_TO_DELETE.to_string(), time.to_string(), app_id),
+	)
+	.await?;
+
+	Ok(())
+}
+
+pub(super) async fn delete_files_for_group(app_id: AppId, group_id: GroupId) -> AppRes<()>
+{
+	let time = get_time()?;
+
+	//language=SQL
+	let sql = r"
+UPDATE 
+    sentc_file 
+SET
+    status = ?, 
+    delete_at = ? 
+WHERE 
+    app_id = ? AND 
+    belongs_to_type = ? AND (
+		belongs_to = ? OR -- the group itself
+		belongs_to IN ( -- the children
+		   WITH RECURSIVE children (id) AS (
+			   SELECT g.id from sentc_group g WHERE g.parent = ? AND g.app_id = ?
+									   
+				UNION ALL 
+			
+				SELECT g1.id FROM children c
+					JOIN sentc_group g1 ON c.id = g1.parent AND g1.app_id = ?
+		   )
+		   SELECT * FROM children
+		)
+    )";
+
+	exec(
+		sql,
+		set_params!(
+			FILE_STATUS_TO_DELETE.to_string(),
+			time.to_string(),
+			app_id,
+			FILE_BELONGS_TO_TYPE_GROUP,
+			group_id
+		),
+	)
+	.await?;
+
+	Ok(())
+}
+
+pub(super) async fn get_all_files_marked_to_delete(last_part_id: Option<String>, start_time: u128) -> AppRes<Vec<FilePartListItem>>
 {
 	//language=SQL
 	let sql = r"
-SELECT fp.id as file_id, sequence, extern 
+SELECT fp.id as file_id_part_id, sequence, extern 
 FROM 
     sentc_file_part fp, sentc_file f 
 WHERE 
     status = ? AND 
-    file_id = f.id"
+    file_id = f.id AND 
+    delete_at < ?"
 		.to_string();
 
 	let (sql, params) = match last_part_id {
 		None => {
 			let sql = sql + " ORDER BY fp.id LIMIT 500";
-			(sql, set_params!(FILE_STATUS_TO_DELETE))
+			(sql, set_params!(FILE_STATUS_TO_DELETE, start_time.to_string()))
 		},
 		Some(last) => {
 			let sql = sql + " AND fp.id > ? ORDER BY fp.id LIMIT 500";
-			(sql, set_params!(FILE_STATUS_TO_DELETE, last))
+			(sql, set_params!(FILE_STATUS_TO_DELETE, start_time.to_string(), last))
 		},
 	};
 
 	let file_parts: Vec<FilePartListItem> = query_string(sql, params).await?;
 
 	Ok(file_parts)
+}
+
+pub(super) async fn delete_file_complete(start_time: u128) -> AppRes<()>
+{
+	//language=SQL
+	let sql = "DELETE FROM sentc_file WHERE delete_at < ?";
+
+	exec(sql, set_params!(start_time.to_string())).await?;
+
+	Ok(())
 }

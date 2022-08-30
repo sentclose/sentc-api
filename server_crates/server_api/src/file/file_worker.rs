@@ -1,3 +1,5 @@
+use server_core::get_time;
+
 use crate::file::file_entities::FilePartListItem;
 use crate::file::file_model;
 use crate::util::api_res::AppRes;
@@ -5,11 +7,12 @@ use crate::util::api_res::AppRes;
 pub async fn start() -> AppRes<()>
 {
 	//get all files which are marked as to delete
+	let start_time = get_time()?;
 
 	let mut last_id = None;
 
 	loop {
-		let parts = file_model::get_all_files_marked_to_delete(last_id).await?;
+		let parts = file_model::get_all_files_marked_to_delete(last_id, start_time).await?;
 		let part_len = parts.len();
 
 		match parts.last() {
@@ -27,6 +30,9 @@ pub async fn start() -> AppRes<()>
 			break;
 		}
 	}
+
+	//now delete all files which got a smaller deleted_at time as the start time
+	file_model::delete_file_complete(start_time).await?;
 
 	Ok(())
 }
