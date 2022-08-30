@@ -218,7 +218,7 @@ pub(super) async fn delete_file(app_id: AppId, file_id: FileId) -> AppRes<()>
 
 	exec(
 		sql,
-		set_params!(FILE_STATUS_TO_DELETE.to_string(), time.to_string(), file_id, app_id),
+		set_params!(FILE_STATUS_TO_DELETE, time.to_string(), file_id, app_id),
 	)
 	.await?;
 
@@ -232,11 +232,7 @@ pub(super) async fn delete_files_for_app(app_id: AppId) -> AppRes<()>
 	//language=SQL
 	let sql = "UPDATE sentc_file SET status = ?, delete_at = ? WHERE app_id = ?";
 
-	exec(
-		sql,
-		set_params!(FILE_STATUS_TO_DELETE.to_string(), time.to_string(), app_id),
-	)
-	.await?;
+	exec(sql, set_params!(FILE_STATUS_TO_DELETE, time.to_string(), app_id)).await?;
 
 	Ok(())
 }
@@ -272,7 +268,7 @@ WHERE
 	exec(
 		sql,
 		set_params!(
-			FILE_STATUS_TO_DELETE.to_string(),
+			FILE_STATUS_TO_DELETE,
 			time.to_string(),
 			app_id,
 			FILE_BELONGS_TO_TYPE_GROUP,
