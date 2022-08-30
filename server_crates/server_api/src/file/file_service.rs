@@ -257,29 +257,31 @@ pub async fn delete_file_for_app(app_id: &str) -> AppRes<()>
 	Ok(())
 }
 
-pub async fn delete_file_for_group(app_id: &str, group_id: &str) -> AppRes<()>
+pub async fn delete_file_for_group(app_id: &str, group_ids: &Vec<GroupId>) -> AppRes<()>
 {
-	//get the file parts
-	let mut last_id = None;
+	for group_id in group_ids {
+		//get the file parts
+		let mut last_id = None;
 
-	loop {
-		let parts = file_model::get_parts_to_delete_for_group(app_id.to_string(), group_id.to_string(), last_id).await?;
-		let part_len = parts.len();
+		loop {
+			let parts = file_model::get_parts_to_delete_for_group(app_id.to_string(), group_id.to_string(), last_id).await?;
+			let part_len = parts.len();
 
-		match parts.last() {
-			Some(p) => {
-				last_id = Some(p.part_id.to_string());
-			},
-			None => {
-				//parts are empty
+			match parts.last() {
+				Some(p) => {
+					last_id = Some(p.part_id.to_string());
+				},
+				None => {
+					//parts are empty
+					break;
+				},
+			}
+
+			delete_parts(parts).await?;
+
+			if part_len < 500 {
 				break;
-			},
-		}
-
-		delete_parts(parts).await?;
-
-		if part_len < 500 {
-			break;
+			}
 		}
 	}
 
