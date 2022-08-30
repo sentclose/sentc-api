@@ -628,7 +628,6 @@ fn get_fake_pw_change_data(prepare_login_auth_key_input: &str, old_pw: &str, new
 
 //__________________________________________________________________________________________________
 
-#[cfg(feature = "mysql")]
 #[tokio::test]
 async fn test_16_reset_customer_password()
 {
@@ -660,6 +659,10 @@ async fn test_16_reset_customer_password()
 	let body = res.text().await.unwrap();
 
 	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+
+	//change the db path of sqlite
+	dotenv::dotenv().ok();
+	env::set_var("DB_PATH", env::var("DB_PATH_TEST").unwrap());
 
 	//get the token -> in real app the token gets send by email.
 	server_api::start().await;
@@ -752,7 +755,6 @@ async fn test_16_reset_customer_password()
 	customer.customer_pw = new_pw.to_string();
 }
 
-#[cfg(feature = "mysql")]
 pub(crate) struct CustomerEmailToken
 {
 	pub email_token: String,
@@ -767,6 +769,19 @@ impl mysql_async::prelude::FromRow for CustomerEmailToken
 	{
 		Ok(Self {
 			email_token: server_core::take_or_err!(row, 0, String),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl server_core::db::FromSqliteRow for CustomerEmailToken
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			email_token: server_core::take_or_err!(row, 0),
 		})
 	}
 }

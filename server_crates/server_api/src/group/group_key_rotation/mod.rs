@@ -31,6 +31,8 @@ pub(crate) async fn start_key_rotation(mut req: Request) -> JRes<KeyRotationStar
 	.await?;
 
 	//TODO change this to a real worker after beta
+	// or with a tokio task, so the group don't need to wait for the key
+	// for tests, wait a sec after key rotation before triggering done key rotation (and for sdk tests too)
 	group_key_rotation_worker::start(group_data.group_data.id.to_string(), key_id.to_string()).await?;
 
 	let out = KeyRotationStartServerOutput {

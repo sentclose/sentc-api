@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 28. Aug 2022 um 20:06
+-- Erstellungszeit: 30. Aug 2022 um 10:02
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -192,6 +192,8 @@ CREATE TABLE `sentc_file` (
   `belongs_to_type` int(11) NOT NULL,
   `app_id` varchar(36) NOT NULL,
   `key_id` varchar(36) NOT NULL,
+  `status` int(11) NOT NULL COMMENT '0 = to delete, 1 = avalible, 2 = disabled',
+  `delete_at` bigint(20) NOT NULL COMMENT '0 = not deleted, time when the file was deleted',
   `time` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -218,6 +220,14 @@ CREATE TABLE `sentc_file_options` (
   `file_storage` int(11) NOT NULL COMMENT '0 = our backend; 1 = customer backend',
   `storage_url` text DEFAULT NULL COMMENT 'when file_storage != 0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Daten für Tabelle `sentc_file_options`
+--
+
+INSERT INTO `sentc_file_options` (`app_id`, `file_storage`, `storage_url`) VALUES
+('1665eb92-4513-469f-81d8-b72a62e0134c', -1, NULL),
+('2a14fdf5-29f9-47eb-8ef3-a6a7067e5827', 0, NULL);
 
 -- --------------------------------------------------------
 

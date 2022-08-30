@@ -91,6 +91,7 @@ pub async fn upload_part(req: Request) -> JRes<ServerSuccessOutput>
 
 	let (file_id, chunk_size) = file_model::check_session(app_id.to_string(), session_id.to_string(), user.id.to_string()).await?;
 
+	//create the id here to upload the right file
 	let part_id = Uuid::new_v4().to_string();
 
 	let (size, extern_storage) = if file_options.file_storage == FILE_STORAGE_SENTC {
@@ -104,7 +105,7 @@ pub async fn upload_part(req: Request) -> JRes<ServerSuccessOutput>
 		(0, true)
 	};
 
-	file_model::save_part(app_id, file_id, size, sequence, end, extern_storage).await?;
+	file_model::save_part(app_id, file_id, part_id, size, sequence, end, extern_storage).await?;
 
 	echo_success()
 }

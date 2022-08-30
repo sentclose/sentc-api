@@ -1,14 +1,18 @@
-use sentc_crypto_common::{AppId, FileId, GroupId, SymKeyId, UserId};
-use server_core::db::{exec, exec_transaction, query_first, query_string, TransactionData};
-use server_core::{get_time, set_params};
+use sentc_crypto_common::{AppId, CustomerId, FileId, GroupId, SymKeyId, UserId};
+use server_core::db::{exec, exec_string, exec_transaction, get_in, query_first, query_string, TransactionData};
+use server_core::{get_time, set_params, set_params_vec};
 use uuid::Uuid;
 
 use crate::file::file_entities::{FileMetaData, FilePartListItem, FileSessionCheck};
+use crate::group::group_entities::GroupChildren;
 use crate::sentc_file_service::FILE_BELONGS_TO_TYPE_GROUP;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 static MAX_CHUNK_SIZE: usize = 5 * 1024 * 1024;
 static MAX_SESSION_ALIVE_TIME: u128 = 24 * 60 * 60 * 1000;
+static FILE_STATUS_AVAILABLE: i32 = 1;
+static FILE_STATUS_TO_DELETE: i32 = 0;
+//static FILE_STATUS_DISABLED: i32 = 1;
 
 pub(super) async fn register_file(
 	key_id: SymKeyId,
@@ -24,7 +28,7 @@ pub(super) async fn register_file(
 	let time = get_time()?;
 
 	//language=SQL
-	let sql = "INSERT INTO sentc_file (id, owner, belongs_to, belongs_to_type, app_id, key_id, time) VALUES (?,?,?,?,?,?,?)";
+	let sql = "INSERT INTO sentc_file (id, owner, belongs_to, belongs_to_type, app_id, key_id, time, status, delete_at) VALUES (?,?,?,?,?,?,?,?,?)";
 	let params = set_params!(
 		file_id.to_string(),
 		user_id,
@@ -32,7 +36,9 @@ pub(super) async fn register_file(
 		belongs_to_type,
 		app_id.to_string(),
 		key_id,
-		time.to_string()
+		time.to_string(),
+		FILE_STATUS_AVAILABLE.to_string(),
+		0.to_string()
 	);
 
 	//language=SQL
@@ -107,10 +113,16 @@ WHERE
 	Ok((check.file_id, check.max_chunk_size))
 }
 
-pub(super) async fn save_part(app_id: AppId, file_id: FileId, size: usize, sequence: i32, end: bool, extern_storage: bool) -> AppRes<()>
+pub(super) async fn save_part(
+	app_id: AppId,
+	file_id: FileId,
+	part_id: String,
+	size: usize,
+	sequence: i32,
+	end: bool,
+	extern_storage: bool,
+) -> AppRes<()>
 {
-	let part_id = Uuid::new_v4().to_string();
-
 	//language=SQL
 	let sql = "INSERT INTO sentc_file_part (id, file_id, app_id, size, sequence, extern) VALUES (?,?,?,?,?,?)";
 
@@ -149,9 +161,9 @@ pub(super) async fn delete_session(session_id: String, app_id: AppId) -> AppRes<
 pub(super) async fn get_file(app_id: AppId, file_id: FileId) -> AppRes<FileMetaData>
 {
 	//language=SQL
-	let sql = "SELECT id, owner, belongs_to, belongs_to_type, key_id, time FROM sentc_file WHERE app_id = ? AND id = ?";
+	let sql = "SELECT id, owner, belongs_to, belongs_to_type, key_id, time FROM sentc_file WHERE app_id = ? AND id = ? AND status = ?";
 
-	let file: Option<FileMetaData> = query_first(sql, set_params!(app_id, file_id)).await?;
+	let file: Option<FileMetaData> = query_first(sql, set_params!(app_id, file_id, FILE_STATUS_AVAILABLE)).await?;
 
 	match file {
 		Some(f) => Ok(f),
@@ -203,71 +215,151 @@ WHERE
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn get_parts_to_delete_for_app(app_id: AppId, last_id: Option<String>) -> AppRes<Vec<FilePartListItem>>
-{
-	//get the file parts
-	//language=SQL
-	let sql = r"
-SELECT id,sequence,extern 
-FROM 
-    sentc_file_part 
-WHERE 
-    app_id = ?"
-		.to_string();
-
-	let (sql, params) = match last_id {
-		None => {
-			let sql = sql + " ORDER BY id LIMIT 500";
-			(sql, set_params!(app_id))
-		},
-		Some(id) => {
-			let sql = sql + " AND id > ? ORDER BY id LIMIT 500";
-			(sql, set_params!(app_id, id))
-		},
-	};
-
-	let file_parts: Vec<FilePartListItem> = query_string(sql, params).await?;
-
-	Ok(file_parts)
-}
-
-pub(super) async fn get_parts_to_delete_for_group(app_id: AppId, group_id: GroupId, last_id: Option<String>) -> AppRes<Vec<FilePartListItem>>
-{
-	//language=SQL
-	let sql = r"
-SELECT fp.id as file_id, sequence, extern 
-FROM sentc_file f,sentc_file_part fp
-WHERE 
-    file_id = f.id AND 
-    f.app_id = ? AND 
-    belongs_to = ? AND 
-    belongs_to_type = ?"
-		.to_string();
-
-	let (sql, params) = match last_id {
-		None => {
-			let sql = sql + " ORDER BY fp.id LIMIT 500";
-			(sql, set_params!(app_id, group_id, FILE_BELONGS_TO_TYPE_GROUP))
-		},
-		Some(id) => {
-			let sql = sql + " AND fp.id > ? ORDER BY fp.id LIMIT 500";
-			(sql, set_params!(app_id, group_id, FILE_BELONGS_TO_TYPE_GROUP, id))
-		},
-	};
-
-	let file_parts: Vec<FilePartListItem> = query_string(sql, params).await?;
-
-	Ok(file_parts)
-}
-
 pub(super) async fn delete_file(app_id: AppId, file_id: FileId) -> AppRes<()>
 {
-	//make sure to delete the parts first
+	//mark the file as to delete
+	let time = get_time()?;
 
 	//language=SQL
-	let sql = "DELETE FROM sentc_file WHERE id = ? AND app_id = ?";
+	let sql = "UPDATE sentc_file SET status = ?, delete_at = ? WHERE id = ? AND app_id = ?";
 
-	exec(sql, set_params!(file_id, app_id)).await?;
+	exec(
+		sql,
+		set_params!(FILE_STATUS_TO_DELETE, time.to_string(), file_id, app_id),
+	)
+	.await?;
+
+	Ok(())
+}
+
+pub(super) async fn delete_files_for_customer(customer_id: CustomerId) -> AppRes<()>
+{
+	let time = get_time()?;
+
+	//language=SQL
+	let sql = r"
+UPDATE 
+    sentc_file 
+SET 
+    status = ?, 
+    delete_at = ? 
+WHERE 
+    app_id IN (
+    SELECT 
+        sentc_app.id 
+    FROM sentc_app 
+    WHERE customer_id = ?
+    )";
+
+	exec(sql, set_params!(FILE_STATUS_TO_DELETE, time.to_string(), customer_id)).await?;
+
+	Ok(())
+}
+
+pub(super) async fn delete_files_for_app(app_id: AppId) -> AppRes<()>
+{
+	let time = get_time()?;
+
+	//language=SQL
+	let sql = "UPDATE sentc_file SET status = ?, delete_at = ? WHERE app_id = ?";
+
+	exec(sql, set_params!(FILE_STATUS_TO_DELETE, time.to_string(), app_id)).await?;
+
+	Ok(())
+}
+
+pub(super) async fn delete_files_for_group(app_id: AppId, group_id: GroupId, children: Vec<String>) -> AppRes<()>
+{
+	let time = get_time()?;
+
+	//language=SQL
+	let sql = r"
+UPDATE 
+    sentc_file 
+SET
+    status = ?, 
+    delete_at = ? 
+WHERE 
+    app_id = ? AND 
+    belongs_to_type = ? AND  
+	belongs_to = ?";
+
+	exec(
+		sql,
+		set_params!(
+			FILE_STATUS_TO_DELETE,
+			time.to_string(),
+			app_id.to_string(),
+			FILE_BELONGS_TO_TYPE_GROUP,
+			group_id,
+		),
+	)
+	.await?;
+
+	//update children, can't use mysql recursion here, because it says the rec table doesn't exist
+	if children.len() > 0 {
+		let get_in = get_in(&children);
+
+		//language=SQLx
+		let sql = format!(
+			"UPDATE sentc_file SET status = ?, delete_at = ? WHERE app_id = ? AND belongs_to_type = ? AND belongs_to IN ({})",
+			get_in
+		);
+
+		let mut exec_vec = Vec::with_capacity(children.len() + 4);
+
+		exec_vec.push(GroupChildren(FILE_STATUS_TO_DELETE.to_string()));
+		exec_vec.push(GroupChildren(time.to_string()));
+		exec_vec.push(GroupChildren(app_id.to_string()));
+		exec_vec.push(GroupChildren(FILE_BELONGS_TO_TYPE_GROUP.to_string()));
+
+		for child in children {
+			exec_vec.push(GroupChildren(child));
+		}
+
+		exec_string(sql, set_params_vec!(exec_vec)).await?;
+	}
+
+	Ok(())
+}
+
+//__________________________________________________________________________________________________
+
+pub(super) async fn get_all_files_marked_to_delete(last_part_id: Option<String>, start_time: u128) -> AppRes<Vec<FilePartListItem>>
+{
+	//language=SQL
+	let sql = r"
+SELECT fp.id as file_id_part_id, sequence, extern 
+FROM 
+    sentc_file_part fp, sentc_file f 
+WHERE 
+    status = ? AND 
+    file_id = f.id AND 
+    delete_at < ?"
+		.to_string();
+
+	let (sql, params) = match last_part_id {
+		None => {
+			let sql = sql + " ORDER BY fp.id LIMIT 500";
+			(sql, set_params!(FILE_STATUS_TO_DELETE, start_time.to_string()))
+		},
+		Some(last) => {
+			let sql = sql + " AND fp.id > ? ORDER BY fp.id LIMIT 500";
+			(sql, set_params!(FILE_STATUS_TO_DELETE, start_time.to_string(), last))
+		},
+	};
+
+	let file_parts: Vec<FilePartListItem> = query_string(sql, params).await?;
+
+	Ok(file_parts)
+}
+
+pub(super) async fn delete_file_complete(start_time: u128) -> AppRes<()>
+{
+	//language=SQL
+	let sql = "DELETE FROM sentc_file WHERE delete_at < ? AND status = ?";
+
+	exec(sql, set_params!(start_time.to_string(), FILE_STATUS_TO_DELETE)).await?;
 
 	Ok(())
 }
