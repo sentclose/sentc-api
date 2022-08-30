@@ -202,6 +202,31 @@ WHERE
 
 //__________________________________________________________________________________________________
 
+pub(super) async fn get_parts_to_delete_for_app(app_id: AppId, last_sequence: i32) -> AppRes<Vec<FilePartListItem>>
+{
+	//get the file parts
+	//language=SQL
+	let sql = r"
+SELECT id,sequence,extern 
+FROM 
+    sentc_file_part 
+WHERE 
+    app_id = ?"
+		.to_string();
+
+	let (sql, params) = if last_sequence > 0 {
+		let sql = sql + " AND id > ? ORDER BY id LIMIT 500";
+		(sql, set_params!(app_id, last_sequence))
+	} else {
+		let sql = sql + " ORDER BY id LIMIT 500";
+		(sql, set_params!(app_id))
+	};
+
+	let file_parts: Vec<FilePartListItem> = query_string(sql, params).await?;
+
+	Ok(file_parts)
+}
+
 pub(super) async fn delete_file(app_id: AppId, file_id: FileId) -> AppRes<()>
 {
 	//make sure to delete the parts first

@@ -1,7 +1,7 @@
 use sentc_crypto_common::file::{BelongsToType, FileRegisterInput, FileRegisterOutput};
 use sentc_crypto_common::{AppId, FileId, GroupId, UserId};
 
-use crate::file::file_entities::FileMetaData;
+use crate::file::file_entities::{FileMetaData, FilePartListItem};
 use crate::file::file_model;
 use crate::group::group_entities::InternalGroupDataComplete;
 use crate::user::user_service;
@@ -188,7 +188,18 @@ pub async fn delete_file(file_id: FileId, app_id: AppId, user_id: UserId, group:
 	let mut last_sequence = 0;
 
 	loop {
-		let parts = file_model::get_file_parts(app_id.to_string(), file_id.to_string(), last_sequence).await?;
+		//parts can return error, if file parts are empty. in this case, don't err but delete the file in the db
+		//other err -> return this error
+		let parts = match file_model::get_file_parts(app_id.to_string(), file_id.to_string(), last_sequence).await {
+			Ok(p) => p,
+			Err(e) => {
+				match e.api_error_code {
+					ApiErrorCodes::FileNotFound => Vec::new(),
+					_ => return Err(e),
+				}
+			},
+		};
+
 		let part_len = parts.len();
 
 		match parts.last() {
@@ -201,21 +212,7 @@ pub async fn delete_file(file_id: FileId, app_id: AppId, user_id: UserId, group:
 			},
 		}
 
-		//split extern and intern
-		let mut extern_storage = Vec::with_capacity(parts.len());
-		let mut intern_storage = Vec::with_capacity(parts.len());
-
-		for part in parts {
-			if part.extern_storage {
-				extern_storage.push(part.part_id);
-			} else {
-				intern_storage.push(part.part_id);
-			}
-		}
-
-		server_core::file::delete_parts(&intern_storage).await?;
-
-		//TODO make a req to delete the extern parts
+		delete_parts(parts).await?;
 
 		if part_len < 500 {
 			break;
@@ -223,6 +220,56 @@ pub async fn delete_file(file_id: FileId, app_id: AppId, user_id: UserId, group:
 	}
 
 	file_model::delete_file(app_id, file_id).await?;
+
+	Ok(())
+}
+
+pub async fn delete_file_for_app(app_id: AppId) -> AppRes<()>
+{
+	//get the file parts
+	let mut last_sequence = 0;
+
+	loop {
+		let parts = file_model::get_parts_to_delete_for_app(app_id.to_string(), last_sequence).await?;
+		let part_len = parts.len();
+
+		match parts.last() {
+			Some(p) => {
+				last_sequence = p.sequence;
+			},
+			None => {
+				//parts are empty
+				break;
+			},
+		}
+
+		delete_parts(parts).await?;
+
+		if part_len < 500 {
+			break;
+		}
+	}
+
+	Ok(())
+}
+
+async fn delete_parts(parts: Vec<FilePartListItem>) -> AppRes<()>
+{
+	//split extern and intern
+	let mut extern_storage = Vec::with_capacity(parts.len());
+	let mut intern_storage = Vec::with_capacity(parts.len());
+
+	for part in parts {
+		if part.extern_storage {
+			extern_storage.push(part.part_id);
+		} else {
+			intern_storage.push(part.part_id);
+		}
+	}
+
+	server_core::file::delete_parts(&intern_storage).await?;
+
+	//TODO make a req to delete the extern parts
 
 	Ok(())
 }
