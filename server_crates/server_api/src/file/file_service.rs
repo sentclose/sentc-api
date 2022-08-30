@@ -126,6 +126,7 @@ pub async fn get_file(app_id: AppId, user_id: Option<UserId>, file_id: FileId, g
 		},
 	}
 
+	//first page of the part list
 	let file_parts = file_model::get_file_parts(app_id, file_id, 0).await?;
 
 	file.part_list = file_parts;
