@@ -63,14 +63,19 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 
 	let group_data = get_group_user_data_from_req(&req)?;
 
-	let children = group_model::delete(
+	group_model::delete(
 		group_data.group_data.app_id.to_string(),
 		group_data.group_data.id.to_string(),
 		group_data.user_data.rank,
 	)
 	.await?;
 
-	file_service::delete_file_for_group(group_data.group_data.app_id.as_str(), &children).await?;
+	//children incl. the deleted group
+	file_service::delete_file_for_group(
+		group_data.group_data.app_id.as_str(),
+		group_data.group_data.id.as_str(),
+	)
+	.await?;
 
 	//don't delete cache for each group user, but for the group
 	let key_group = get_group_cache_key(

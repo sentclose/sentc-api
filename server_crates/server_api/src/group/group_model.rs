@@ -360,7 +360,7 @@ VALUES (?,?,?,?,?,?,?)";
 	Ok(group_id)
 }
 
-pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_rank: i32) -> AppRes<Vec<String>>
+pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_rank: i32) -> AppRes<()>
 {
 	//check with app id to make sure the user is in the right group
 	check_group_rank(user_rank, 1)?;
@@ -374,14 +374,7 @@ pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_rank: i32) -> 
 	//can't delete it via on delete cascade because the trigger for the children won't run, so we are left with garbage data.
 	let children = get_children_to_parent(group_id.to_string(), app_id.to_string()).await?;
 
-	let mut children_out = Vec::with_capacity(children.len() + 1); //1 for this group
-
 	if children.len() > 0 {
-		//copy the children id
-		for child in &children {
-			children_out.push(child.0.to_string());
-		}
-
 		let get_in = get_in(&children);
 
 		//language=SQLx
@@ -391,8 +384,6 @@ pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_rank: i32) -> 
 		exec_string(sql_delete_child, set_params_vec!(children)).await?;
 	}
 
-	children_out.push(group_id.to_string());
-
 	//delete the rest of the user group keys, this is the rest from user invite but this wont get deleted when group user gets deleted
 	//important: do this after the delete!
 
@@ -401,7 +392,7 @@ pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_rank: i32) -> 
 
 	exec(sql, set_params!(group_id)).await?;
 
-	Ok(children_out)
+	Ok(())
 }
 
 /**
