@@ -337,7 +337,7 @@ async fn test_13_get_file_in_group()
 		assert_eq!(org, decrypted);
 	}
 
-	state.files = vec![file_data];
+	state.files.push(file_data);
 }
 
 /**
