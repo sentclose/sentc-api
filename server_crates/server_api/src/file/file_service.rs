@@ -136,7 +136,7 @@ pub async fn get_file(app_id: AppId, user_id: Option<UserId>, file_id: FileId, g
 
 //__________________________________________________________________________________________________
 
-pub async fn delete_file(file_id: FileId, app_id: AppId, user_id: UserId, group: Option<&InternalGroupDataComplete>) -> AppRes<()>
+pub async fn delete_file(file_id: &str, app_id: &str, user_id: UserId, group: Option<&InternalGroupDataComplete>) -> AppRes<()>
 {
 	let file = file_model::get_file(app_id.to_string(), file_id.to_string()).await?;
 
@@ -221,12 +221,12 @@ pub async fn delete_file(file_id: FileId, app_id: AppId, user_id: UserId, group:
 		}
 	}
 
-	file_model::delete_file(app_id, file_id).await?;
+	file_model::delete_file(app_id.to_string(), file_id.to_string()).await?;
 
 	Ok(())
 }
 
-pub async fn delete_file_for_app(app_id: AppId) -> AppRes<()>
+pub async fn delete_file_for_app(app_id: &str) -> AppRes<()>
 {
 	//get the file parts
 	let mut last_id = None;
@@ -257,7 +257,7 @@ pub async fn delete_file_for_app(app_id: AppId) -> AppRes<()>
 	Ok(())
 }
 
-pub async fn delete_file_for_group(app_id: AppId, group_id: GroupId) -> AppRes<()>
+pub async fn delete_file_for_group(app_id: &str, group_id: &str) -> AppRes<()>
 {
 	//get the file parts
 	let mut last_id = None;

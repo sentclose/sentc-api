@@ -148,7 +148,7 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 
 	let app_id = get_name_param_from_req(&req, "app_id")?;
 
-	file_service::delete_file_for_app(app_id.to_string()).await?;
+	file_service::delete_file_for_app(app_id).await?;
 
 	app_model::delete(customer_id.to_string(), app_id.to_string()).await?;
 

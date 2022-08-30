@@ -208,7 +208,7 @@ pub async fn delete_file(req: Request) -> JRes<ServerSuccessOutput>
 
 	let file_id = get_name_param_from_req(&req, "file_id")?;
 
-	file_service::delete_file(file_id.to_string(), user.sub.to_string(), user.id.to_string(), None).await?;
+	file_service::delete_file(file_id, &user.sub, user.id.to_string(), None).await?;
 
 	echo_success()
 }
@@ -222,8 +222,8 @@ pub async fn delete_file_in_group(req: Request) -> JRes<ServerSuccessOutput>
 	let file_id = get_name_param_from_req(&req, "file_id")?;
 
 	file_service::delete_file(
-		file_id.to_string(),
-		group_data.group_data.app_id.to_string(),
+		&file_id,
+		&group_data.group_data.app_id,
 		group_data.user_data.user_id.to_string(),
 		Some(group_data),
 	)
