@@ -113,10 +113,16 @@ WHERE
 	Ok((check.file_id, check.max_chunk_size))
 }
 
-pub(super) async fn save_part(app_id: AppId, file_id: FileId, size: usize, sequence: i32, end: bool, extern_storage: bool) -> AppRes<()>
+pub(super) async fn save_part(
+	app_id: AppId,
+	file_id: FileId,
+	part_id: String,
+	size: usize,
+	sequence: i32,
+	end: bool,
+	extern_storage: bool,
+) -> AppRes<()>
 {
-	let part_id = Uuid::new_v4().to_string();
-
 	//language=SQL
 	let sql = "INSERT INTO sentc_file_part (id, file_id, app_id, size, sequence, extern) VALUES (?,?,?,?,?,?)";
 
