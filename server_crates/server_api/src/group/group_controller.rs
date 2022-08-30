@@ -63,7 +63,7 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 
 	let group_data = get_group_user_data_from_req(&req)?;
 
-	group_model::delete(
+	let children = group_model::delete(
 		group_data.group_data.app_id.to_string(),
 		group_data.group_data.id.to_string(),
 		group_data.user_data.rank,
@@ -74,6 +74,7 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 	file_service::delete_file_for_group(
 		group_data.group_data.app_id.as_str(),
 		group_data.group_data.id.as_str(),
+		children,
 	)
 	.await?;
 
