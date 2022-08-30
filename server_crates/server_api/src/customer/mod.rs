@@ -30,6 +30,7 @@ use server_core::url_helper::{get_name_param_from_params, get_params};
 #[cfg(feature = "send_mail")]
 use crate::customer::customer_entities::RegisterEmailStatus;
 use crate::customer_app::app_util::get_app_data_from_req;
+use crate::file::file_service;
 use crate::user;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, AppRes, HttpErr, JRes};
@@ -192,6 +193,9 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 	let user = get_jwt_data_from_param(&req)?;
 
 	user::user_service::delete(user).await?;
+
+	//files must be deleted before customer delete. we need the apps for the customer
+	file_service::delete_file_for_customer(user.id.as_str()).await?;
 
 	customer_model::delete(user.id.to_string()).await?;
 

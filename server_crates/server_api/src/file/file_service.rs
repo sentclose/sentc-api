@@ -193,6 +193,11 @@ pub async fn delete_file(file_id: &str, app_id: &str, user_id: UserId, group: Op
 	Ok(())
 }
 
+pub fn delete_file_for_customer(customer_id: &str) -> impl Future<Output = AppRes<()>>
+{
+	file_model::delete_files_for_customer(customer_id.to_string())
+}
+
 pub fn delete_file_for_app(app_id: &str) -> impl Future<Output = AppRes<()>>
 {
 	file_model::delete_files_for_app(app_id.to_string())

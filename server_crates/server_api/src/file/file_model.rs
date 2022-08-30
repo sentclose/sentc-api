@@ -1,4 +1,4 @@
-use sentc_crypto_common::{AppId, FileId, GroupId, SymKeyId, UserId};
+use sentc_crypto_common::{AppId, CustomerId, FileId, GroupId, SymKeyId, UserId};
 use server_core::db::{exec, exec_string, exec_transaction, get_in, query_first, query_string, TransactionData};
 use server_core::{get_time, set_params, set_params_vec};
 use uuid::Uuid;
@@ -232,6 +232,30 @@ pub(super) async fn delete_file(app_id: AppId, file_id: FileId) -> AppRes<()>
 	Ok(())
 }
 
+pub(super) async fn delete_files_for_customer(customer_id: CustomerId) -> AppRes<()>
+{
+	let time = get_time()?;
+
+	//language=SQL
+	let sql = r"
+UPDATE 
+    sentc_file 
+SET 
+    status = ?, 
+    delete_at = ? 
+WHERE 
+    app_id IN (
+    SELECT 
+        sentc_app.id 
+    FROM sentc_app 
+    WHERE customer_id = ?
+    )";
+
+	exec(sql, set_params!(FILE_STATUS_TO_DELETE, time.to_string(), customer_id)).await?;
+
+	Ok(())
+}
+
 pub(super) async fn delete_files_for_app(app_id: AppId) -> AppRes<()>
 {
 	let time = get_time()?;
@@ -298,6 +322,8 @@ WHERE
 
 	Ok(())
 }
+
+//__________________________________________________________________________________________________
 
 pub(super) async fn get_all_files_marked_to_delete(last_part_id: Option<String>, start_time: u128) -> AppRes<Vec<FilePartListItem>>
 {
