@@ -198,7 +198,7 @@ pub fn delete_file_for_app(app_id: &str) -> impl Future<Output = AppRes<()>>
 	file_model::delete_files_for_app(app_id.to_string())
 }
 
-pub fn delete_file_for_group(app_id: &str, group_id: &str) -> impl Future<Output = AppRes<()>>
+pub fn delete_file_for_group(app_id: &str, group_id: &str, children: Vec<String>) -> impl Future<Output = AppRes<()>>
 {
-	file_model::delete_files_for_group(app_id.to_string(), group_id.to_string())
+	file_model::delete_files_for_group(app_id.to_string(), group_id.to_string(), children)
 }

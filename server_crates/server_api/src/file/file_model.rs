@@ -1,9 +1,10 @@
 use sentc_crypto_common::{AppId, FileId, GroupId, SymKeyId, UserId};
-use server_core::db::{exec, exec_transaction, query_first, query_string, TransactionData};
-use server_core::{get_time, set_params};
+use server_core::db::{exec, exec_string, exec_transaction, get_in, query_first, query_string, TransactionData};
+use server_core::{get_time, set_params, set_params_vec};
 use uuid::Uuid;
 
 use crate::file::file_entities::{FileMetaData, FilePartListItem, FileSessionCheck};
+use crate::group::group_entities::GroupChildren;
 use crate::sentc_file_service::FILE_BELONGS_TO_TYPE_GROUP;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
@@ -237,7 +238,7 @@ pub(super) async fn delete_files_for_app(app_id: AppId) -> AppRes<()>
 	Ok(())
 }
 
-pub(super) async fn delete_files_for_group(app_id: AppId, group_id: GroupId) -> AppRes<()>
+pub(super) async fn delete_files_for_group(app_id: AppId, group_id: GroupId, children: Vec<String>) -> AppRes<()>
 {
 	let time = get_time()?;
 
@@ -250,32 +251,44 @@ SET
     delete_at = ? 
 WHERE 
     app_id = ? AND 
-    belongs_to_type = ? AND (
-		belongs_to = ? OR -- the group itself
-		belongs_to IN ( -- the children
-		   WITH RECURSIVE children (id) AS (
-			   SELECT g.id from sentc_group g WHERE g.parent = ? AND g.app_id = ?
-									   
-				UNION ALL 
-			
-				SELECT g1.id FROM children c
-					JOIN sentc_group g1 ON c.id = g1.parent AND g1.app_id = ?
-		   )
-		   SELECT * FROM children
-		)
-    )";
+    belongs_to_type = ? AND  
+	belongs_to = ?";
 
 	exec(
 		sql,
 		set_params!(
 			FILE_STATUS_TO_DELETE,
 			time.to_string(),
-			app_id,
+			app_id.to_string(),
 			FILE_BELONGS_TO_TYPE_GROUP,
-			group_id
+			group_id,
 		),
 	)
 	.await?;
+
+	//update children, can't use mysql recursion here, because it says the rec table doesn't exist
+	if children.len() > 0 {
+		let get_in = get_in(&children);
+
+		//language=SQLx
+		let sql = format!(
+			"UPDATE sentc_file SET status = ?, delete_at = ? WHERE app_id = ? AND belongs_to_type = ? AND belongs_to IN ({})",
+			get_in
+		);
+
+		let mut exec_vec = Vec::with_capacity(children.len() + 4);
+
+		exec_vec.push(GroupChildren(FILE_STATUS_TO_DELETE.to_string()));
+		exec_vec.push(GroupChildren(time.to_string()));
+		exec_vec.push(GroupChildren(app_id.to_string()));
+		exec_vec.push(GroupChildren(FILE_BELONGS_TO_TYPE_GROUP.to_string()));
+
+		for child in children {
+			exec_vec.push(GroupChildren(child));
+		}
+
+		exec_string(sql, set_params_vec!(exec_vec)).await?;
+	}
 
 	Ok(())
 }
