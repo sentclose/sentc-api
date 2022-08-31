@@ -120,6 +120,7 @@ impl ApiErrorCodes
 					CoreErrorCodes::FileRemove => 501,
 					CoreErrorCodes::FileSave => 502,
 					CoreErrorCodes::FileDownload => 503,
+					CoreErrorCodes::FileTooLarge => 504,
 				}
 			},
 

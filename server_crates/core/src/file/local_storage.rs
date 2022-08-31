@@ -98,6 +98,16 @@ impl FileHandler for LocalStorage
 
 			if b_len + size > max_chunk_size {
 				self.remove_file(path.as_str()).await?;
+
+				return Err(CoreError::new(
+					400,
+					CoreErrorCodes::FileSave,
+					format!(
+						"File chunk is too large to upload. The max chunk size is: {}",
+						max_chunk_size
+					),
+					None,
+				));
 			}
 
 			file.write_all(&bytes).await.map_err(|e| {
@@ -128,7 +138,11 @@ impl FileHandler for LocalStorage
 		for part in parts {
 			let path = self.path.to_string() + "/" + part.as_str();
 
-			self.remove_file(path.as_str()).await?;
+			//ignore the error here, maybe later just print out the error to std
+			match self.remove_file(path.as_str()).await {
+				Ok(_) => {},
+				Err(_) => {},
+			}
 		}
 
 		Ok(())
