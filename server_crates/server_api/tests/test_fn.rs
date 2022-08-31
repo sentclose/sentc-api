@@ -5,7 +5,9 @@ use std::env;
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::group::{DoneGettingGroupKeysOutput, GroupKeyData, GroupOutData};
+use sentc_crypto::sdk_common::file::FileData;
 use sentc_crypto::sdk_common::group::GroupAcceptJoinReqServerOutput;
+use sentc_crypto::util::public::handle_server_response;
 use sentc_crypto::{PrivateKeyFormat, PublicKeyFormat, SymKeyFormat, UserData};
 use sentc_crypto_common::group::{GroupCreateOutput, KeyRotationStartServerOutput};
 use sentc_crypto_common::user::{RegisterData, UserInitServerOutput};
@@ -446,7 +448,7 @@ pub async fn add_user_by_invite(
 
 	let body = res.text().await.unwrap();
 
-	let join_res: GroupAcceptJoinReqServerOutput = sentc_crypto::util::public::handle_server_response(body.as_str()).unwrap();
+	let join_res: GroupAcceptJoinReqServerOutput = handle_server_response(body.as_str()).unwrap();
 	assert_eq!(join_res.session_id, None);
 
 	//accept the invite, no need to accept the invite -> we using auto invite here
@@ -569,4 +571,60 @@ pub async fn done_key_rotation(
 	}
 
 	new_keys
+}
+
+pub async fn get_file(file_id: &str, jwt: &str, token: &str, group_id: Option<&str>) -> FileData
+{
+	//download the file info
+	let url = match group_id {
+		Some(id) => get_url("api/v1/group/".to_string() + id + "/file/" + file_id),
+		None => get_url("api/v1/file/".to_string() + file_id),
+	};
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header("x-sentc-app-token", token)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let file_data: FileData = handle_server_response(body.as_str()).unwrap();
+
+	file_data
+}
+
+pub async fn get_file_part(part_id: &str, jwt: &str, token: &str) -> Vec<u8>
+{
+	let url = get_url("api/v1/file/part/".to_string() + part_id);
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header("x-sentc-app-token", token)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.send()
+		.await
+		.unwrap();
+
+	if res.status() != 200 {
+		let text = res.text().await.unwrap();
+
+		panic!("error in fetching part: {:?}", text);
+	}
+
+	let buffer = res.bytes().await.unwrap().to_vec();
+
+	buffer
+}
+
+pub async fn get_and_decrypt_file_part(part_id: &str, jwt: &str, token: &str, file_key: &SymKeyFormat) -> Vec<u8>
+{
+	let buffer = get_file_part(part_id, jwt, token).await;
+
+	let decrypted_file = sentc_crypto::crypto::decrypt_symmetric(file_key, &buffer, None).unwrap();
+
+	decrypted_file
 }

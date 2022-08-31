@@ -1,9 +1,10 @@
 use rand::RngCore;
 use reqwest::header::AUTHORIZATION;
 use sentc_crypto::group::GroupKeyData;
+use sentc_crypto::sdk_common::file::FileData;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::{SdkError, UserData};
-use sentc_crypto_common::file::{FileData, FileRegisterOutput};
+use sentc_crypto_common::file::FileRegisterOutput;
 use sentc_crypto_common::{GroupId, ServerOutput};
 use server_api::sentc_file_worker;
 use server_api_common::app::AppRegisterOutput;
@@ -18,6 +19,8 @@ use crate::test_fn::{
 	create_test_customer,
 	create_test_user,
 	customer_delete,
+	get_and_decrypt_file_part,
+	get_file,
 	get_group,
 	get_url,
 };
@@ -54,7 +57,6 @@ pub struct TestData
 
 	pub files: Vec<FileData>,
 	pub file_ids: Vec<String>,
-	pub test_file_large: Vec<u8>,
 	pub test_file_big: Vec<u8>,
 	pub test_file_mid: Vec<u8>,
 	pub test_file_small: Vec<u8>,
@@ -62,8 +64,7 @@ pub struct TestData
 
 static TEST_SMALL_FILE_SIZE: usize = 1024 * 1024; //1mb (to test files without chunking)
 static TEST_MID_FILE_SIZE: usize = 1024 * 1024 * 5; //5 mb exact chunking
-static TEST_BIG_FILE_SIZE: usize = 1024 * 1024 * 15; //15 mb
-static TEST_LARGE_FILE_SIZE: usize = 1024 * 1024 * 100; //100 mb
+static TEST_BIG_FILE_SIZE: usize = 1024 * 1024 * 14; //14 mb
 
 static TEST_STATE: OnceCell<RwLock<TestData>> = OnceCell::const_new();
 
@@ -145,13 +146,10 @@ async fn aaa_init_state()
 	let mut rng = rand::thread_rng();
 
 	//create "files"
-	let mut test_file_large = vec![0u8; TEST_SMALL_FILE_SIZE];
-	rng.try_fill_bytes(&mut test_file_large).unwrap();
-
-	let mut test_file_big = vec![0u8; TEST_SMALL_FILE_SIZE];
+	let mut test_file_big = vec![0u8; TEST_BIG_FILE_SIZE];
 	rng.try_fill_bytes(&mut test_file_big).unwrap();
 
-	let mut test_file_mid = vec![0u8; TEST_SMALL_FILE_SIZE];
+	let mut test_file_mid = vec![0u8; TEST_MID_FILE_SIZE];
 	rng.try_fill_bytes(&mut test_file_mid).unwrap();
 
 	let mut test_file_small = vec![0u8; TEST_SMALL_FILE_SIZE];
@@ -173,7 +171,6 @@ async fn aaa_init_state()
 					child_group_data,
 					files: vec![],
 					file_ids: vec![],
-					test_file_large,
 					test_file_big,
 					test_file_mid,
 					test_file_small,
@@ -215,7 +212,41 @@ async fn test_10_upload_small_file_for_non_target()
 	//no chunk needed
 	let encrypted_small_file = sentc_crypto::crypto::encrypt_symmetric(file_key, file, None).unwrap();
 
-	//upload the file
+	//should not upload the file from a different user
+	let encrypted_small_file_1 = sentc_crypto::crypto::encrypt_symmetric(file_key, file, None).unwrap();
+
+	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/1/true");
+
+	//buffered req
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", state.app_data.public_token.as_str())
+		.header(AUTHORIZATION, auth_header(state.user_data_1.jwt.as_str()))
+		.body(encrypted_small_file_1)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	match handle_general_server_response(body.as_str()) {
+		Ok(_) => {
+			panic!("Should be an error");
+		},
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(s, _msg) => {
+					assert_eq!(s, 510); //session not found error for the
+				},
+				_ => {
+					panic!("Should be server error")
+				},
+			}
+		},
+	}
+
+	//finally upload the file_______________________________________________________________________
 	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/1/true");
 
 	//buffered req
@@ -552,18 +583,296 @@ async fn test_16_no_file_access_when_for_child_group_user()
 	assert_eq!(out.status, false);
 }
 
-// #[tokio::test]
-// async fn test_17_file_access_from_parent_to_child_group()
-// {
-// 	//
-// }
+#[tokio::test]
+async fn test_17_file_access_from_parent_to_child_group()
+{
+	//create file in the child group by the direct member
+	let mut state = TEST_STATE.get().unwrap().write().await;
+
+	let url = get_url("api/v1/group/".to_string() + &state.child_group_data.id + "/file");
+
+	let file_key = &state.child_group_data.keys[0].group_key;
+
+	//normally create a new sym key for a file but here it is ok
+	let input = sentc_crypto::file::prepare_register_file(
+		file_key,
+		Some(state.child_group_data.id.to_string()),
+		sentc_crypto::sdk_common::file::BelongsToType::Group,
+	)
+	.unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(state.user_data_1.jwt.as_str()))
+		.header("x-sentc-app-token", state.app_data.public_token.as_str())
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	//session id
+	let (file_id, session_id) = sentc_crypto::file::done_register_file(body.as_str()).unwrap();
+
+	let file = &state.test_file_small;
+
+	//no chunk needed
+	let encrypted_small_file = sentc_crypto::crypto::encrypt_symmetric(file_key, file, None).unwrap();
+
+	//upload the file
+	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/1/true");
+
+	//buffered req
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", state.app_data.public_token.as_str())
+		.header(AUTHORIZATION, auth_header(state.user_data_1.jwt.as_str()))
+		.body(encrypted_small_file)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(body.as_str()).unwrap();
+
+	state.file_ids.push(file_id);
+}
+
+#[tokio::test]
+async fn test_18_access_the_child_group_file()
+{
+	//access from the direct member
+	let mut state = TEST_STATE.get().unwrap().write().await;
+	let file_id = &state.file_ids[2];
+	let file_key = &state.child_group_data.keys[0].group_key;
+
+	//download the file info
+	let file_data = get_file(
+		file_id,
+		state.user_data_1.jwt.as_str(),
+		state.app_data.public_token.as_str(),
+		Some(&state.child_group_data.id),
+	)
+	.await;
+
+	//download the part
+	let decrypted_file = get_and_decrypt_file_part(
+		&file_data.part_list[0].part_id,
+		state.user_data_1.jwt.as_str(),
+		state.app_data.public_token.as_str(),
+		&file_key,
+	)
+	.await;
+
+	let file = &state.test_file_small;
+
+	assert_eq!(file.len(), decrypted_file.len());
+
+	for i in 0..decrypted_file.len() {
+		let org = file[i];
+		let decrypted = decrypted_file[i];
+
+		assert_eq!(org, decrypted);
+	}
+
+	//now get the file as a parent group member_______________________
+	let file_data = get_file(
+		file_id,
+		state.user_data.jwt.as_str(),
+		state.app_data.public_token.as_str(),
+		Some(&state.child_group_data.id),
+	)
+	.await;
+
+	//download the part
+	let decrypted_file = get_and_decrypt_file_part(
+		&file_data.part_list[0].part_id,
+		state.user_data.jwt.as_str(),
+		state.app_data.public_token.as_str(),
+		&file_key,
+	)
+	.await;
+
+	let file = &state.test_file_small;
+
+	assert_eq!(file.len(), decrypted_file.len());
+
+	for i in 0..decrypted_file.len() {
+		let org = file[i];
+		let decrypted = decrypted_file[i];
+
+		assert_eq!(org, decrypted);
+	}
+
+	state.files.push(file_data);
+}
+
+#[tokio::test]
+async fn test_19_chunked_filed()
+{
+	//create and upload a bigger file
+	let mut state = TEST_STATE.get().unwrap().write().await;
+
+	let url = get_url("api/v1/file".to_string());
+
+	let file_key = &state.group_data.keys[0].group_key;
+
+	//normally create a new sym key for a file but here it is ok
+	let input = sentc_crypto::file::prepare_register_file(file_key, None, sentc_crypto::sdk_common::file::BelongsToType::None).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(state.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", state.app_data.public_token.as_str())
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	//session id
+	let (file_id, session_id) = sentc_crypto::file::done_register_file(body.as_str()).unwrap();
+
+	let file = &state.test_file_big;
+
+	//should not upload a too large part
+	let too_large_part = &file[0..1024 * 1024 * 6];
+	let encrypted_part = sentc_crypto::crypto::encrypt_symmetric(file_key, too_large_part, None).unwrap();
+	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/0/false");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", state.app_data.public_token.as_str())
+		.header(AUTHORIZATION, auth_header(state.user_data.jwt.as_str()))
+		.body(encrypted_part)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	match handle_general_server_response(body.as_str()) {
+		Ok(_) => {
+			panic!("Should be an error")
+		},
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(s, _) => {
+					assert_eq!(s, 502);
+				},
+				_ => panic!("must be server error"),
+			}
+		},
+	}
+
+	//upload the real parts
+	//chunk the file, use 4 instead of 5 mb because of the little overhead of the encryption
+	let chunk_size = 1024 * 1024 * 4;
+
+	let mut start = 0;
+	let mut end = chunk_size;
+	let mut current_chunk = 0;
+
+	while start < file.len() {
+		current_chunk += 1;
+
+		//vec slice fill panic if the end is bigger than the length
+		let used_end = if end > file.len() { file.len() } else { end };
+
+		let part = &file[start..used_end];
+
+		start = end;
+		end = start + chunk_size;
+		let is_end = start >= file.len();
+
+		let encrypted_part = sentc_crypto::crypto::encrypt_symmetric(file_key, part, None).unwrap();
+
+		let url = get_url(
+			"api/v1/file/part/".to_string() + session_id.as_str() + "/" + current_chunk.to_string().as_str() + "/" + is_end.to_string().as_str(),
+		);
+
+		let client = reqwest::Client::new();
+		let res = client
+			.post(url)
+			.header("x-sentc-app-token", state.app_data.public_token.as_str())
+			.header(AUTHORIZATION, auth_header(state.user_data.jwt.as_str()))
+			.body(encrypted_part)
+			.send()
+			.await
+			.unwrap();
+
+		let body = res.text().await.unwrap();
+
+		handle_general_server_response(body.as_str()).unwrap();
+	}
+
+	state.file_ids.push(file_id);
+}
+
+#[tokio::test]
+async fn test_20_download_chunked_file()
+{
+	let mut state = TEST_STATE.get().unwrap().write().await;
+	let file_id = &state.file_ids[3];
+	let file_key = &state.group_data.keys[0].group_key;
+
+	let file_data = get_file(
+		file_id,
+		state.user_data.jwt.as_str(),
+		state.app_data.public_token.as_str(),
+		None,
+	)
+	.await;
+
+	let parts = &file_data.part_list;
+
+	let mut file: Vec<u8> = Vec::new();
+
+	for part in parts {
+		let part_id = &part.part_id;
+
+		//should all internal storage
+		let mut decrypted_part = get_and_decrypt_file_part(
+			part_id,
+			state.user_data.jwt.as_str(),
+			state.app_data.public_token.as_str(),
+			&file_key,
+		)
+		.await;
+
+		file.append(&mut decrypted_part);
+	}
+
+	let org_file = &state.test_file_big;
+
+	assert_eq!(file.len(), org_file.len());
+
+	for i in 0..file.len() {
+		let org = org_file[i];
+		let decrypted = file[i];
+
+		assert_eq!(org, decrypted);
+	}
+
+	state.files.push(file_data);
+}
+
+//__________________________________________________________________________________________________
+//handle file delete
 
 /**
 TODO
-	- handle files with chunks
 	 - when deleting a group, check if the file is marked as deleted
-	 - when uploading the file in a child group check if member from parent group got access
 	 - when deleting the parent group check if file from the child group is marked as deleted
+	  -> do the delete check with sql look up
+	  - test with large files like static TEST_LARGE_FILE_SIZE: usize = 1024 * 1024 * 100; //100 mb
 */
 
 #[tokio::test]
