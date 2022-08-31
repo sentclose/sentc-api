@@ -1,6 +1,6 @@
 use hyper::StatusCode;
-use rustgram::service::HttpResult;
-use rustgram::{GramHttpErr, Response};
+use rustgram::service::IntoResponse;
+use rustgram::Response;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::ServerOutput;
 use serde::Serialize;
@@ -231,9 +231,9 @@ impl HttpErr
 	}
 }
 
-impl GramHttpErr<Response> for HttpErr
+impl IntoResponse<Response> for HttpErr
 {
-	fn get_res(self) -> Response
+	fn into_response(self) -> Response
 	{
 		let status = match StatusCode::from_u16(self.http_status_code) {
 			Ok(s) => s,
@@ -276,9 +276,9 @@ Creates a string from the obj
 */
 pub struct JsonRes<T: Serialize>(pub T);
 
-impl<T: Serialize> HttpResult<Response> for JsonRes<T>
+impl<T: Serialize> IntoResponse<Response> for JsonRes<T>
 {
-	fn get_res(self) -> Response
+	fn into_response(self) -> Response
 	{
 		let out = ServerOutput {
 			status: true,
@@ -289,7 +289,7 @@ impl<T: Serialize> HttpResult<Response> for JsonRes<T>
 
 		let string = match json_to_string(&out) {
 			Ok(s) => s,
-			Err(e) => return Into::<HttpErr>::into(e).get_res(),
+			Err(e) => return Into::<HttpErr>::into(e).into_response(),
 		};
 
 		hyper::Response::builder()

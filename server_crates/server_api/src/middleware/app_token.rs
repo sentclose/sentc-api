@@ -3,8 +3,8 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use rustgram::service::Service;
-use rustgram::{GramHttpErr, Request, Response};
+use rustgram::service::{IntoResponse, Service};
+use rustgram::{Request, Response};
 use sentc_crypto_common::AppId;
 use server_core::cache;
 use server_core::cache::{CacheVariant, LONG_TTL};
@@ -35,7 +35,7 @@ where
 		Box::pin(async move {
 			match token_check(&mut req).await {
 				Ok(_) => {},
-				Err(e) => return e.get_res(),
+				Err(e) => return e.into_response(),
 			}
 
 			next.call(req).await
@@ -74,13 +74,13 @@ where
 		Box::pin(async move {
 			match token_check(&mut req).await {
 				Ok(_) => {},
-				Err(e) => return e.get_res(),
+				Err(e) => return e.into_response(),
 			}
 
 			//check the app id
 			let app_data = match get_app_data_from_req(&req) {
 				Ok(d) => d,
-				Err(e) => return e.get_res(),
+				Err(e) => return e.into_response(),
 			};
 
 			if app_data.app_data.app_id != app_id {
@@ -90,7 +90,7 @@ where
 					"Wrong app token used".to_string(),
 					None,
 				)
-				.get_res();
+				.into_response();
 			}
 
 			next.call(req).await
