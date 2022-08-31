@@ -2,32 +2,56 @@ use rand::RngCore;
 use reqwest::header::AUTHORIZATION;
 use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::UserData;
-use sentc_crypto_common::file::FileData;
-use sentc_crypto_common::GroupId;
+use sentc_crypto::{SdkError, UserData};
+use sentc_crypto_common::file::{FileData, FileRegisterOutput};
+use sentc_crypto_common::{GroupId, ServerOutput};
 use server_api::sentc_file_worker;
 use server_api_common::app::AppRegisterOutput;
 use server_api_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
 
-use crate::test_fn::{auth_header, create_app, create_group, create_test_customer, create_test_user, customer_delete, get_group, get_url};
+use crate::test_fn::{
+	add_user_by_invite,
+	auth_header,
+	create_app,
+	create_group,
+	create_test_customer,
+	create_test_user,
+	customer_delete,
+	get_group,
+	get_url,
+};
 
 mod test_fn;
 
 pub struct GroupData
 {
 	keys: Vec<GroupKeyData>,
+	keys_2: Vec<GroupKeyData>, //for the 2nd user
 	id: GroupId,
 }
 
 pub struct TestData
 {
+	//user 1
 	pub user_data: UserData,
 	pub username: String,
 	pub user_pw: String,
+
+	//user 2
+	pub user_data_1: UserData,
+	pub username_1: String,
+	pub user_pw_1: String,
+
 	pub app_data: AppRegisterOutput,
 	pub customer_data: CustomerDoneLoginOutput,
+
+	//parent group
 	pub group_data: GroupData,
+
+	//child group
+	pub child_group_data: GroupData,
+
 	pub files: Vec<FileData>,
 	pub file_ids: Vec<String>,
 	pub test_file_large: Vec<u8>,
@@ -59,9 +83,14 @@ async fn aaa_init_state()
 	let public_token = app_data.public_token.to_string();
 
 	let user_pw = "12345";
-	let username = "hello5";
+	let username = "hello6";
+	let user_pw_1 = "12345";
+	let username_1 = "hello61";
 
 	let (_user_id, key_data) = create_test_user(secret_token.as_str(), public_token.as_str(), username, user_pw).await;
+	let (_user_id, key_data_1) = create_test_user(secret_token.as_str(), public_token.as_str(), username_1, user_pw_1).await;
+
+	//create parent group
 
 	let group_id = create_group(
 		secret_token.as_str(),
@@ -83,6 +112,33 @@ async fn aaa_init_state()
 
 	let group_data = GroupData {
 		keys: group_keys,
+		keys_2: vec![],
+		id: group_id.to_string(),
+	};
+
+	//create child group
+
+	let group_id = create_group(
+		secret_token.as_str(),
+		&group_data.keys[0].public_group_key,
+		Some(group_id),
+		key_data.jwt.as_str(),
+	)
+	.await;
+
+	let group_keys = get_group(
+		secret_token.as_str(),
+		key_data.jwt.as_str(),
+		group_id.as_str(),
+		&group_data.keys[0].private_group_key,
+		false,
+	)
+	.await
+	.1;
+
+	let child_group_data = GroupData {
+		keys: group_keys,
+		keys_2: vec![],
 		id: group_id,
 	};
 
@@ -108,9 +164,13 @@ async fn aaa_init_state()
 					user_data: key_data,
 					username: username.to_string(),
 					user_pw: user_pw.to_string(),
+					user_data_1: key_data_1,
+					username_1: username_1.to_string(),
+					user_pw_1: user_pw_1.to_string(),
 					app_data,
 					customer_data,
 					group_data,
+					child_group_data,
 					files: vec![],
 					file_ids: vec![],
 					test_file_large,
@@ -173,6 +233,41 @@ async fn test_10_upload_small_file_for_non_target()
 
 	handle_general_server_response(body.as_str()).unwrap();
 
+	//should not upload a part with finished session
+	let encrypted_small_file_2 = sentc_crypto::crypto::encrypt_symmetric(file_key, file, None).unwrap();
+
+	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/1/true");
+
+	//buffered req
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", state.app_data.public_token.as_str())
+		.header(AUTHORIZATION, auth_header(state.user_data.jwt.as_str()))
+		.body(encrypted_small_file_2)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	match handle_general_server_response(body.as_str()) {
+		Ok(_) => {
+			panic!("Should be an error");
+		},
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(s, _msg) => {
+					assert_eq!(s, 510); //session not found error
+				},
+				_ => {
+					panic!("Should be server error")
+				},
+			}
+		},
+	}
+
+	//save the data
 	state.file_ids = vec![file_id];
 }
 
@@ -340,11 +435,132 @@ async fn test_13_get_file_in_group()
 	state.files.push(file_data);
 }
 
+#[tokio::test]
+async fn test_14_get_not_files_in_group_without_group_access()
+{
+	let state = TEST_STATE.get().unwrap().read().await;
+	let file_id = &state.file_ids[1];
+
+	//user 1 is not in this group
+	let url = get_url("api/v1/group/".to_string() + &state.group_data.id + "/file/" + file_id);
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header("x-sentc-app-token", state.app_data.public_token.as_str())
+		.header(AUTHORIZATION, auth_header(state.user_data_1.jwt.as_str()))
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<FileData>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, false);
+}
+
+#[tokio::test]
+async fn test_15_not_upload_file_in_a_group_without_access()
+{
+	let state = TEST_STATE.get().unwrap().read().await;
+
+	let url = get_url("api/v1/group/".to_string() + &state.group_data.id + "/file");
+
+	let file_key = &state.group_data.keys[0].group_key;
+
+	//normally create a new sym key for a file but here it is ok
+	let input = sentc_crypto::file::prepare_register_file(
+		file_key,
+		Some(state.group_data.id.to_string()),
+		sentc_crypto::sdk_common::file::BelongsToType::Group,
+	)
+	.unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(state.user_data_1.jwt.as_str()))
+		.header("x-sentc-app-token", state.app_data.public_token.as_str())
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<FileRegisterOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, false);
+
+	match sentc_crypto::file::done_register_file(body.as_str()) {
+		Ok(_) => {
+			panic!("should be an error")
+		},
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(s, _msg) => {
+					assert_eq!(s, 310); //no group access error
+				},
+				_ => {
+					panic!("should be server error")
+				},
+			}
+		},
+	}
+}
+
+#[tokio::test]
+async fn test_16_no_file_access_when_for_child_group_user()
+{
+	//push 2nd user to the child group
+	let mut state = TEST_STATE.get().unwrap().write().await;
+
+	let child_group = &state.child_group_data;
+
+	let (_user_group_data_2, group_keys) = add_user_by_invite(
+		state.app_data.secret_token.as_str(),
+		state.user_data.jwt.as_str(),
+		child_group.id.as_str(),
+		&child_group.keys,
+		state.user_data_1.user_id.as_str(),
+		state.user_data_1.jwt.as_str(),
+		&state.user_data_1.keys.exported_public_key,
+		&state.user_data_1.keys.private_key,
+	)
+	.await;
+
+	state.child_group_data.keys_2 = group_keys;
+
+	//should not access the file of the parent group
+	let file_id = &state.file_ids[1];
+
+	//user 1 is not in this group
+	let url = get_url("api/v1/group/".to_string() + &state.group_data.id + "/file/" + file_id);
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header("x-sentc-app-token", state.app_data.public_token.as_str())
+		.header(AUTHORIZATION, auth_header(state.user_data_1.jwt.as_str()))
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<FileData>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, false);
+}
+
+// #[tokio::test]
+// async fn test_17_file_access_from_parent_to_child_group()
+// {
+// 	//
+// }
+
 /**
 TODO
 	- handle files with chunks
-	 - when uploading file in group, check if non group member can access the file (create a 2nd user)
-	 - check if non group member can upload files in a group
 	 - when deleting a group, check if the file is marked as deleted
 	 - when uploading the file in a child group check if member from parent group got access
 	 - when deleting the parent group check if file from the child group is marked as deleted
