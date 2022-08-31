@@ -9,7 +9,7 @@ edition = "2021"
 tokio = { version = "1", features = ["full"] }
 tokio-util = "0.7.2"
 
-rustgram = "0.1.6"
+rustgram = "0.1.7"
 
 # dotenv vars
 dotenv = "0.15.0"
