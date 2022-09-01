@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 10:01am on August 30, 2022 (UTC)
+-- Exported: 10:28am on September 1, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -421,4 +421,14 @@ CREATE TRIGGER 'group_user_delete_user_keys' AFTER DELETE ON "sentc_group_user" 
 -- structure for trigger delete_file_options on table sentc_app
 ----
 CREATE TRIGGER 'delete_file_options' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_file_options WHERE app_id = OLD.id; END;
+
+----
+-- structure for trigger file_delete_parts on table sentc_file
+----
+CREATE TRIGGER 'file_delete_parts' AFTER DELETE ON "sentc_file" FOR EACH ROW BEGIN DELETE FROM sentc_file_part WHERE file_id = OLD.id; END;
+
+----
+-- structure for trigger file_session_delete on table sentc_file
+----
+CREATE TRIGGER 'file_session_delete' AFTER DELETE ON "sentc_file" FOR EACH ROW BEGIN DELETE FROM sentc_file_session WHERE file_id = OLD.id; END;
 COMMIT;
