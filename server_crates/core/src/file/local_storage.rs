@@ -74,11 +74,11 @@ impl FileHandler for LocalStorage
 	{
 		let path = self.path.to_string() + "/" + part_id;
 
-		let mut file = File::create(path.as_str()).await.map_err(|e| {
+		let mut file = File::create(path.as_str()).await.map_err(|_e| {
 			CoreError::new(
 				400,
 				CoreErrorCodes::FileLocalOpen,
-				format!("error in creating file: {}", e),
+				format!("error in creating file"),
 				None,
 			)
 		})?;
