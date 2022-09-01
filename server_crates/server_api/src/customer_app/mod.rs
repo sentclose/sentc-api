@@ -21,9 +21,9 @@ use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 
 use crate::customer::customer_util;
+use crate::customer_app::app_service::check_file_options;
 use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
 use crate::file::file_service;
-use crate::sentc_customer_app_service::check_file_options;
 use crate::user::jwt::{create_jwt_keys, get_jwt_data_from_param};
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 use crate::util::APP_TOKEN_CACHE;

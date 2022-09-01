@@ -4,8 +4,8 @@ use server_core::{get_time, set_params, set_params_vec};
 use uuid::Uuid;
 
 use crate::file::file_entities::{FileMetaData, FilePartListItem, FileSessionCheck};
+use crate::file::file_service::FILE_BELONGS_TO_TYPE_GROUP;
 use crate::group::group_entities::GroupChildren;
-use crate::sentc_file_service::FILE_BELONGS_TO_TYPE_GROUP;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 static MAX_CHUNK_SIZE: usize = 5 * 1024 * 1024;
