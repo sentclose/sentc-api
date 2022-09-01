@@ -73,7 +73,7 @@ async fn aaa_init_state()
 {
 	dotenv::dotenv().ok();
 
-	let (_, customer_data) = create_test_customer("hello@test5.com", "12345").await;
+	let (_, customer_data) = create_test_customer("hello@test6.com", "12345").await;
 
 	let customer_jwt = &customer_data.user_keys.jwt;
 
@@ -872,7 +872,6 @@ TODO
 	 - when deleting a group, check if the file is marked as deleted
 	 - when deleting the parent group check if file from the child group is marked as deleted
 	  -> do the delete check with sql look up
-	  - test with large files like static TEST_LARGE_FILE_SIZE: usize = 1024 * 1024 * 100; //100 mb
 */
 
 #[tokio::test]
@@ -886,6 +885,153 @@ async fn zz_clean_up()
 async fn zzz_test_worker_delete()
 {
 	dotenv::dotenv().ok();
+
+	//override the path for this process because test files are exec in sub dir
+	std::env::set_var("LOCAL_STORAGE_PATH", "../../storage");
+	std::env::set_var("DB_PATH", std::env::var("DB_PATH_TEST").unwrap());
+
+	server_api::start().await;
+
+	sentc_file_worker::start().await.unwrap();
+}
+
+#[ignore]
+#[tokio::test]
+async fn test_0_large_file()
+{
+	dotenv::dotenv().ok();
+
+	//prepare
+	let file_size = 1024 * 1024 * 104; //104 mb
+
+	let (_, customer_data) = create_test_customer("hello@test61.com", "12345").await;
+	let customer_jwt = &customer_data.user_keys.jwt;
+	let app_data = create_app(customer_jwt).await;
+	let secret_token = app_data.secret_token.to_string();
+	let public_token = app_data.public_token.to_string();
+	let user_pw = "12345";
+	let username = "hello6";
+	let (_user_id, key_data) = create_test_user(secret_token.as_str(), public_token.as_str(), username, user_pw).await;
+
+	let group_id = create_group(
+		secret_token.as_str(),
+		&key_data.keys.public_key,
+		None,
+		key_data.jwt.as_str(),
+	)
+	.await;
+
+	let group_keys = get_group(
+		secret_token.as_str(),
+		key_data.jwt.as_str(),
+		group_id.as_str(),
+		&key_data.keys.private_key,
+		false,
+	)
+	.await
+	.1;
+
+	let mut rng = rand::thread_rng();
+
+	//______________________________________________________________________________________________
+	//create "files"
+	let mut file = vec![0u8; file_size];
+	rng.try_fill_bytes(&mut file).unwrap();
+
+	//______________________________________________________________________________________________
+	//upload the file
+	let url = get_url("api/v1/file".to_string());
+
+	let file_key = &group_keys[0].group_key;
+	let input = sentc_crypto::file::prepare_register_file(file_key, None, sentc_crypto::sdk_common::file::BelongsToType::None).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(key_data.jwt.as_str()))
+		.header("x-sentc-app-token", public_token.as_str())
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	//session id
+	let (file_id, session_id) = sentc_crypto::file::done_register_file(body.as_str()).unwrap();
+
+	//______________________________________________________________________________________________
+	//chunk the file
+	let chunk_size = 1024 * 1024 * 4;
+
+	let mut start = 0;
+	let mut end = chunk_size;
+	let mut current_chunk = 0;
+
+	while start < file.len() {
+		current_chunk += 1;
+
+		//vec slice fill panic if the end is bigger than the length
+		let used_end = if end > file.len() { file.len() } else { end };
+
+		let part = &file[start..used_end];
+
+		start = end;
+		end = start + chunk_size;
+		let is_end = start >= file.len();
+
+		let encrypted_part = sentc_crypto::crypto::encrypt_symmetric(file_key, part, None).unwrap();
+
+		let url = get_url(
+			"api/v1/file/part/".to_string() + session_id.as_str() + "/" + current_chunk.to_string().as_str() + "/" + is_end.to_string().as_str(),
+		);
+
+		let client = reqwest::Client::new();
+		let res = client
+			.post(url)
+			.header("x-sentc-app-token", public_token.as_str())
+			.header(AUTHORIZATION, auth_header(key_data.jwt.as_str()))
+			.body(encrypted_part)
+			.send()
+			.await
+			.unwrap();
+
+		let body = res.text().await.unwrap();
+
+		handle_general_server_response(body.as_str()).unwrap();
+	}
+
+	//______________________________________________________________________________________________
+	//test download the large file
+	let file_data = get_file(&file_id, key_data.jwt.as_str(), public_token.as_str(), None).await;
+
+	let parts = &file_data.part_list;
+
+	let mut downloaded_file: Vec<u8> = Vec::new();
+
+	for part in parts {
+		let part_id = &part.part_id;
+
+		//should all internal storage
+		let mut decrypted_part = get_and_decrypt_file_part(part_id, key_data.jwt.as_str(), public_token.as_str(), &file_key).await;
+
+		downloaded_file.append(&mut decrypted_part);
+	}
+
+	assert_eq!(file.len(), downloaded_file.len());
+
+	for i in 0..downloaded_file.len() {
+		let org = file[i];
+		let decrypted = file[i];
+
+		assert_eq!(org, decrypted);
+	}
+
+	//______________________________________________________________________________________________
+	//mark it as delete
+	customer_delete(customer_data.user_keys.jwt.as_str()).await;
+
+	//delete the file
 
 	//override the path for this process because test files are exec in sub dir
 	std::env::set_var("LOCAL_STORAGE_PATH", "../../storage");
