@@ -1,6 +1,6 @@
 use rustgram::service::IntoResponse;
 use rustgram::{Request, Response};
-use sentc_crypto_common::file::{FileRegisterInput, FileRegisterOutput};
+use sentc_crypto_common::file::{FileNameUpdate, FileRegisterInput, FileRegisterOutput};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use server_api_common::app::{FILE_STORAGE_NONE, FILE_STORAGE_SENTC};
 use server_core::input_helper::{bytes_to_json, get_raw_body};
@@ -198,6 +198,28 @@ pub async fn download_part_internally(req: Request) -> AppRes<Response>
 	let part_id = get_name_param_from_req(&req, "part_id")?;
 
 	Ok(server_core::file::get_part(part_id).await?)
+}
+
+pub async fn update_file_name(mut req: Request) -> JRes<ServerSuccessOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+
+	check_endpoint_with_req(&req, Endpoint::FileRegister)?;
+
+	let user = get_jwt_data_from_param(&req)?;
+	let part_id = get_name_param_from_req(&req, "file_id")?;
+
+	let input: FileNameUpdate = bytes_to_json(&body)?;
+
+	file_service::update_file_name(
+		user.sub.to_string(),
+		user.id.to_string(),
+		part_id.to_string(),
+		input.encrypted_file_name,
+	)
+	.await?;
+
+	echo_success()
 }
 
 //__________________________________________________________________________________________________

@@ -8,6 +8,7 @@ use server_api::sentc_file_controller::{
 	get_parts,
 	register_file,
 	register_file_in_group,
+	update_file_name,
 	upload_part,
 };
 
@@ -30,6 +31,13 @@ pub fn routes(router: &mut Router)
 	router.get(
 		"/api/v1/file/:file_id",
 		r(get_file)
+			.add(server_api::sentc_jwt_optional_mw)
+			.add(server_api::sentc_app_mw),
+	);
+
+	router.put(
+		"/api/v1/file/:file_id",
+		r(update_file_name)
 			.add(server_api::sentc_jwt_optional_mw)
 			.add(server_api::sentc_app_mw),
 	);

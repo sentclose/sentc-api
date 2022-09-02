@@ -65,6 +65,7 @@ pub struct FileMetaData
 	pub belongs_to_type: BelongsToType,
 	pub key_id: SymKeyId,
 	pub time: u128,
+	pub encrypted_file_name: Option<String>,
 	pub part_list: Vec<FilePartListItem>,
 }
 
@@ -84,6 +85,7 @@ impl Into<sentc_crypto_common::file::FileData> for FileMetaData
 			belongs_to: self.belongs_to,
 			belongs_to_type: self.belongs_to_type,
 			key_id: self.key_id,
+			encrypted_file_name: self.encrypted_file_name,
 			part_list,
 		}
 	}
@@ -96,6 +98,18 @@ impl mysql_async::prelude::FromRow for FileMetaData
 	where
 		Self: Sized,
 	{
+		let encrypted_file_name = match row.take_opt::<Option<String>, _>(6) {
+			Some(value) => {
+				match value {
+					Ok(ir) => ir,
+					Err(mysql_async::FromValueError(_value)) => {
+						return Err(mysql_async::FromRowError(row));
+					},
+				}
+			},
+			None => return Err(mysql_async::FromRowError(row)),
+		};
+
 		let belongs_to = match row.take_opt::<Option<String>, _>(2) {
 			Some(value) => {
 				match value {
@@ -124,6 +138,7 @@ impl mysql_async::prelude::FromRow for FileMetaData
 			key_id: take_or_err!(row, 4, String),
 			time: take_or_err!(row, 5, u128),
 			part_list: Vec::new(),
+			encrypted_file_name,
 		})
 	}
 }
@@ -157,6 +172,7 @@ impl server_core::db::FromSqliteRow for FileMetaData
 			belongs_to_type,
 			key_id: take_or_err!(row, 4),
 			time,
+			encrypted_file_name: take_or_err!(row, 6),
 			part_list: Vec::new(),
 		})
 	}
