@@ -912,6 +912,126 @@ async fn test_20_delete_a_file()
 	}
 }
 
+#[tokio::test]
+async fn test_21_delete_file_via_group_delete()
+{
+	//delete the parent group.
+	let state = TEST_STATE.get().unwrap().read().await;
+	let group_id = &state.group_data.id;
+
+	let creator = &state.user_data;
+	let secret_token = &state.app_data.secret_token;
+
+	let url = get_url("api/v1/group/".to_owned() + group_id);
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(creator.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(body.as_str()).unwrap();
+
+	//check if the group file was deleted (files[1])
+	let file_id = &state.file_ids[1];
+	let child_group_file = &state.file_ids[2];
+
+	dotenv::dotenv().ok();
+	std::env::set_var("DB_PATH", std::env::var("DB_PATH_TEST").unwrap());
+
+	#[cfg(feature = "mysql")]
+	{
+		let user = std::env::var("DB_USER").unwrap();
+		let pw = std::env::var("DB_PASS").unwrap();
+		let mysql_host = std::env::var("DB_HOST").unwrap();
+		let db = std::env::var("DB_NAME").unwrap();
+
+		let mut conn =
+			mysql_async::Conn::new(mysql_async::Opts::try_from(format!("mysql://{}:{}@{}/{}", user, pw, mysql_host, db).as_str()).unwrap())
+				.await
+				.unwrap();
+
+		//language=SQL
+		let sql = "SELECT status,delete_at FROM sentc_file WHERE id = ?";
+
+		let deleted_file = conn
+			.exec_first::<FileDeleteCheck, _, _>(sql, server_core::set_params!(file_id.to_string()))
+			.await
+			.unwrap();
+
+		let deleted_file = deleted_file.unwrap();
+
+		let time = server_core::get_time().unwrap();
+
+		//the deleted time should be in the past
+		assert!(!(deleted_file.deleted_at > time));
+
+		//from file model: FILE_STATUS_TO_DELETE
+		assert_eq!(deleted_file.status, 0);
+
+		//check if the child group file was deleted (files[2])
+
+		//check the other files (from the group) this files should not be deleted
+		//language=SQL
+		let sql = "SELECT status,delete_at FROM sentc_file WHERE id = ?";
+
+		let deleted_file = conn
+			.exec_first::<FileDeleteCheck, _, _>(sql, server_core::set_params!(child_group_file.to_string()))
+			.await
+			.unwrap();
+
+		let deleted_file = deleted_file.unwrap();
+
+		//the deleted time should be in the past
+		assert!(!(deleted_file.deleted_at > time));
+
+		//from file model: FILE_STATUS_TO_DELETE
+		assert_eq!(deleted_file.status, 0);
+
+		drop(conn);
+	}
+
+	#[cfg(feature = "sqlite")]
+	{
+		server_core::db::init_db().await;
+
+		//language=SQL
+		let sql = "SELECT status,delete_at FROM sentc_file WHERE id = ?";
+
+		let deleted_file: Option<FileDeleteCheck> = server_core::db::query_first(sql, server_core::set_params!(file_id.to_string()))
+			.await
+			.unwrap();
+		let deleted_file = deleted_file.unwrap();
+
+		let time = server_core::get_time().unwrap();
+
+		//the deleted time should be in the past
+		assert!(!(deleted_file.deleted_at > time));
+
+		//from file model: FILE_STATUS_TO_DELETE
+		assert_eq!(deleted_file.status, 0);
+
+		//language=SQL
+		let sql = "SELECT status,delete_at FROM sentc_file WHERE id = ?";
+
+		let deleted_file: Option<FileDeleteCheck> = server_core::db::query_first(sql, server_core::set_params!(child_group_file.to_string()))
+			.await
+			.unwrap();
+
+		let deleted_file = deleted_file.unwrap();
+
+		//the deleted time should be in the past
+		assert!(!(deleted_file.deleted_at > time));
+
+		//from file model: FILE_STATUS_TO_DELETE
+		assert_eq!(deleted_file.status, 0);
+	}
+}
+
 //__________________________________________________________________________________________________
 //chunk file
 
@@ -1067,12 +1187,6 @@ async fn test_31_download_chunked_file()
 
 	state.files.push(file_data);
 }
-
-/**
-TODO
-	 - when deleting a group, check if the file is marked as deleted
-	 - when deleting the parent group check if file from the child group is marked as deleted
-*/
 
 #[tokio::test]
 async fn zz_clean_up()
