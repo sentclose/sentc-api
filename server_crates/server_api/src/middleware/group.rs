@@ -2,8 +2,8 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use rustgram::service::Service;
-use rustgram::{GramHttpErr, Request, Response};
+use rustgram::service::{IntoResponse, Service};
+use rustgram::{Request, Response};
 use server_core::cache;
 use server_core::cache::{CacheVariant, LONG_TTL, SHORT_TTL};
 use server_core::input_helper::{bytes_to_json, json_to_string};
@@ -34,7 +34,7 @@ where
 		Box::pin(async move {
 			match get_group_from_req(&mut req).await {
 				Ok(_) => {},
-				Err(e) => return e.get_res(),
+				Err(e) => return e.into_response(),
 			}
 
 			next.call(req).await

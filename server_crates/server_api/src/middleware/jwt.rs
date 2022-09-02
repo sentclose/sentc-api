@@ -6,8 +6,8 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use hyper::header::AUTHORIZATION;
-use rustgram::service::Service;
-use rustgram::{GramHttpErr, Request, Response};
+use rustgram::service::{IntoResponse, Service};
+use rustgram::{Request, Response};
 use sentc_crypto_common::AppId;
 use server_core::cache;
 use server_core::cache::{CacheVariant, DEFAULT_TTL};
@@ -43,7 +43,7 @@ where
 		Box::pin(async move {
 			match jwt_check(&mut req, opt, check_exp).await {
 				Ok(_) => {},
-				Err(e) => return e.get_res(),
+				Err(e) => return e.into_response(),
 			}
 
 			next.call(req).await
@@ -106,12 +106,12 @@ where
 		Box::pin(async move {
 			match jwt_check(&mut req, false, check_exp).await {
 				Ok(_) => {},
-				Err(e) => return e.get_res(),
+				Err(e) => return e.into_response(),
 			}
 
 			let jwt = match get_jwt_data_from_param(&req) {
 				Ok(jwt) => jwt,
-				Err(e) => return e.get_res(),
+				Err(e) => return e.into_response(),
 			};
 
 			//check the app id
@@ -122,7 +122,7 @@ where
 					"Wrong jwt used".to_string(),
 					None,
 				)
-				.get_res();
+				.into_response();
 			}
 
 			next.call(req).await

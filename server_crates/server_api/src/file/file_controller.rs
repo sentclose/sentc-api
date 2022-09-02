@@ -1,4 +1,5 @@
-use rustgram::{GramHttpErr, Request, Response};
+use rustgram::service::IntoResponse;
+use rustgram::{Request, Response};
 use sentc_crypto_common::file::{FileRegisterInput, FileRegisterOutput};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use server_api_common::app::{FILE_STORAGE_NONE, FILE_STORAGE_SENTC};
@@ -186,7 +187,7 @@ pub async fn download_part(req: Request) -> Response
 {
 	match download_part_internally(req).await {
 		Ok(res) => res,
-		Err(e) => e.get_res(),
+		Err(e) => e.into_response(),
 	}
 }
 

@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 server_api = {version = "0.1.0", path = "../server_api", default-features = false, features = ["embedded"]}
 
-rustgram = "0.1.6"
+rustgram = "0.1.7"
 
 [dev-dependencies]
 sentc-crypto-common = {version = "0.1.0", path = "../../sdk-common" }

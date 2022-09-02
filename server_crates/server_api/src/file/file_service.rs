@@ -75,7 +75,7 @@ pub async fn get_file(app_id: AppId, user_id: Option<UserId>, file_id: FileId, g
 							//user tries to access the file outside of the group routes
 							return Err(HttpErr::new(
 								400,
-								ApiErrorCodes::AppAction,
+								ApiErrorCodes::FileAccess,
 								"No access to this file".to_string(),
 								None,
 							));
@@ -85,7 +85,7 @@ pub async fn get_file(app_id: AppId, user_id: Option<UserId>, file_id: FileId, g
 							if g_id.as_str() != id {
 								return Err(HttpErr::new(
 									400,
-									ApiErrorCodes::AppAction,
+									ApiErrorCodes::FileAccess,
 									"No access to this file".to_string(),
 									None,
 								));
@@ -106,7 +106,7 @@ pub async fn get_file(app_id: AppId, user_id: Option<UserId>, file_id: FileId, g
 						None => {
 							return Err(HttpErr::new(
 								400,
-								ApiErrorCodes::AppAction,
+								ApiErrorCodes::FileAccess,
 								"No access to this file".to_string(),
 								None,
 							));
@@ -116,7 +116,7 @@ pub async fn get_file(app_id: AppId, user_id: Option<UserId>, file_id: FileId, g
 							if user_id != id.to_string() && user_id != file.owner {
 								return Err(HttpErr::new(
 									400,
-									ApiErrorCodes::AppAction,
+									ApiErrorCodes::FileAccess,
 									"No access to this file".to_string(),
 									None,
 								));
@@ -148,7 +148,7 @@ pub async fn delete_file(file_id: &str, app_id: &str, user_id: UserId, group: Op
 			BelongsToType::None => {
 				return Err(HttpErr::new(
 					400,
-					ApiErrorCodes::AppAction,
+					ApiErrorCodes::FileAccess,
 					"No access to this file".to_string(),
 					None,
 				));
@@ -156,7 +156,7 @@ pub async fn delete_file(file_id: &str, app_id: &str, user_id: UserId, group: Op
 			BelongsToType::User => {
 				return Err(HttpErr::new(
 					400,
-					ApiErrorCodes::AppAction,
+					ApiErrorCodes::FileAccess,
 					"No access to this file".to_string(),
 					None,
 				));
@@ -168,7 +168,7 @@ pub async fn delete_file(file_id: &str, app_id: &str, user_id: UserId, group: Op
 						//user tries to access the file outside of the group routes
 						return Err(HttpErr::new(
 							400,
-							ApiErrorCodes::AppAction,
+							ApiErrorCodes::FileAccess,
 							"No access to this file".to_string(),
 							None,
 						));
@@ -177,7 +177,7 @@ pub async fn delete_file(file_id: &str, app_id: &str, user_id: UserId, group: Op
 						if g.user_data.rank > 3 {
 							return Err(HttpErr::new(
 								400,
-								ApiErrorCodes::AppAction,
+								ApiErrorCodes::FileAccess,
 								"No access to this file".to_string(),
 								None,
 							));

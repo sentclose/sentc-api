@@ -17,7 +17,7 @@ server-core = {version = "0.1.0", path = "../core", default-features = false}
 hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
 
-rustgram = "0.1.6"
+rustgram = "0.1.7"
 
 # dotenv vars
 dotenv = "0.15.0"
@@ -56,14 +56,14 @@ rand = "0.8.5"
 # to get it from ssh: write this in your ~/.cargo/config.toml:
 # [net]
 # git-fetch-with-cli = true
-sentc-crypto = {version = "0.1.0", git = "ssh://git@gitlab.com/sentclose/sentc/sdk.git", default-features = false, features = ["rust", "server"]}
+sentc-crypto = {version = "0.1.0", git = "ssh://git@gitlab.com/sentclose/sentc/sdk.git",branch = "file_support", default-features = false, features = ["rust", "server"]}
 
 #_______________________________________________________________________________________________________________________
 
 [dev-dependencies]
 # for making req for integration tests
 reqwest = { version = "0.11.11", features = ["json"] }
-sentc-crypto = {version = "0.1.0", git = "ssh://git@gitlab.com/sentclose/sentc/sdk.git", default-features = false, features = ["rust", "server", "server_test"]}
+sentc-crypto = {version = "0.1.0", git = "ssh://git@gitlab.com/sentclose/sentc/sdk.git", branch = "file_support", default-features = false, features = ["rust", "server", "server_test"]}
 #sentc-crypto-full = {version = "0.1.0", git = "ssh://git@gitlab.com/sentclose/sentc/sdk.git", default-features = false, features = ["rust"]}
 
 [features]

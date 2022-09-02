@@ -22,6 +22,7 @@ pub enum CoreErrorCodes
 	FileLocalOpen,
 	FileRemove,
 	FileSave,
+	FileTooLarge,
 	FileDownload,
 }
 
