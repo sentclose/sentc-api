@@ -192,7 +192,13 @@ async fn test_10_upload_small_file_for_non_target()
 	let file_key = &state.group_data.keys[0].group_key;
 
 	//normally create a new sym key for a file but here it is ok
-	let input = sentc_crypto::file::prepare_register_file(file_key, None, sentc_crypto::sdk_common::file::BelongsToType::None).unwrap();
+	let input = sentc_crypto::file::prepare_register_file(
+		file_key,
+		None,
+		sentc_crypto::sdk_common::file::BelongsToType::None,
+		Some("Hello".to_string()),
+	)
+	.unwrap();
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -371,6 +377,7 @@ async fn test_12_upload_small_file_for_group()
 		file_key,
 		Some(state.group_data.id.to_string()),
 		sentc_crypto::sdk_common::file::BelongsToType::Group,
+		None,
 	)
 	.unwrap();
 
@@ -506,6 +513,7 @@ async fn test_15_not_upload_file_in_a_group_without_access()
 		file_key,
 		Some(state.group_data.id.to_string()),
 		sentc_crypto::sdk_common::file::BelongsToType::Group,
+		None,
 	)
 	.unwrap();
 
@@ -600,6 +608,7 @@ async fn test_17_file_access_from_parent_to_child_group()
 		file_key,
 		Some(state.child_group_data.id.to_string()),
 		sentc_crypto::sdk_common::file::BelongsToType::Group,
+		None,
 	)
 	.unwrap();
 
@@ -1046,7 +1055,13 @@ async fn test_30_chunked_filed()
 	let file_key = &state.group_data.keys[0].group_key;
 
 	//normally create a new sym key for a file but here it is ok
-	let input = sentc_crypto::file::prepare_register_file(file_key, None, sentc_crypto::sdk_common::file::BelongsToType::None).unwrap();
+	let input = sentc_crypto::file::prepare_register_file(
+		file_key,
+		None,
+		sentc_crypto::sdk_common::file::BelongsToType::None,
+		None,
+	)
+	.unwrap();
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -1257,7 +1272,13 @@ async fn test_0_large_file()
 	let url = get_url("api/v1/file".to_string());
 
 	let file_key = &group_keys[0].group_key;
-	let input = sentc_crypto::file::prepare_register_file(file_key, None, sentc_crypto::sdk_common::file::BelongsToType::None).unwrap();
+	let input = sentc_crypto::file::prepare_register_file(
+		file_key,
+		None,
+		sentc_crypto::sdk_common::file::BelongsToType::None,
+		None,
+	)
+	.unwrap();
 
 	let client = reqwest::Client::new();
 	let res = client
