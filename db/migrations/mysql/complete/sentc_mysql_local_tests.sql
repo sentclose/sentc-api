@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 30. Aug 2022 um 10:02
+-- Erstellungszeit: 03. Sep 2022 um 10:10
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -188,6 +188,7 @@ DELIMITER ;
 CREATE TABLE `sentc_file` (
   `id` varchar(36) NOT NULL,
   `owner` varchar(36) NOT NULL COMMENT 'user_id',
+  `encrypted_file_name` text DEFAULT NULL,
   `belongs_to` varchar(36) DEFAULT NULL,
   `belongs_to_type` int(11) NOT NULL,
   `app_id` varchar(36) NOT NULL,
