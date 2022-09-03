@@ -159,7 +159,7 @@ pub async fn update_file_name(app_id: AppId, user_id: UserId, file_id: FileId, f
 		));
 	}
 
-	file_model::update_file_name(file_name, app_id, user_id).await?;
+	file_model::update_file_name(file_name, app_id, file_id).await?;
 
 	Ok(())
 }
