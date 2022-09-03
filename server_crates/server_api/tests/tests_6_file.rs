@@ -364,6 +364,50 @@ async fn test_11_download_small_file_non_target()
 }
 
 #[tokio::test]
+async fn test_12_update_file_name()
+{
+	let state = TEST_STATE.get().unwrap().read().await;
+	let file_id = &state.file_ids[0];
+	let file_key = &state.group_data.keys[0].group_key;
+
+	let input = sentc_crypto::file::prepare_file_name_update(file_key, Some("Hello 123".to_string())).unwrap();
+
+	let url = get_url("api/v1/file/".to_string() + file_id);
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header("x-sentc-app-token", state.app_data.public_token.as_str())
+		.header(AUTHORIZATION, auth_header(state.user_data.jwt.as_str()))
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(body.as_str()).unwrap();
+
+	//should get the file info with the new name
+	let url = get_url("api/v1/file/".to_string() + file_id);
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header("x-sentc-app-token", state.app_data.public_token.as_str())
+		.header(AUTHORIZATION, auth_header(state.user_data.jwt.as_str()))
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let file_data: FileData = handle_server_response(body.as_str()).unwrap();
+
+	let decrypted_name = sentc_crypto::crypto::decrypt_string_symmetric(file_key, file_data.encrypted_file_name.unwrap().as_str(), None).unwrap();
+
+	assert_eq!(decrypted_name, "Hello 123");
+}
+
+#[tokio::test]
 async fn test_12_upload_small_file_for_group()
 {
 	let mut state = TEST_STATE.get().unwrap().write().await;
