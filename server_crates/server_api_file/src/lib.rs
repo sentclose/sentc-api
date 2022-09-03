@@ -1,78 +1,8 @@
-use rustgram::{r, Router};
-use server_api::sentc_file_controller::{
-	delete_file,
-	delete_file_in_group,
-	download_part,
-	get_file,
-	get_file_in_group,
-	get_parts,
-	register_file,
-	register_file_in_group,
-	upload_part,
-};
+use rustgram::Router;
+
+mod routes;
 
 pub fn routes(router: &mut Router)
 {
-	router.post(
-		"/api/v1/file",
-		r(register_file)
-			.add(server_api::sentc_jwt_mw)
-			.add(server_api::sentc_app_mw),
-	);
-
-	router.post(
-		"/api/v1/file/part/:session_id/:seq/:end",
-		r(upload_part)
-			.add(server_api::sentc_jwt_mw)
-			.add(server_api::sentc_app_mw),
-	);
-
-	router.get(
-		"/api/v1/file/:file_id",
-		r(get_file)
-			.add(server_api::sentc_jwt_optional_mw)
-			.add(server_api::sentc_app_mw),
-	);
-
-	router.delete(
-		"/api/v1/file/:file_id",
-		r(delete_file)
-			.add(server_api::sentc_jwt_optional_mw)
-			.add(server_api::sentc_app_mw),
-	);
-
-	router.get(
-		"/api/v1/file/:file_id/part_fetch/:last_sequence",
-		r(get_parts).add(server_api::sentc_app_mw),
-	);
-
-	router.get(
-		"/api/v1/file/part/:part_id",
-		r(download_part).add(server_api::sentc_app_mw),
-	);
-
-	//file for a group
-	router.post(
-		"/api/v1/group/:group_id/file",
-		r(register_file_in_group)
-			.add(server_api::sentc_group_mw)
-			.add(server_api::sentc_jwt_mw)
-			.add(server_api::sentc_app_mw),
-	);
-
-	router.get(
-		"/api/v1/group/:group_id/file/:file_id",
-		r(get_file_in_group)
-			.add(server_api::sentc_group_mw)
-			.add(server_api::sentc_jwt_mw)
-			.add(server_api::sentc_app_mw),
-	);
-
-	router.delete(
-		"/api/v1/group/:group_id/file/:file_id",
-		r(delete_file_in_group)
-			.add(server_api::sentc_group_mw)
-			.add(server_api::sentc_jwt_mw)
-			.add(server_api::sentc_app_mw),
-	);
+	routes::routes(router)
 }

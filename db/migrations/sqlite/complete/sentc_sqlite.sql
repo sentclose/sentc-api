@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 10:28am on September 1, 2022 (UTC)
+-- Exported: 10:12am on September 3, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -193,14 +193,14 @@ CREATE TABLE 'sentc_file_session' ('id' TEXT PRIMARY KEY NOT NULL, 'file_id' TEX
 CREATE TABLE 'sentc_file_part' ('id' TEXT PRIMARY KEY NOT NULL, 'file_id' TEXT, 'app_id' TEXT, 'size' TEXT, 'sequence' INTEGER, 'extern' BOOLEAN);
 
 ----
--- Table structure for sentc_file
-----
-CREATE TABLE 'sentc_file' ('id' TEXT PRIMARY KEY NOT NULL, 'owner' TEXT, 'belongs_to' TEXT, 'belongs_to_type' INTEGER, 'app_id' TEXT, 'key_id' TEXT, 'time' TEXT, 'status' INTEGER, 'delete_at' TEXT);
-
-----
 -- Table structure for sentc_file_options
 ----
 CREATE TABLE 'sentc_file_options' ('app_id' TEXT PRIMARY KEY NOT NULL, 'file_storage' INTEGER, 'storage_url' TEXT);
+
+----
+-- Table structure for sentc_file
+----
+CREATE TABLE 'sentc_file' ('id' TEXT PRIMARY KEY NOT NULL, 'owner' TEXT, 'belongs_to' TEXT, 'belongs_to_type' INTEGER, 'app_id' TEXT, 'key_id' TEXT, 'time' TEXT, 'status' INTEGER, 'delete_at' TEXT, 'encrypted_file_name' TEXT DEFAULT NULL);
 
 ----
 -- structure for index sqlite_autoindex_test_1 on table test
@@ -343,12 +343,12 @@ CREATE INDEX 'by_user' ON "sentc_sym_key_management" ("creator_id" ASC, "app_id"
 ;
 
 ----
--- structure for index sqlite_autoindex_sentc_file_1 on table sentc_file
+-- structure for index sqlite_autoindex_sentc_file_options_1 on table sentc_file_options
 ----
 ;
 
 ----
--- structure for index sqlite_autoindex_sentc_file_options_1 on table sentc_file_options
+-- structure for index sqlite_autoindex_sentc_file_1 on table sentc_file
 ----
 ;
 

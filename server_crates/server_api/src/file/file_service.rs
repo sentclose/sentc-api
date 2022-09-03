@@ -49,7 +49,15 @@ pub async fn register_file(input: FileRegisterInput, app_id: AppId, user_id: Use
 		},
 	};
 
-	let (file_id, session_id) = file_model::register_file(input.key_id, belongs_to, belongs_to_type, app_id, user_id).await?;
+	let (file_id, session_id) = file_model::register_file(
+		input.key_id,
+		input.encrypted_file_name,
+		belongs_to,
+		belongs_to_type,
+		app_id,
+		user_id,
+	)
+	.await?;
 
 	Ok(FileRegisterOutput {
 		file_id,
@@ -134,6 +142,26 @@ pub async fn get_file(app_id: AppId, user_id: Option<UserId>, file_id: FileId, g
 	file.part_list = file_parts;
 
 	Ok(file)
+}
+
+pub async fn update_file_name(app_id: AppId, user_id: UserId, file_id: FileId, file_name: Option<String>) -> AppRes<()>
+{
+	let file = file_model::get_file(app_id.to_string(), file_id.to_string()).await?;
+
+	//just check for write access, if owner == user id
+
+	if user_id != file.owner {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::FileAccess,
+			"No access to this file".to_string(),
+			None,
+		));
+	}
+
+	file_model::update_file_name(file_name, app_id, file_id).await?;
+
+	Ok(())
 }
 
 //__________________________________________________________________________________________________

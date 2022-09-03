@@ -16,6 +16,7 @@ static FILE_STATUS_TO_DELETE: i32 = 0;
 
 pub(super) async fn register_file(
 	key_id: SymKeyId,
+	file_name: Option<String>,
 	belongs_to_id: Option<String>,
 	belongs_to_type: i32,
 	app_id: AppId,
@@ -28,7 +29,7 @@ pub(super) async fn register_file(
 	let time = get_time()?;
 
 	//language=SQL
-	let sql = "INSERT INTO sentc_file (id, owner, belongs_to, belongs_to_type, app_id, key_id, time, status, delete_at) VALUES (?,?,?,?,?,?,?,?,?)";
+	let sql = "INSERT INTO sentc_file (id, owner, belongs_to, belongs_to_type, app_id, key_id, time, status, delete_at, encrypted_file_name) VALUES (?,?,?,?,?,?,?,?,?,?)";
 	let params = set_params!(
 		file_id.to_string(),
 		user_id,
@@ -38,7 +39,8 @@ pub(super) async fn register_file(
 		key_id,
 		time.to_string(),
 		FILE_STATUS_AVAILABLE.to_string(),
-		0.to_string()
+		0.to_string(),
+		file_name
 	);
 
 	//language=SQL
@@ -161,7 +163,20 @@ pub(super) async fn delete_session(session_id: String, app_id: AppId) -> AppRes<
 pub(super) async fn get_file(app_id: AppId, file_id: FileId) -> AppRes<FileMetaData>
 {
 	//language=SQL
-	let sql = "SELECT id, owner, belongs_to, belongs_to_type, key_id, time FROM sentc_file WHERE app_id = ? AND id = ? AND status = ?";
+	let sql = r"
+SELECT 
+    id, 
+    owner, 
+    belongs_to, 
+    belongs_to_type, 
+    key_id, 
+    time, 
+    encrypted_file_name 
+FROM sentc_file 
+WHERE 
+    app_id = ? AND 
+    id = ? AND 
+    status = ?";
 
 	let file: Option<FileMetaData> = query_first(sql, set_params!(app_id, file_id, FILE_STATUS_AVAILABLE)).await?;
 
@@ -211,6 +226,16 @@ WHERE
 	}
 
 	Ok(file_parts)
+}
+
+pub(super) async fn update_file_name(file_name: Option<String>, app_id: AppId, file_id: FileId) -> AppRes<()>
+{
+	//language=SQL
+	let sql = "UPDATE sentc_file SET encrypted_file_name = ? WHERE app_id = ? AND id = ?";
+
+	exec(sql, set_params!(file_name, app_id, file_id)).await?;
+
+	Ok(())
 }
 
 //__________________________________________________________________________________________________
