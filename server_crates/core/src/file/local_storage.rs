@@ -59,6 +59,7 @@ impl FileHandler for LocalStorage
 
 		hyper::Response::builder()
 			.header("Content-Type", "application/octet-stream")
+			.header("Access-Control-Allow-Origin", "*")
 			.body(body)
 			.map_err(|_e| {
 				CoreError::new(
