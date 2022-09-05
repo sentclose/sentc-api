@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 03. Sep 2022 um 10:10
+-- Erstellungszeit: 05. Sep 2022 um 20:36
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -232,6 +232,7 @@ CREATE TABLE `sentc_group` (
   `app_id` varchar(36) NOT NULL,
   `parent` varchar(36) DEFAULT NULL,
   `identifier` text DEFAULT NULL,
+  `type` int(11) NOT NULL COMMENT '0 0 normal group, 1 = user group',
   `time` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -264,6 +265,9 @@ CREATE TABLE `sentc_group_keys` (
   `private_key_pair_alg` text NOT NULL,
   `encrypted_private_key` text NOT NULL,
   `public_key` text NOT NULL,
+  `encrypted_sign_key` text DEFAULT NULL,
+  `verify_key` text DEFAULT NULL,
+  `keypair_sign_alg` text DEFAULT NULL,
   `group_key_alg` text NOT NULL,
   `encrypted_ephemeral_key` text DEFAULT NULL COMMENT 'after key rotation, encrypt this key with every group member public key',
   `encrypted_group_key_by_eph_key` text DEFAULT NULL COMMENT 'encrypted group master key, encrypted by the eph key. this key needs to distribute to all group member',
@@ -379,7 +383,7 @@ CREATE TABLE `sentc_sym_key_management` (
 CREATE TABLE `sentc_user` (
   `id` varchar(36) NOT NULL,
   `app_id` varchar(36) NOT NULL,
-  `identifier` varchar(200) NOT NULL,
+  `user_group_id` varchar(36) NOT NULL,
   `time` bigint(20) NOT NULL COMMENT 'registered at'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -391,7 +395,7 @@ CREATE TRIGGER `user_delete_jwt_refresh` AFTER DELETE ON `sentc_user` FOR EACH R
 $$
 DELIMITER ;
 DELIMITER $$
-CREATE TRIGGER `user_delete_user_keys` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_keys WHERE user_id = OLD.id
+CREATE TRIGGER `user_delete_user_device` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_device WHERE user_id = OLD.id
 $$
 DELIMITER ;
 
@@ -411,12 +415,14 @@ CREATE TABLE `sentc_user_action_log` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `sentc_user_keys`
+-- Tabellenstruktur für Tabelle `sentc_user_device`
 --
 
-CREATE TABLE `sentc_user_keys` (
+CREATE TABLE `sentc_user_device` (
   `id` varchar(36) NOT NULL,
   `user_id` varchar(36) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
+  `device_identifier` varchar(200) NOT NULL,
   `client_random_value` text NOT NULL,
   `public_key` text NOT NULL,
   `encrypted_private_key` text NOT NULL,
@@ -430,7 +436,7 @@ CREATE TABLE `sentc_user_keys` (
   `encrypted_master_key_alg` text NOT NULL,
   `hashed_auth_key` text NOT NULL,
   `time` bigint(20) NOT NULL COMMENT 'active since'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='multiple keys per user';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='multiple device per user';
 
 -- --------------------------------------------------------
 
@@ -439,7 +445,7 @@ CREATE TABLE `sentc_user_keys` (
 --
 
 CREATE TABLE `sentc_user_token` (
-  `user_id` varchar(36) NOT NULL,
+  `device_id` varchar(36) NOT NULL,
   `token` varchar(100) NOT NULL,
   `app_id` varchar(36) NOT NULL,
   `time` bigint(20) NOT NULL
@@ -573,7 +579,7 @@ ALTER TABLE `sentc_sym_key_management`
 --
 ALTER TABLE `sentc_user`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `app_id` (`app_id`,`identifier`);
+  ADD UNIQUE KEY `app_id` (`app_id`) USING BTREE;
 
 --
 -- Indizes für die Tabelle `sentc_user_action_log`
@@ -582,17 +588,18 @@ ALTER TABLE `sentc_user_action_log`
   ADD PRIMARY KEY (`user_id`,`time`,`app_id`);
 
 --
--- Indizes für die Tabelle `sentc_user_keys`
+-- Indizes für die Tabelle `sentc_user_device`
 --
-ALTER TABLE `sentc_user_keys`
+ALTER TABLE `sentc_user_device`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`);
+  ADD UNIQUE KEY `device_identifier` (`device_identifier`),
+  ADD KEY `user_id` (`user_id`,`app_id`) USING BTREE;
 
 --
 -- Indizes für die Tabelle `sentc_user_token`
 --
 ALTER TABLE `sentc_user_token`
-  ADD PRIMARY KEY (`user_id`,`token`,`app_id`) USING BTREE;
+  ADD PRIMARY KEY (`device_id`,`token`,`app_id`) USING BTREE;
 
 --
 -- Indizes für die Tabelle `test`
