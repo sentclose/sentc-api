@@ -15,7 +15,7 @@ use crate::group::group_entities::InternalGroupDataComplete;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 static GROUP_TYPE_NORMAL: i32 = 0;
-static GROUP_TYPE_USER: i32 = 1;
+pub(crate) static GROUP_TYPE_USER: i32 = 1;
 
 pub fn get_group_user_data_from_req(req: &Request) -> AppRes<&InternalGroupDataComplete>
 {
