@@ -13,13 +13,14 @@ use crate::group::group_entities::{
 	InternalUserGroupDataFromParent,
 	ListGroups,
 };
+use crate::group::{GROUP_TYPE_NORMAL, GROUP_TYPE_USER};
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 pub(crate) async fn get_internal_group_data(app_id: AppId, group_id: GroupId) -> AppRes<InternalGroupData>
 {
 	//language=SQL
-	let sql = "SELECT id as group_id, app_id, parent, time FROM sentc_group WHERE app_id = ? AND id = ?";
-	let group: Option<InternalGroupData> = query_first(sql, set_params!(app_id, group_id)).await?;
+	let sql = "SELECT id as group_id, app_id, parent, time FROM sentc_group WHERE app_id = ? AND id = ? AND type = ?";
+	let group: Option<InternalGroupData> = query_first(sql, set_params!(app_id, group_id, GROUP_TYPE_NORMAL)).await?;
 
 	match group {
 		Some(d) => Ok(d),
@@ -280,9 +281,12 @@ INSERT INTO sentc_group_keys
      encrypted_ephemeral_key, 
      encrypted_group_key_by_eph_key,
      previous_group_key_id,
-     time
+     time,
+     encrypted_sign_key,
+     verify_key,
+     keypair_sign_alg
      ) 
-VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let encrypted_ephemeral_key: Option<String> = None;
 	let encrypted_group_key_by_eph_key: Option<String> = None;
@@ -299,7 +303,10 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?)";
 		encrypted_ephemeral_key,
 		encrypted_group_key_by_eph_key,
 		previous_group_key_id,
-		time.to_string()
+		time.to_string(),
+		data.encrypted_sign_key,
+		data.verify_key,
+		data.keypair_sign_alg
 	);
 
 	//insert he creator => rank = 0
@@ -362,14 +369,38 @@ VALUES (?,?,?,?,?,?,?)";
 	Ok(group_id)
 }
 
+pub(super) async fn delete_user_group(app_id: AppId, user_id: UserId) -> AppRes<()>
+{
+	//don't delete children because user group won't have children
+
+	//language=SQL
+	let sql = r"
+DELETE 
+FROM sentc_group 
+WHERE 
+    app_id = ? AND 
+    type = ? AND 
+    sentc_group.id = (
+        SELECT user_group_id FROM sentc_user WHERE sentc_user.id = ?
+    )";
+
+	exec(sql, set_params!(app_id, GROUP_TYPE_USER, user_id)).await?;
+
+	Ok(())
+}
+
 pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_rank: i32) -> AppRes<Vec<String>>
 {
 	//check with app id to make sure the user is in the right group
 	check_group_rank(user_rank, 1)?;
 
 	//language=SQL
-	let sql = "DELETE FROM sentc_group WHERE id = ? AND app_id = ?";
-	exec(sql, set_params!(group_id.to_string(), app_id.to_string())).await?;
+	let sql = "DELETE FROM sentc_group WHERE id = ? AND app_id = ? AND type = ?";
+	exec(
+		sql,
+		set_params!(group_id.to_string(), app_id.to_string(), GROUP_TYPE_NORMAL),
+	)
+	.await?;
 
 	//delete the children via recursion, can't delete them directly because sqlite don't support delete from multiple tables
 	//can't delete it via trigger because it is the same table
