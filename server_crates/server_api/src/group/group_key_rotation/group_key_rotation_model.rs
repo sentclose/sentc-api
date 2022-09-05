@@ -29,8 +29,11 @@ INSERT INTO sentc_group_keys
      encrypted_group_key_by_eph_key, 
      previous_group_key_id, 
      ephemeral_alg,
-     time
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+     time,
+     encrypted_sign_key,
+     verify_key,
+     keypair_sign_alg
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let params = set_params!(
 		key_id.to_string(),
@@ -44,7 +47,10 @@ INSERT INTO sentc_group_keys
 		input.encrypted_group_key_by_ephemeral,
 		input.previous_group_key_id,
 		input.ephemeral_alg,
-		time.to_string()
+		time.to_string(),
+		input.encrypted_sign_key,
+		input.verify_key,
+		input.keypair_sign_alg
 	);
 
 	//insert the rotated keys (from the starter) into the group user keys
@@ -186,14 +192,19 @@ pub(super) async fn get_user_and_public_key(
 	last_id: UserId,
 ) -> AppRes<Vec<UserGroupPublicKeyData>>
 {
+	//get the public key from the user group
 	//language=SQL
 	let sql = r"
-SELECT gu.user_id, id, public_key, keypair_encrypt_alg, gu.time 
-FROM sentc_group_user gu, sentc_user_keys uk 
+SELECT user_id, ugk.id, public_key, private_key_pair_alg, gu.time
+FROM 
+    sentc_group_user gu, 
+    sentc_group_keys ugk, 
+    sentc_user u 
 WHERE 
-    gu.user_id = uk.user_id AND 
-    group_id = ? AND 
-    type = 0 AND -- only real user
+    gu.user_id = u.id AND 
+    user_group_id = ugk.group_id AND 
+    gu.type = 0 AND -- only real user
+    gu.group_id = ? AND
     NOT EXISTS(
         -- this user is already done -> skip
         SELECT 1 
