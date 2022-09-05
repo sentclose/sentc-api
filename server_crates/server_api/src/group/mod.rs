@@ -2,6 +2,7 @@ mod group_controller;
 pub(crate) mod group_entities;
 mod group_key_rotation;
 pub(crate) mod group_model;
+pub mod group_service;
 mod group_user;
 
 pub(crate) use group_controller::*;
@@ -12,6 +13,9 @@ use rustgram::Request;
 pub use self::group_user::group_user_service;
 use crate::group::group_entities::InternalGroupDataComplete;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+
+static GROUP_TYPE_NORMAL: i32 = 0;
+static GROUP_TYPE_USER: i32 = 1;
 
 pub fn get_group_user_data_from_req(req: &Request) -> AppRes<&InternalGroupDataComplete>
 {

@@ -233,6 +233,7 @@ pub(super) async fn create(
 	data: CreateData,
 	parent_group_id: Option<GroupId>,
 	user_rank: Option<i32>,
+	group_type: i32,
 ) -> AppRes<GroupId>
 {
 	let (insert_user_id, user_type) = match (&parent_group_id, user_rank) {
@@ -253,13 +254,14 @@ pub(super) async fn create(
 	let time = get_time()?;
 
 	//language=SQL
-	let sql_group = "INSERT INTO sentc_group (id, app_id, parent, identifier, time, type) VALUES (?,?,?,?,?,0)";
+	let sql_group = "INSERT INTO sentc_group (id, app_id, parent, identifier, time, type) VALUES (?,?,?,?,?,?)";
 	let group_params = set_params!(
 		group_id.to_string(),
 		app_id.to_string(),
 		parent_group_id,
 		"".to_string(),
-		time.to_string()
+		time.to_string(),
+		group_type
 	);
 
 	let group_key_id = Uuid::new_v4().to_string();
