@@ -1,9 +1,9 @@
 use sentc_crypto_common::user::{UserInitServerOutput, UserPublicKeyDataServerOutput, UserVerifyKeyDataServerOutput};
-use sentc_crypto_common::{EncryptionKeyPairId, SignKeyPairId, UserId};
+use sentc_crypto_common::{DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, UserId};
 use serde::{Deserialize, Serialize};
 use server_core::take_or_err;
 
-use crate::group::group_entities::GroupInviteReq;
+use crate::group::group_entities::{GroupInviteReq, GroupUserKeys};
 
 //generated with browser console: btoa(String.fromCharCode.apply(null, window.crypto.getRandomValues(new Uint8Array(128/8))));
 //the value with the used alg
@@ -64,6 +64,8 @@ impl server_core::db::FromSqliteRow for JwtVerifyKey
 pub struct UserJwtEntity
 {
 	pub id: UserId,
+	pub device_id: DeviceId,
+	pub group_id: GroupId,
 	pub identifier: String,
 	//aud if it is an app user or an customer
 	pub aud: String,
@@ -143,6 +145,35 @@ impl server_core::db::FromSqliteRow for UserLoginDataEntity
 //__________________________________________________________________________________________________
 //User done login data
 
+#[derive(Serialize)]
+pub struct DoneLoginServerOutput
+{
+	pub device_keys: DoneLoginServerKeysOutputEntity,
+	pub user_keys: Vec<GroupUserKeys>,
+	pub jwt: String,
+	pub refresh_token: String,
+}
+
+impl Into<sentc_crypto_common::user::DoneLoginServerOutput> for DoneLoginServerOutput
+{
+	fn into(self) -> sentc_crypto_common::user::DoneLoginServerOutput
+	{
+		let mut user_keys = Vec::with_capacity(self.user_keys.len());
+
+		for user_key in self.user_keys {
+			user_keys.push(user_key.into());
+		}
+
+		sentc_crypto_common::user::DoneLoginServerOutput {
+			device_keys: self.device_keys.into(),
+			jwt: self.jwt,
+			refresh_token: self.refresh_token,
+			user_keys,
+		}
+	}
+}
+
+#[derive(Serialize)]
 pub struct DoneLoginServerKeysOutputEntity
 {
 	pub encrypted_master_key: String,
@@ -155,6 +186,29 @@ pub struct DoneLoginServerKeysOutputEntity
 	pub keypair_encrypt_id: EncryptionKeyPairId,
 	pub keypair_sign_id: SignKeyPairId,
 	pub user_id: UserId,
+	pub device_id: DeviceId,
+	pub user_group_id: GroupId,
+}
+
+impl Into<sentc_crypto_common::user::DoneLoginServerKeysOutput> for DoneLoginServerKeysOutputEntity
+{
+	fn into(self) -> sentc_crypto_common::user::DoneLoginServerKeysOutput
+	{
+		sentc_crypto_common::user::DoneLoginServerKeysOutput {
+			encrypted_master_key: self.encrypted_master_key,
+			encrypted_private_key: self.encrypted_private_key,
+			public_key_string: self.public_key_string,
+			keypair_encrypt_alg: self.keypair_encrypt_alg,
+			encrypted_sign_key: self.encrypted_sign_key,
+			verify_key_string: self.verify_key_string,
+			keypair_sign_alg: self.keypair_sign_alg,
+			keypair_encrypt_id: self.keypair_encrypt_id,
+			keypair_sign_id: self.keypair_sign_id,
+			user_id: self.user_id,
+			device_id: self.device_id,
+			user_group_id: self.user_group_id,
+		}
+	}
 }
 
 #[cfg(feature = "mysql")]
@@ -179,6 +233,8 @@ impl mysql_async::prelude::FromRow for DoneLoginServerKeysOutputEntity
 			keypair_encrypt_id,
 			keypair_sign_id,
 			user_id: take_or_err!(row, 8, String),
+			device_id: k_id.to_string(),
+			user_group_id: take_or_err!(row, 9, String),
 		})
 	}
 }
@@ -205,16 +261,57 @@ impl server_core::db::FromSqliteRow for DoneLoginServerKeysOutputEntity
 			keypair_encrypt_id,
 			keypair_sign_id,
 			user_id: take_or_err!(row, 8),
+			device_id: k_id.to_string(),
+			user_group_id: take_or_err!(row, 9),
 		})
 	}
 }
 
 //__________________________________________________________________________________________________
 
-pub struct UserKeyFistRow(pub String);
+pub struct UserLoginLightEntity
+{
+	pub user_id: UserId,
+	pub device_id: DeviceId,
+	pub group_id: GroupId,
+}
 
 #[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for UserKeyFistRow
+impl mysql_async::prelude::FromRow for UserLoginLightEntity
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			user_id: take_or_err!(row, 0, String),
+			device_id: take_or_err!(row, 1, String),
+			group_id: take_or_err!(row, 2, String),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl server_core::db::FromSqliteRow for UserLoginLightEntity
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			user_id: take_or_err!(row, 0),
+			device_id: take_or_err!(row, 1),
+			group_id: take_or_err!(row, 2),
+		})
+	}
+}
+
+//__________________________________________________________________________________________________
+
+pub struct UserResetPwCheck(pub UserId);
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for UserResetPwCheck
 {
 	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
 	where
@@ -225,13 +322,52 @@ impl mysql_async::prelude::FromRow for UserKeyFistRow
 }
 
 #[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for UserKeyFistRow
+impl server_core::db::FromSqliteRow for UserResetPwCheck
 {
 	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		Ok(Self(take_or_err!(row, 0)))
+	}
+}
+
+//__________________________________________________________________________________________________
+
+pub struct UserRefreshTokenCheck
+{
+	pub user_id: DeviceId,
+	pub device_identifier: String,
+	pub group_id: GroupId,
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for UserRefreshTokenCheck
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			user_id: take_or_err!(row, 0, String),
+			device_identifier: take_or_err!(row, 1, String),
+			group_id: take_or_err!(row, 2, String),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl server_core::db::FromSqliteRow for UserRefreshTokenCheck
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			user_id: take_or_err!(row, 0),
+			device_identifier: take_or_err!(row, 1),
+			group_id: take_or_err!(row, 2),
+		})
 	}
 }
 
