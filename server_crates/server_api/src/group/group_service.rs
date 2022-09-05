@@ -1,8 +1,11 @@
+use std::future::Future;
+
 use sentc_crypto_common::group::CreateData;
-use sentc_crypto_common::{AppId, GroupId, UserId};
+use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
 use server_core::cache;
 
 use crate::file::file_service;
+use crate::group::group_entities::GroupUserKeys;
 use crate::group::group_model;
 use crate::util::api_res::AppRes;
 use crate::util::get_group_cache_key;
@@ -32,4 +35,20 @@ pub async fn delete_group(app_id: AppId, group_id: GroupId, user_rank: i32) -> A
 	cache::delete(key_group.as_str()).await;
 
 	Ok(())
+}
+
+pub fn delete_user_group(app_id: AppId, user_id: UserId) -> impl Future<Output = AppRes<()>>
+{
+	group_model::delete_user_group(app_id, user_id)
+}
+
+pub fn get_user_group_keys(
+	app_id: AppId,
+	group_id: GroupId,
+	user_id: UserId,
+	last_fetched_time: u128,
+	last_k_id: SymKeyId,
+) -> impl Future<Output = AppRes<Vec<GroupUserKeys>>>
+{
+	group_model::get_user_group_keys(app_id, group_id, user_id, last_fetched_time, last_k_id.to_string())
 }
