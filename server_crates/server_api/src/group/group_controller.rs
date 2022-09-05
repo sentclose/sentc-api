@@ -81,7 +81,7 @@ pub(crate) async fn get_user_group_data(req: Request) -> JRes<GroupServerData>
 	let group_id = &group_data.group_data.id;
 	let user_id = &group_data.user_data.user_id;
 
-	let keys = group_model::get_user_group_keys(
+	let keys = group_service::get_user_group_keys(
 		app_id.to_string(),
 		group_id.to_string(),
 		user_id.to_string(),
@@ -159,7 +159,7 @@ pub(crate) async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupUserKeys>
 		)
 	})?;
 
-	let user_keys = group_model::get_user_group_keys(
+	let user_keys = group_service::get_user_group_keys(
 		group_data.group_data.app_id.to_string(),
 		group_data.group_data.id.to_string(),
 		group_data.user_data.user_id.to_string(),
