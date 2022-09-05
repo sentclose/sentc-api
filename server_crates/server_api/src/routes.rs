@@ -156,6 +156,12 @@ pub(crate) fn routes(router: &mut Router)
 		"/api/v1/keys/sym_key/:key_id",
 		r(crate::key_management::get_sym_key_by_id).add(app_token::app_token_transform),
 	);
+	router.get(
+		"/api/v1/user/user_keys",
+		r(crate::user::get_user_keys)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
 	router.put(
 		"/api/v1/user",
 		r(crate::user::update)

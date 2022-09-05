@@ -109,6 +109,7 @@ routes:
               - group:
                   p: "/user"
                   gr:
+                    - get: {p: "/user_keys", s: crate::user::get_user_keys}
                     - put: {p: "", s: crate::user::update}
                     - put: {p: "/update_pw", s: crate::user::change_password}
                     - put: {p: "/reset_pw", s: crate::user::reset_password}
