@@ -22,6 +22,8 @@ pub use file::file_controller as sentc_file_controller;
 pub use file::file_service as sentc_file_service;
 pub use file::file_worker as sentc_file_worker;
 #[cfg(feature = "embedded")]
+pub use group::group_service as sentc_group_service;
+#[cfg(feature = "embedded")]
 pub use group::group_user_service as sentc_group_user_service;
 #[cfg(feature = "embedded")]
 pub use middleware::app_token::app_token_transform as sentc_app_mw;

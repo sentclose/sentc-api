@@ -11,7 +11,7 @@ use server_core::url_helper::{get_name_param_from_params, get_name_param_from_re
 use crate::customer_app::app_util::{check_endpoint_with_req, Endpoint};
 use crate::file::file_service;
 use crate::group::group_entities::{GroupServerData, GroupUserKeys, ListGroups};
-use crate::group::{get_group_user_data_from_req, group_model, GROUP_TYPE_NORMAL};
+use crate::group::{get_group_user_data_from_req, group_model, group_service, GROUP_TYPE_NORMAL};
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 use crate::util::get_group_cache_key;
@@ -41,13 +41,13 @@ async fn create_group(mut req: Request, parent_group_id: Option<GroupId>, user_r
 
 	let input: CreateData = bytes_to_json(&body)?;
 
-	let group_id = group_model::create(
+	let group_id = group_service::create_group(
 		user.sub.to_string(),
 		user.id.to_string(),
 		input,
+		GROUP_TYPE_NORMAL,
 		parent_group_id,
 		user_rank,
-		GROUP_TYPE_NORMAL,
 	)
 	.await?;
 
