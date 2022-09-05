@@ -154,7 +154,7 @@ SELECT group_id, i.time
 FROM sentc_group_user_invites_and_join_req i, sentc_group g 
 WHERE 
     user_id = ? AND 
-    type = ? AND 
+    i.type = ? AND 
     app_id = ? AND
     group_id = id"
 		.to_string();
