@@ -253,7 +253,7 @@ pub(super) async fn create(
 	let time = get_time()?;
 
 	//language=SQL
-	let sql_group = "INSERT INTO sentc_group (id, app_id, parent, identifier, time) VALUES (?,?,?,?,?)";
+	let sql_group = "INSERT INTO sentc_group (id, app_id, parent, identifier, time, type) VALUES (?,?,?,?,?,0)";
 	let group_params = set_params!(
 		group_id.to_string(),
 		app_id.to_string(),
