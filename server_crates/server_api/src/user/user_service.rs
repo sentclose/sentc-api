@@ -4,7 +4,6 @@ use std::ptr;
 use rand::RngCore;
 use sentc_crypto::sdk_common::GroupId;
 use sentc_crypto::util::public::HashedAuthenticationKey;
-use sentc_crypto_common::group::GroupKeysForNewMemberServerInput;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
 	DoneLoginLightServerOutput,
@@ -15,6 +14,7 @@ use sentc_crypto_common::user::{
 	RegisterData,
 	RegisterServerOutput,
 	ResetPasswordData,
+	UserDeviceDoneRegisterInput,
 	UserDeviceRegisterInput,
 	UserDeviceRegisterOutput,
 	UserIdentifierAvailableServerInput,
@@ -84,50 +84,83 @@ pub async fn register(app_id: AppId, register_input: RegisterData) -> AppRes<Reg
 	Ok(out)
 }
 
-pub async fn prepare_register_device(app_id: AppId, user_id: UserId, input: UserDeviceRegisterInput) -> AppRes<UserDeviceRegisterOutput>
+/**
+# Prepare the device
+
+1. save the device keys
+2. return the device id
+
+In the client:
+- transport the token to the active device
+- call done register device with the device id and the token
+*/
+pub async fn prepare_register_device(app_id: AppId, input: UserDeviceRegisterInput) -> AppRes<UserDeviceRegisterOutput>
 {
-	//TODO endpoint
+	let check = user_model::check_user_exists(app_id.as_str(), input.device_identifier.as_str()).await?;
+
+	if check {
+		//check true == user exists
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::UserExists,
+			"Identifier already exists".to_string(),
+			None,
+		));
+	}
 
 	let device_identifier = input.device_identifier.to_string();
-	let device_id = user_model::register_device(app_id.to_string(), input, user_id).await?;
+	let token = create_refresh_token()?;
+
+	let device_id = user_model::register_device(app_id.to_string(), input, token.to_string()).await?;
 
 	Ok(UserDeviceRegisterOutput {
 		device_id,
+		token,
 		device_identifier,
 	})
 }
 
+/**
+# Done the register device
+
+In the client:
+- prepare the user group keys
+
+1. auto invite the new device
+2. same as group auto invite
+*/
 pub async fn done_register_device(
 	app_id: AppId,
 	user_id: UserId,
 	user_group_id: GroupId,
-	device_id: DeviceId,
-	input: GroupKeysForNewMemberServerInput,
+	input: UserDeviceDoneRegisterInput,
 ) -> AppRes<Option<String>>
 {
-	//TODO endpoint
+	let device_id = user_model::get_done_register_device(app_id.to_string(), input.token).await?;
 
 	//for the auto invite we only need the group id and the group user rank
 	let session_id = group_user_service::invite_auto(
 		&InternalGroupDataComplete {
 			group_data: InternalGroupData {
-				app_id,
+				app_id: app_id.to_string(),
 				id: user_group_id,
 				time: 0,
 				parent: None,
 			},
 			user_data: InternalUserGroupData {
-				user_id: user_id.to_string(),
-				real_user_id: user_id,
+				user_id: "".to_string(),
+				real_user_id: "".to_string(),
 				joined_time: 0,
 				rank: 0, //Rank must be 0
 				get_values_from_parent: None,
 			},
 		},
-		input,
+		input.user_keys,
 		device_id.to_string(), //invite the new device
 	)
 	.await?;
+
+	user_model::done_register_device(app_id, user_id, device_id).await?;
 
 	Ok(session_id)
 }
@@ -364,6 +397,8 @@ pub async fn delete_device(user: &UserJwtEntity, device_id: DeviceId) -> AppRes<
 
 	let user_id = &user.id;
 	let app_id = &user.sub.to_string();
+
+	//TODO delete user group member
 
 	user_model::delete_device(user_id.to_string(), app_id.to_string(), device_id).await
 }

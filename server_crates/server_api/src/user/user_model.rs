@@ -190,7 +190,7 @@ FROM
     sentc_user u
 WHERE ut.app_id = ? AND 
       ut.device_id = ? AND 
-      token = ? AND 
+      ut.token = ? AND 
       ud.id = ut.device_id AND 
       u.id = user_id";
 
@@ -439,6 +439,7 @@ pub(super) async fn register(app_id: AppId, register_data: UserDeviceRegisterInp
 		register_data.device_identifier,
 		master_key_info,
 		derived_data,
+		None,
 	);
 
 	exec_transaction(vec![
@@ -456,20 +457,8 @@ pub(super) async fn register(app_id: AppId, register_data: UserDeviceRegisterInp
 	Ok((user_id, device_id))
 }
 
-pub(super) async fn register_device(app_id: AppId, input: UserDeviceRegisterInput, user_id: UserId) -> AppRes<DeviceId>
+pub(super) async fn register_device(app_id: AppId, input: UserDeviceRegisterInput, token: String) -> AppRes<DeviceId>
 {
-	let check = check_user_exists(app_id.as_str(), input.device_identifier.as_str()).await?;
-
-	if check {
-		//check true == user exists
-		return Err(HttpErr::new(
-			400,
-			ApiErrorCodes::UserExists,
-			"Identifier already exists".to_string(),
-			None,
-		));
-	}
-
 	let master_key_info = input.master_key;
 	let derived_data = input.derived;
 
@@ -478,17 +467,59 @@ pub(super) async fn register_device(app_id: AppId, input: UserDeviceRegisterInpu
 
 	let (sql_keys, key_params) = prepare_register_device(
 		device_id.to_string(),
-		user_id,
+		"not_registered".to_string(),
 		app_id,
 		time,
 		input.device_identifier,
 		master_key_info,
 		derived_data,
+		Some(token),
 	);
 
 	exec(sql_keys, key_params).await?;
 
 	Ok(device_id)
+}
+
+pub(super) async fn get_done_register_device(app_id: AppId, token: String) -> AppRes<DeviceId>
+{
+	if token.as_str() == "NULL" || token.as_str() == "null" {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::UserNotFound,
+			"Device was not found for this token".to_string(),
+			None,
+		));
+	}
+
+	//language=SQL
+	let sql = "SELECT id FROM sentc_user_device WHERE app_id = ? AND token = ?";
+
+	let out: Option<UserResetPwCheck> = query_first(sql, set_params!(app_id, token)).await?;
+
+	let device_id: DeviceId = match out {
+		Some(id) => id.0,
+		None => {
+			return Err(HttpErr::new(
+				400,
+				ApiErrorCodes::UserNotFound,
+				"Device was not found for this token".to_string(),
+				None,
+			))
+		},
+	};
+
+	Ok(device_id)
+}
+
+pub(super) async fn done_register_device(app_id: AppId, user_id: UserId, device_id: DeviceId) -> AppRes<()>
+{
+	//update the user id, in two fn because there can be an err for inserting user keys in user group
+	//language=SQL
+	let sql = "UPDATE sentc_user_device SET user_id = ?, token = NULL WHERE id = ? AND app_id = ?";
+	exec(sql, set_params!(user_id, device_id, app_id)).await?;
+
+	Ok(())
 }
 
 //__________________________________________________________________________________________________
@@ -664,6 +695,7 @@ fn prepare_register_device(
 	device_identifier: String,
 	master_key_info: MasterKey,
 	derived_data: KeyDerivedData,
+	token: Option<String>,
 ) -> (&'static str, Params)
 {
 	//language=SQL
@@ -685,9 +717,10 @@ INSERT INTO sentc_user_device
      master_key_alg, 
      encrypted_master_key_alg, 
      hashed_auth_key, 
-     time
+     time,
+     token
      ) 
-VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let key_params = set_params!(
 		device_id.to_string(),
@@ -706,7 +739,8 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 		master_key_info.master_key_alg,
 		master_key_info.encrypted_master_key_alg,
 		derived_data.hashed_authentication_key,
-		time.to_string()
+		time.to_string(),
+		token
 	);
 
 	(sql_keys, key_params)
