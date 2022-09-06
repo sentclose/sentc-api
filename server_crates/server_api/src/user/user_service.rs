@@ -125,7 +125,7 @@ pub async fn done_register_device(
 			},
 		},
 		input,
-		device_id.to_string(),
+		device_id.to_string(), //invite the new device
 	)
 	.await?;
 
