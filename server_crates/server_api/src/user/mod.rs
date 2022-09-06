@@ -28,7 +28,6 @@ use server_core::url_helper::{get_name_param_from_params, get_name_param_from_re
 
 use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use crate::group::group_entities::GroupUserKeys;
-use crate::group::group_service;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::user::user_entities::{DoneLoginServerOutput, UserInitEntity, UserPublicData, UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
 use crate::user::user_model::UserAction;
@@ -150,14 +149,7 @@ pub(crate) async fn get_user_keys(req: Request) -> JRes<Vec<GroupUserKeys>>
 		)
 	})?;
 
-	let user_keys = group_service::get_user_group_keys(
-		user.sub.to_string(),
-		user.group_id.to_string(),
-		user.device_id.to_string(), //call it with the device id to decrypt the keys
-		last_fetched_time,
-		last_k_id.to_string(),
-	)
-	.await?;
+	let user_keys = user_service::get_user_keys(user, last_fetched_time, last_k_id.to_string()).await?;
 
 	echo(user_keys)
 }

@@ -21,9 +21,9 @@ use sentc_crypto_common::user::{
 	UserIdentifierAvailableServerOutput,
 	UserUpdateServerInput,
 };
-use sentc_crypto_common::{AppId, DeviceId, UserId};
+use sentc_crypto_common::{AppId, DeviceId, SymKeyId, UserId};
 
-use crate::group::group_entities::{InternalGroupData, InternalGroupDataComplete, InternalUserGroupData};
+use crate::group::group_entities::{GroupUserKeys, InternalGroupData, InternalGroupDataComplete, InternalUserGroupData};
 use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
 use crate::user::jwt::create_jwt;
 use crate::user::user_entities::{DoneLoginServerOutput, UserInitEntity, UserJwtEntity, SERVER_RANDOM_VALUE};
@@ -293,6 +293,17 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 	};
 
 	Ok(out)
+}
+
+pub fn get_user_keys(user: &UserJwtEntity, last_fetched_time: u128, last_k_id: SymKeyId) -> impl Future<Output = AppRes<Vec<GroupUserKeys>>>
+{
+	group_service::get_user_group_keys(
+		user.sub.to_string(),
+		user.group_id.to_string(),
+		user.device_id.to_string(), //call it with the device id to decrypt the keys
+		last_fetched_time,
+		last_k_id.to_string(),
+	)
 }
 
 //__________________________________________________________________________________________________
