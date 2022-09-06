@@ -217,11 +217,9 @@ pub(super) async fn get_public_data(app_id: AppId, user_id: UserId) -> AppRes<Us
 SELECT gk.id, public_key, private_key_pair_alg, verify_key, keypair_sign_alg
 FROM 
     sentc_user u, 
-    sentc_group g, 
     sentc_group_keys gk
 WHERE 
-    user_group_id = g.id AND 
-    group_id = g.id AND 
+    user_group_id = group_id AND 
     u.app_id = ? AND 
     u.id = ? 
 ORDER BY gk.time DESC 
@@ -244,18 +242,14 @@ LIMIT 1";
 
 pub(super) async fn get_public_key_by_id(app_id: AppId, user_id: UserId, public_key_id: EncryptionKeyPairId) -> AppRes<UserPublicKeyDataEntity>
 {
-	//TODO endpoint
-
 	//language=SQL
 	let sql = r"
 SELECT gk.id, public_key, private_key_pair_alg 
 FROM 
     sentc_user u, 
-    sentc_group g, 
     sentc_group_keys gk
 WHERE 
-    user_group_id = g.id AND 
-    group_id = g.id AND 
+    user_group_id = group_id AND 
     u.app_id = ? AND 
     u.id = ? AND 
     gk.id = ?";
@@ -285,11 +279,9 @@ pub(super) async fn get_public_key_data(app_id: AppId, user_id: UserId) -> AppRe
 SELECT gk.id, public_key, private_key_pair_alg 
 FROM 
     sentc_user u, 
-    sentc_group g, 
     sentc_group_keys gk
 WHERE 
-    user_group_id = g.id AND 
-    group_id = g.id AND 
+    user_group_id = group_id AND 
     u.app_id = ? AND 
     u.id = ? 
 ORDER BY gk.time DESC 
@@ -312,18 +304,14 @@ LIMIT 1";
 
 pub(super) async fn get_verify_key_by_id(app_id: AppId, user_id: UserId, verify_key_id: SignKeyPairId) -> AppRes<UserVerifyKeyDataEntity>
 {
-	//TODO endpoint
-
 	//language=SQL
 	let sql = r"
 SELECT gk.id,verify_key, keypair_sign_alg
 FROM 
     sentc_user u, 
-    sentc_group g, 
     sentc_group_keys gk
 WHERE 
-    user_group_id = g.id AND 
-    group_id = g.id AND 
+    user_group_id = group_id AND 
     u.app_id = ? AND 
     u.id = ? AND 
     gk.id = ?";
@@ -353,11 +341,9 @@ pub(super) async fn get_verify_key_data(app_id: AppId, user_id: UserId) -> AppRe
 SELECT gk.id,verify_key, keypair_sign_alg
 FROM 
     sentc_user u, 
-    sentc_group g, 
     sentc_group_keys gk
 WHERE 
-    user_group_id = g.id AND 
-    group_id = g.id AND 
+    user_group_id = group_id AND 
     u.app_id = ? AND 
     u.id = ? 
 ORDER BY gk.time DESC 
