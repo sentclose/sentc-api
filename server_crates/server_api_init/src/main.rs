@@ -48,6 +48,7 @@ async fn main()
 			file_part_upload: 0,
 			file_get: 0,
 			file_part_download: 0,
+			user_device_register: 0,
 		},
 		file_options: AppFileOptions {
 			file_storage: -1,

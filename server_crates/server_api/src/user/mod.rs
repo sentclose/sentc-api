@@ -66,6 +66,8 @@ pub(crate) async fn prepare_register_device(mut req: Request) -> JRes<UserDevice
 	let input: UserDeviceRegisterInput = bytes_to_json(&body)?;
 	let app_data = get_app_data_from_req(&req)?;
 
+	check_endpoint_with_app_options(app_data, Endpoint::UserDeviceRegister)?;
+
 	let out = user_service::prepare_register_device(app_data.app_data.app_id.to_string(), input).await?;
 
 	echo(out)
@@ -76,6 +78,8 @@ pub(crate) async fn done_register_device(mut req: Request) -> JRes<GroupAcceptJo
 	let body = get_raw_body(&mut req).await?;
 	let input: UserDeviceDoneRegisterInput = bytes_to_json(&body)?;
 	let user = get_jwt_data_from_param(&req)?;
+
+	check_endpoint_with_req(&req, Endpoint::UserDeviceRegister)?;
 
 	let session_id = user_service::done_register_device(
 		user.sub.to_string(),
