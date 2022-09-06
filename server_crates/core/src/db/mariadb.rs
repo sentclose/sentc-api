@@ -23,6 +23,23 @@ macro_rules! take_or_err {
 	};
 }
 
+#[macro_export]
+macro_rules! take_or_err_opt {
+	($row:expr, $index:expr, $t:ident) => {
+		match $row.take_opt::<Option<$t>, _>($index) {
+			Some(value) => {
+				match value {
+					Ok(ir) => ir,
+					Err(mysql_async::FromValueError(_value)) => {
+						return Err(mysql_async::FromRowError($row));
+					},
+				}
+			},
+			None => return Err(mysql_async::FromRowError($row)),
+		}
+	};
+}
+
 pub struct TransactionData<'a, P>
 where
 	P: Into<Params> + Send,
