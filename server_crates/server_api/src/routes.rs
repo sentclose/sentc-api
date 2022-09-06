@@ -124,6 +124,10 @@ pub(crate) fn routes(router: &mut Router)
 		"/api/v1/done_login",
 		r(crate::user::done_login).add(app_token::app_token_transform),
 	);
+	router.post(
+		"/api/v1/user/prepare_register_device",
+		r(crate::user::prepare_register_device).add(app_token::app_token_transform),
+	);
 	router.put(
 		"/api/v1/refresh",
 		r(crate::user::refresh_jwt)
@@ -165,6 +169,12 @@ pub(crate) fn routes(router: &mut Router)
 	router.put(
 		"/api/v1/user",
 		r(crate::user::update)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.put(
+		"/api/v1/user/done_register_device",
+		r(crate::user::done_register_device)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);

@@ -4,6 +4,7 @@ mod user_model;
 pub mod user_service;
 
 use rustgram::Request;
+use sentc_crypto_common::group::GroupAcceptJoinReqServerOutput;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
@@ -15,6 +16,9 @@ use sentc_crypto_common::user::{
 	RegisterData,
 	RegisterServerOutput,
 	ResetPasswordData,
+	UserDeviceDoneRegisterInput,
+	UserDeviceRegisterInput,
+	UserDeviceRegisterOutput,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
 	UserUpdateServerInput,
@@ -56,6 +60,41 @@ pub(crate) async fn register(mut req: Request) -> JRes<RegisterServerOutput>
 
 	echo(out)
 }
+
+pub(crate) async fn prepare_register_device(mut req: Request) -> JRes<UserDeviceRegisterOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+	let input: UserDeviceRegisterInput = bytes_to_json(&body)?;
+	let app_data = get_app_data_from_req(&req)?;
+
+	let out = user_service::prepare_register_device(app_data.app_data.app_id.to_string(), input).await?;
+
+	echo(out)
+}
+
+pub(crate) async fn done_register_device(mut req: Request) -> JRes<GroupAcceptJoinReqServerOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+	let input: UserDeviceDoneRegisterInput = bytes_to_json(&body)?;
+	let user = get_jwt_data_from_param(&req)?;
+
+	let session_id = user_service::done_register_device(
+		user.sub.to_string(),
+		user.id.to_string(),
+		user.group_id.to_string(),
+		input,
+	)
+	.await?;
+
+	let out = GroupAcceptJoinReqServerOutput {
+		session_id,
+		message: "This device was added to the account.".to_string(),
+	};
+
+	echo(out)
+}
+
+//__________________________________________________________________________________________________
 
 pub(crate) async fn prepare_login(mut req: Request) -> JRes<PrepareLoginSaltServerOutput>
 {
