@@ -4,6 +4,7 @@ use std::ptr;
 use rand::RngCore;
 use sentc_crypto::sdk_common::GroupId;
 use sentc_crypto::util::public::HashedAuthenticationKey;
+use sentc_crypto_common::group::GroupKeysForNewMemberServerInput;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
 	DoneLoginLightServerOutput,
@@ -14,7 +15,7 @@ use sentc_crypto_common::user::{
 	RegisterData,
 	RegisterServerOutput,
 	ResetPasswordData,
-	UserDeviceRegister,
+	UserDeviceRegisterInput,
 	UserDeviceRegisterOutput,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
@@ -83,18 +84,29 @@ pub async fn register(app_id: AppId, register_input: RegisterData) -> AppRes<Reg
 	Ok(out)
 }
 
-pub async fn register_device(app_id: AppId, user_id: UserId, user_group_id: GroupId, input: UserDeviceRegister) -> AppRes<UserDeviceRegisterOutput>
+pub async fn prepare_register_device(app_id: AppId, user_id: UserId, input: UserDeviceRegisterInput) -> AppRes<UserDeviceRegisterOutput>
 {
 	//TODO endpoint
 
-	let device = input.device;
-	let group = input.group_keys;
+	let device_identifier = input.device_identifier.to_string();
+	let device_id = user_model::register_device(app_id.to_string(), input, user_id).await?;
 
-	let device_identifier = device.device_identifier.to_string();
-	let device_id = user_model::register_device(app_id.to_string(), device, user_id).await?;
+	Ok(UserDeviceRegisterOutput {
+		device_id,
+		device_identifier,
+	})
+}
 
-	//TODO join req here and accept join req endpoint. accept the join req from other device which is already registered
-	//TODO change the input here, to just accept the register device input and not the group keys
+pub async fn done_register_device(
+	app_id: AppId,
+	user_id: UserId,
+	user_group_id: GroupId,
+	device_id: DeviceId,
+	input: GroupKeysForNewMemberServerInput,
+) -> AppRes<Option<String>>
+{
+	//TODO endpoint
+
 	//for the auto invite we only need the group id and the group user rank
 	let session_id = group_user_service::invite_auto(
 		&InternalGroupDataComplete {
@@ -105,23 +117,19 @@ pub async fn register_device(app_id: AppId, user_id: UserId, user_group_id: Grou
 				parent: None,
 			},
 			user_data: InternalUserGroupData {
-				user_id: "".to_string(),
-				real_user_id: "".to_string(),
+				user_id: user_id.to_string(),
+				real_user_id: user_id,
 				joined_time: 0,
 				rank: 0, //Rank must be 0
 				get_values_from_parent: None,
 			},
 		},
-		group,
+		input,
 		device_id.to_string(),
 	)
 	.await?;
 
-	Ok(UserDeviceRegisterOutput {
-		device_id,
-		device_identifier,
-		session_id,
-	})
+	Ok(session_id)
 }
 
 //__________________________________________________________________________________________________
