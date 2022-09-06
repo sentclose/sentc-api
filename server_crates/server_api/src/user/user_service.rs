@@ -396,6 +396,8 @@ pub async fn delete(user: &UserJwtEntity) -> AppRes<()>
 
 pub async fn delete_device(user: &UserJwtEntity, device_id: DeviceId) -> AppRes<()>
 {
+	//TODO endpoint
+
 	//this can be any device don't need to be the device to delete
 	if user.fresh == false {
 		return Err(HttpErr::new(
@@ -409,9 +411,24 @@ pub async fn delete_device(user: &UserJwtEntity, device_id: DeviceId) -> AppRes<
 	let user_id = &user.id;
 	let app_id = &user.sub.to_string();
 
-	//TODO delete user group member
+	user_model::delete_device(user_id.to_string(), app_id.to_string(), device_id).await?;
 
-	user_model::delete_device(user_id.to_string(), app_id.to_string(), device_id).await
+	group_user_service::leave_group(&InternalGroupDataComplete {
+		group_data: InternalGroupData {
+			app_id: app_id.to_string(),
+			id: user.group_id.to_string(),
+			time: 0,
+			parent: None,
+		},
+		user_data: InternalUserGroupData {
+			user_id: user_id.to_string(),
+			real_user_id: "".to_string(),
+			joined_time: 0,
+			rank: 4,
+			get_values_from_parent: None,
+		},
+	})
+	.await
 }
 
 pub async fn update(user: &UserJwtEntity, update_input: UserUpdateServerInput) -> AppRes<()>
