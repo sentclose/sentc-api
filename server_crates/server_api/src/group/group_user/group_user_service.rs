@@ -1,9 +1,11 @@
 use sentc_crypto_common::group::GroupKeysForNewMemberServerInput;
 use sentc_crypto_common::{AppId, GroupId, UserId};
+use server_core::cache;
 
 use crate::group::group_entities::{GroupInviteReq, InternalGroupDataComplete};
 use crate::group::group_user::group_user_model;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::util::get_group_user_cache_key;
 
 pub async fn get_invite_req(app_id: AppId, user_id: UserId, last_fetched_time: u128, last_id: GroupId) -> AppRes<Vec<GroupInviteReq>>
 {
@@ -69,4 +71,24 @@ pub async fn invite_auto(
 	group_user_model::accept_invite(group_data.group_data.id.to_string(), invited_user).await?;
 
 	Ok(session_id)
+}
+
+pub async fn leave_group(group_data: &InternalGroupDataComplete) -> AppRes<()>
+{
+	group_user_model::user_leave_group(
+		group_data.group_data.id.to_string(),
+		group_data.user_data.user_id.to_string(),
+		group_data.user_data.rank,
+	)
+	.await?;
+
+	let key_group = get_group_user_cache_key(
+		group_data.group_data.app_id.as_str(),
+		group_data.group_data.id.as_str(),
+		group_data.user_data.user_id.as_str(),
+	);
+
+	cache::delete(key_group.as_str()).await;
+
+	Ok(())
 }
