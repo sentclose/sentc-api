@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 05. Sep 2022 um 20:36
+-- Erstellungszeit: 06. Sep 2022 um 09:46
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -463,7 +463,8 @@ CREATE TABLE `sentc_user_device` (
   `master_key_alg` text NOT NULL,
   `encrypted_master_key_alg` text NOT NULL,
   `hashed_auth_key` text NOT NULL,
-  `time` bigint(20) NOT NULL COMMENT 'active since'
+  `time` bigint(20) NOT NULL COMMENT 'active since',
+  `token` varchar(100) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='multiple device per user';
 
 -- --------------------------------------------------------
@@ -621,7 +622,8 @@ ALTER TABLE `sentc_user_action_log`
 ALTER TABLE `sentc_user_device`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `device_identifier` (`device_identifier`),
-  ADD KEY `user_id` (`user_id`,`app_id`) USING BTREE;
+  ADD KEY `user_id` (`user_id`,`app_id`) USING BTREE,
+  ADD KEY `app_id` (`app_id`,`token`);
 
 --
 -- Indizes für die Tabelle `sentc_user_token`

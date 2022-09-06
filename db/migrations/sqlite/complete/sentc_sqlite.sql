@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 8:37pm on September 5, 2022 (UTC)
+-- Exported: 9:47am on September 6, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -187,7 +187,7 @@ CREATE TABLE 'sentc_user' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'time'
 ----
 -- Table structure for sentc_user_device
 ----
-CREATE TABLE 'sentc_user_device' ('id' TEXT PRIMARY KEY NOT NULL, 'user_id' TEXT, 'app_id' TEXT, 'device_identifier' TEXT, 'client_random_value' TEXT, 'public_key' TEXT, 'encrypted_private_key' TEXT, 'keypair_encrypt_alg' TEXT, 'encrypted_sign_key' TEXT, 'verify_key' TEXT, 'keypair_sign_alg' TEXT, 'derived_alg' TEXT, 'encrypted_master_key' TEXT, 'master_key_alg' TEXT, 'encrypted_master_key_alg' TEXT, 'hashed_auth_key' TEXT, 'time' TEXT);
+CREATE TABLE 'sentc_user_device' ('id' TEXT PRIMARY KEY NOT NULL, 'user_id' TEXT, 'app_id' TEXT, 'device_identifier' TEXT, 'client_random_value' TEXT, 'public_key' TEXT, 'encrypted_private_key' TEXT, 'keypair_encrypt_alg' TEXT, 'encrypted_sign_key' TEXT, 'verify_key' TEXT, 'keypair_sign_alg' TEXT, 'derived_alg' TEXT, 'encrypted_master_key' TEXT, 'master_key_alg' TEXT, 'encrypted_master_key_alg' TEXT, 'hashed_auth_key' TEXT, 'time' TEXT, 'token' TEXT);
 
 ----
 -- Table structure for sentc_user_token
@@ -346,6 +346,11 @@ CREATE INDEX 'app_id' ON "sentc_user" ("app_id");
 -- structure for index sqlite_autoindex_sentc_user_token_1 on table sentc_user_token
 ----
 ;
+
+----
+-- structure for index token on table sentc_user_device
+----
+CREATE INDEX 'token' ON "sentc_user_device" ("token");
 
 ----
 -- structure for trigger group_delete_invites on table sentc_group
