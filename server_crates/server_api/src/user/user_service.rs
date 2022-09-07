@@ -311,7 +311,7 @@ pub fn get_user_key(user: &UserJwtEntity, key_id: SymKeyId) -> impl Future<Outpu
 	group_service::get_user_group_key(
 		user.sub.to_string(),
 		user.group_id.to_string(),
-		user.id.to_string(),
+		user.device_id.to_string(), //call it with the device id to decrypt the keys
 		key_id,
 	)
 }
