@@ -179,7 +179,7 @@ pub(crate) async fn get_user_group_key(req: Request) -> JRes<GroupUserKeys>
 
 	let key_id = get_name_param_from_req(&req, "key_id")?;
 
-	let key = group_model::get_user_group_key(
+	let key = group_service::get_user_group_key(
 		group_data.group_data.app_id.to_string(),
 		group_data.group_data.id.to_string(),
 		group_data.user_data.user_id.to_string(),

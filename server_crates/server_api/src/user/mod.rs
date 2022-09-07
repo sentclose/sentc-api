@@ -158,6 +158,18 @@ pub(crate) async fn get_user_keys(req: Request) -> JRes<Vec<GroupUserKeys>>
 	echo(user_keys)
 }
 
+pub(crate) async fn get_user_key(req: Request) -> JRes<GroupUserKeys>
+{
+	check_endpoint_with_req(&req, Endpoint::UserDoneLogin)?;
+
+	let user = get_jwt_data_from_param(&req)?;
+	let key_id = get_name_param_from_req(&req, "key_id")?;
+
+	let user_key = user_service::get_user_key(user, key_id.to_string()).await?;
+
+	echo(user_key)
+}
+
 //__________________________________________________________________________________________________
 
 pub(crate) async fn get(req: Request) -> JRes<UserPublicData>

@@ -306,6 +306,16 @@ pub fn get_user_keys(user: &UserJwtEntity, last_fetched_time: u128, last_k_id: S
 	)
 }
 
+pub fn get_user_key(user: &UserJwtEntity, key_id: SymKeyId) -> impl Future<Output = AppRes<GroupUserKeys>>
+{
+	group_service::get_user_group_key(
+		user.sub.to_string(),
+		user.group_id.to_string(),
+		user.id.to_string(),
+		key_id,
+	)
+}
+
 //__________________________________________________________________________________________________
 // user fn with jwt
 
@@ -410,6 +420,8 @@ pub async fn delete_device(user: &UserJwtEntity, device_id: DeviceId) -> AppRes<
 
 	let user_id = &user.id;
 	let app_id = &user.sub.to_string();
+
+	//TODO delete jwt cache of this device
 
 	user_model::delete_device(user_id.to_string(), app_id.to_string(), device_id).await?;
 

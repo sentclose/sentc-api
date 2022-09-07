@@ -50,3 +50,11 @@ pub fn get_user_group_keys(
 {
 	group_model::get_user_group_keys(app_id, group_id, user_id, last_fetched_time, last_k_id.to_string())
 }
+
+/**
+# Get a single key
+*/
+pub fn get_user_group_key(app_id: AppId, group_id: GroupId, user_id: UserId, key_id: SymKeyId) -> impl Future<Output = AppRes<GroupUserKeys>>
+{
+	group_model::get_user_group_key(app_id, group_id, user_id, key_id)
+}
