@@ -108,7 +108,9 @@ pub async fn prepare_register_device(app_id: AppId, input: UserDeviceRegisterInp
 		));
 	}
 
-	let public_key = input.derived.public_key.to_string();
+	let public_key_string = input.derived.public_key.to_string();
+	let keypair_encrypt_alg = input.derived.keypair_encrypt_alg.to_string();
+
 	let device_identifier = input.device_identifier.to_string();
 	let token = create_refresh_token()?;
 
@@ -118,7 +120,8 @@ pub async fn prepare_register_device(app_id: AppId, input: UserDeviceRegisterInp
 		device_id,
 		token,
 		device_identifier,
-		public_key,
+		public_key_string,
+		keypair_encrypt_alg,
 	})
 }
 
