@@ -210,6 +210,12 @@ pub(crate) fn routes(router: &mut Router)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
+	router.delete(
+		"/api/v1/user/device/:device_id",
+		r(crate::user::delete_device)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
 	router.post(
 		"/api/v1/group",
 		r(crate::group::create)

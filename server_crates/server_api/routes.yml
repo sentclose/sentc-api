@@ -120,6 +120,7 @@ routes:
                     - put: {p: "/reset_pw", s: crate::user::reset_password}
                     # check the api token for delete action, maybe the app creator only wants to trigger delete from the own backend
                     - delete: {p: "", s: crate::user::delete}
+                    - delete: {p: "/device/:device_id", s: crate::user::delete_device}
               #_________________________________________________________________________________________________________
               # group routes in the group mod, check always the app token for this actions
               - group:

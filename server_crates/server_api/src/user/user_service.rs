@@ -411,8 +411,6 @@ pub async fn delete(user: &UserJwtEntity) -> AppRes<()>
 
 pub async fn delete_device(user: &UserJwtEntity, device_id: DeviceId) -> AppRes<()>
 {
-	//TODO endpoint
-
 	//this can be any device don't need to be the device to delete
 	if user.fresh == false {
 		return Err(HttpErr::new(
@@ -425,8 +423,6 @@ pub async fn delete_device(user: &UserJwtEntity, device_id: DeviceId) -> AppRes<
 
 	let user_id = &user.id;
 	let app_id = &user.sub.to_string();
-
-	//TODO delete jwt cache of this device
 
 	user_model::delete_device(user_id.to_string(), app_id.to_string(), device_id).await?;
 

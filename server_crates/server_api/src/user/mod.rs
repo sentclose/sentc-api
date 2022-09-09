@@ -314,6 +314,18 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
+pub(crate) async fn delete_device(req: Request) -> JRes<ServerSuccessOutput>
+{
+	check_endpoint_with_req(&req, Endpoint::UserDeviceDelete)?;
+
+	let user = get_jwt_data_from_param(&req)?;
+	let device_id = get_name_param_from_req(&req, "device_id")?;
+
+	user_service::delete_device(user, device_id.to_string()).await?;
+
+	echo_success()
+}
+
 pub(crate) async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 {
 	let body = get_raw_body(&mut req).await?;
