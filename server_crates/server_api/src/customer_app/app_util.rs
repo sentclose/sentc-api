@@ -20,6 +20,7 @@ pub enum Endpoint
 	UserPublicData,
 	UserRefreshJwt,
 	UserDeviceRegister,
+	UserDeviceDelete,
 
 	GroupCreate,
 	GroupDelete,
@@ -125,6 +126,7 @@ pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endp
 		Endpoint::UserPublicData => options.user_public_data,
 		Endpoint::UserRefreshJwt => options.user_jwt_refresh,
 		Endpoint::UserDeviceRegister => options.user_device_register,
+		Endpoint::UserDeviceDelete => options.user_device_delete,
 
 		Endpoint::GroupCreate => options.group_create,
 		Endpoint::GroupDelete => options.group_delete,
