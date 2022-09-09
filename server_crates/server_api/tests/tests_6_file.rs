@@ -97,7 +97,7 @@ async fn aaa_init_state()
 
 	let group_id = create_group(
 		secret_token.as_str(),
-		&key_data.keys.public_key,
+		&key_data.user_keys[0].public_key,
 		None,
 		key_data.jwt.as_str(),
 	)
@@ -107,7 +107,7 @@ async fn aaa_init_state()
 		secret_token.as_str(),
 		key_data.jwt.as_str(),
 		group_id.as_str(),
-		&key_data.keys.private_key,
+		&key_data.user_keys[0].private_key,
 		false,
 	)
 	.await
@@ -192,7 +192,7 @@ async fn test_10_upload_small_file_for_non_target()
 	let file_key = &state.group_data.keys[0].group_key;
 
 	//normally create a new sym key for a file but here it is ok
-	let input = sentc_crypto::file::prepare_register_file(
+	let (input, _) = sentc_crypto::file::prepare_register_file(
 		file_key,
 		None,
 		sentc_crypto::sdk_common::file::BelongsToType::None,
@@ -417,7 +417,7 @@ async fn test_12_upload_small_file_for_group()
 	let file_key = &state.group_data.keys[0].group_key;
 
 	//normally create a new sym key for a file but here it is ok
-	let input = sentc_crypto::file::prepare_register_file(
+	let (input, _) = sentc_crypto::file::prepare_register_file(
 		file_key,
 		Some(state.group_data.id.to_string()),
 		sentc_crypto::sdk_common::file::BelongsToType::Group,
@@ -553,7 +553,7 @@ async fn test_15_not_upload_file_in_a_group_without_access()
 	let file_key = &state.group_data.keys[0].group_key;
 
 	//normally create a new sym key for a file but here it is ok
-	let input = sentc_crypto::file::prepare_register_file(
+	let (input, _) = sentc_crypto::file::prepare_register_file(
 		file_key,
 		Some(state.group_data.id.to_string()),
 		sentc_crypto::sdk_common::file::BelongsToType::Group,
@@ -609,8 +609,8 @@ async fn test_16_no_file_access_when_for_child_group_user()
 		&child_group.keys,
 		state.user_data_1.user_id.as_str(),
 		state.user_data_1.jwt.as_str(),
-		&state.user_data_1.keys.exported_public_key,
-		&state.user_data_1.keys.private_key,
+		&state.user_data_1.user_keys[0].exported_public_key,
+		&state.user_data_1.user_keys[0].private_key,
 	)
 	.await;
 
@@ -648,7 +648,7 @@ async fn test_17_file_access_from_parent_to_child_group()
 	let file_key = &state.child_group_data.keys[0].group_key;
 
 	//normally create a new sym key for a file but here it is ok
-	let input = sentc_crypto::file::prepare_register_file(
+	let (input, _) = sentc_crypto::file::prepare_register_file(
 		file_key,
 		Some(state.child_group_data.id.to_string()),
 		sentc_crypto::sdk_common::file::BelongsToType::Group,
@@ -1099,7 +1099,7 @@ async fn test_30_chunked_filed()
 	let file_key = &state.group_data.keys[0].group_key;
 
 	//normally create a new sym key for a file but here it is ok
-	let input = sentc_crypto::file::prepare_register_file(
+	let (input, _) = sentc_crypto::file::prepare_register_file(
 		file_key,
 		None,
 		sentc_crypto::sdk_common::file::BelongsToType::None,
@@ -1288,7 +1288,7 @@ async fn test_0_large_file()
 
 	let group_id = create_group(
 		secret_token.as_str(),
-		&key_data.keys.public_key,
+		&key_data.user_keys[0].public_key,
 		None,
 		key_data.jwt.as_str(),
 	)
@@ -1298,7 +1298,7 @@ async fn test_0_large_file()
 		secret_token.as_str(),
 		key_data.jwt.as_str(),
 		group_id.as_str(),
-		&key_data.keys.private_key,
+		&key_data.user_keys[0].private_key,
 		false,
 	)
 	.await
@@ -1316,7 +1316,7 @@ async fn test_0_large_file()
 	let url = get_url("api/v1/file".to_string());
 
 	let file_key = &group_keys[0].group_key;
-	let input = sentc_crypto::file::prepare_register_file(
+	let (input, _) = sentc_crypto::file::prepare_register_file(
 		file_key,
 		None,
 		sentc_crypto::sdk_common::file::BelongsToType::None,

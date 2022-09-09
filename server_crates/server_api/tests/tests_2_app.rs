@@ -379,7 +379,7 @@ async fn test_17_update_app_options()
 	assert_eq!(register_out.err_code, None);
 
 	let register_out = register_out.result.unwrap();
-	assert_eq!(register_out.user_identifier, username.to_string());
+	assert_eq!(register_out.device_identifier, username.to_string());
 
 	sentc_crypto::user::done_register(body.as_str()).unwrap();
 }

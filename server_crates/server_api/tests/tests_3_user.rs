@@ -1,6 +1,7 @@
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
-use sentc_crypto::UserData;
+use sentc_crypto::util::public::handle_general_server_response;
+use sentc_crypto::{SdkError, UserData};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{
 	DoneLoginLightServerOutput,
@@ -13,7 +14,6 @@ use sentc_crypto_common::user::{
 	UserPublicData,
 	UserPublicKeyDataServerOutput,
 	UserUpdateServerInput,
-	UserUpdateServerOut,
 	UserVerifyKeyDataServerOutput,
 };
 use sentc_crypto_common::{ServerOutput, UserId};
@@ -153,7 +153,7 @@ async fn test_11_user_register()
 	assert_eq!(register_out.err_code, None);
 
 	let register_out = register_out.result.unwrap();
-	assert_eq!(register_out.user_identifier, username.to_string());
+	assert_eq!(register_out.device_identifier, username.to_string());
 
 	//get the user id like the client
 	let user_id = sentc_crypto::user::done_register(body.as_str()).unwrap();
@@ -237,7 +237,7 @@ async fn test_13_user_register_failed_username_exists()
 		},
 		Err(e) => {
 			match e {
-				sentc_crypto::SdkError::ServerErr(s, m) => {
+				SdkError::ServerErr(s, m) => {
 					//this should be the right err
 					//this are the same err as the backend
 					assert_eq!(error.err_code.unwrap(), s);
@@ -343,7 +343,7 @@ async fn test_15_login_with_wrong_password()
 		},
 		Err(e) => {
 			match e {
-				sentc_crypto::SdkError::ServerErr(s, m) => {
+				SdkError::ServerErr(s, m) => {
 					//this should be the right err
 					//this are the same err as the backend
 					assert_eq!(login_output.err_code.unwrap(), s);
@@ -538,7 +538,13 @@ async fn test_18_reset_password()
 	let key_data = user.user_data.as_ref().unwrap();
 	let public_token = &user.app_data.public_token;
 
-	let input = sentc_crypto::user::reset_password(new_pw, &key_data.keys.private_key, &key_data.keys.sign_key).unwrap();
+	//use device keys for pw reset
+	let input = sentc_crypto::user::reset_password(
+		new_pw,
+		&key_data.device_keys.private_key,
+		&key_data.device_keys.sign_key,
+	)
+	.unwrap();
 
 	let url = get_url("api/v1/user/reset_pw".to_owned());
 	let client = reqwest::Client::new();
@@ -555,7 +561,7 @@ async fn test_18_reset_password()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
 	//test login with the old pw
@@ -609,7 +615,6 @@ async fn test_18_reset_password()
 async fn test_19_user_update()
 {
 	let mut user = USER_TEST_STATE.get().unwrap().write().await;
-	let old_username = &user.username;
 	let jwt = &user.user_data.as_ref().unwrap().jwt;
 
 	let new_username = "bla".to_string();
@@ -633,14 +638,7 @@ async fn test_19_user_update()
 
 	let body = res.text().await.unwrap();
 
-	let out = ServerOutput::<UserUpdateServerOut>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
-
-	let out = out.result.unwrap();
-
-	assert_ne!(out.user_identifier, old_username.to_string());
+	handle_general_server_response(body.as_str()).unwrap();
 
 	user.username = new_username;
 }
@@ -672,10 +670,17 @@ async fn test_20_user_not_update_when_identifier_exists()
 
 	let body = res.text().await.unwrap();
 
-	let out = ServerOutput::<UserUpdateServerOut>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, false);
-	assert_eq!(out.err_code.unwrap(), 101);
+	match handle_general_server_response(body.as_str()) {
+		Ok(_) => panic!("Must be an error"),
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(s, _) => {
+					assert_eq!(s, 101)
+				},
+				_ => panic!("Must be server error"),
+			}
+		},
+	}
 }
 
 #[tokio::test]
@@ -702,10 +707,7 @@ async fn test_21_get_user_public_data()
 
 	assert_eq!(
 		out.public_key_id,
-		user.user_data
-			.as_ref()
-			.unwrap()
-			.keys
+		user.user_data.as_ref().unwrap().user_keys[0]
 			.public_key
 			.key_id
 			.to_string()
@@ -713,10 +715,7 @@ async fn test_21_get_user_public_data()
 
 	assert_eq!(
 		out.verify_key_id,
-		user.user_data
-			.as_ref()
-			.unwrap()
-			.keys
+		user.user_data.as_ref().unwrap().user_keys[0]
 			.verify_key
 			.key_id
 			.to_string()
@@ -742,10 +741,7 @@ async fn test_21_get_user_public_data()
 
 	assert_eq!(
 		out.public_key_id,
-		user.user_data
-			.as_ref()
-			.unwrap()
-			.keys
+		user.user_data.as_ref().unwrap().user_keys[0]
 			.public_key
 			.key_id
 			.to_string()
@@ -771,10 +767,7 @@ async fn test_21_get_user_public_data()
 
 	assert_eq!(
 		out.verify_key_id,
-		user.user_data
-			.as_ref()
-			.unwrap()
-			.keys
+		user.user_data.as_ref().unwrap().user_keys[0]
 			.verify_key
 			.key_id
 			.to_string()
@@ -836,10 +829,17 @@ async fn test_22_refresh_jwt()
 
 	let body = res.text().await.unwrap();
 
-	let out = ServerOutput::<UserUpdateServerOut>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, false);
-	assert_eq!(out.err_code.unwrap(), 101);
+	match handle_general_server_response(body.as_str()) {
+		Ok(_) => panic!("Must be an error"),
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(s, _) => {
+					assert_eq!(s, 101)
+				},
+				_ => panic!("Must be server error"),
+			}
+		},
+	}
 
 	//______________________________________________________________________________________________
 	//it should not delete the user because a fresh jwt is needed here.
@@ -920,7 +920,7 @@ async fn test_24_user_delete()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 }
 
 #[derive(Serialize, Deserialize)]
@@ -984,7 +984,7 @@ async fn test_25_not_register_user_with_wrong_input()
 		},
 		Err(e) => {
 			match e {
-				sentc_crypto::SdkError::ServerErr(s, m) => {
+				SdkError::ServerErr(s, m) => {
 					//this should be the right err
 					//this are the same err as the backend
 					assert_eq!(error.err_code.unwrap(), s);
