@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 09. Sep 2022 um 15:16
+-- Erstellungszeit: 10. Sep 2022 um 21:12
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -421,10 +421,6 @@ CREATE TABLE `sentc_user` (
 -- Trigger `sentc_user`
 --
 DELIMITER $$
-CREATE TRIGGER `user_delete_jwt_refresh` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_token WHERE user_id = OLD.id
-$$
-DELIMITER ;
-DELIMITER $$
 CREATE TRIGGER `user_delete_user_device` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_device WHERE user_id = OLD.id
 $$
 DELIMITER ;
@@ -468,6 +464,14 @@ CREATE TABLE `sentc_user_device` (
   `time` bigint(20) NOT NULL COMMENT 'active since',
   `token` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='multiple device per user';
+
+--
+-- Trigger `sentc_user_device`
+--
+DELIMITER $$
+CREATE TRIGGER `user_delete_jwt_refresh` AFTER DELETE ON `sentc_user_device` FOR EACH ROW DELETE FROM sentc_user_token WHERE device_id = OLD.id
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -610,7 +614,7 @@ ALTER TABLE `sentc_sym_key_management`
 --
 ALTER TABLE `sentc_user`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `app_id` (`app_id`) USING BTREE;
+  ADD KEY `app_id` (`app_id`) USING BTREE;
 
 --
 -- Indizes für die Tabelle `sentc_user_action_log`
