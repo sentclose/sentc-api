@@ -46,7 +46,7 @@ async fn test_0_register_customer_with_email()
 
 	let input = CustomerRegisterData {
 		email,
-		register_data,
+		register_data: register_data.device,
 	};
 
 	let public_token = env::var("SENTC_PUBLIC_TOKEN").unwrap();
@@ -107,7 +107,7 @@ async fn test_10_register_without_valid_email()
 
 	let input = CustomerRegisterData {
 		email: wrong_email,
-		register_data,
+		register_data: register_data.device,
 	};
 
 	let public_token = customer.public_token.as_str();
@@ -146,7 +146,7 @@ async fn test_11_register_customer()
 
 	let input = CustomerRegisterData {
 		email: email.to_string(),
-		register_data,
+		register_data: register_data.device,
 	};
 
 	let public_token = customer.public_token.as_str();
@@ -552,34 +552,37 @@ fn get_fake_login_data(old_pw: &str) -> (String, String)
 
 	//do the server prepare login again to get the salt (we need a salt to this fake register data)
 	let salt_string = sentc_crypto::util::server::generate_salt_from_base64_to_string(
-		fake_key_data.derived.client_random_value.as_str(),
-		fake_key_data.derived.derived_alg.as_str(),
+		fake_key_data.device.derived.client_random_value.as_str(),
+		fake_key_data.device.derived.derived_alg.as_str(),
 		"",
 	)
 	.unwrap();
 
 	let prepare_login_user_data = PrepareLoginSaltServerOutput {
 		salt_string,
-		derived_encryption_key_alg: fake_key_data.derived.derived_alg.to_string(),
+		derived_encryption_key_alg: fake_key_data.device.derived.derived_alg.to_string(),
 	};
 
-	let keys = DoneLoginServerKeysOutput {
-		encrypted_master_key: fake_key_data.master_key.encrypted_master_key,
-		encrypted_private_key: fake_key_data.derived.encrypted_private_key,
-		public_key_string: fake_key_data.derived.public_key,
-		keypair_encrypt_alg: fake_key_data.derived.keypair_encrypt_alg,
-		encrypted_sign_key: fake_key_data.derived.encrypted_sign_key,
-		verify_key_string: fake_key_data.derived.verify_key,
-		keypair_sign_alg: fake_key_data.derived.keypair_sign_alg,
+	let device_keys = DoneLoginServerKeysOutput {
+		encrypted_master_key: fake_key_data.device.master_key.encrypted_master_key,
+		encrypted_private_key: fake_key_data.device.derived.encrypted_private_key,
+		public_key_string: fake_key_data.device.derived.public_key,
+		keypair_encrypt_alg: fake_key_data.device.derived.keypair_encrypt_alg,
+		encrypted_sign_key: fake_key_data.device.derived.encrypted_sign_key,
+		verify_key_string: fake_key_data.device.derived.verify_key,
+		keypair_sign_alg: fake_key_data.device.derived.keypair_sign_alg,
 		keypair_encrypt_id: "abc".to_string(),
 		keypair_sign_id: "abc".to_string(),
+		user_id: "abc".to_string(),
+		device_id: "1234".to_string(),
+		user_group_id: "1234".to_string(),
 	};
 
 	let done_login_user_data = DoneLoginServerOutput {
-		keys,
+		device_keys,
 		jwt: "abc".to_string(),
 		refresh_token: "abc".to_string(),
-		user_id: "abc".to_string(),
+		user_keys: vec![],
 	};
 
 	let prepare_login_user_data = ServerOutput {
@@ -684,7 +687,12 @@ async fn test_16_reset_customer_password()
 
 	let user_key_data = sentc_crypto::user::done_login(&derived_master_key, done_login_user_data.as_str()).unwrap();
 
-	let pw_reset_out = sentc_crypto::user::reset_password(new_pw, &user_key_data.keys.private_key, &user_key_data.keys.sign_key).unwrap();
+	let pw_reset_out = sentc_crypto::user::reset_password(
+		new_pw,
+		&user_key_data.device_keys.private_key,
+		&user_key_data.device_keys.sign_key,
+	)
+	.unwrap();
 	let reset_password_data = sentc_crypto_common::user::ResetPasswordData::from_string(pw_reset_out.as_str()).unwrap();
 
 	let input = server_api_common::customer::CustomerDonePasswordResetInput {

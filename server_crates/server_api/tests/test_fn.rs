@@ -39,7 +39,7 @@ pub async fn register_customer(email: String, pw: &str) -> CustomerId
 
 	let input = CustomerRegisterData {
 		email,
-		register_data,
+		register_data: register_data.device,
 	};
 
 	let client = reqwest::Client::new();
