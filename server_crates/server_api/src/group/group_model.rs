@@ -124,7 +124,10 @@ SELECT
     public_key,
     private_key_pair_alg,
     uk.encrypted_group_key_key_id,
-    uk.time
+    uk.time,
+    encrypted_sign_key,
+    verify_key,
+    keypair_sign_alg
 FROM 
     sentc_group_keys k, 
     sentc_group_user_keys uk
@@ -173,7 +176,10 @@ SELECT
     public_key,
     private_key_pair_alg,
     uk.encrypted_group_key_key_id,
-    uk.time
+    uk.time,
+    encrypted_sign_key,
+    verify_key,
+    keypair_sign_alg
 FROM 
     sentc_group_keys k, 
     sentc_group_user_keys uk
