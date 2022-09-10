@@ -48,6 +48,13 @@ pub async fn exists(app_data: &AppData, data: UserIdentifierAvailableServerInput
 	Ok(out)
 }
 
+pub async fn register_light(app_id: AppId, input: UserDeviceRegisterInput) -> AppRes<(String, String)>
+{
+	let (user_id, device_id) = user_model::register(app_id.to_string(), input).await?;
+
+	Ok((user_id, device_id))
+}
+
 pub async fn register(app_id: AppId, register_input: RegisterData) -> AppRes<RegisterServerOutput>
 {
 	let mut group_data = register_input.group;
