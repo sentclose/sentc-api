@@ -60,8 +60,7 @@ pub(crate) async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 		));
 	}
 
-	let registered_user_account = user::user_service::register(app_data, register_data.register_data).await?;
-	let customer_id = registered_user_account.user_id;
+	let (customer_id, _) = user::user_service::register_light(app_data.app_data.app_id.to_string(), register_data.register_data).await?;
 
 	//send the normal token via email
 	let validate_token = generate_email_validate_token()?;
@@ -181,7 +180,7 @@ pub(crate) async fn refresh_jwt(mut req: Request) -> JRes<DoneLoginLightServerOu
 	let app_data = get_app_data_from_req(&req)?;
 	let user = get_jwt_data_from_param(&req)?;
 
-	let out = user::user_service::refresh_jwt(app_data, user.id.to_string(), input, "customer").await?;
+	let out = user::user_service::refresh_jwt(app_data, user.device_id.to_string(), input, "customer").await?;
 
 	echo(out)
 }
@@ -319,7 +318,7 @@ pub(crate) async fn done_reset_password(mut req: Request) -> JRes<ServerSuccessO
 
 	let token_data = customer_model::get_email_by_token(input.token).await?;
 
-	user::user_service::reset_password(token_data.id.as_str(), input.reset_password_data).await?;
+	user::user_service::reset_password(token_data.id, token_data.device_id, input.reset_password_data).await?;
 
 	echo_success()
 }

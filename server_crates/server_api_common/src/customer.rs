@@ -1,4 +1,4 @@
-use sentc_crypto_common::user::{DoneLoginLightServerOutput, RegisterData, ResetPasswordData};
+use sentc_crypto_common::user::{DoneLoginLightServerOutput, ResetPasswordData, UserDeviceRegisterInput};
 use sentc_crypto_common::{AppId, CustomerId};
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "server")]
@@ -8,7 +8,7 @@ use server_core::take_or_err;
 pub struct CustomerRegisterData
 {
 	pub email: String,
-	pub register_data: RegisterData,
+	pub register_data: UserDeviceRegisterInput,
 }
 
 #[derive(Serialize, Deserialize)]
