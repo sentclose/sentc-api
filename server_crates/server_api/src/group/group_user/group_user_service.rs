@@ -1,3 +1,5 @@
+use std::future::Future;
+
 use sentc_crypto_common::group::GroupKeysForNewMemberServerInput;
 use sentc_crypto_common::{AppId, GroupId, UserId};
 use server_core::cache;
@@ -7,11 +9,10 @@ use crate::group::group_user::group_user_model;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::util::get_group_user_cache_key;
 
-pub async fn get_invite_req(app_id: AppId, user_id: UserId, last_fetched_time: u128, last_id: GroupId) -> AppRes<Vec<GroupInviteReq>>
+pub fn get_invite_req(app_id: AppId, user_id: UserId, last_fetched_time: u128, last_id: GroupId)
+	-> impl Future<Output = AppRes<Vec<GroupInviteReq>>>
 {
-	let reqs = group_user_model::get_invite_req_to_user(app_id, user_id, last_fetched_time, last_id).await?;
-
-	Ok(reqs)
+	group_user_model::get_invite_req_to_user(app_id, user_id, last_fetched_time, last_id)
 }
 
 /**
