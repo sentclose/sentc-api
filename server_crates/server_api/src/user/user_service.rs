@@ -2,7 +2,6 @@ use std::future::Future;
 use std::ptr;
 
 use rand::RngCore;
-use sentc_crypto::sdk_common::GroupId;
 use sentc_crypto::util::public::HashedAuthenticationKey;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
@@ -21,7 +20,7 @@ use sentc_crypto_common::user::{
 	UserIdentifierAvailableServerOutput,
 	UserUpdateServerInput,
 };
-use sentc_crypto_common::{AppId, DeviceId, SymKeyId, UserId};
+use sentc_crypto_common::{AppId, DeviceId, GroupId, SymKeyId, UserId};
 
 use crate::group::group_entities::{GroupUserKeys, InternalGroupData, InternalGroupDataComplete, InternalUserGroupData};
 use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
