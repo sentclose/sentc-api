@@ -1840,11 +1840,11 @@ dependencies = [
 [[package]]
 name = "sentc-crypto"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git?branch=multi_device_support#eb1fb5c6cd5ccd5a97ebeb477174ad486c8e5fb4"
+source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#4f614849a409f4aa1600a8b1b5ee09c30e6ffa1d"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
- "sentc-crypto-common 0.1.0 (git+ssh://git@gitlab.com/sentclose/sentc/sdk.git?branch=multi_device_support)",
+ "sentc-crypto-common 0.1.0 (git+ssh://git@gitlab.com/sentclose/sentc/sdk.git)",
  "sentc-crypto-core",
  "serde",
  "serde_json",
@@ -1861,7 +1861,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-common"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git?branch=multi_device_support#eb1fb5c6cd5ccd5a97ebeb477174ad486c8e5fb4"
+source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#4f614849a409f4aa1600a8b1b5ee09c30e6ffa1d"
 dependencies = [
  "serde",
  "serde_json",
@@ -1870,7 +1870,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-core"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git?branch=multi_device_support#eb1fb5c6cd5ccd5a97ebeb477174ad486c8e5fb4"
+source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#4f614849a409f4aa1600a8b1b5ee09c30e6ffa1d"
 dependencies = [
  "aes-gcm",
  "argon2",
