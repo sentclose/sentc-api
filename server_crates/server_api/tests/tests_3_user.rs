@@ -1,6 +1,8 @@
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
-use sentc_crypto::util::public::handle_general_server_response;
+use sentc_crypto::sdk_common::group::GroupAcceptJoinReqServerOutput;
+use sentc_crypto::sdk_common::user::UserDeviceRegisterOutput;
+use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::{SdkError, UserData};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{
@@ -46,6 +48,7 @@ pub struct UserState
 	pub pw: String,
 	pub user_id: UserId,
 	pub user_data: Option<UserData>,
+	pub user_data_1: Option<UserData>, //for the 2nd device
 	pub app_data: AppRegisterOutput,
 	pub customer_data: CustomerDoneLoginOutput,
 }
@@ -73,6 +76,7 @@ async fn aaa_init_global_test()
 					pw: "12345".to_string(),
 					user_id: "".to_string(),
 					user_data: None,
+					user_data_1: None,
 					app_data,
 					customer_data,
 				})
@@ -898,10 +902,182 @@ async fn test_23_user_normal_init()
 	assert_eq!(out.invites.len(), 0);
 }
 
+#[tokio::test]
+async fn test_24_user_add_device()
+{
+	let mut user = USER_TEST_STATE.get().unwrap().write().await;
+	let jwt = &user.user_data.as_ref().unwrap().jwt;
+
+	let input = sentc_crypto::user::prepare_register_device_start("device_1", "12345").unwrap();
+
+	let url = get_url("api/v1/user/prepare_register_device".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	//normal check if the res was ok
+	let _out: UserDeviceRegisterOutput = handle_server_response(body.as_str()).unwrap();
+
+	//check in the sdk if the res was ok
+	sentc_crypto::user::done_register_device_start(body.as_str()).unwrap();
+
+	//get the user group keys
+	let group_keys = &user.user_data.as_ref().unwrap().user_keys;
+
+	let mut group_keys_ref = vec![];
+
+	for decrypted_group_key in group_keys {
+		group_keys_ref.push(&decrypted_group_key.group_key);
+	}
+
+	//now transfer the output to the main device to add it
+	let input = sentc_crypto::user::prepare_register_device(body.as_str(), &group_keys_ref, false).unwrap();
+
+	let url = get_url("api/v1/user/done_register_device".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let _out: GroupAcceptJoinReqServerOutput = handle_server_response(body.as_str()).unwrap();
+
+	//no key session yet
+
+	//login the new device
+	let url = get_url("api/v1/prepare_login".to_owned());
+
+	let prep_server_input = sentc_crypto::user::prepare_login_start("device_1").unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.body(prep_server_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let (auth_key, derived_master_key) = sentc_crypto::user::prepare_login("device_1", "12345", body.as_str()).unwrap();
+
+	// //done login
+	let url = get_url("api/v1/done_login".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.body(auth_key)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let done_login = sentc_crypto::user::done_login(&derived_master_key, body.as_str()).unwrap();
+
+	assert_ne!(
+		&done_login.device_keys.private_key.key_id,
+		&user
+			.user_data
+			.as_ref()
+			.unwrap()
+			.device_keys
+			.private_key
+			.key_id
+	);
+
+	user.user_data_1 = Some(done_login);
+}
+
+#[tokio::test]
+async fn test_25_delete_device()
+{
+	let user = USER_TEST_STATE.get().unwrap().read().await;
+	let jwt = &user.user_data.as_ref().unwrap().jwt; //use the jwt from the main device
+
+	let user_data = user.user_data_1.as_ref().unwrap();
+
+	let url = get_url("api/v1/user/device/".to_owned() + user_data.device_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(body.as_str()).unwrap();
+
+	//should not login with the deleted device
+	let url = get_url("api/v1/prepare_login".to_owned());
+
+	let prep_server_input = sentc_crypto::user::prepare_login_start("device_1").unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.body(prep_server_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let (auth_key, derived_master_key) = sentc_crypto::user::prepare_login("device_1", "12345", body.as_str()).unwrap();
+
+	// //done login
+	let url = get_url("api/v1/done_login".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.body(auth_key)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	match sentc_crypto::user::done_login(&derived_master_key, body.as_str()) {
+		Ok(_) => panic!("should be error"),
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(s, _) => {
+					assert_eq!(s, 100)
+				},
+				_ => panic!("should be server error"),
+			}
+		},
+	}
+}
+
 //do user tests before this one!
 
 #[tokio::test]
-async fn test_24_user_delete()
+async fn test_30_user_delete()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let jwt = &user.user_data.as_ref().unwrap().jwt;
@@ -943,7 +1119,7 @@ impl WrongRegisterData
 }
 
 #[tokio::test]
-async fn test_25_not_register_user_with_wrong_input()
+async fn test_31_not_register_user_with_wrong_input()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 
@@ -997,7 +1173,7 @@ async fn test_25_not_register_user_with_wrong_input()
 }
 
 #[tokio::test]
-async fn test_26_register_and_login_user_via_test_fn()
+async fn test_32_register_and_login_user_via_test_fn()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let secret_token = &user.app_data.secret_token;
