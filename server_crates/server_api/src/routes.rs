@@ -105,8 +105,16 @@ pub(crate) fn routes(router: &mut Router)
 		r(crate::user::get_public_key_data).add(app_token::app_token_transform),
 	);
 	router.get(
+		"/api/v1/user/:user_id/public_key/:key_id",
+		r(crate::user::get_public_key_by_id).add(app_token::app_token_transform),
+	);
+	router.get(
 		"/api/v1/user/:user_id/verify_key",
 		r(crate::user::get_verify_key_data).add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/user/:user_id/verify_key/:key_id",
+		r(crate::user::get_verify_key_by_id).add(app_token::app_token_transform),
 	);
 	router.post(
 		"/api/v1/exists",
@@ -123,6 +131,10 @@ pub(crate) fn routes(router: &mut Router)
 	router.post(
 		"/api/v1/done_login",
 		r(crate::user::done_login).add(app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/user/prepare_register_device",
+		r(crate::user::prepare_register_device).add(app_token::app_token_transform),
 	);
 	router.put(
 		"/api/v1/refresh",
@@ -156,9 +168,27 @@ pub(crate) fn routes(router: &mut Router)
 		"/api/v1/keys/sym_key/:key_id",
 		r(crate::key_management::get_sym_key_by_id).add(app_token::app_token_transform),
 	);
+	router.get(
+		"/api/v1/user/user_keys",
+		r(crate::user::get_user_keys)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/user/user_key/:key_id",
+		r(crate::user::get_user_key)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
 	router.put(
 		"/api/v1/user",
 		r(crate::user::update)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.put(
+		"/api/v1/user/done_register_device",
+		r(crate::user::done_register_device)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
@@ -177,6 +207,12 @@ pub(crate) fn routes(router: &mut Router)
 	router.delete(
 		"/api/v1/user",
 		r(crate::user::delete)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.delete(
+		"/api/v1/user/device/:device_id",
+		r(crate::user::delete_device)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);

@@ -55,7 +55,7 @@ async fn aaa_init_global_state()
 
 	let group_id = create_group(
 		secret_token.as_str(),
-		&key_data.keys.public_key,
+		&key_data.user_keys[0].public_key,
 		None,
 		key_data.jwt.as_str(),
 	)
@@ -65,7 +65,7 @@ async fn aaa_init_global_state()
 		secret_token.as_str(),
 		key_data.jwt.as_str(),
 		group_id.as_str(),
-		&key_data.keys.private_key,
+		&key_data.user_keys[0].private_key,
 		false,
 	)
 	.await

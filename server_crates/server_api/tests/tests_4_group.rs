@@ -150,7 +150,7 @@ async fn test_10_create_group()
 	let creator = USERS_TEST_STATE.get().unwrap().read().await;
 	let creator = &creator[0];
 
-	let group_input = sentc_crypto::group::prepare_create(&creator.user_data.keys.public_key).unwrap();
+	let group_input = sentc_crypto::group::prepare_create(&creator.user_data.user_keys[0].public_key).unwrap();
 
 	let url = get_url("api/v1/group".to_owned());
 	let client = reqwest::Client::new();
@@ -209,7 +209,7 @@ async fn test_11_get_group_data()
 
 	let data = sentc_crypto::group::get_group_data(body.as_str()).unwrap();
 
-	let data_key = sentc_crypto::group::decrypt_group_keys(&creator.user_data.keys.private_key, &data.keys[0]).unwrap();
+	let data_key = sentc_crypto::group::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, &data.keys[0]).unwrap();
 
 	//user is the creator
 	assert_eq!(data.rank, 0);
@@ -326,7 +326,7 @@ async fn test_13_invite_user()
 	}
 
 	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(
-		&user_to_invite.user_data.keys.exported_public_key,
+		&user_to_invite.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
 	)
@@ -478,7 +478,7 @@ async fn test_17_accept_invite()
 		secret_token,
 		user_to_invite.user_data.jwt.as_str(),
 		group.group_id.as_str(),
-		&user_to_invite.user_data.keys.private_key,
+		&user_to_invite.user_data.user_keys[0].private_key,
 		false,
 	)
 	.await;
@@ -516,7 +516,7 @@ async fn test_18_invite_user_an_reject_invite()
 	}
 
 	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(
-		&user_to_invite.user_data.keys.exported_public_key,
+		&user_to_invite.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
 	)
@@ -613,7 +613,7 @@ async fn test_19_not_leave_group_when_user_is_the_only_admin()
 		secret_token,
 		creator.user_data.jwt.as_str(),
 		group.group_id.as_str(),
-		&creator.user_data.keys.private_key,
+		&creator.user_data.user_keys[0].private_key,
 		false,
 	)
 	.await;
@@ -885,7 +885,12 @@ async fn test_25_no_join_req_when_user_is_in_parent_group()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(&creator.user_data.keys.exported_public_key, &group_keys_ref, false).unwrap();
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(
+		&creator.user_data.user_keys[0].exported_public_key,
+		&group_keys_ref,
+		false,
+	)
+	.unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/invite/" + creator.user_id.as_str());
 
@@ -949,7 +954,7 @@ async fn test_26_accept_join_req()
 	}
 
 	let join = sentc_crypto::group::prepare_group_keys_for_new_member(
-		&user_to_accept.user_data.keys.exported_public_key,
+		&user_to_accept.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
 	)
@@ -979,7 +984,7 @@ async fn test_26_accept_join_req()
 		secret_token,
 		user.user_data.jwt.as_str(),
 		group.group_id.as_str(),
-		&user.user_data.keys.private_key,
+		&user.user_data.user_keys[0].private_key,
 		false,
 	);
 }
@@ -1002,7 +1007,7 @@ async fn test_27_start_key_rotation()
 		.get(user.user_id.as_str())
 		.unwrap()[0]
 		.group_key;
-	let invoker_public_key = &user.user_data.keys.public_key;
+	let invoker_public_key = &user.user_data.user_keys[0].public_key;
 
 	let input = sentc_crypto::group::key_rotation(pre_group_key, invoker_public_key).unwrap();
 
@@ -1034,7 +1039,7 @@ async fn test_27_start_key_rotation()
 		secret_token,
 		user.user_data.jwt.as_str(),
 		out.group_id.as_str(),
-		&user.user_data.keys.private_key,
+		&user.user_data.user_keys[0].private_key,
 		false,
 	)
 	.await;
@@ -1061,7 +1066,7 @@ async fn test_28_done_key_rotation_for_other_user()
 		secret_token,
 		user.user_data.jwt.as_str(),
 		group.group_id.as_str(),
-		&user.user_data.keys.private_key,
+		&user.user_data.user_keys[0].private_key,
 		true,
 	)
 	.await;
@@ -1093,8 +1098,8 @@ async fn test_28_done_key_rotation_for_other_user()
 	//done it for each key
 	for key in &out {
 		let rotation_out = sentc_crypto::group::done_key_rotation(
-			&user.user_data.keys.private_key,
-			&user.user_data.keys.public_key,
+			&user.user_data.user_keys[0].private_key,
+			&user.user_data.user_keys[0].public_key,
 			&group
 				.decrypted_group_keys
 				.get(user.user_id.as_str())
@@ -1124,7 +1129,7 @@ async fn test_28_done_key_rotation_for_other_user()
 		secret_token,
 		user.user_data.jwt.as_str(),
 		group.group_id.as_str(),
-		&user.user_data.keys.private_key,
+		&user.user_data.user_keys[0].private_key,
 		false,
 	)
 	.await;
@@ -1150,7 +1155,7 @@ async fn test_28_done_key_rotation_for_other_user()
 	let body = res.text().await.unwrap();
 	let new_key = sentc_crypto::group::get_group_key_from_server_output(body.as_str()).unwrap();
 
-	let _decrypted_key = sentc_crypto::group::decrypt_group_keys(&user.user_data.keys.private_key, &new_key).unwrap();
+	let _decrypted_key = sentc_crypto::group::decrypt_group_keys(&user.user_data.user_keys[0].private_key, &new_key).unwrap();
 }
 
 #[tokio::test]
@@ -1186,7 +1191,7 @@ async fn test_29_get_key_with_pagination()
 	let mut group_keys = Vec::with_capacity(group_keys_fetch.len());
 
 	for group_keys_fetch in group_keys_fetch {
-		group_keys.push(sentc_crypto::group::decrypt_group_keys(&user.user_data.keys.private_key, &group_keys_fetch).unwrap());
+		group_keys.push(sentc_crypto::group::decrypt_group_keys(&user.user_data.user_keys[0].private_key, &group_keys_fetch).unwrap());
 	}
 
 	//normally use len() - 1 but this time we wont fake a pagination, so we don't use the last item
@@ -1239,8 +1244,8 @@ async fn test_30_invite_user_with_two_keys()
 		user_keys,
 		user_to_invite.user_id.as_str(),
 		user_to_invite.user_data.jwt.as_str(),
-		&user_to_invite.user_data.keys.exported_public_key,
-		&user_to_invite.user_data.keys.private_key,
+		&user_to_invite.user_data.user_keys[0].exported_public_key,
+		&user_to_invite.user_data.user_keys[0].private_key,
 	)
 	.await;
 
@@ -1290,7 +1295,7 @@ async fn test_31_update_rank()
 		secret_token,
 		user_to_change.user_data.jwt.as_str(),
 		group.group_id.as_str(),
-		&user_to_change.user_data.keys.private_key,
+		&user_to_change.user_data.user_keys[0].private_key,
 		false,
 	)
 	.await;
@@ -1484,8 +1489,8 @@ async fn test_34_key_rotation_in_child_group_by_parent()
 		user_keys,
 		user_for_child_group.user_id.as_str(),
 		user_for_child_group.user_data.jwt.as_str(),
-		&user_for_child_group.user_data.keys.exported_public_key,
-		&user_for_child_group.user_data.keys.private_key,
+		&user_for_child_group.user_data.user_keys[0].exported_public_key,
+		&user_for_child_group.user_data.user_keys[0].private_key,
 	)
 	.await;
 
@@ -1532,8 +1537,8 @@ async fn test_34_key_rotation_in_child_group_by_parent()
 		user_for_child_group.user_data.jwt.as_str(),
 		child_group.group_id.as_str(),
 		pre_group_key,
-		&user_for_child_group.user_data.keys.public_key,
-		&user_for_child_group.user_data.keys.private_key,
+		&user_for_child_group.user_data.user_keys[0].public_key,
+		&user_for_child_group.user_data.user_keys[0].private_key,
 	)
 	.await;
 
@@ -1588,8 +1593,8 @@ async fn test_35_key_rotation_in_child_group_by_user()
 		user_for_child_group.user_data.jwt.as_str(),
 		child_group.group_id.as_str(),
 		pre_group_key,
-		&user_for_child_group.user_data.keys.public_key,
-		&user_for_child_group.user_data.keys.private_key,
+		&user_for_child_group.user_data.user_keys[0].public_key,
+		&user_for_child_group.user_data.user_keys[0].private_key,
 	)
 	.await;
 
@@ -1658,7 +1663,7 @@ async fn test_37_get_all_groups_to_user()
 	//create more groups for pagination
 	let group_1 = create_group(
 		secret_token,
-		&creator.user_data.keys.public_key,
+		&creator.user_data.user_keys[0].public_key,
 		None,
 		creator.user_data.jwt.as_str(),
 	)
@@ -1666,7 +1671,7 @@ async fn test_37_get_all_groups_to_user()
 
 	let group_2 = create_group(
 		secret_token,
-		&creator.user_data.keys.public_key,
+		&creator.user_data.user_keys[0].public_key,
 		None,
 		creator.user_data.jwt.as_str(),
 	)
@@ -1674,7 +1679,7 @@ async fn test_37_get_all_groups_to_user()
 
 	let group_3 = create_group(
 		secret_token,
-		&creator.user_data.keys.public_key,
+		&creator.user_data.user_keys[0].public_key,
 		None,
 		creator.user_data.jwt.as_str(),
 	)

@@ -1,6 +1,9 @@
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
-use sentc_crypto::UserData;
+use sentc_crypto::sdk_common::group::GroupAcceptJoinReqServerOutput;
+use sentc_crypto::sdk_common::user::UserDeviceRegisterOutput;
+use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
+use sentc_crypto::{SdkError, UserData};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{
 	DoneLoginLightServerOutput,
@@ -13,7 +16,6 @@ use sentc_crypto_common::user::{
 	UserPublicData,
 	UserPublicKeyDataServerOutput,
 	UserUpdateServerInput,
-	UserUpdateServerOut,
 	UserVerifyKeyDataServerOutput,
 };
 use sentc_crypto_common::{ServerOutput, UserId};
@@ -46,6 +48,7 @@ pub struct UserState
 	pub pw: String,
 	pub user_id: UserId,
 	pub user_data: Option<UserData>,
+	pub user_data_1: Option<UserData>, //for the 2nd device
 	pub app_data: AppRegisterOutput,
 	pub customer_data: CustomerDoneLoginOutput,
 }
@@ -73,6 +76,7 @@ async fn aaa_init_global_test()
 					pw: "12345".to_string(),
 					user_id: "".to_string(),
 					user_data: None,
+					user_data_1: None,
 					app_data,
 					customer_data,
 				})
@@ -153,7 +157,7 @@ async fn test_11_user_register()
 	assert_eq!(register_out.err_code, None);
 
 	let register_out = register_out.result.unwrap();
-	assert_eq!(register_out.user_identifier, username.to_string());
+	assert_eq!(register_out.device_identifier, username.to_string());
 
 	//get the user id like the client
 	let user_id = sentc_crypto::user::done_register(body.as_str()).unwrap();
@@ -237,7 +241,7 @@ async fn test_13_user_register_failed_username_exists()
 		},
 		Err(e) => {
 			match e {
-				sentc_crypto::SdkError::ServerErr(s, m) => {
+				SdkError::ServerErr(s, m) => {
 					//this should be the right err
 					//this are the same err as the backend
 					assert_eq!(error.err_code.unwrap(), s);
@@ -343,7 +347,7 @@ async fn test_15_login_with_wrong_password()
 		},
 		Err(e) => {
 			match e {
-				sentc_crypto::SdkError::ServerErr(s, m) => {
+				SdkError::ServerErr(s, m) => {
 					//this should be the right err
 					//this are the same err as the backend
 					assert_eq!(login_output.err_code.unwrap(), s);
@@ -538,7 +542,13 @@ async fn test_18_reset_password()
 	let key_data = user.user_data.as_ref().unwrap();
 	let public_token = &user.app_data.public_token;
 
-	let input = sentc_crypto::user::reset_password(new_pw, &key_data.keys.private_key, &key_data.keys.sign_key).unwrap();
+	//use device keys for pw reset
+	let input = sentc_crypto::user::reset_password(
+		new_pw,
+		&key_data.device_keys.private_key,
+		&key_data.device_keys.sign_key,
+	)
+	.unwrap();
 
 	let url = get_url("api/v1/user/reset_pw".to_owned());
 	let client = reqwest::Client::new();
@@ -555,7 +565,7 @@ async fn test_18_reset_password()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
 	//test login with the old pw
@@ -609,7 +619,6 @@ async fn test_18_reset_password()
 async fn test_19_user_update()
 {
 	let mut user = USER_TEST_STATE.get().unwrap().write().await;
-	let old_username = &user.username;
 	let jwt = &user.user_data.as_ref().unwrap().jwt;
 
 	let new_username = "bla".to_string();
@@ -633,14 +642,7 @@ async fn test_19_user_update()
 
 	let body = res.text().await.unwrap();
 
-	let out = ServerOutput::<UserUpdateServerOut>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
-
-	let out = out.result.unwrap();
-
-	assert_ne!(out.user_identifier, old_username.to_string());
+	handle_general_server_response(body.as_str()).unwrap();
 
 	user.username = new_username;
 }
@@ -672,10 +674,17 @@ async fn test_20_user_not_update_when_identifier_exists()
 
 	let body = res.text().await.unwrap();
 
-	let out = ServerOutput::<UserUpdateServerOut>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, false);
-	assert_eq!(out.err_code.unwrap(), 101);
+	match handle_general_server_response(body.as_str()) {
+		Ok(_) => panic!("Must be an error"),
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(s, _) => {
+					assert_eq!(s, 101)
+				},
+				_ => panic!("Must be server error"),
+			}
+		},
+	}
 }
 
 #[tokio::test]
@@ -702,10 +711,7 @@ async fn test_21_get_user_public_data()
 
 	assert_eq!(
 		out.public_key_id,
-		user.user_data
-			.as_ref()
-			.unwrap()
-			.keys
+		user.user_data.as_ref().unwrap().user_keys[0]
 			.public_key
 			.key_id
 			.to_string()
@@ -713,10 +719,7 @@ async fn test_21_get_user_public_data()
 
 	assert_eq!(
 		out.verify_key_id,
-		user.user_data
-			.as_ref()
-			.unwrap()
-			.keys
+		user.user_data.as_ref().unwrap().user_keys[0]
 			.verify_key
 			.key_id
 			.to_string()
@@ -742,10 +745,7 @@ async fn test_21_get_user_public_data()
 
 	assert_eq!(
 		out.public_key_id,
-		user.user_data
-			.as_ref()
-			.unwrap()
-			.keys
+		user.user_data.as_ref().unwrap().user_keys[0]
 			.public_key
 			.key_id
 			.to_string()
@@ -771,10 +771,7 @@ async fn test_21_get_user_public_data()
 
 	assert_eq!(
 		out.verify_key_id,
-		user.user_data
-			.as_ref()
-			.unwrap()
-			.keys
+		user.user_data.as_ref().unwrap().user_keys[0]
 			.verify_key
 			.key_id
 			.to_string()
@@ -836,10 +833,17 @@ async fn test_22_refresh_jwt()
 
 	let body = res.text().await.unwrap();
 
-	let out = ServerOutput::<UserUpdateServerOut>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, false);
-	assert_eq!(out.err_code.unwrap(), 101);
+	match handle_general_server_response(body.as_str()) {
+		Ok(_) => panic!("Must be an error"),
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(s, _) => {
+					assert_eq!(s, 101)
+				},
+				_ => panic!("Must be server error"),
+			}
+		},
+	}
 
 	//______________________________________________________________________________________________
 	//it should not delete the user because a fresh jwt is needed here.
@@ -898,10 +902,182 @@ async fn test_23_user_normal_init()
 	assert_eq!(out.invites.len(), 0);
 }
 
+#[tokio::test]
+async fn test_24_user_add_device()
+{
+	let mut user = USER_TEST_STATE.get().unwrap().write().await;
+	let jwt = &user.user_data.as_ref().unwrap().jwt;
+
+	let input = sentc_crypto::user::prepare_register_device_start("device_1", "12345").unwrap();
+
+	let url = get_url("api/v1/user/prepare_register_device".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	//normal check if the res was ok
+	let _out: UserDeviceRegisterOutput = handle_server_response(body.as_str()).unwrap();
+
+	//check in the sdk if the res was ok
+	sentc_crypto::user::done_register_device_start(body.as_str()).unwrap();
+
+	//get the user group keys
+	let group_keys = &user.user_data.as_ref().unwrap().user_keys;
+
+	let mut group_keys_ref = vec![];
+
+	for decrypted_group_key in group_keys {
+		group_keys_ref.push(&decrypted_group_key.group_key);
+	}
+
+	//now transfer the output to the main device to add it
+	let input = sentc_crypto::user::prepare_register_device(body.as_str(), &group_keys_ref, false).unwrap();
+
+	let url = get_url("api/v1/user/done_register_device".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let _out: GroupAcceptJoinReqServerOutput = handle_server_response(body.as_str()).unwrap();
+
+	//no key session yet
+
+	//login the new device
+	let url = get_url("api/v1/prepare_login".to_owned());
+
+	let prep_server_input = sentc_crypto::user::prepare_login_start("device_1").unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.body(prep_server_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let (auth_key, derived_master_key) = sentc_crypto::user::prepare_login("device_1", "12345", body.as_str()).unwrap();
+
+	// //done login
+	let url = get_url("api/v1/done_login".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.body(auth_key)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let done_login = sentc_crypto::user::done_login(&derived_master_key, body.as_str()).unwrap();
+
+	assert_ne!(
+		&done_login.device_keys.private_key.key_id,
+		&user
+			.user_data
+			.as_ref()
+			.unwrap()
+			.device_keys
+			.private_key
+			.key_id
+	);
+
+	user.user_data_1 = Some(done_login);
+}
+
+#[tokio::test]
+async fn test_25_delete_device()
+{
+	let user = USER_TEST_STATE.get().unwrap().read().await;
+	let jwt = &user.user_data.as_ref().unwrap().jwt; //use the jwt from the main device
+
+	let user_data = user.user_data_1.as_ref().unwrap();
+
+	let url = get_url("api/v1/user/device/".to_owned() + user_data.device_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(body.as_str()).unwrap();
+
+	//should not login with the deleted device
+	let url = get_url("api/v1/prepare_login".to_owned());
+
+	let prep_server_input = sentc_crypto::user::prepare_login_start("device_1").unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.body(prep_server_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let (auth_key, derived_master_key) = sentc_crypto::user::prepare_login("device_1", "12345", body.as_str()).unwrap();
+
+	// //done login
+	let url = get_url("api/v1/done_login".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.body(auth_key)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	match sentc_crypto::user::done_login(&derived_master_key, body.as_str()) {
+		Ok(_) => panic!("should be error"),
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(s, _) => {
+					assert_eq!(s, 100)
+				},
+				_ => panic!("should be server error"),
+			}
+		},
+	}
+}
+
 //do user tests before this one!
 
 #[tokio::test]
-async fn test_24_user_delete()
+async fn test_30_user_delete()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let jwt = &user.user_data.as_ref().unwrap().jwt;
@@ -920,7 +1096,7 @@ async fn test_24_user_delete()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 }
 
 #[derive(Serialize, Deserialize)]
@@ -943,7 +1119,7 @@ impl WrongRegisterData
 }
 
 #[tokio::test]
-async fn test_25_not_register_user_with_wrong_input()
+async fn test_31_not_register_user_with_wrong_input()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 
@@ -984,7 +1160,7 @@ async fn test_25_not_register_user_with_wrong_input()
 		},
 		Err(e) => {
 			match e {
-				sentc_crypto::SdkError::ServerErr(s, m) => {
+				SdkError::ServerErr(s, m) => {
 					//this should be the right err
 					//this are the same err as the backend
 					assert_eq!(error.err_code.unwrap(), s);
@@ -997,7 +1173,7 @@ async fn test_25_not_register_user_with_wrong_input()
 }
 
 #[tokio::test]
-async fn test_26_register_and_login_user_via_test_fn()
+async fn test_32_register_and_login_user_via_test_fn()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let secret_token = &user.app_data.secret_token;

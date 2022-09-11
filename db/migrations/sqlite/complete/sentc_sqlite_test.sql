@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 10:12am on September 3, 2022 (UTC)
+-- Exported: 9:14pm on September 10, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -20,24 +20,6 @@ CREATE TABLE "test"
 
 ----
 -- Data dump for test, a total of 0 rows
-----
-
-----
--- Table structure for sentc_user
-----
-CREATE TABLE "sentc_user" ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'identifier' TEXT, 'time' TEXT);
-
-----
--- Data dump for sentc_user, a total of 0 rows
-----
-
-----
--- Table structure for sentc_user_keys
-----
-CREATE TABLE "sentc_user_keys" ('id' TEXT PRIMARY KEY NOT NULL, 'user_id' TEXT, 'client_random_value' TEXT, 'public_key' TEXT, 'encrypted_private_key' TEXT, 'keypair_encrypt_alg' TEXT, 'encrypted_sign_key' TEXT, 'verify_key' TEXT, 'keypair_sign_alg' TEXT, 'derived_alg' TEXT, 'encrypted_master_key' TEXT, 'master_key_alg' TEXT, 'hashed_auth_key' TEXT, 'time' TEXT, encrypted_master_key_alg text);
-
-----
--- Data dump for sentc_user_keys, a total of 0 rows
 ----
 
 ----
@@ -91,7 +73,7 @@ CREATE TABLE sentc_group
 	parent     text,
 	identifier text,
 	time       text
-);
+, 'type' INTEGER);
 
 ----
 -- Data dump for sentc_group, a total of 0 rows
@@ -113,7 +95,7 @@ CREATE TABLE sentc_group_keys
 	encrypted_ephemeral_key        text,
 	encrypted_group_key_by_eph_key text,
 	time                           text
-, 'previous_group_key_id' TEXT, 'ephemeral_alg' TEXT, 'app_id' TEXT);
+, 'previous_group_key_id' TEXT, 'ephemeral_alg' TEXT, 'app_id' TEXT, 'encrypted_sign_key' TEXT, 'verify_key' TEXT, 'keypair_sign_alg' TEXT);
 
 ----
 -- Data dump for sentc_group_keys, a total of 0 rows
@@ -184,29 +166,12 @@ CREATE TABLE 'sentc_customer' ('id' TEXT PRIMARY KEY NOT NULL, 'email' TEXT, 'em
 ----
 -- Table structure for sentc_app_options
 ----
-CREATE TABLE "sentc_app_options" ('app_id' TEXT PRIMARY KEY NOT NULL, 'group_create' INTEGER, 'group_get' INTEGER, 'group_invite' INTEGER, 'group_reject_invite' INTEGER, 'group_accept_invite' INTEGER, 'group_join_req' INTEGER, 'group_accept_join_req' INTEGER, 'group_reject_join_req' INTEGER, 'group_key_rotation' INTEGER, 'group_user_delete' INTEGER, 'group_change_rank' INTEGER, 'group_delete' INTEGER, 'group_leave' INTEGER, 'user_exists' INTEGER, 'user_register' INTEGER, 'user_delete' INTEGER, 'user_update' INTEGER, 'user_change_password' INTEGER, 'user_reset_password' INTEGER, 'user_prepare_login' INTEGER, 'user_done_login' INTEGER, 'user_public_data' INTEGER, 'user_refresh' INTEGER, 'key_register' INTEGER, 'key_get' INTEGER, 'group_user_keys' INTEGER, 'group_user_update_check' INTEGER, 'group_auto_invite' INTEGER, 'group_list' INTEGER, 'file_register' INTEGER, 'file_part_upload' INTEGER, 'file_get' INTEGER, 'file_part_download' INTEGER);
+CREATE TABLE "sentc_app_options" ('app_id' TEXT PRIMARY KEY NOT NULL, 'group_create' INTEGER, 'group_get' INTEGER, 'group_invite' INTEGER, 'group_reject_invite' INTEGER, 'group_accept_invite' INTEGER, 'group_join_req' INTEGER, 'group_accept_join_req' INTEGER, 'group_reject_join_req' INTEGER, 'group_key_rotation' INTEGER, 'group_user_delete' INTEGER, 'group_change_rank' INTEGER, 'group_delete' INTEGER, 'group_leave' INTEGER, 'user_exists' INTEGER, 'user_register' INTEGER, 'user_delete' INTEGER, 'user_update' INTEGER, 'user_change_password' INTEGER, 'user_reset_password' INTEGER, 'user_prepare_login' INTEGER, 'user_done_login' INTEGER, 'user_public_data' INTEGER, 'user_refresh' INTEGER, 'key_register' INTEGER, 'key_get' INTEGER, 'group_user_keys' INTEGER, 'group_user_update_check' INTEGER, 'group_auto_invite' INTEGER, 'group_list' INTEGER, 'file_register' INTEGER, 'file_part_upload' INTEGER, 'file_get' INTEGER, 'file_part_download' INTEGER, 'user_device_register' INTEGER, 'user_device_delete' INTEGER);
 
 ----
 -- Data dump for sentc_app_options, a total of 1 rows
 ----
-INSERT INTO "sentc_app_options" ("app_id","group_create","group_get","group_invite","group_reject_invite","group_accept_invite","group_join_req","group_accept_join_req","group_reject_join_req","group_key_rotation","group_user_delete","group_change_rank","group_delete","group_leave","user_exists","user_register","user_delete","user_update","user_change_password","user_reset_password","user_prepare_login","user_done_login","user_public_data","user_refresh","key_register","key_get","group_user_keys","group_user_update_check","group_auto_invite","group_list","file_register","file_part_upload","file_get","file_part_download") VALUES ('1665eb92-4513-469f-81d8-b72a62e0134c','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0');
-
-----
--- Table structure for sentc_user_token
-----
-CREATE TABLE "sentc_user_token"
-(
-	user_id TEXT,
-	token   TEXT,
-	app_id  TEXT,
-	time    TEXT,
-	constraint sentc_user_token_pk
-		primary key (user_id, app_id, token)
-);
-
-----
--- Data dump for sentc_user_token, a total of 0 rows
-----
+INSERT INTO "sentc_app_options" ("app_id","group_create","group_get","group_invite","group_reject_invite","group_accept_invite","group_join_req","group_accept_join_req","group_reject_join_req","group_key_rotation","group_user_delete","group_change_rank","group_delete","group_leave","user_exists","user_register","user_delete","user_update","user_change_password","user_reset_password","user_prepare_login","user_done_login","user_public_data","user_refresh","key_register","key_get","group_user_keys","group_user_update_check","group_auto_invite","group_list","file_register","file_part_upload","file_get","file_part_download","user_device_register","user_device_delete") VALUES ('1665eb92-4513-469f-81d8-b72a62e0134c','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0');
 
 ----
 -- Table structure for sentc_sym_key_management
@@ -287,17 +252,42 @@ CREATE TABLE 'sentc_file' ('id' TEXT PRIMARY KEY NOT NULL, 'owner' TEXT, 'belong
 ----
 
 ----
+-- Table structure for sentc_user
+----
+CREATE TABLE 'sentc_user' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'time' TEXT, 'user_group_id' TEXT);
+
+----
+-- Data dump for sentc_user, a total of 0 rows
+----
+
+----
+-- Table structure for sentc_user_device
+----
+CREATE TABLE 'sentc_user_device' ('id' TEXT PRIMARY KEY NOT NULL, 'user_id' TEXT, 'app_id' TEXT, 'device_identifier' TEXT, 'client_random_value' TEXT, 'public_key' TEXT, 'encrypted_private_key' TEXT, 'keypair_encrypt_alg' TEXT, 'encrypted_sign_key' TEXT, 'verify_key' TEXT, 'keypair_sign_alg' TEXT, 'derived_alg' TEXT, 'encrypted_master_key' TEXT, 'master_key_alg' TEXT, 'encrypted_master_key_alg' TEXT, 'hashed_auth_key' TEXT, 'time' TEXT, 'token' TEXT);
+
+----
+-- Data dump for sentc_user_device, a total of 0 rows
+----
+
+----
+-- Table structure for sentc_user_token
+----
+CREATE TABLE sentc_user_token
+(
+	device_id TEXT,
+	token     TEXT,
+	app_id    TEXT,
+	time      TEXT,
+	constraint sentc_user_token_pk
+		primary key (device_id, app_id, token)
+);
+
+----
+-- Data dump for sentc_user_token, a total of 0 rows
+----
+
+----
 -- structure for index sqlite_autoindex_test_1 on table test
-----
-;
-
-----
--- structure for index sqlite_autoindex_sentc_user_1 on table sentc_user
-----
-;
-
-----
--- structure for index sqlite_autoindex_sentc_user_keys_1 on table sentc_user_keys
 ----
 ;
 
@@ -337,14 +327,59 @@ CREATE TABLE 'sentc_file' ('id' TEXT PRIMARY KEY NOT NULL, 'owner' TEXT, 'belong
 ;
 
 ----
--- structure for index user_id on table sentc_user_keys
+-- structure for index sqlite_autoindex_sentc_customer_1 on table sentc_customer
 ----
-CREATE INDEX 'user_id' ON "sentc_user_keys" ("user_id");
+;
 
 ----
--- structure for index app_id on table sentc_user
+-- structure for index sqlite_autoindex_sentc_app_options_1 on table sentc_app_options
 ----
-CREATE INDEX 'app_id' ON "sentc_user" ("app_id");
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_sym_key_management_1 on table sentc_sym_key_management
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_user_action_log_1 on table sentc_user_action_log
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_group_user_1 on table sentc_group_user
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_file_session_1 on table sentc_file_session
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_file_part_1 on table sentc_file_part
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_file_options_1 on table sentc_file_options
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_file_1 on table sentc_file
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_user_1 on table sentc_user
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_user_device_1 on table sentc_user_device
+----
+;
 
 ----
 -- structure for index app_jwt_keys_app_id_index on table sentc_app_jwt_keys
@@ -382,14 +417,14 @@ CREATE INDEX sentc_group_parent_index
 CREATE INDEX 'get_group' ON "sentc_group_keys" ("group_id" ASC, "app_id" ASC);
 
 ----
--- structure for index sqlite_autoindex_sentc_customer_1 on table sentc_customer
+-- structure for index by_user on table sentc_sym_key_management
 ----
-;
+CREATE INDEX 'by_user' ON "sentc_sym_key_management" ("creator_id" ASC, "app_id" ASC);
 
 ----
--- structure for index sqlite_autoindex_sentc_app_options_1 on table sentc_app_options
+-- structure for index app_id on table sentc_user
 ----
-;
+CREATE INDEX 'app_id' ON "sentc_user" ("app_id");
 
 ----
 -- structure for index sqlite_autoindex_sentc_user_token_1 on table sentc_user_token
@@ -397,44 +432,9 @@ CREATE INDEX 'get_group' ON "sentc_group_keys" ("group_id" ASC, "app_id" ASC);
 ;
 
 ----
--- structure for index sqlite_autoindex_sentc_sym_key_management_1 on table sentc_sym_key_management
+-- structure for index token on table sentc_user_device
 ----
-;
-
-----
--- structure for index by_user on table sentc_sym_key_management
-----
-CREATE INDEX 'by_user' ON "sentc_sym_key_management" ("creator_id" ASC, "app_id" ASC);
-
-----
--- structure for index sqlite_autoindex_sentc_user_action_log_1 on table sentc_user_action_log
-----
-;
-
-----
--- structure for index sqlite_autoindex_sentc_group_user_1 on table sentc_group_user
-----
-;
-
-----
--- structure for index sqlite_autoindex_sentc_file_session_1 on table sentc_file_session
-----
-;
-
-----
--- structure for index sqlite_autoindex_sentc_file_part_1 on table sentc_file_part
-----
-;
-
-----
--- structure for index sqlite_autoindex_sentc_file_options_1 on table sentc_file_options
-----
-;
-
-----
--- structure for index sqlite_autoindex_sentc_file_1 on table sentc_file
-----
-;
+CREATE INDEX 'token' ON "sentc_user_device" ("token");
 
 ----
 -- structure for trigger group_delete_invites on table sentc_group
@@ -477,16 +477,6 @@ CREATE TRIGGER 'delete_options' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN D
 CREATE TRIGGER 'delete_user' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_user WHERE app_id = OLD.id; END;
 
 ----
--- structure for trigger user_delete_jwt_refresh on table sentc_user
-----
-CREATE TRIGGER 'user_delete_jwt_refresh' AFTER DELETE ON "sentc_user" FOR EACH ROW BEGIN DELETE FROM sentc_user_token WHERE user_id = OLD.id; END;
-
-----
--- structure for trigger user_delete_user_keys on table sentc_user
-----
-CREATE TRIGGER 'user_delete_user_keys' AFTER DELETE ON "sentc_user" FOR EACH ROW BEGIN DELETE FROM sentc_user_keys WHERE user_id = OLD.id; END;
-
-----
 -- structure for trigger delete_keys on table sentc_app
 ----
 CREATE TRIGGER 'delete_keys' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_sym_key_management WHERE app_id = OLD.id; END;
@@ -515,4 +505,14 @@ CREATE TRIGGER 'file_delete_parts' AFTER DELETE ON "sentc_file" FOR EACH ROW BEG
 -- structure for trigger file_session_delete on table sentc_file
 ----
 CREATE TRIGGER 'file_session_delete' AFTER DELETE ON "sentc_file" FOR EACH ROW BEGIN DELETE FROM sentc_file_session WHERE file_id = OLD.id; END;
+
+----
+-- structure for trigger user_delete_user_device on table sentc_user
+----
+CREATE TRIGGER 'user_delete_user_device' AFTER DELETE ON "sentc_user" FOR EACH ROW BEGIN DELETE FROM sentc_user_device WHERE user_id = OLD.id; END;
+
+----
+-- structure for trigger user_delete_jwt_refresh on table sentc_user_device
+----
+CREATE TRIGGER 'user_delete_jwt_refresh' AFTER DELETE ON "sentc_user_device" FOR EACH ROW BEGIN DELETE FROM sentc_user_token WHERE device_id = OLD.id; END;
 COMMIT;

@@ -154,7 +154,7 @@ SELECT group_id, i.time
 FROM sentc_group_user_invites_and_join_req i, sentc_group g 
 WHERE 
     user_id = ? AND 
-    type = ? AND 
+    i.type = ? AND 
     app_id = ? AND
     group_id = id"
 		.to_string();
@@ -442,9 +442,10 @@ pub(super) async fn user_leave_group(group_id: GroupId, user_id: UserId, rank: i
 	}
 
 	//language=SQL
-	let sql = "DELETE FROM sentc_group_user WHERE group_id = ? AND user_id = ?";
+	let sql = "DELETE FROM sentc_group_user WHERE group_id = ? AND user_id = ? AND type = ?";
 
-	exec(sql, set_params!(group_id, user_id)).await?;
+	//only delete normal user
+	exec(sql, set_params!(group_id, user_id, 0)).await?;
 
 	Ok(())
 }

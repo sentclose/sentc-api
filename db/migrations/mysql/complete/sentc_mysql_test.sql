@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 28. Aug 2022 um 20:06
+-- Erstellungszeit: 10. Sep 2022 um 21:12
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -135,15 +135,17 @@ CREATE TABLE `sentc_app_options` (
   `file_register` int(11) NOT NULL,
   `file_part_upload` int(11) NOT NULL,
   `file_get` int(11) NOT NULL,
-  `file_part_download` int(11) NOT NULL
+  `file_part_download` int(11) NOT NULL,
+  `user_device_register` int(11) NOT NULL,
+  `user_device_delete` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='option: 0 = not allowed,  1 = public token, 2 = secret token';
 
 --
 -- Daten für Tabelle `sentc_app_options`
 --
 
-INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_user_keys`, `group_user_update_check`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`, `key_register`, `key_get`, `group_auto_invite`, `group_list`, `file_register`, `file_part_upload`, `file_get`, `file_part_download`) VALUES
-('1665eb92-4513-469f-81d8-b72a62e0134c', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_user_keys`, `group_user_update_check`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`, `key_register`, `key_get`, `group_auto_invite`, `group_list`, `file_register`, `file_part_upload`, `file_get`, `file_part_download`, `user_device_register`, `user_device_delete`) VALUES
+('1665eb92-4513-469f-81d8-b72a62e0134c', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -212,6 +214,13 @@ CREATE TABLE `sentc_file_options` (
   `storage_url` text DEFAULT NULL COMMENT 'when file_storage != 0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+--
+-- Daten für Tabelle `sentc_file_options`
+--
+
+INSERT INTO `sentc_file_options` (`app_id`, `file_storage`, `storage_url`) VALUES
+('1665eb92-4513-469f-81d8-b72a62e0134c', -1, NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -253,6 +262,7 @@ CREATE TABLE `sentc_group` (
   `app_id` varchar(36) NOT NULL,
   `parent` varchar(36) DEFAULT NULL,
   `identifier` text DEFAULT NULL,
+  `type` int(11) NOT NULL COMMENT '0 0 normal group, 1 = user group',
   `time` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -285,6 +295,9 @@ CREATE TABLE `sentc_group_keys` (
   `private_key_pair_alg` text NOT NULL,
   `encrypted_private_key` text NOT NULL,
   `public_key` text NOT NULL,
+  `encrypted_sign_key` text DEFAULT NULL,
+  `verify_key` text DEFAULT NULL,
+  `keypair_sign_alg` text DEFAULT NULL,
   `group_key_alg` text NOT NULL,
   `encrypted_ephemeral_key` text DEFAULT NULL COMMENT 'after key rotation, encrypt this key with every group member public key',
   `encrypted_group_key_by_eph_key` text DEFAULT NULL COMMENT 'encrypted group master key, encrypted by the eph key. this key needs to distribute to all group member',
@@ -400,7 +413,7 @@ CREATE TABLE `sentc_sym_key_management` (
 CREATE TABLE `sentc_user` (
   `id` varchar(36) NOT NULL,
   `app_id` varchar(36) NOT NULL,
-  `identifier` varchar(200) NOT NULL,
+  `user_group_id` varchar(36) NOT NULL,
   `time` bigint(20) NOT NULL COMMENT 'registered at'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -408,11 +421,7 @@ CREATE TABLE `sentc_user` (
 -- Trigger `sentc_user`
 --
 DELIMITER $$
-CREATE TRIGGER `user_delete_jwt_refresh` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_token WHERE user_id = OLD.id
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `user_delete_user_keys` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_keys WHERE user_id = OLD.id
+CREATE TRIGGER `user_delete_user_device` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_device WHERE user_id = OLD.id
 $$
 DELIMITER ;
 
@@ -432,12 +441,14 @@ CREATE TABLE `sentc_user_action_log` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `sentc_user_keys`
+-- Tabellenstruktur für Tabelle `sentc_user_device`
 --
 
-CREATE TABLE `sentc_user_keys` (
+CREATE TABLE `sentc_user_device` (
   `id` varchar(36) NOT NULL,
   `user_id` varchar(36) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
+  `device_identifier` varchar(200) NOT NULL,
   `client_random_value` text NOT NULL,
   `public_key` text NOT NULL,
   `encrypted_private_key` text NOT NULL,
@@ -450,8 +461,17 @@ CREATE TABLE `sentc_user_keys` (
   `master_key_alg` text NOT NULL,
   `encrypted_master_key_alg` text NOT NULL,
   `hashed_auth_key` text NOT NULL,
-  `time` bigint(20) NOT NULL COMMENT 'active since'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='multiple keys per user';
+  `time` bigint(20) NOT NULL COMMENT 'active since',
+  `token` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='multiple device per user';
+
+--
+-- Trigger `sentc_user_device`
+--
+DELIMITER $$
+CREATE TRIGGER `user_delete_jwt_refresh` AFTER DELETE ON `sentc_user_device` FOR EACH ROW DELETE FROM sentc_user_token WHERE device_id = OLD.id
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -460,7 +480,7 @@ CREATE TABLE `sentc_user_keys` (
 --
 
 CREATE TABLE `sentc_user_token` (
-  `user_id` varchar(36) NOT NULL,
+  `device_id` varchar(36) NOT NULL,
   `token` varchar(100) NOT NULL,
   `app_id` varchar(36) NOT NULL,
   `time` bigint(20) NOT NULL
@@ -594,7 +614,7 @@ ALTER TABLE `sentc_sym_key_management`
 --
 ALTER TABLE `sentc_user`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `app_id` (`app_id`,`identifier`);
+  ADD KEY `app_id` (`app_id`) USING BTREE;
 
 --
 -- Indizes für die Tabelle `sentc_user_action_log`
@@ -603,17 +623,19 @@ ALTER TABLE `sentc_user_action_log`
   ADD PRIMARY KEY (`user_id`,`time`,`app_id`);
 
 --
--- Indizes für die Tabelle `sentc_user_keys`
+-- Indizes für die Tabelle `sentc_user_device`
 --
-ALTER TABLE `sentc_user_keys`
+ALTER TABLE `sentc_user_device`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`);
+  ADD UNIQUE KEY `device_identifier` (`device_identifier`),
+  ADD KEY `user_id` (`user_id`,`app_id`) USING BTREE,
+  ADD KEY `app_id` (`app_id`,`token`);
 
 --
 -- Indizes für die Tabelle `sentc_user_token`
 --
 ALTER TABLE `sentc_user_token`
-  ADD PRIMARY KEY (`user_id`,`token`,`app_id`) USING BTREE;
+  ADD PRIMARY KEY (`device_id`,`token`,`app_id`) USING BTREE;
 
 --
 -- Indizes für die Tabelle `test`

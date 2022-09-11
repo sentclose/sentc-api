@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use sentc_crypto_common::CustomerId;
+use sentc_crypto_common::{CustomerId, DeviceId};
 use server_core::take_or_err;
 
 #[cfg(feature = "send_mail")]
@@ -178,6 +178,7 @@ pub(crate) struct CustomerEmailByToken
 {
 	pub email: String,
 	pub id: CustomerId,
+	pub device_id: DeviceId,
 }
 
 #[cfg(feature = "mysql")]
@@ -190,6 +191,7 @@ impl mysql_async::prelude::FromRow for CustomerEmailByToken
 		Ok(Self {
 			email: take_or_err!(row, 0, String),
 			id: take_or_err!(row, 1, String),
+			device_id: take_or_err!(row, 2, String),
 		})
 	}
 }
@@ -204,6 +206,7 @@ impl server_core::db::FromSqliteRow for CustomerEmailByToken
 		Ok(Self {
 			email: take_or_err!(row, 0),
 			id: take_or_err!(row, 1),
+			device_id: take_or_err!(row, 2),
 		})
 	}
 }

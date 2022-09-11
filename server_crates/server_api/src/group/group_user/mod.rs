@@ -296,21 +296,7 @@ pub(crate) async fn leave_group(req: Request) -> JRes<ServerSuccessOutput>
 
 	let group_data = get_group_user_data_from_req(&req)?;
 
-	group_user_model::user_leave_group(
-		group_data.group_data.id.to_string(),
-		group_data.user_data.user_id.to_string(),
-		group_data.user_data.rank,
-	)
-	.await?;
-
-	//delete the user cache
-	let key_group = get_group_user_cache_key(
-		group_data.group_data.app_id.as_str(),
-		group_data.group_data.id.as_str(),
-		group_data.user_data.user_id.as_str(),
-	);
-
-	cache::delete(key_group.as_str()).await;
+	group_user_service::leave_group(group_data).await?;
 
 	echo_success()
 }

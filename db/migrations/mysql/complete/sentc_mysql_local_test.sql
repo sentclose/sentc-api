@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 03. Sep 2022 um 10:10
+-- Erstellungszeit: 11. Sep 2022 um 15:40
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -44,7 +44,7 @@ CREATE TABLE `sentc_app` (
 
 INSERT INTO `sentc_app` (`id`, `customer_id`, `identifier`, `hashed_secret_token`, `hashed_public_token`, `hash_alg`, `time`) VALUES
 ('1665eb92-4513-469f-81d8-b72a62e0134c', 'sentc_int', '', 'cmzOt+BnyErJKsF2qNaiJ/YqsXJymnGQSdvJi5FpeOo=', 'b/t88y7h0zwqOXAtR/UqE4qsPL11PLFvo1e+8PNP8LU=', 'SHA256', 1659606752935),
-('2a14fdf5-29f9-47eb-8ef3-a6a7067e5827', 'b63d4761-98a5-46f5-bc1d-cefa8ada12f4', 'local test', 'zH2kAAMkCKnLb1zHa/+icZu/3My4wYP9bKR/GUMUyfA=', 'cR3wHjCG8OD2eKF1IEZPtKuIFC4B+JewG4CdoHT1GFg=', 'SHA256', 1660981544954);
+('ecae27fb-d849-467d-9c58-49fca0d8430a', 'sentc_test', 'test_app', 'QSCg8j7LNThPeyHj9Nqdi6m87/iDHqGCOnFnZxibeU8=', 'QNaYRBpRtvWY+uRzYe7HkDb8e2IVzXaFXCKC3hQ6i/0=', 'SHA256', 1662900015863);
 
 --
 -- Trigger `sentc_app`
@@ -95,7 +95,7 @@ CREATE TABLE `sentc_app_jwt_keys` (
 
 INSERT INTO `sentc_app_jwt_keys` (`id`, `app_id`, `sign_key`, `verify_key`, `alg`, `time`) VALUES
 ('174b531f-8814-42a2-94ab-3c17036183a5', '1665eb92-4513-469f-81d8-b72a62e0134c', 'MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDAhH0kMPR68V4jaSECXKgz6hEV+7iHqyOFAAv0Y6EXf7Db3T3rwuwuIfHyD41Rgy0ihZANiAARUyndUd/523UjG1Q5cChBHuntfYiQ5wRUIbONlT78ZrU6eUbncTdaWN72pLYTVIyjmpqgCtszZYKQNMw5I1V4c0mEddOe8bMSmic0egcVxmCCjgQVau8xU4bccdyrllFI=', 'BFTKd1R3/nbdSMbVDlwKEEe6e19iJDnBFQhs42VPvxmtTp5RudxN1pY3vakthNUjKOamqAK2zNlgpA0zDkjVXhzSYR1057xsxKaJzR6BxXGYIKOBBVq7zFThtxx3KuWUUg==', 'ES384', 1659606752935),
-('6a7c0d75-d029-41af-a4a9-d1c8e2a15ede', '2a14fdf5-29f9-47eb-8ef3-a6a7067e5827', 'MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDAREUug/8gbmMipkSpSduWQBVUh6AHEF1+XpBw2FAoUySYW7hmbIV2CIieiCanfZvihZANiAARuNACs/bm+aLj8CDujNADmbvD/sDkbve6KQV5/Q3gZW7aHHnM924KqYSYKIe8qXyHOYAP0ugH8zHQ6/I5ZN6QckiLA8iizPD3MZLoVx0oVNAm3dQLH5X36BGRNbS3t+Ls=', 'BG40AKz9ub5ouPwIO6M0AOZu8P+wORu97opBXn9DeBlbtocecz3bgqphJgoh7ypfIc5gA/S6AfzMdDr8jlk3pBySIsDyKLM8PcxkuhXHShU0Cbd1AsflffoEZE1tLe34uw==', 'ES384', 1660981546551);
+('ad68a7c1-e61c-46b5-a04d-8e64e0206df4', 'ecae27fb-d849-467d-9c58-49fca0d8430a', 'MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDB6t3bHnfXG//pBXQQre2jn5QWYCiyVWiNfyyyVmsKmAcR2SXX3YDIX/uCcvbiFaJmhZANiAAR7ZdgOvTLAMFglss75YQQfUqKtC2vdYBRYk8TzCE0wRFSe5njaWzGZRVu1dj0UOsnS+Hl3DsHvbi6SCX2PcFJEcjMKgl1Qjkf+Y0R5Z1P8IQK94XNhdwTJ+NNqFQJSpWs=', 'BHtl2A69MsAwWCWyzvlhBB9Soq0La91gFFiTxPMITTBEVJ7meNpbMZlFW7V2PRQ6ydL4eXcOwe9uLpIJfY9wUkRyMwqCXVCOR/5jRHlnU/whAr3hc2F3BMn402oVAlKlaw==', 'ES384', 1662900015863);
 
 -- --------------------------------------------------------
 
@@ -137,16 +137,18 @@ CREATE TABLE `sentc_app_options` (
   `file_register` int(11) NOT NULL,
   `file_part_upload` int(11) NOT NULL,
   `file_get` int(11) NOT NULL,
-  `file_part_download` int(11) NOT NULL
+  `file_part_download` int(11) NOT NULL,
+  `user_device_register` int(11) NOT NULL,
+  `user_device_delete` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='option: 0 = not allowed,  1 = public token, 2 = secret token';
 
 --
 -- Daten für Tabelle `sentc_app_options`
 --
 
-INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_user_keys`, `group_user_update_check`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`, `key_register`, `key_get`, `group_auto_invite`, `group_list`, `file_register`, `file_part_upload`, `file_get`, `file_part_download`) VALUES
-('1665eb92-4513-469f-81d8-b72a62e0134c', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-('2a14fdf5-29f9-47eb-8ef3-a6a7067e5827', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_user_keys`, `group_user_update_check`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`, `key_register`, `key_get`, `group_auto_invite`, `group_list`, `file_register`, `file_part_upload`, `file_get`, `file_part_download`, `user_device_register`, `user_device_delete`) VALUES
+('1665eb92-4513-469f-81d8-b72a62e0134c', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+('ecae27fb-d849-467d-9c58-49fca0d8430a', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
 
 -- --------------------------------------------------------
 
@@ -163,13 +165,6 @@ CREATE TABLE `sentc_customer` (
   `email_error_msg` text DEFAULT NULL,
   `email_token` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Daten für Tabelle `sentc_customer`
---
-
-INSERT INTO `sentc_customer` (`id`, `email`, `email_validate_sent`, `email_validate`, `email_status`, `email_error_msg`, `email_token`) VALUES
-('b63d4761-98a5-46f5-bc1d-cefa8ada12f4', 'hello@local_test.com', 1660981544552, 1, 1, NULL, 'foXXDXtQV1gsvQgN9zFZJCXMatDmAR5BpFZzgAul');
 
 --
 -- Trigger `sentc_customer`
@@ -228,7 +223,7 @@ CREATE TABLE `sentc_file_options` (
 
 INSERT INTO `sentc_file_options` (`app_id`, `file_storage`, `storage_url`) VALUES
 ('1665eb92-4513-469f-81d8-b72a62e0134c', -1, NULL),
-('2a14fdf5-29f9-47eb-8ef3-a6a7067e5827', 0, NULL);
+('ecae27fb-d849-467d-9c58-49fca0d8430a', 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -271,6 +266,7 @@ CREATE TABLE `sentc_group` (
   `app_id` varchar(36) NOT NULL,
   `parent` varchar(36) DEFAULT NULL,
   `identifier` text DEFAULT NULL,
+  `type` int(11) NOT NULL COMMENT '0 0 normal group, 1 = user group',
   `time` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -303,6 +299,9 @@ CREATE TABLE `sentc_group_keys` (
   `private_key_pair_alg` text NOT NULL,
   `encrypted_private_key` text NOT NULL,
   `public_key` text NOT NULL,
+  `encrypted_sign_key` text DEFAULT NULL,
+  `verify_key` text DEFAULT NULL,
+  `keypair_sign_alg` text DEFAULT NULL,
   `group_key_alg` text NOT NULL,
   `encrypted_ephemeral_key` text DEFAULT NULL COMMENT 'after key rotation, encrypt this key with every group member public key',
   `encrypted_group_key_by_eph_key` text DEFAULT NULL COMMENT 'encrypted group master key, encrypted by the eph key. this key needs to distribute to all group member',
@@ -418,26 +417,15 @@ CREATE TABLE `sentc_sym_key_management` (
 CREATE TABLE `sentc_user` (
   `id` varchar(36) NOT NULL,
   `app_id` varchar(36) NOT NULL,
-  `identifier` varchar(200) NOT NULL,
+  `user_group_id` varchar(36) NOT NULL,
   `time` bigint(20) NOT NULL COMMENT 'registered at'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Daten für Tabelle `sentc_user`
---
-
-INSERT INTO `sentc_user` (`id`, `app_id`, `identifier`, `time`) VALUES
-('b63d4761-98a5-46f5-bc1d-cefa8ada12f4', '1665eb92-4513-469f-81d8-b72a62e0134c', 'hello@local_test.com', 1660981544547);
 
 --
 -- Trigger `sentc_user`
 --
 DELIMITER $$
-CREATE TRIGGER `user_delete_jwt_refresh` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_token WHERE user_id = OLD.id
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `user_delete_user_keys` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_keys WHERE user_id = OLD.id
+CREATE TRIGGER `user_delete_user_device` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_device WHERE user_id = OLD.id
 $$
 DELIMITER ;
 
@@ -457,12 +445,14 @@ CREATE TABLE `sentc_user_action_log` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `sentc_user_keys`
+-- Tabellenstruktur für Tabelle `sentc_user_device`
 --
 
-CREATE TABLE `sentc_user_keys` (
+CREATE TABLE `sentc_user_device` (
   `id` varchar(36) NOT NULL,
   `user_id` varchar(36) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
+  `device_identifier` varchar(200) NOT NULL,
   `client_random_value` text NOT NULL,
   `public_key` text NOT NULL,
   `encrypted_private_key` text NOT NULL,
@@ -475,15 +465,17 @@ CREATE TABLE `sentc_user_keys` (
   `master_key_alg` text NOT NULL,
   `encrypted_master_key_alg` text NOT NULL,
   `hashed_auth_key` text NOT NULL,
-  `time` bigint(20) NOT NULL COMMENT 'active since'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='multiple keys per user';
+  `time` bigint(20) NOT NULL COMMENT 'active since',
+  `token` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='multiple device per user';
 
 --
--- Daten für Tabelle `sentc_user_keys`
+-- Trigger `sentc_user_device`
 --
-
-INSERT INTO `sentc_user_keys` (`id`, `user_id`, `client_random_value`, `public_key`, `encrypted_private_key`, `keypair_encrypt_alg`, `encrypted_sign_key`, `verify_key`, `keypair_sign_alg`, `derived_alg`, `encrypted_master_key`, `master_key_alg`, `encrypted_master_key_alg`, `hashed_auth_key`, `time`) VALUES
-('529fa062-6d95-4cfa-923b-7b357a448346', 'b63d4761-98a5-46f5-bc1d-cefa8ada12f4', 'dVmrQvkgmRwTIGVeTsuoMQ==', '-----BEGIN PUBLIC KEY-----\r\nSDoZ3jBVdMl21PXzQG8jN2LT0G0Vqp5stUCsmV8tR1k=\r\n-----END PUBLIC KEY-----\r\n', 'l18wEJEMfTcpz9fzsudN5wlvX/WuMJ6QgKapH2BEE6kiXdtzG2+NjVNLdSoA60TfbY8QuT+JzulISjd/', 'ECIES-ed25519', 'nA/kp6PcsQwU6qwjoHtA85+nzA9vO/HnzD0LjLtE5uvajh+d3EcaT8tSr0URnDk1+btIamY6rD20jTYs', '-----BEGIN PUBLIC KEY-----\r\n+9n1pBQUWfSaneH6A1ME9Oa4wU4QRxU08pE5xLWpLGc=\r\n-----END PUBLIC KEY-----\r\n', 'ED25519', 'ARGON-2-SHA256', 'UlX86X2X8tiM/g7iBn20m9zm7KzFW/fotRzoeI7C1mJO53e3d1IrH4fVRB3MVStECHo6LFKZF4kOgYTf', 'AES-GCM-256', 'AES-GCM-256', 'iGwgpmvHibErAGhfzgZcKg==', 1660981544547);
+DELIMITER $$
+CREATE TRIGGER `user_delete_jwt_refresh` AFTER DELETE ON `sentc_user_device` FOR EACH ROW DELETE FROM sentc_user_token WHERE device_id = OLD.id
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -492,7 +484,7 @@ INSERT INTO `sentc_user_keys` (`id`, `user_id`, `client_random_value`, `public_k
 --
 
 CREATE TABLE `sentc_user_token` (
-  `user_id` varchar(36) NOT NULL,
+  `device_id` varchar(36) NOT NULL,
   `token` varchar(100) NOT NULL,
   `app_id` varchar(36) NOT NULL,
   `time` bigint(20) NOT NULL
@@ -626,7 +618,7 @@ ALTER TABLE `sentc_sym_key_management`
 --
 ALTER TABLE `sentc_user`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `app_id` (`app_id`,`identifier`);
+  ADD KEY `app_id` (`app_id`) USING BTREE;
 
 --
 -- Indizes für die Tabelle `sentc_user_action_log`
@@ -635,17 +627,19 @@ ALTER TABLE `sentc_user_action_log`
   ADD PRIMARY KEY (`user_id`,`time`,`app_id`);
 
 --
--- Indizes für die Tabelle `sentc_user_keys`
+-- Indizes für die Tabelle `sentc_user_device`
 --
-ALTER TABLE `sentc_user_keys`
+ALTER TABLE `sentc_user_device`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`);
+  ADD UNIQUE KEY `device_identifier` (`device_identifier`),
+  ADD KEY `user_id` (`user_id`,`app_id`) USING BTREE,
+  ADD KEY `app_id` (`app_id`,`token`);
 
 --
 -- Indizes für die Tabelle `sentc_user_token`
 --
 ALTER TABLE `sentc_user_token`
-  ADD PRIMARY KEY (`user_id`,`token`,`app_id`) USING BTREE;
+  ADD PRIMARY KEY (`device_id`,`token`,`app_id`) USING BTREE;
 
 --
 -- Indizes für die Tabelle `test`

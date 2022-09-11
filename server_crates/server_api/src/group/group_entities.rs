@@ -1,5 +1,5 @@
 use sentc_crypto_common::group::{GroupInviteReqList, GroupJoinReqList, GroupKeyServerOutput, KeyRotationInput};
-use sentc_crypto_common::{AppId, EncryptionKeyPairId, GroupId, SymKeyId, UserId};
+use sentc_crypto_common::{AppId, EncryptionKeyPairId, GroupId, SignKeyPairId, SymKeyId, UserId};
 use serde::{Deserialize, Serialize};
 use server_core::take_or_err;
 
@@ -36,23 +36,10 @@ impl mysql_async::prelude::FromRow for InternalGroupData
 	where
 		Self: Sized,
 	{
-		//use this here because the macro don't handle Option<T>
-		let parent = match row.take_opt::<Option<String>, _>(2) {
-			Some(value) => {
-				match value {
-					Ok(ir) => ir,
-					Err(mysql_async::FromValueError(_value)) => {
-						return Err(mysql_async::FromRowError(row));
-					},
-				}
-			},
-			None => return Err(mysql_async::FromRowError(row)),
-		};
-
 		Ok(Self {
 			id: take_or_err!(row, 0, String),
 			app_id: take_or_err!(row, 1, String),
-			parent,
+			parent: server_core::take_or_err_opt!(row, 2, String),
 			time: take_or_err!(row, 3, u128),
 		})
 	}
@@ -335,6 +322,15 @@ pub struct GroupUserKeys
 	pub keypair_encrypt_alg: String,
 	pub user_public_key_id: EncryptionKeyPairId,
 	pub time: u128,
+	//this keys are only set for user group
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub encrypted_sign_key: Option<String>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub verify_key: Option<String>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub keypair_sign_alg: Option<String>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub keypair_sign_id: Option<SignKeyPairId>,
 }
 
 impl Into<GroupKeyServerOutput> for GroupUserKeys
@@ -351,6 +347,10 @@ impl Into<GroupKeyServerOutput> for GroupUserKeys
 			key_pair_id: self.key_pair_id,
 			user_public_key_id: self.user_public_key_id,
 			time: self.time,
+			encrypted_sign_key: self.encrypted_sign_key,
+			verify_key: self.verify_key,
+			keypair_sign_alg: self.keypair_sign_alg,
+			keypair_sign_id: self.keypair_sign_id,
 		}
 	}
 }
@@ -366,7 +366,7 @@ impl mysql_async::prelude::FromRow for GroupUserKeys
 
 		Ok(Self {
 			key_pair_id: k_id.to_string(),
-			group_key_id: k_id,
+			group_key_id: k_id.to_string(),
 			encrypted_group_key: take_or_err!(row, 1, String),
 			group_key_alg: take_or_err!(row, 2, String),
 			encrypted_private_group_key: take_or_err!(row, 3, String),
@@ -374,6 +374,10 @@ impl mysql_async::prelude::FromRow for GroupUserKeys
 			keypair_encrypt_alg: take_or_err!(row, 5, String),
 			user_public_key_id: take_or_err!(row, 6, String),
 			time: take_or_err!(row, 7, u128),
+			encrypted_sign_key: server_core::take_or_err_opt!(row, 8, String),
+			verify_key: server_core::take_or_err_opt!(row, 9, String),
+			keypair_sign_alg: server_core::take_or_err_opt!(row, 10, String),
+			keypair_sign_id: Some(k_id),
 		})
 	}
 }
@@ -397,7 +401,7 @@ impl server_core::db::FromSqliteRow for GroupUserKeys
 
 		Ok(Self {
 			key_pair_id: k_id.to_string(),
-			group_key_id: k_id,
+			group_key_id: k_id.to_string(),
 			encrypted_group_key: take_or_err!(row, 1),
 			group_key_alg: take_or_err!(row, 2),
 			encrypted_private_group_key: take_or_err!(row, 3),
@@ -405,6 +409,10 @@ impl server_core::db::FromSqliteRow for GroupUserKeys
 			keypair_encrypt_alg: take_or_err!(row, 5),
 			user_public_key_id: take_or_err!(row, 6),
 			time,
+			encrypted_sign_key: take_or_err!(row, 8),
+			verify_key: take_or_err!(row, 9),
+			keypair_sign_alg: take_or_err!(row, 10),
+			keypair_sign_id: Some(k_id),
 		})
 	}
 }
@@ -812,24 +820,12 @@ impl mysql_async::prelude::FromRow for ListGroups
 	where
 		Self: Sized,
 	{
-		let parent = match row.take_opt::<Option<String>, _>(4) {
-			Some(value) => {
-				match value {
-					Ok(ir) => ir,
-					Err(mysql_async::FromValueError(_value)) => {
-						return Err(mysql_async::FromRowError(row));
-					},
-				}
-			},
-			None => return Err(mysql_async::FromRowError(row)),
-		};
-
 		Ok(Self {
 			group_id: take_or_err!(row, 0, String),
 			time: take_or_err!(row, 1, u128),
 			joined_time: take_or_err!(row, 2, u128),
 			rank: take_or_err!(row, 3, i32),
-			parent,
+			parent: server_core::take_or_err_opt!(row, 4, String),
 		})
 	}
 }

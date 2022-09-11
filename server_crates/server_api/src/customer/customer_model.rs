@@ -123,7 +123,14 @@ pub(super) async fn get_email_token(customer_id: CustomerId) -> AppRes<CustomerE
 pub(super) async fn get_email_by_token(email: String) -> AppRes<CustomerEmailByToken>
 {
 	//language=SQL
-	let sql = "SELECT email, id FROM sentc_customer WHERE email_token = ?";
+	let sql = r"
+SELECT email, c.id as customer_id, cd.id as device_id  
+FROM 
+    sentc_customer c,
+    sentc_user_device cd 
+WHERE 
+    email_token = ? AND 
+    c.id = user_id";
 
 	let token: Option<CustomerEmailByToken> = query_first(sql, set_params!(email)).await?;
 

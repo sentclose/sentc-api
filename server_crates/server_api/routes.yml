@@ -62,11 +62,14 @@ routes:
             gr:
               - get: { p: "/user/:user_id", s: crate::user::get }
               - get: { p: "/user/:user_id/public_key", s: crate::user::get_public_key_data }
+              - get: { p: "/user/:user_id/public_key/:key_id", s: crate::user::get_public_key_by_id }
               - get: { p: "/user/:user_id/verify_key", s: crate::user::get_verify_key_data }
+              - get: { p: "/user/:user_id/verify_key/:key_id", s: crate::user::get_verify_key_by_id }
               - post: {p: "/exists", s: crate::user::exists}
               - post: {p: "/register", s: crate::user::register}
               - post: {p: "/prepare_login", s: crate::user::prepare_login}
               - post: {p: "/done_login", s: crate::user::done_login}
+              - post: {p: "/user/prepare_register_device", s: crate::user::prepare_register_device}
               #_________________________________________________________________________________________________________
               # group with exp jwt mw -> the jwt can be exp for this routes
               - group:
@@ -109,11 +112,15 @@ routes:
               - group:
                   p: "/user"
                   gr:
+                    - get: {p: "/user_keys", s: crate::user::get_user_keys}
+                    - get: {p: "/user_key/:key_id", s: crate::user::get_user_key}
                     - put: {p: "", s: crate::user::update}
+                    - put: {p: "/done_register_device", s: crate::user::done_register_device}
                     - put: {p: "/update_pw", s: crate::user::change_password}
                     - put: {p: "/reset_pw", s: crate::user::reset_password}
                     # check the api token for delete action, maybe the app creator only wants to trigger delete from the own backend
                     - delete: {p: "", s: crate::user::delete}
+                    - delete: {p: "/device/:device_id", s: crate::user::delete_device}
               #_________________________________________________________________________________________________________
               # group routes in the group mod, check always the app token for this actions
               - group:

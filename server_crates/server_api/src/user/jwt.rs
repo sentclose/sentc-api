@@ -5,7 +5,7 @@ use jsonwebtoken::{decode, decode_header, encode, Algorithm, DecodingKey, Encodi
 use ring::rand;
 use ring::signature::{self, KeyPair};
 use rustgram::Request;
-use sentc_crypto_common::UserId;
+use sentc_crypto_common::{DeviceId, GroupId, UserId};
 use serde::{Deserialize, Serialize};
 use server_core::get_time_in_sec;
 
@@ -27,7 +27,9 @@ struct Claims
 
 	//sentc
 	internal_user_id: UserId,
-	user_identifier: String,
+	group_id: GroupId,
+	device_id: DeviceId,
+	device_identifier: String,
 	fresh: bool, //was this token from refresh jwt or from login
 }
 
@@ -60,8 +62,10 @@ pub fn get_jwt_data_from_param(req: &Request) -> Result<&UserJwtEntity, HttpErr>
 }
 
 pub(crate) async fn create_jwt(
-	internal_user_id: &str,
-	user_identifier: &str,
+	internal_user_id: UserId,
+	group_id: GroupId,
+	device_id: DeviceId,
+	device_identifier: String,
 	app_id: &str,
 	customer_jwt_data: &AppJwt,
 	aud: &str,
@@ -76,8 +80,10 @@ pub(crate) async fn create_jwt(
 		aud: aud.to_string(),
 		sub: app_id.to_string(),
 		exp: expiration as usize,
-		internal_user_id: internal_user_id.to_string(),
-		user_identifier: user_identifier.to_string(),
+		internal_user_id,
+		group_id,
+		device_id,
+		device_identifier,
 		fresh,
 	};
 
@@ -137,7 +143,9 @@ pub async fn auth(jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), 
 	Ok((
 		UserJwtEntity {
 			id: decoded.claims.internal_user_id,
-			identifier: decoded.claims.user_identifier,
+			device_id: decoded.claims.device_id,
+			group_id: decoded.claims.group_id,
+			identifier: decoded.claims.device_identifier,
 			aud: decoded.claims.aud,
 			sub: decoded.claims.sub,
 			fresh: decoded.claims.fresh,
@@ -204,7 +212,9 @@ mod test
 			sub: "12345".to_string(),
 			exp: expiration as usize,
 			internal_user_id: "12345".to_string(),
-			user_identifier: "username".to_string(),
+			group_id: "12345".to_string(),
+			device_id: "12345".to_string(),
+			device_identifier: "username".to_string(),
 			fresh: false,
 		};
 
@@ -236,7 +246,7 @@ mod test
 
 		let decoded = decode::<Claims>(&jwt, &DecodingKey::from_ec_der(&verify_key), &validation).unwrap();
 
-		assert_eq!(decoded.claims.user_identifier, claims.user_identifier);
+		assert_eq!(decoded.claims.device_identifier, claims.device_identifier);
 		assert_eq!(key_id, key_id_str);
 		assert_eq!(decoded.claims.fresh, false);
 	}
