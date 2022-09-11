@@ -375,7 +375,7 @@ VALUES (?,?,?,?,?,?,?)";
 	Ok(group_id)
 }
 
-pub(super) async fn delete_user_group(app_id: AppId, user_id: UserId) -> AppRes<()>
+pub(super) async fn delete_user_group(app_id: AppId, group_id: GroupId) -> AppRes<()>
 {
 	//don't delete children because user group won't have children
 
@@ -386,11 +386,9 @@ FROM sentc_group
 WHERE 
     app_id = ? AND 
     type = ? AND 
-    sentc_group.id = (
-        SELECT user_group_id FROM sentc_user WHERE sentc_user.id = ?
-    )";
+    id = ?";
 
-	exec(sql, set_params!(app_id, GROUP_TYPE_USER, user_id)).await?;
+	exec(sql, set_params!(app_id, GROUP_TYPE_USER, group_id)).await?;
 
 	Ok(())
 }

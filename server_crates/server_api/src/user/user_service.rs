@@ -406,11 +406,12 @@ pub async fn delete(user: &UserJwtEntity) -> AppRes<()>
 	}
 
 	let user_id = &user.id;
+	let group_id = &user.group_id;
 	let app_id = &user.sub.to_string();
 
 	user_model::delete(user_id.to_string(), app_id.to_string()).await?;
 
-	group_service::delete_user_group(app_id.to_string(), user_id.to_string()).await?;
+	group_service::delete_user_group(app_id.to_string(), group_id.to_string()).await?;
 
 	Ok(())
 }

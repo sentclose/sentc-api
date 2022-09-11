@@ -35,9 +35,9 @@ pub async fn delete_group(app_id: AppId, group_id: GroupId, user_rank: i32) -> A
 	Ok(())
 }
 
-pub fn delete_user_group(app_id: AppId, user_id: UserId) -> impl Future<Output = AppRes<()>>
+pub fn delete_user_group(app_id: AppId, group_id: GroupId) -> impl Future<Output = AppRes<()>>
 {
-	group_model::delete_user_group(app_id, user_id)
+	group_model::delete_user_group(app_id, group_id)
 }
 
 pub fn get_user_group_keys(
