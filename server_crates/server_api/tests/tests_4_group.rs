@@ -4,7 +4,7 @@ use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupInviteServerOutput};
-use sentc_crypto::UserData;
+use sentc_crypto::{SdkError, UserData};
 use sentc_crypto_common::group::{
 	GroupChangeRankServerInput,
 	GroupCreateOutput,
@@ -304,7 +304,141 @@ async fn test_12_create_child_group()
 //invite
 
 #[tokio::test]
-async fn test_13_invite_user()
+async fn test_13_stop_group_invite()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let user = &users[0];
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/change_invite");
+	let client = reqwest::Client::new();
+	let res = client
+		.patch(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+}
+
+#[tokio::test]
+async fn test_14_not_send_invite_or_join_when_invite_is_disabled()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let user = &users[1];
+
+	//no join req
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req");
+	let client = reqwest::Client::new();
+	let res = client
+		.patch(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	match sentc_crypto::util::public::handle_general_server_response(body.as_str()) {
+		Ok(_) => panic!("Should be an error"),
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(s, _) => {
+					assert_eq!(s, 317);
+				},
+				_ => panic!("should be server error"),
+			}
+		},
+	}
+
+	//no invite req
+	let creator = &users[0];
+
+	let user_to_invite = &users[1];
+
+	let mut group_keys_ref = vec![];
+
+	let user_keys = group
+		.decrypted_group_keys
+		.get(creator.user_id.as_str())
+		.unwrap();
+
+	for decrypted_group_key in user_keys {
+		group_keys_ref.push(&decrypted_group_key.group_key);
+	}
+
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(
+		&user_to_invite.user_data.user_keys[0].exported_public_key,
+		&group_keys_ref,
+		false,
+	)
+	.unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/invite/" + user_to_invite.user_id.as_str());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(invite)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	match sentc_crypto::util::public::handle_server_response::<GroupInviteServerOutput>(body.as_str()) {
+		Ok(_) => panic!("Should be an error"),
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(s, _) => {
+					assert_eq!(s, 317);
+				},
+				_ => panic!("should be server error"),
+			}
+		},
+	}
+}
+
+#[tokio::test]
+async fn test_15_enable_group_invite()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let user = &users[0];
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/change_invite");
+	let client = reqwest::Client::new();
+	let res = client
+		.patch(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+}
+
+#[tokio::test]
+async fn test_16_invite_user()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -352,7 +486,7 @@ async fn test_13_invite_user()
 }
 
 #[tokio::test]
-async fn test_14_not_invite_user_without_keys()
+async fn test_17_not_invite_user_without_keys()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -399,7 +533,7 @@ async fn test_14_not_invite_user_without_keys()
 }
 
 #[tokio::test]
-async fn test_15_get_invite_for_user()
+async fn test_18_get_invite_for_user()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -432,7 +566,7 @@ async fn test_15_get_invite_for_user()
 }
 
 #[tokio::test]
-async fn test_16_user_init_with_invites()
+async fn test_19_user_init_with_invites()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
@@ -449,7 +583,7 @@ async fn test_16_user_init_with_invites()
 }
 
 #[tokio::test]
-async fn test_17_accept_invite()
+async fn test_20_accept_invite()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let mut group = GROUP_TEST_STATE.get().unwrap().write().await;
@@ -494,7 +628,7 @@ async fn test_17_accept_invite()
 }
 
 #[tokio::test]
-async fn test_18_invite_user_an_reject_invite()
+async fn test_21_invite_user_an_reject_invite()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -583,7 +717,7 @@ async fn test_18_invite_user_an_reject_invite()
 //leave group
 
 #[tokio::test]
-async fn test_19_not_leave_group_when_user_is_the_only_admin()
+async fn test_22_not_leave_group_when_user_is_the_only_admin()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -620,7 +754,7 @@ async fn test_19_not_leave_group_when_user_is_the_only_admin()
 }
 
 #[tokio::test]
-async fn test_20_leave_group()
+async fn test_23_leave_group()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -668,7 +802,7 @@ async fn test_20_leave_group()
 //join req
 
 #[tokio::test]
-async fn test_21_join_req()
+async fn test_24_join_req()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -693,7 +827,7 @@ async fn test_21_join_req()
 }
 
 #[tokio::test]
-async fn test_22_get_join_req()
+async fn test_25_get_join_req()
 {
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
 
@@ -750,7 +884,7 @@ async fn test_22_get_join_req()
 }
 
 #[tokio::test]
-async fn test_23_send_join_req_aging()
+async fn test_26_send_join_req_aging()
 {
 	//this should not err because of insert ignore
 
@@ -806,7 +940,7 @@ async fn test_23_send_join_req_aging()
 }
 
 #[tokio::test]
-async fn test_24_reject_join_req()
+async fn test_27_reject_join_req()
 {
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
 
@@ -832,7 +966,7 @@ async fn test_24_reject_join_req()
 }
 
 #[tokio::test]
-async fn test_25_get_not_join_req_after_reject()
+async fn test_28_get_not_join_req_after_reject()
 {
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
 
@@ -866,7 +1000,7 @@ async fn test_25_get_not_join_req_after_reject()
 }
 
 #[tokio::test]
-async fn test_25_no_join_req_when_user_is_in_parent_group()
+async fn test_29_no_join_req_when_user_is_in_parent_group()
 {
 	//it should not make a join req from the creator of the parent group because he is in the parent as member
 	let group = CHILD_GROUP_TEST_STATE.get().unwrap().read().await;
@@ -912,7 +1046,7 @@ async fn test_25_no_join_req_when_user_is_in_parent_group()
 }
 
 #[tokio::test]
-async fn test_26_accept_join_req()
+async fn test_30_accept_join_req()
 {
 	//1. send the join req again, because we were rejecting the last one
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
@@ -993,7 +1127,7 @@ async fn test_26_accept_join_req()
 //key rotation
 
 #[tokio::test]
-async fn test_27_start_key_rotation()
+async fn test_31_start_key_rotation()
 {
 	//
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
@@ -1052,7 +1186,7 @@ async fn test_27_start_key_rotation()
 }
 
 #[tokio::test]
-async fn test_28_done_key_rotation_for_other_user()
+async fn test_32_done_key_rotation_for_other_user()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let mut group = GROUP_TEST_STATE.get().unwrap().write().await;
@@ -1159,7 +1293,7 @@ async fn test_28_done_key_rotation_for_other_user()
 }
 
 #[tokio::test]
-async fn test_29_get_key_with_pagination()
+async fn test_33_get_key_with_pagination()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -1222,7 +1356,7 @@ async fn test_29_get_key_with_pagination()
 }
 
 #[tokio::test]
-async fn test_30_invite_user_with_two_keys()
+async fn test_34_invite_user_with_two_keys()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let mut group = GROUP_TEST_STATE.get().unwrap().write().await;
@@ -1260,7 +1394,7 @@ async fn test_30_invite_user_with_two_keys()
 //__________________________________________________________________________________________________
 
 #[tokio::test]
-async fn test_31_update_rank()
+async fn test_35_update_rank()
 {
 	//update the rank of a user and check if the rank for the child group is also updated
 
@@ -1304,7 +1438,7 @@ async fn test_31_update_rank()
 }
 
 #[tokio::test]
-async fn test_32_no_rank_change_without_permission()
+async fn test_36_no_rank_change_without_permission()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -1338,7 +1472,7 @@ async fn test_32_no_rank_change_without_permission()
 }
 
 #[tokio::test]
-async fn test_33_get_group_user()
+async fn test_37_get_group_user()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -1422,7 +1556,7 @@ async fn test_33_get_group_user()
 }
 
 #[tokio::test]
-async fn test_33_kick_user_from_group()
+async fn test_38_kick_user_from_group()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -1464,7 +1598,7 @@ async fn test_33_kick_user_from_group()
 }
 
 #[tokio::test]
-async fn test_34_key_rotation_in_child_group_by_parent()
+async fn test_39_key_rotation_in_child_group_by_parent()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -1557,7 +1691,7 @@ async fn test_34_key_rotation_in_child_group_by_parent()
 }
 
 #[tokio::test]
-async fn test_35_key_rotation_in_child_group_by_user()
+async fn test_40_key_rotation_in_child_group_by_user()
 {
 	//this time start the key rotation from a group user and check if the parent got the keys too
 
@@ -1628,7 +1762,7 @@ async fn test_35_key_rotation_in_child_group_by_user()
 //delete group
 
 #[tokio::test]
-async fn test_36_delete_group()
+async fn test_41_delete_group()
 {
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
 
@@ -1654,7 +1788,7 @@ async fn test_36_delete_group()
 }
 
 #[tokio::test]
-async fn test_37_get_all_groups_to_user()
+async fn test_42_get_all_groups_to_user()
 {
 	let creator = USERS_TEST_STATE.get().unwrap().read().await;
 	let creator = &creator[0];

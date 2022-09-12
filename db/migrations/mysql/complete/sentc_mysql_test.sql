@@ -138,15 +138,16 @@ CREATE TABLE `sentc_app_options` (
   `file_part_download` int(11) NOT NULL,
   `user_device_register` int(11) NOT NULL,
   `user_device_delete` int(11) NOT NULL,
-  `user_device_list` int(11) NOT NULL
+  `user_device_list` int(11) NOT NULL,
+  `group_invite_stop` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='option: 0 = not allowed,  1 = public token, 2 = secret token';
 
 --
 -- Daten für Tabelle `sentc_app_options`
 --
 
-INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_user_keys`, `group_user_update_check`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`, `key_register`, `key_get`, `group_auto_invite`, `group_list`, `file_register`, `file_part_upload`, `file_get`, `file_part_download`, `user_device_register`, `user_device_delete`, `user_device_list`) VALUES
-('1665eb92-4513-469f-81d8-b72a62e0134c', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_user_keys`, `group_user_update_check`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`, `key_register`, `key_get`, `group_auto_invite`, `group_list`, `file_register`, `file_part_upload`, `file_get`, `file_part_download`, `user_device_register`, `user_device_delete`, `user_device_list`,  `group_invite_stop`) VALUES
+('1665eb92-4513-469f-81d8-b72a62e0134c', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -264,6 +265,7 @@ CREATE TABLE `sentc_group` (
   `parent` varchar(36) DEFAULT NULL,
   `identifier` text DEFAULT NULL,
   `type` int(11) NOT NULL COMMENT '0 0 normal group, 1 = user group',
+  `invite` tinyint(1) NOT NULL,
   `time` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -627,11 +629,10 @@ ALTER TABLE `sentc_user_action_log`
 -- Indizes für die Tabelle `sentc_user_device`
 --
 ALTER TABLE `sentc_user_device`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `device_identifier` (`device_identifier`),
-  ADD KEY `user_id` (`user_id`,`app_id`) USING BTREE,
-  ADD KEY `app_id` (`app_id`,`token`);
-
+	ADD PRIMARY KEY (`id`),
+	ADD KEY `user_id` (`user_id`,`app_id`) USING BTREE,
+	ADD KEY `app_id` (`app_id`,`token`),
+	ADD KEY `device_identifier` (`device_identifier`) USING BTREE;
 --
 -- Indizes für die Tabelle `sentc_user_token`
 --

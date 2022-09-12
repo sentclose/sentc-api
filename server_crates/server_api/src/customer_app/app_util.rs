@@ -28,6 +28,7 @@ pub enum Endpoint
 	GroupUserDataGet,
 	GroupUserKeys,
 	GroupUserUpdateCheck,
+	GroupInviteStop,
 
 	GroupList,
 
@@ -151,6 +152,7 @@ pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endp
 		Endpoint::GroupLeave => options.group_leave,
 		Endpoint::GroupChangeRank => options.group_change_rank,
 		Endpoint::GroupUserDelete => options.group_user_delete,
+		Endpoint::GroupInviteStop => options.group_invite_stop,
 
 		Endpoint::KeyRegister => options.key_register,
 		Endpoint::KeyGet => options.key_get,

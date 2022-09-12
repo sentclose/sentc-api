@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 12. Sep 2022 um 14:21
+-- Erstellungszeit: 12. Sep 2022 um 17:40
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -124,7 +124,8 @@ CREATE TABLE `sentc_app_options` (
   `file_part_download` int(11) NOT NULL,
   `user_device_register` int(11) NOT NULL,
   `user_device_delete` int(11) NOT NULL,
-  `user_device_list` int(11) NOT NULL
+  `user_device_list` int(11) NOT NULL,
+  `group_invite_stop` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='option: 0 = not allowed,  1 = public token, 2 = secret token';
 
 -- --------------------------------------------------------
@@ -236,6 +237,7 @@ CREATE TABLE `sentc_group` (
   `parent` varchar(36) DEFAULT NULL,
   `identifier` text DEFAULT NULL,
   `type` int(11) NOT NULL COMMENT '0 0 normal group, 1 = user group',
+  `invite` tinyint(1) NOT NULL,
   `time` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -600,9 +602,9 @@ ALTER TABLE `sentc_user_action_log`
 --
 ALTER TABLE `sentc_user_device`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `device_identifier` (`device_identifier`),
   ADD KEY `user_id` (`user_id`,`app_id`) USING BTREE,
-  ADD KEY `app_id` (`app_id`,`token`);
+  ADD KEY `app_id` (`app_id`,`token`),
+  ADD KEY `device_identifier` (`device_identifier`) USING BTREE;
 
 --
 -- Indizes für die Tabelle `sentc_user_token`

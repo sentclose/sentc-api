@@ -64,6 +64,7 @@ async fn main_app()
 			user_device_register: 0,
 			user_device_delete: 0,
 			user_device_list: 0,
+			group_invite_stop: 0,
 		},
 		file_options: AppFileOptions {
 			file_storage: -1,
