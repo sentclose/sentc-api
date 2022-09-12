@@ -10,6 +10,7 @@ use sentc_crypto_common::user::{
 	DoneLoginServerOutput,
 	MasterKey,
 	RegisterServerOutput,
+	UserDeviceList,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
 	UserInitServerOutput,
@@ -1008,7 +1009,53 @@ async fn test_24_user_add_device()
 }
 
 #[tokio::test]
-async fn test_25_delete_device()
+async fn test_25_get_all_devices()
+{
+	let user = USER_TEST_STATE.get().unwrap().read().await;
+	let jwt = &user.user_data.as_ref().unwrap().jwt; //use the jwt from the main device
+
+	let url = get_url("api/v1/user/device/0/none".to_owned());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let list: Vec<UserDeviceList> = handle_server_response(body.as_str()).unwrap();
+
+	assert_eq!(list.len(), 2);
+	assert_eq!(list[0].device_id, user.user_data.as_ref().unwrap().device_id);
+	assert_eq!(list[1].device_id, user.user_data_1.as_ref().unwrap().device_id);
+
+	//get device from page 2
+
+	let last_item = &list[0];
+
+	let url = get_url("api/v1/user/device/".to_owned() + last_item.time.to_string().as_str() + "/" + last_item.device_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let list: Vec<UserDeviceList> = handle_server_response(body.as_str()).unwrap();
+
+	assert_eq!(list.len(), 1);
+	assert_eq!(list[0].device_id, user.user_data_1.as_ref().unwrap().device_id);
+}
+
+#[tokio::test]
+async fn test_26_delete_device()
 {
 	let user = USER_TEST_STATE.get().unwrap().read().await;
 	let jwt = &user.user_data.as_ref().unwrap().jwt; //use the jwt from the main device
