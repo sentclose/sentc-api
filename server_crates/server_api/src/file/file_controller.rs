@@ -17,14 +17,15 @@ use crate::util::api_res::{echo, echo_success, ApiErrorCodes, AppRes, HttpErr, J
 pub async fn register_file(mut req: Request) -> JRes<FileRegisterOutput>
 {
 	let body = get_raw_body(&mut req).await?;
+	let app = get_app_data_from_req(&req)?;
 
-	check_endpoint_with_req(&req, Endpoint::FileRegister)?;
+	check_endpoint_with_app_options(&app, Endpoint::FileRegister)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 
 	let input: FileRegisterInput = bytes_to_json(&body)?;
 
-	let out = file_service::register_file(input, user.sub.to_string(), user.id.to_string(), None).await?;
+	let out = file_service::register_file(input, app.app_data.app_id.to_string(), user.id.to_string(), None).await?;
 
 	echo(out)
 }
@@ -58,7 +59,7 @@ pub async fn upload_part(req: Request) -> JRes<ServerSuccessOutput>
 	check_endpoint_with_app_options(&app, Endpoint::FilePartUpload)?;
 
 	let user = get_jwt_data_from_param(&req)?;
-	let app_id = user.sub.to_string();
+	let app_id = app.app_data.app_id.to_string();
 
 	if file_options.file_storage == FILE_STORAGE_NONE {
 		return Err(HttpErr::new(
@@ -113,22 +114,22 @@ pub async fn upload_part(req: Request) -> JRes<ServerSuccessOutput>
 
 pub async fn get_file(req: Request) -> JRes<FileMetaData>
 {
-	check_endpoint_with_req(&req, Endpoint::FileGet)?;
+	let app = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(&app, Endpoint::FileGet)?;
 
 	//use optional user id
-	let (app_id, user_id) = match get_jwt_data_from_param(&req) {
+	let user_id = match get_jwt_data_from_param(&req) {
 		Err(_e) => {
 			//only err when jwt was not set -> which is optional here
 			//get app id from app data
-			let app_data = get_app_data_from_req(&req)?;
-			(app_data.app_data.app_id.to_string(), None)
+			None
 		},
-		Ok(jwt) => (jwt.sub.to_string(), Some(jwt.id.to_string())),
+		Ok(jwt) => Some(jwt.id.to_string()),
 	};
 
 	let file_id = get_name_param_from_req(&req, "file_id")?;
 
-	let file = file_service::get_file(app_id, user_id, file_id.to_string(), None).await?;
+	let file = file_service::get_file(app.app_data.app_id.to_string(), user_id, file_id.to_string(), None).await?;
 
 	echo(file)
 }
@@ -204,7 +205,8 @@ pub async fn update_file_name(mut req: Request) -> JRes<ServerSuccessOutput>
 {
 	let body = get_raw_body(&mut req).await?;
 
-	check_endpoint_with_req(&req, Endpoint::FileRegister)?;
+	let app = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(&app, Endpoint::FileRegister)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 	let part_id = get_name_param_from_req(&req, "file_id")?;
@@ -212,7 +214,7 @@ pub async fn update_file_name(mut req: Request) -> JRes<ServerSuccessOutput>
 	let input: FileNameUpdate = bytes_to_json(&body)?;
 
 	file_service::update_file_name(
-		user.sub.to_string(),
+		app.app_data.app_id.to_string(),
 		user.id.to_string(),
 		part_id.to_string(),
 		input.encrypted_file_name,
@@ -226,13 +228,15 @@ pub async fn update_file_name(mut req: Request) -> JRes<ServerSuccessOutput>
 
 pub async fn delete_file(req: Request) -> JRes<ServerSuccessOutput>
 {
-	check_endpoint_with_req(&req, Endpoint::FilePartDownload)?;
+	let app = get_app_data_from_req(&req)?;
+
+	check_endpoint_with_app_options(&app, Endpoint::FilePartDownload)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 
 	let file_id = get_name_param_from_req(&req, "file_id")?;
 
-	file_service::delete_file(file_id, &user.sub, user.id.to_string(), None).await?;
+	file_service::delete_file(file_id, app.app_data.app_id.as_str(), user.id.to_string(), None).await?;
 
 	echo_success()
 }

@@ -306,10 +306,15 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 	Ok(out)
 }
 
-pub fn get_user_keys(user: &UserJwtEntity, last_fetched_time: u128, last_k_id: SymKeyId) -> impl Future<Output = AppRes<Vec<GroupUserKeys>>>
+pub fn get_user_keys(
+	user: &UserJwtEntity,
+	app_id: AppId,
+	last_fetched_time: u128,
+	last_k_id: SymKeyId,
+) -> impl Future<Output = AppRes<Vec<GroupUserKeys>>>
 {
 	group_service::get_user_group_keys(
-		user.sub.to_string(),
+		app_id,
 		user.group_id.to_string(),
 		user.device_id.to_string(), //call it with the device id to decrypt the keys
 		last_fetched_time,
@@ -317,10 +322,10 @@ pub fn get_user_keys(user: &UserJwtEntity, last_fetched_time: u128, last_k_id: S
 	)
 }
 
-pub fn get_user_key(user: &UserJwtEntity, key_id: SymKeyId) -> impl Future<Output = AppRes<GroupUserKeys>>
+pub fn get_user_key(user: &UserJwtEntity, app_id: AppId, key_id: SymKeyId) -> impl Future<Output = AppRes<GroupUserKeys>>
 {
 	group_service::get_user_group_key(
-		user.sub.to_string(),
+		app_id,
 		user.group_id.to_string(),
 		user.device_id.to_string(), //call it with the device id to decrypt the keys
 		key_id,
@@ -393,7 +398,7 @@ pub async fn refresh_jwt(app_data: &AppData, device_id: DeviceId, input: JwtRefr
 	Ok(out)
 }
 
-pub async fn delete(user: &UserJwtEntity) -> AppRes<()>
+pub async fn delete(user: &UserJwtEntity, app_id: AppId) -> AppRes<()>
 {
 	//the user needs a jwt which was created from login and no refreshed jwt
 	if user.fresh == false {
@@ -407,16 +412,15 @@ pub async fn delete(user: &UserJwtEntity) -> AppRes<()>
 
 	let user_id = &user.id;
 	let group_id = &user.group_id;
-	let app_id = &user.sub.to_string();
 
 	user_model::delete(user_id.to_string(), app_id.to_string()).await?;
 
-	group_service::delete_user_group(app_id.to_string(), group_id.to_string()).await?;
+	group_service::delete_user_group(app_id, group_id.to_string()).await?;
 
 	Ok(())
 }
 
-pub async fn delete_device(user: &UserJwtEntity, device_id: DeviceId) -> AppRes<()>
+pub async fn delete_device(user: &UserJwtEntity, app_id: AppId, device_id: DeviceId) -> AppRes<()>
 {
 	//this can be any device don't need to be the device to delete
 	if user.fresh == false {
@@ -429,13 +433,12 @@ pub async fn delete_device(user: &UserJwtEntity, device_id: DeviceId) -> AppRes<
 	}
 
 	let user_id = &user.id;
-	let app_id = &user.sub.to_string();
 
 	user_model::delete_device(user_id.to_string(), app_id.to_string(), device_id).await?;
 
 	group_user_service::leave_group(&InternalGroupDataComplete {
 		group_data: InternalGroupData {
-			app_id: app_id.to_string(),
+			app_id,
 			id: user.group_id.to_string(),
 			time: 0,
 			parent: None,
@@ -451,13 +454,12 @@ pub async fn delete_device(user: &UserJwtEntity, device_id: DeviceId) -> AppRes<
 	.await
 }
 
-pub async fn update(user: &UserJwtEntity, update_input: UserUpdateServerInput) -> AppRes<()>
+pub async fn update(user: &UserJwtEntity, app_id: AppId, update_input: UserUpdateServerInput) -> AppRes<()>
 {
 	let user_id = &user.id;
-	let app_id = &user.sub;
 
 	//check if the new ident exists
-	let exists = user_model::check_user_exists(app_id, update_input.user_identifier.as_str()).await?;
+	let exists = user_model::check_user_exists(app_id.as_str(), update_input.user_identifier.as_str()).await?;
 
 	if exists {
 		return Err(HttpErr::new(
@@ -471,7 +473,7 @@ pub async fn update(user: &UserJwtEntity, update_input: UserUpdateServerInput) -
 	user_model::update(
 		user_id.to_string(),
 		user.device_id.to_string(),
-		app_id.to_string(),
+		app_id,
 		update_input.user_identifier,
 	)
 	.await?;
@@ -479,7 +481,7 @@ pub async fn update(user: &UserJwtEntity, update_input: UserUpdateServerInput) -
 	Ok(())
 }
 
-pub async fn change_password(user: &UserJwtEntity, input: ChangePasswordData) -> AppRes<()>
+pub async fn change_password(user: &UserJwtEntity, app_id: AppId, input: ChangePasswordData) -> AppRes<()>
 {
 	//the user needs a jwt which was created from login and no refreshed jwt
 	if user.fresh == false {
@@ -493,10 +495,9 @@ pub async fn change_password(user: &UserJwtEntity, input: ChangePasswordData) ->
 
 	let user_id = &user.id;
 	let user_identifier = &user.identifier;
-	let app_id = &user.sub;
 	let device_id = &user.device_id;
 
-	let old_hashed_auth_key = auth_user(app_id.to_string(), user_identifier, input.old_auth_key.to_string()).await?;
+	let old_hashed_auth_key = auth_user(app_id, user_identifier, input.old_auth_key.to_string()).await?;
 
 	user_model::change_password(user_id.to_string(), device_id.to_string(), input, old_hashed_auth_key).await?;
 

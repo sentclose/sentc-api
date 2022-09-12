@@ -9,6 +9,7 @@ use server_core::cache::{CacheVariant, LONG_TTL, SHORT_TTL};
 use server_core::input_helper::{bytes_to_json, json_to_string};
 use server_core::url_helper::get_name_param_from_req;
 
+use crate::customer_app::app_util::get_app_data_from_req;
 use crate::group::group_entities::{InternalGroupData, InternalGroupDataComplete, InternalUserGroupData, InternalUserGroupDataFromParent};
 use crate::group::group_model;
 use crate::user::jwt::get_jwt_data_from_param;
@@ -51,10 +52,11 @@ pub fn group_transform<S>(inner: S) -> GroupMiddleware<S>
 
 async fn get_group_from_req(req: &mut Request) -> AppRes<()>
 {
+	let app = get_app_data_from_req(&req)?;
 	let user = get_jwt_data_from_param(&req)?;
 	let group_id = get_name_param_from_req(&req, "group_id")?;
 
-	let group_data = get_group(user.sub.as_str(), group_id, user.id.as_str()).await?;
+	let group_data = get_group(app.app_data.app_id.as_str(), group_id, user.id.as_str()).await?;
 
 	req.extensions_mut().insert(group_data);
 

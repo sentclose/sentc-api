@@ -26,7 +26,7 @@ use sentc_crypto_common::user::{
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 
-use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
+use crate::customer_app::app_util::{check_endpoint_with_app_options, get_app_data_from_req, Endpoint};
 use crate::group::group_entities::GroupUserKeys;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::user::user_entities::{DoneLoginServerOutput, UserInitEntity, UserPublicData, UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
@@ -77,12 +77,13 @@ pub(crate) async fn done_register_device(mut req: Request) -> JRes<GroupAcceptJo
 {
 	let body = get_raw_body(&mut req).await?;
 	let input: UserDeviceDoneRegisterInput = bytes_to_json(&body)?;
+	let app = get_app_data_from_req(&req)?;
 	let user = get_jwt_data_from_param(&req)?;
 
-	check_endpoint_with_req(&req, Endpoint::UserDeviceRegister)?;
+	check_endpoint_with_app_options(&app, Endpoint::UserDeviceRegister)?;
 
 	let session_id = user_service::done_register_device(
-		user.sub.to_string(),
+		app.app_data.app_id.to_string(),
 		user.id.to_string(),
 		user.group_id.to_string(),
 		input,
@@ -137,7 +138,8 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerOutput>
 
 pub(crate) async fn get_user_keys(req: Request) -> JRes<Vec<GroupUserKeys>>
 {
-	check_endpoint_with_req(&req, Endpoint::UserDoneLogin)?;
+	let app = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(&app, Endpoint::UserDoneLogin)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 
@@ -153,19 +155,26 @@ pub(crate) async fn get_user_keys(req: Request) -> JRes<Vec<GroupUserKeys>>
 		)
 	})?;
 
-	let user_keys = user_service::get_user_keys(user, last_fetched_time, last_k_id.to_string()).await?;
+	let user_keys = user_service::get_user_keys(
+		user,
+		app.app_data.app_id.to_string(),
+		last_fetched_time,
+		last_k_id.to_string(),
+	)
+	.await?;
 
 	echo(user_keys)
 }
 
 pub(crate) async fn get_user_key(req: Request) -> JRes<GroupUserKeys>
 {
-	check_endpoint_with_req(&req, Endpoint::UserDoneLogin)?;
+	let app = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(&app, Endpoint::UserDoneLogin)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 	let key_id = get_name_param_from_req(&req, "key_id")?;
 
-	let user_key = user_service::get_user_key(user, key_id.to_string()).await?;
+	let user_key = user_service::get_user_key(user, app.app_data.app_id.to_string(), key_id.to_string()).await?;
 
 	echo(user_key)
 }
@@ -303,25 +312,32 @@ pub(crate) async fn refresh_jwt(mut req: Request) -> JRes<DoneLoginLightServerOu
 
 pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 {
-	check_endpoint_with_req(&req, Endpoint::UserDelete)?;
+	let app = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(&app, Endpoint::UserDelete)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 
-	user_service::delete(user).await?;
+	user_service::delete(user, app.app_data.app_id.to_string()).await?;
 
-	user_model::save_user_action(user.sub.to_string(), user.id.to_string(), UserAction::Delete).await?;
+	user_model::save_user_action(
+		app.app_data.app_id.to_string(),
+		user.id.to_string(),
+		UserAction::Delete,
+	)
+	.await?;
 
 	echo_success()
 }
 
 pub(crate) async fn delete_device(req: Request) -> JRes<ServerSuccessOutput>
 {
-	check_endpoint_with_req(&req, Endpoint::UserDeviceDelete)?;
+	let app = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(&app, Endpoint::UserDeviceDelete)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 	let device_id = get_name_param_from_req(&req, "device_id")?;
 
-	user_service::delete_device(user, device_id.to_string()).await?;
+	user_service::delete_device(user, app.app_data.app_id.to_string(), device_id.to_string()).await?;
 
 	echo_success()
 }
@@ -330,11 +346,13 @@ pub(crate) async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 {
 	let body = get_raw_body(&mut req).await?;
 	let update_input: UserUpdateServerInput = bytes_to_json(&body)?;
+
+	let app = get_app_data_from_req(&req)?;
 	let user = get_jwt_data_from_param(&req)?;
 
-	check_endpoint_with_req(&req, Endpoint::UserUpdate)?;
+	check_endpoint_with_app_options(&app, Endpoint::UserUpdate)?;
 
-	user_service::update(user, update_input).await?;
+	user_service::update(user, app.app_data.app_id.to_string(), update_input).await?;
 
 	echo_success()
 }
@@ -343,13 +361,20 @@ pub(crate) async fn change_password(mut req: Request) -> JRes<ServerSuccessOutpu
 {
 	let body = get_raw_body(&mut req).await?;
 	let user = get_jwt_data_from_param(&req)?;
+	let app_data = get_app_data_from_req(&req)?;
+
 	let input: ChangePasswordData = bytes_to_json(&body)?;
 
-	check_endpoint_with_req(&req, Endpoint::UserChangePassword)?;
+	check_endpoint_with_app_options(&app_data, Endpoint::UserChangePassword)?;
 
-	user_service::change_password(user, input).await?;
+	user_service::change_password(user, app_data.app_data.app_id.to_string(), input).await?;
 
-	user_model::save_user_action(user.sub.to_string(), user.id.to_string(), UserAction::ChangePassword).await?;
+	user_model::save_user_action(
+		app_data.app_data.app_id.to_string(),
+		user.id.to_string(),
+		UserAction::ChangePassword,
+	)
+	.await?;
 
 	echo_success()
 }
@@ -358,13 +383,19 @@ pub(crate) async fn reset_password(mut req: Request) -> JRes<ServerSuccessOutput
 {
 	let body = get_raw_body(&mut req).await?;
 	let user = get_jwt_data_from_param(&req)?; //non fresh jwt here
+	let app_data = get_app_data_from_req(&req)?;
 	let input: ResetPasswordData = bytes_to_json(&body)?;
 
-	check_endpoint_with_req(&req, Endpoint::UserResetPassword)?;
+	check_endpoint_with_app_options(&app_data, Endpoint::UserResetPassword)?;
 
 	user_service::reset_password(user.id.to_string(), user.device_id.to_string(), input).await?;
 
-	user_model::save_user_action(user.sub.to_string(), user.id.to_string(), UserAction::ResetPassword).await?;
+	user_model::save_user_action(
+		app_data.app_data.app_id.to_string(),
+		user.id.to_string(),
+		UserAction::ResetPassword,
+	)
+	.await?;
 
 	echo_success()
 }

@@ -191,7 +191,7 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 {
 	let user = get_jwt_data_from_param(&req)?;
 
-	user::user_service::delete(user).await?;
+	user::user_service::delete(user, user.sub.to_string()).await?;
 
 	//files must be deleted before customer delete. we need the apps for the customer
 	file_service::delete_file_for_customer(user.id.as_str()).await?;
@@ -228,6 +228,7 @@ pub(crate) async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 	//update in user table too
 	user::user_service::update(
 		user,
+		user.sub.to_string(),
 		UserUpdateServerInput {
 			user_identifier: email.to_string(),
 		},
@@ -260,7 +261,8 @@ pub(crate) async fn change_password(mut req: Request) -> JRes<ServerSuccessOutpu
 
 	let user = get_jwt_data_from_param(&req)?;
 
-	user::user_service::change_password(user, update_data).await?;
+	//the jwt can only be created at our backend
+	user::user_service::change_password(user, user.sub.to_string(), update_data).await?;
 
 	echo_success()
 }

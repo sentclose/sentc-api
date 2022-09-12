@@ -13,7 +13,7 @@ use server_core::cache;
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 
-use crate::customer_app::app_util::{check_endpoint_with_req, Endpoint};
+use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use crate::group::get_group_user_data_from_req;
 use crate::group::group_entities::{GroupInviteReq, GroupJoinReq, GroupUserListItem};
 use crate::group::group_user::group_user_model::InsertNewUserType;
@@ -102,7 +102,8 @@ pub(crate) async fn invite_request(mut req: Request) -> JRes<GroupInviteServerOu
 
 pub(crate) async fn get_invite_req(req: Request) -> JRes<Vec<GroupInviteReq>>
 {
-	check_endpoint_with_req(&req, Endpoint::GroupInvite)?;
+	let app = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(&app, Endpoint::GroupInvite)?;
 
 	//called from the invited user not the group admin
 
@@ -120,7 +121,7 @@ pub(crate) async fn get_invite_req(req: Request) -> JRes<Vec<GroupInviteReq>>
 	})?;
 
 	let out = group_user_service::get_invite_req(
-		user.sub.to_string(),
+		app.app_data.app_id.to_string(),
 		user.id.to_string(),
 		last_fetched_time,
 		last_group_id.to_string(),
@@ -144,7 +145,8 @@ pub(crate) async fn reject_invite(req: Request) -> JRes<ServerSuccessOutput>
 
 pub(crate) async fn accept_invite(req: Request) -> JRes<ServerSuccessOutput>
 {
-	check_endpoint_with_req(&req, Endpoint::GroupAcceptInvite)?;
+	let app = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(&app, Endpoint::GroupAcceptInvite)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 	let group_id = get_name_param_from_req(&req, "group_id")?;
@@ -152,7 +154,7 @@ pub(crate) async fn accept_invite(req: Request) -> JRes<ServerSuccessOutput>
 	group_user_model::accept_invite(group_id.to_string(), user.id.to_string()).await?;
 
 	//delete the cache here so the user can join the group
-	let key_user = get_group_user_cache_key(user.sub.as_str(), group_id, user.id.as_str());
+	let key_user = get_group_user_cache_key(app.app_data.app_id.as_str(), group_id, user.id.as_str());
 
 	cache::delete(&key_user).await;
 
