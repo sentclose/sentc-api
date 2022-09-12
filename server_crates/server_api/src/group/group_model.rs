@@ -443,8 +443,13 @@ pub(super) async fn stop_invite(app_id: AppId, group_id: GroupId, user_rank: i32
 {
 	check_group_rank(user_rank, 1)?;
 
+	#[cfg(feature = "mysql")]
 	//language=SQL
 	let sql = "UPDATE sentc_group SET invite = IF(invite LIKE 0, 1,0) WHERE app_id = ? AND id = ?";
+
+	#[cfg(feature = "sqlite")]
+	let sql = "UPDATE sentc_group SET invite = IIF(invite LIKE 0, 1,0) WHERE app_id = ? AND id = ?";
+
 	exec(sql, set_params!(app_id, group_id)).await?;
 
 	Ok(())
