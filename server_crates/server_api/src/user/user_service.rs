@@ -157,7 +157,7 @@ pub async fn done_register_device(
 				id: user_group_id,
 				time: 0,
 				parent: None,
-				invite: 0,
+				invite: 1, //must be 1 to accept the device invite
 			},
 			user_data: InternalUserGroupData {
 				user_id: "".to_string(),
