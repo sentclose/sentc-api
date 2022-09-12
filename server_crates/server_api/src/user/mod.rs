@@ -29,7 +29,14 @@ use server_core::url_helper::{get_name_param_from_params, get_name_param_from_re
 use crate::customer_app::app_util::{check_endpoint_with_app_options, get_app_data_from_req, Endpoint};
 use crate::group::group_entities::GroupUserKeys;
 use crate::user::jwt::get_jwt_data_from_param;
-use crate::user::user_entities::{DoneLoginServerOutput, UserInitEntity, UserPublicData, UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
+use crate::user::user_entities::{
+	DoneLoginServerOutput,
+	UserDeviceList,
+	UserInitEntity,
+	UserPublicData,
+	UserPublicKeyDataEntity,
+	UserVerifyKeyDataEntity,
+};
 use crate::user::user_model::UserAction;
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 
@@ -340,6 +347,38 @@ pub(crate) async fn delete_device(req: Request) -> JRes<ServerSuccessOutput>
 	user_service::delete_device(user, app.app_data.app_id.to_string(), device_id.to_string()).await?;
 
 	echo_success()
+}
+
+pub(crate) async fn get_devices(req: Request) -> JRes<Vec<UserDeviceList>>
+{
+	let app = get_app_data_from_req(&req)?;
+
+	//TODO new endpoint
+	check_endpoint_with_app_options(&app, Endpoint::UserDeviceRegister)?;
+
+	let user = get_jwt_data_from_param(&req)?;
+
+	let params = get_params(&req)?;
+	let last_id = get_name_param_from_params(&params, "last_id")?;
+	let last_fetched_time = get_name_param_from_params(&params, "last_fetched_time")?;
+	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
+		HttpErr::new(
+			400,
+			ApiErrorCodes::UnexpectedTime,
+			"last fetched time is wrong".to_string(),
+			None,
+		)
+	})?;
+
+	let out = user_service::get_devices(
+		app.app_data.app_id.to_string(),
+		user.id.to_string(),
+		last_fetched_time,
+		last_id.to_string(),
+	)
+	.await?;
+
+	echo(out)
 }
 
 pub(crate) async fn update(mut req: Request) -> JRes<ServerSuccessOutput>

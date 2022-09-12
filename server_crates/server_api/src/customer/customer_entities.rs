@@ -71,17 +71,10 @@ impl server_core::db::FromSqliteRow for CustomerDataEntity
 	where
 		Self: Sized,
 	{
-		let time: String = take_or_err!(row, 2);
-		let time: u128 = time.parse().map_err(|e| {
-			server_core::db::FormSqliteRowError {
-				msg: format!("err in db fetch: {:?}", e),
-			}
-		})?;
-
 		Ok(Self {
 			email: take_or_err!(row, 0),
 			email_valid: take_or_err!(row, 1),
-			email_send: time,
+			email_send: server_core::take_or_err_u128!(row, 2),
 			email_status: take_or_err!(row, 3),
 		})
 	}
@@ -120,17 +113,10 @@ impl server_core::db::FromSqliteRow for CustomerDataByEmailEntity
 	where
 		Self: Sized,
 	{
-		let time: String = take_or_err!(row, 2);
-		let time: u128 = time.parse().map_err(|e| {
-			server_core::db::FormSqliteRowError {
-				msg: format!("err in db fetch: {:?}", e),
-			}
-		})?;
-
 		Ok(Self {
 			id: take_or_err!(row, 0),
 			email_valid: take_or_err!(row, 1),
-			email_send: time,
+			email_send: server_core::take_or_err_u128!(row, 2),
 			email_status: take_or_err!(row, 3),
 		})
 	}

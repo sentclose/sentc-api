@@ -124,17 +124,10 @@ impl server_core::db::FromSqliteRow for AppJwt
 	where
 		Self: Sized,
 	{
-		let time: String = take_or_err!(row, 2);
-		let time: u128 = time.parse().map_err(|e| {
-			server_core::db::FormSqliteRowError {
-				msg: format!("err in db fetch: {:?}", e),
-			}
-		})?;
-
 		Ok(Self {
 			jwt_key_id: take_or_err!(row, 0),
 			jwt_alg: take_or_err!(row, 1),
-			time,
+			time: server_core::take_or_err_u128!(row, 2),
 		})
 	}
 }

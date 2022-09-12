@@ -25,7 +25,7 @@ use sentc_crypto_common::{AppId, DeviceId, GroupId, SymKeyId, UserId};
 use crate::group::group_entities::{GroupUserKeys, InternalGroupData, InternalGroupDataComplete, InternalUserGroupData};
 use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
 use crate::user::jwt::create_jwt;
-use crate::user::user_entities::{DoneLoginServerOutput, UserInitEntity, UserJwtEntity, SERVER_RANDOM_VALUE};
+use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserJwtEntity, SERVER_RANDOM_VALUE};
 use crate::user::user_model;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::AppData;
@@ -452,6 +452,16 @@ pub async fn delete_device(user: &UserJwtEntity, app_id: AppId, device_id: Devic
 		},
 	})
 	.await
+}
+
+pub fn get_devices(
+	app_id: AppId,
+	user_id: UserId,
+	last_fetched_time: u128,
+	last_fetched_id: DeviceId,
+) -> impl Future<Output = AppRes<Vec<UserDeviceList>>>
+{
+	user_model::get_devices(app_id, user_id, last_fetched_time, last_fetched_id)
 }
 
 pub async fn update(user: &UserJwtEntity, app_id: AppId, update_input: UserUpdateServerInput) -> AppRes<()>

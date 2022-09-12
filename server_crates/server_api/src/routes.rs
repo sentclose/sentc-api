@@ -180,6 +180,12 @@ pub(crate) fn routes(router: &mut Router)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
+	router.get(
+		"/api/v1/user/device/:last_fetched_time/:last_id",
+		r(crate::user::get_devices)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
 	router.put(
 		"/api/v1/user",
 		r(crate::user::update)

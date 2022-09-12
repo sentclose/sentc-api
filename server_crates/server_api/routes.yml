@@ -114,6 +114,7 @@ routes:
                   gr:
                     - get: {p: "/user_keys", s: crate::user::get_user_keys}
                     - get: {p: "/user_key/:key_id", s: crate::user::get_user_key}
+                    - get: {p: "/device/:last_fetched_time/:last_id", s: crate::user::get_devices}
                     - put: {p: "", s: crate::user::update}
                     - put: {p: "/done_register_device", s: crate::user::done_register_device}
                     - put: {p: "/update_pw", s: crate::user::change_password}
