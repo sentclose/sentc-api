@@ -714,6 +714,7 @@ async fn check_for_only_one_admin(group_id: GroupId, user_id: UserId) -> AppRes<
 	}
 }
 
+#[inline(always)]
 async fn group_accept_invite(app_id: AppId, group_id: GroupId) -> AppRes<()>
 {
 	//check if this group can be invited
