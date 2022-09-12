@@ -165,12 +165,18 @@ pub(crate) async fn accept_invite(req: Request) -> JRes<ServerSuccessOutput>
 
 pub(crate) async fn join_req(req: Request) -> JRes<ServerSuccessOutput>
 {
-	check_endpoint_with_req(&req, Endpoint::GroupJoinReq)?;
+	let app = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(app, Endpoint::GroupJoinReq)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 	let group_id = get_name_param_from_req(&req, "group_id")?;
 
-	group_user_model::join_req(group_id.to_string(), user.id.to_string()).await?;
+	group_user_model::join_req(
+		app.app_data.app_id.to_string(),
+		group_id.to_string(),
+		user.id.to_string(),
+	)
+	.await?;
 
 	echo_success()
 }
