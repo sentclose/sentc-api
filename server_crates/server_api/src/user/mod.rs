@@ -353,8 +353,7 @@ pub(crate) async fn get_devices(req: Request) -> JRes<Vec<UserDeviceList>>
 {
 	let app = get_app_data_from_req(&req)?;
 
-	//TODO new endpoint
-	check_endpoint_with_app_options(&app, Endpoint::UserDeviceRegister)?;
+	check_endpoint_with_app_options(&app, Endpoint::UserDeviceList)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 

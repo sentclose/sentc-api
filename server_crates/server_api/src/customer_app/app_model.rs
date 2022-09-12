@@ -90,7 +90,8 @@ SELECT
     file_get,
     file_part_download,
     user_device_register,
-    user_device_delete
+    user_device_delete,
+    user_device_list
 FROM sentc_app_options 
 WHERE 
     app_id = ?";
@@ -467,8 +468,9 @@ INSERT INTO sentc_app_options
      file_get,
      file_part_download,
      user_device_register,
-     user_device_delete
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+     user_device_delete,
+     user_device_list
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let params_options = set_params!(
 		app_id.to_string(),
@@ -506,7 +508,8 @@ INSERT INTO sentc_app_options
 		app_options.file_get,
 		app_options.file_part_download,
 		app_options.user_device_register,
-		app_options.user_device_delete
+		app_options.user_device_delete,
+		app_options.user_device_list
 	);
 
 	(sql, params_options)
