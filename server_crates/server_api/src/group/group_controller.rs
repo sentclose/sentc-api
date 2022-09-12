@@ -222,3 +222,19 @@ pub(crate) async fn get_all_groups_for_user(req: Request) -> JRes<Vec<ListGroups
 
 	echo(list)
 }
+
+pub(crate) async fn stop_invite(req: Request) -> JRes<ServerSuccessOutput>
+{
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	check_endpoint_with_req(&req, Endpoint::GroupInviteStop)?;
+
+	group_model::stop_invite(
+		group_data.group_data.app_id.to_string(),
+		group_data.group_data.id.to_string(),
+		group_data.user_data.rank,
+	)
+	.await?;
+
+	echo_success()
+}

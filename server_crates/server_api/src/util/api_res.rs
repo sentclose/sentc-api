@@ -78,6 +78,7 @@ pub enum ApiErrorCodes
 	GroupUserRankUpdate,
 	GroupUserKick,
 	GroupUserKickRank,
+	GroupInviteStop,
 
 	KeyNotFound,
 
@@ -191,6 +192,7 @@ impl ApiErrorCodes
 			ApiErrorCodes::GroupUserRankUpdate => 314,
 			ApiErrorCodes::GroupUserKick => 315,
 			ApiErrorCodes::GroupUserKickRank => 316,
+			ApiErrorCodes::GroupInviteStop => 317,
 
 			ApiErrorCodes::KeyNotFound => 400,
 

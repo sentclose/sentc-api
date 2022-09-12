@@ -161,6 +161,7 @@ routes:
                           - put: {p: "/invite/session/:key_session_id", s: crate::group::insert_user_keys_via_session_invite}
 
                           - put: {p: "/change_rank", s: crate::group::change_rank}
+                          - patch: {p: "/invite", s: crate::group::stop_invite}
                           #_____________________________________________________________________________________________
                           # groups for join reqs
                           - group:
