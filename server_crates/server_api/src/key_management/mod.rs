@@ -4,7 +4,7 @@ use sentc_crypto_common::server_default::ServerSuccessOutput;
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 
-use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
+use crate::customer_app::app_util::{check_endpoint_with_app_options, get_app_data_from_req, Endpoint};
 use crate::key_management::key_entity::SymKeyEntity;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
@@ -17,10 +17,11 @@ pub(crate) async fn register_sym_key(mut req: Request) -> JRes<GeneratedSymKeyHe
 	let body = get_raw_body(&mut req).await?;
 	let input: GeneratedSymKeyHeadServerInput = bytes_to_json(&body)?;
 
-	check_endpoint_with_req(&req, Endpoint::KeyRegister)?;
+	let app = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(&app, Endpoint::KeyRegister)?;
 	let user = get_jwt_data_from_param(&req)?;
 
-	let key_id = key_model::register_sym_key(user.sub.to_string(), user.id.to_string(), input).await?;
+	let key_id = key_model::register_sym_key(app.app_data.app_id.to_string(), user.id.to_string(), input).await?;
 
 	let out = GeneratedSymKeyHeadServerRegisterOutput {
 		key_id,
@@ -31,12 +32,19 @@ pub(crate) async fn register_sym_key(mut req: Request) -> JRes<GeneratedSymKeyHe
 
 pub(crate) async fn delete_sym_key(req: Request) -> JRes<ServerSuccessOutput>
 {
-	check_endpoint_with_req(&req, Endpoint::KeyRegister)?;
+	let app = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(&app, Endpoint::KeyRegister)?;
+
 	let user = get_jwt_data_from_param(&req)?;
 
 	let key_id = get_name_param_from_req(&req, "key_id")?;
 
-	key_model::delete_sym_key(user.sub.to_string(), user.id.to_string(), key_id.to_string()).await?;
+	key_model::delete_sym_key(
+		app.app_data.app_id.to_string(),
+		user.id.to_string(),
+		key_id.to_string(),
+	)
+	.await?;
 
 	echo_success()
 }

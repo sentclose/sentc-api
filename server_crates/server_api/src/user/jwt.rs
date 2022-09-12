@@ -129,6 +129,9 @@ pub async fn auth(jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), 
 	};
 	let alg = header.alg;
 
+	//it is secure when using only the key id without app ref. Only the backend with the right sign key can create a jwt which can be verified by the verify key.
+	//so faking the key id but using another sign key for the sign would be an error.
+
 	//get the verify key from the db (no cache here because we would got extreme big cache for each app, and we may get the jwt from cache too)
 	let verify_key = user_model::get_jwt_verify_key(key_id.as_str()).await?;
 	//decode the key

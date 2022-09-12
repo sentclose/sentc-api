@@ -7,7 +7,7 @@ use sentc_crypto_common::GroupId;
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 
-use crate::customer_app::app_util::{check_endpoint_with_req, Endpoint};
+use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use crate::group::group_entities::{GroupServerData, GroupUserKeys, ListGroups};
 use crate::group::{get_group_user_data_from_req, group_model, group_service, GROUP_TYPE_NORMAL};
 use crate::user::jwt::get_jwt_data_from_param;
@@ -32,14 +32,16 @@ async fn create_group(mut req: Request, parent_group_id: Option<GroupId>, user_r
 {
 	let body = get_raw_body(&mut req).await?;
 
-	check_endpoint_with_req(&req, Endpoint::GroupCreate)?;
+	let app = get_app_data_from_req(&req)?;
+
+	check_endpoint_with_app_options(&app, Endpoint::GroupCreate)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 
 	let input: CreateData = bytes_to_json(&body)?;
 
 	let group_id = group_service::create_group(
-		user.sub.to_string(),
+		app.app_data.app_id.to_string(),
 		user.id.to_string(),
 		input,
 		GROUP_TYPE_NORMAL,
@@ -194,7 +196,8 @@ pub(crate) async fn get_all_groups_for_user(req: Request) -> JRes<Vec<ListGroups
 {
 	//this is called from the user without a group id
 
-	check_endpoint_with_req(&req, Endpoint::GroupList)?;
+	let app = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(&app, Endpoint::GroupList)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 	let params = get_params(&req)?;
@@ -210,7 +213,7 @@ pub(crate) async fn get_all_groups_for_user(req: Request) -> JRes<Vec<ListGroups
 	})?;
 
 	let list = group_model::get_all_groups_to_user(
-		user.sub.to_string(),
+		app.app_data.app_id.to_string(),
 		user.id.to_string(),
 		last_fetched_time,
 		last_group_id.to_string(),
