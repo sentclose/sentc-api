@@ -157,6 +157,7 @@ pub async fn done_register_device(
 				id: user_group_id,
 				time: 0,
 				parent: None,
+				invite: 0,
 			},
 			user_data: InternalUserGroupData {
 				user_id: "".to_string(),
@@ -442,6 +443,7 @@ pub async fn delete_device(user: &UserJwtEntity, app_id: AppId, device_id: Devic
 			id: user.group_id.to_string(),
 			time: 0,
 			parent: None,
+			invite: 0,
 		},
 		user_data: InternalUserGroupData {
 			user_id: user_id.to_string(),
