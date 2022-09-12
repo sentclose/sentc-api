@@ -32,13 +32,6 @@ impl server_core::db::FromSqliteRow for FileSessionCheck
 	where
 		Self: Sized,
 	{
-		let created_at: String = take_or_err!(row, 1);
-		let created_at: u128 = created_at.parse().map_err(|e| {
-			server_core::db::FormSqliteRowError {
-				msg: format!("err in db fetch: {:?}", e),
-			}
-		})?;
-
 		let max_chunk_size: String = take_or_err!(row, 2);
 		let max_chunk_size: usize = max_chunk_size.parse().map_err(|e| {
 			server_core::db::FormSqliteRowError {
@@ -48,7 +41,7 @@ impl server_core::db::FromSqliteRow for FileSessionCheck
 
 		Ok(Self {
 			file_id: take_or_err!(row, 0),
-			created_at,
+			created_at: server_core::take_or_err_u128!(row, 1),
 			max_chunk_size,
 		})
 	}
@@ -98,30 +91,6 @@ impl mysql_async::prelude::FromRow for FileMetaData
 	where
 		Self: Sized,
 	{
-		let encrypted_file_name = match row.take_opt::<Option<String>, _>(6) {
-			Some(value) => {
-				match value {
-					Ok(ir) => ir,
-					Err(mysql_async::FromValueError(_value)) => {
-						return Err(mysql_async::FromRowError(row));
-					},
-				}
-			},
-			None => return Err(mysql_async::FromRowError(row)),
-		};
-
-		let belongs_to = match row.take_opt::<Option<String>, _>(2) {
-			Some(value) => {
-				match value {
-					Ok(ir) => ir,
-					Err(mysql_async::FromValueError(_value)) => {
-						return Err(mysql_async::FromRowError(row));
-					},
-				}
-			},
-			None => return Err(mysql_async::FromRowError(row)),
-		};
-
 		let belongs_to_type = take_or_err!(row, 3, i32);
 		let belongs_to_type = match belongs_to_type {
 			0 => BelongsToType::None,
@@ -133,12 +102,12 @@ impl mysql_async::prelude::FromRow for FileMetaData
 		Ok(Self {
 			file_id: take_or_err!(row, 0, String),
 			owner: take_or_err!(row, 1, String),
-			belongs_to,
+			belongs_to: server_core::take_or_err_opt!(row, 2, String),
 			belongs_to_type,
 			key_id: take_or_err!(row, 4, String),
 			time: take_or_err!(row, 5, u128),
 			part_list: Vec::new(),
-			encrypted_file_name,
+			encrypted_file_name: server_core::take_or_err_opt!(row, 6, String),
 		})
 	}
 }
@@ -150,13 +119,6 @@ impl server_core::db::FromSqliteRow for FileMetaData
 	where
 		Self: Sized,
 	{
-		let time: String = take_or_err!(row, 5);
-		let time: u128 = time.parse().map_err(|e| {
-			server_core::db::FormSqliteRowError {
-				msg: format!("err in db fetch: {:?}", e),
-			}
-		})?;
-
 		let belongs_to_type: i32 = take_or_err!(row, 3);
 		let belongs_to_type = match belongs_to_type {
 			0 => BelongsToType::None,
@@ -171,7 +133,7 @@ impl server_core::db::FromSqliteRow for FileMetaData
 			belongs_to: take_or_err!(row, 2),
 			belongs_to_type,
 			key_id: take_or_err!(row, 4),
-			time,
+			time: server_core::take_or_err_u128!(row, 5),
 			encrypted_file_name: take_or_err!(row, 6),
 			part_list: Vec::new(),
 		})
