@@ -44,6 +44,15 @@ pub async fn invite_request(
 		));
 	}
 
+	if group_data.group_data.invite == 0 {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::GroupInviteStop,
+			"No invites allowed for this group".to_string(),
+			None,
+		));
+	}
+
 	let session_id = group_user_model::invite_request(
 		group_data.group_data.id.to_string(),
 		invited_user.to_string(),
