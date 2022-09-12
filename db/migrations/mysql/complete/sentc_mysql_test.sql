@@ -629,11 +629,10 @@ ALTER TABLE `sentc_user_action_log`
 -- Indizes für die Tabelle `sentc_user_device`
 --
 ALTER TABLE `sentc_user_device`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `device_identifier` (`device_identifier`),
-  ADD KEY `user_id` (`user_id`,`app_id`) USING BTREE,
-  ADD KEY `app_id` (`app_id`,`token`);
-
+	ADD PRIMARY KEY (`id`),
+	ADD KEY `user_id` (`user_id`,`app_id`) USING BTREE,
+	ADD KEY `app_id` (`app_id`,`token`),
+	ADD KEY `device_identifier` (`device_identifier`) USING BTREE;
 --
 -- Indizes für die Tabelle `sentc_user_token`
 --

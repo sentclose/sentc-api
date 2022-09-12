@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 12. Sep 2022 um 17:21
+-- Erstellungszeit: 12. Sep 2022 um 17:40
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -634,9 +634,9 @@ ALTER TABLE `sentc_user_action_log`
 --
 ALTER TABLE `sentc_user_device`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `device_identifier` (`device_identifier`),
   ADD KEY `user_id` (`user_id`,`app_id`) USING BTREE,
-  ADD KEY `app_id` (`app_id`,`token`);
+  ADD KEY `app_id` (`app_id`,`token`),
+  ADD KEY `device_identifier` (`device_identifier`) USING BTREE;
 
 --
 -- Indizes für die Tabelle `sentc_user_token`
