@@ -27,6 +27,7 @@ pub struct InternalGroupData
 	pub id: GroupId,
 	pub time: u128,
 	pub parent: Option<GroupId>,
+	pub invite: i32,
 }
 
 #[cfg(feature = "mysql")]
@@ -41,6 +42,7 @@ impl mysql_async::prelude::FromRow for InternalGroupData
 			app_id: take_or_err!(row, 1, String),
 			parent: server_core::take_or_err_opt!(row, 2, String),
 			time: take_or_err!(row, 3, u128),
+			invite: take_or_err!(row, 4, i32),
 		})
 	}
 }
@@ -57,6 +59,7 @@ impl server_core::db::FromSqliteRow for InternalGroupData
 			app_id: take_or_err!(row, 1),
 			parent: take_or_err!(row, 2),
 			time: server_core::take_or_err_u128!(row, 3),
+			invite: take_or_err!(row, 4),
 		})
 	}
 }

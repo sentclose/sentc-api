@@ -19,7 +19,7 @@ use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 pub(crate) async fn get_internal_group_data(app_id: AppId, group_id: GroupId) -> AppRes<InternalGroupData>
 {
 	//language=SQL
-	let sql = "SELECT id as group_id, app_id, parent, time FROM sentc_group WHERE app_id = ? AND id = ? AND type = ?";
+	let sql = "SELECT id as group_id, app_id, parent, time, invite FROM sentc_group WHERE app_id = ? AND id = ? AND type = ?";
 	let group: Option<InternalGroupData> = query_first(sql, set_params!(app_id, group_id, GROUP_TYPE_NORMAL)).await?;
 
 	match group {
@@ -261,14 +261,15 @@ pub(super) async fn create(
 	let time = get_time()?;
 
 	//language=SQL
-	let sql_group = "INSERT INTO sentc_group (id, app_id, parent, identifier, time, type) VALUES (?,?,?,?,?,?)";
+	let sql_group = "INSERT INTO sentc_group (id, app_id, parent, identifier, time, type, invite) VALUES (?,?,?,?,?,?,?)";
 	let group_params = set_params!(
 		group_id.to_string(),
 		app_id.to_string(),
 		parent_group_id,
 		"".to_string(),
 		time.to_string(),
-		group_type
+		group_type,
+		1
 	);
 
 	let group_key_id = Uuid::new_v4().to_string();
@@ -436,6 +437,17 @@ pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_rank: i32) -> 
 	exec(sql, set_params!(group_id)).await?;
 
 	Ok(children_out)
+}
+
+pub(super) async fn stop_invite(app_id: AppId, group_id: GroupId, user_rank: i32) -> AppRes<()>
+{
+	check_group_rank(user_rank, 1)?;
+
+	//language=SQL
+	let sql = "UPDATE sentc_group SET invite = IF(invite LIKE 0, 1,0) WHERE app_id = ? AND id = ?";
+	exec(sql, set_params!(app_id, group_id)).await?;
+
+	Ok(())
 }
 
 /**
