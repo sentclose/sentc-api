@@ -350,7 +350,7 @@ pub(crate) fn routes(router: &mut Router)
 			.add(app_token::app_token_transform),
 	);
 	router.patch(
-		"/api/v1/group/:group_id/invite",
+		"/api/v1/group/:group_id/change_invite",
 		r(crate::group::stop_invite)
 			.add(group::group_transform)
 			.add(jwt::jwt_transform)
