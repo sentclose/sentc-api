@@ -1121,6 +1121,41 @@ async fn test_26_delete_device()
 	}
 }
 
+#[tokio::test]
+async fn test_27_not_delete_the_last_device()
+{
+	let user = USER_TEST_STATE.get().unwrap().read().await;
+	let jwt = &user.user_data.as_ref().unwrap().jwt; //use the jwt from the main device
+
+	let user_data = user.user_data.as_ref().unwrap();
+
+	let url = get_url("api/v1/user/device/".to_owned() + user_data.device_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	match handle_general_server_response(body.as_str()) {
+		Ok(_) => {
+			panic!("Should be an error");
+		},
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(s, _) => {
+					assert_eq!(s, 115)
+				},
+				_ => panic!("Should be server error"),
+			}
+		},
+	}
+}
+
 //do user tests before this one!
 
 #[tokio::test]
