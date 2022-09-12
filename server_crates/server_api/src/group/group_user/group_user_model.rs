@@ -263,30 +263,7 @@ pub(super) async fn join_req(app_id: AppId, group_id: GroupId, user_id: UserId) 
 	}
 
 	//check if this group can be invited
-	//language=SQL
-	let sql = "SELECT invite FROM sentc_group WHERE app_id = ? AND id = ?";
-	let can_invite: Option<UserInGroupCheck> = query_first(sql, set_params!(app_id, group_id.to_string())).await?;
-
-	match can_invite {
-		Some(ci) => {
-			if ci.0 == 0 {
-				return Err(HttpErr::new(
-					400,
-					ApiErrorCodes::GroupInviteStop,
-					"No invites allowed for this group".to_string(),
-					None,
-				));
-			}
-		},
-		None => {
-			return Err(HttpErr::new(
-				400,
-				ApiErrorCodes::GroupAccess,
-				"Group not found".to_string(),
-				None,
-			))
-		},
-	}
+	group_accept_invite(app_id, group_id.to_string()).await?;
 
 	let time = get_time()?;
 
@@ -735,4 +712,35 @@ async fn check_for_only_one_admin(group_id: GroupId, user_id: UserId) -> AppRes<
 		Some(_) => Ok(false),
 		None => Ok(true),
 	}
+}
+
+async fn group_accept_invite(app_id: AppId, group_id: GroupId) -> AppRes<()>
+{
+	//check if this group can be invited
+	//language=SQL
+	let sql = "SELECT invite FROM sentc_group WHERE app_id = ? AND id = ?";
+	let can_invite: Option<UserInGroupCheck> = query_first(sql, set_params!(app_id, group_id)).await?;
+
+	match can_invite {
+		Some(ci) => {
+			if ci.0 == 0 {
+				return Err(HttpErr::new(
+					400,
+					ApiErrorCodes::GroupInviteStop,
+					"No invites allowed for this group".to_string(),
+					None,
+				));
+			}
+		},
+		None => {
+			return Err(HttpErr::new(
+				400,
+				ApiErrorCodes::GroupAccess,
+				"Group not found".to_string(),
+				None,
+			))
+		},
+	}
+
+	Ok(())
 }
