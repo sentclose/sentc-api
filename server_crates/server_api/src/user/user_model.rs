@@ -1,6 +1,6 @@
 use sentc_crypto_common::user::{ChangePasswordData, KeyDerivedData, MasterKey, ResetPasswordData, UserDeviceRegisterInput};
 use sentc_crypto_common::{AppId, DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, UserId};
-use server_core::db::{exec, exec_transaction, query_first, Params, TransactionData};
+use server_core::db::{exec, exec_transaction, query_first, query_string, Params, TransactionData};
 use server_core::{get_time, set_params};
 use uuid::Uuid;
 
@@ -8,6 +8,7 @@ use crate::user::user_entities::{
 	DoneLoginServerKeysOutputEntity,
 	JwtSignKey,
 	JwtVerifyKey,
+	UserDeviceList,
 	UserExistsEntity,
 	UserLoginDataEntity,
 	UserLoginLightEntity,
@@ -636,6 +637,41 @@ WHERE
 	.await?;
 
 	Ok(())
+}
+
+pub(super) async fn get_devices(app_id: AppId, user_id: UserId, last_fetched_time: u128, last_fetched_id: DeviceId) -> AppRes<Vec<UserDeviceList>>
+{
+	//language=SQL
+	let sql = r"
+SELECT id, time, device_identifier 
+FROM sentc_user_device 
+WHERE 
+    app_id = ? AND 
+    user_id = ?"
+		.to_string();
+
+	let (sql, params) = if last_fetched_time > 0 {
+		let sql = sql + " AND time >= ? AND (time > ? OR (time = ? AND id > ?)) ORDER BY time, id LIMIT 50";
+		(
+			sql,
+			set_params!(
+				app_id,
+				user_id,
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_id
+			),
+		)
+	} else {
+		let sql = sql + " ORDER BY time, id LIMIT 50";
+
+		(sql, set_params!(app_id, user_id))
+	};
+
+	let list: Vec<UserDeviceList> = query_string(sql, params).await?;
+
+	Ok(list)
 }
 
 //__________________________________________________________________________________________________

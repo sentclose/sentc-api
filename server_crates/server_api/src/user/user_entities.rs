@@ -549,7 +549,7 @@ impl server_core::db::FromSqliteRow for UserVerifyKeyDataEntity
 //__________________________________________________________________________________________________
 
 /**
-Only used int he controller
+Only used in the controller
 */
 #[derive(Serialize)]
 pub struct UserInitEntity
@@ -576,3 +576,53 @@ impl Into<UserInitServerOutput> for UserInitEntity
 }
 
 //__________________________________________________________________________________________________
+
+#[derive(Serialize)]
+pub struct UserDeviceList
+{
+	pub device_id: String,
+	pub time: u128,
+	pub device_identifier: String,
+}
+
+impl Into<sentc_crypto_common::user::UserDeviceList> for UserDeviceList
+{
+	fn into(self) -> sentc_crypto_common::user::UserDeviceList
+	{
+		sentc_crypto_common::user::UserDeviceList {
+			device_id: self.device_id,
+			time: self.time,
+			device_identifier: self.device_identifier,
+		}
+	}
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for UserDeviceList
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			device_id: take_or_err!(row, 0, String),
+			time: take_or_err!(row, 1, u128),
+			device_identifier: take_or_err!(row, 2, String),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl server_core::db::FromSqliteRow for UserDeviceList
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			device_id: take_or_err!(row, 0),
+			time: server_core::take_or_err_u128!(row, 1),
+			device_identifier: take_or_err!(row, 2),
+		})
+	}
+}
