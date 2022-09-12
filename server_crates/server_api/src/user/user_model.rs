@@ -523,6 +523,33 @@ pub(super) async fn delete(user_id: String, app_id: AppId) -> AppRes<()>
 
 pub(super) async fn delete_device(user_id: UserId, app_id: AppId, device_id: DeviceId) -> AppRes<()>
 {
+	//first check if it is the only device
+	//language=SQL
+	let sql = "SELECT COUNT(id) FROM sentc_user_device WHERE app_id = ? AND user_id = ? LIMIT 2";
+
+	let device_count: Option<UserExistsEntity> = query_first(sql, set_params!(app_id.to_string(), user_id.to_string())).await?;
+
+	match device_count {
+		Some(c) => {
+			if c.0 < 2 {
+				return Err(HttpErr::new(
+					400,
+					ApiErrorCodes::UserDeviceDelete,
+					"Can't delete the last device. Use user delete instead.".to_string(),
+					None,
+				));
+			}
+		},
+		None => {
+			return Err(HttpErr::new(
+				400,
+				ApiErrorCodes::UserDeviceNotFound,
+				"No device found".to_string(),
+				None,
+			));
+		},
+	}
+
 	//language=SQL
 	let sql = "DELETE FROM sentc_user_device WHERE user_id = ? AND id = ? AND app_id = ?";
 

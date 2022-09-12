@@ -46,6 +46,8 @@ pub enum ApiErrorCodes
 	CustomerEmailSyntax,
 
 	UserNotFound,
+	UserDeviceDelete,
+	UserDeviceNotFound,
 	UserExists,
 	Login,
 	WrongJwtAction,
@@ -163,6 +165,8 @@ impl ApiErrorCodes
 			ApiErrorCodes::Login => 112,
 			ApiErrorCodes::WrongJwtAction => 113,
 			ApiErrorCodes::RefreshToken => 114,
+			ApiErrorCodes::UserDeviceDelete => 115,
+			ApiErrorCodes::UserDeviceNotFound => 116,
 
 			ApiErrorCodes::AppTokenNotFound => 200,
 			ApiErrorCodes::AppTokenWrongFormat => 201,
