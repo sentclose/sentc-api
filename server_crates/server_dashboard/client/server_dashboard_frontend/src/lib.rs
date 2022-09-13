@@ -347,3 +347,21 @@ pub async fn app_create_app(
 
 	Ok(out.into())
 }
+
+#[wasm_bindgen]
+pub async fn app_update(base_url: String, auth_token: String, jwt: String, app_id: String, identifier: String) -> Result<(), JsValue>
+{
+	let identifier = match identifier.as_str() {
+		"" => None,
+		_ => Some(identifier),
+	};
+
+	Ok(app::update(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		app_id.as_str(),
+		identifier,
+	)
+	.await?)
+}
