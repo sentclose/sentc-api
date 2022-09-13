@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "babel_node": "babel pkg/server_dashboard_frontend.js --out-file pkg/server_dashboard_frontend_cjs.js --plugins babel-plugin-transform-import-meta"
+    "babel_node": "babel pkg/server_dashboard_frontend.js --out-file pkg/server_dashboard_frontend_cjs.js"
   },
   "keywords": [],
   "author": "",
