@@ -9,6 +9,6 @@ members = [
     "server_crates/helper/server_api_route_builder",
     "server_crates/helper/server_api_init",
     "server_crates/server_dashboard/server_dashboard_backend",
-    #"server_crates/server_dashboard/client/server_dashboard_frontend",  #deactivate it after wasm update because we are using different features for sentc sdk
+    "server_crates/server_dashboard/server_dashboard_frontend",  #deactivate it after wasm update because we are using different features for sentc sdk
     #"server_crates/helper/server_migration"
 ]
