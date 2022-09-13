@@ -1,11 +1,13 @@
 #![no_std]
 
+mod app;
 mod customer;
 
 extern crate alloc;
 
 use alloc::string::{String, ToString};
 
+use server_api_common::app::{AppFileOptions, AppOptions};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -166,4 +168,181 @@ pub async fn change_password(base_url: String, auth_token: String, email: String
 		new_pw.as_str(),
 	)
 	.await?)
+}
+
+//__________________________________________________________________________________________________
+
+#[wasm_bindgen]
+pub fn app_options_default() -> JsValue
+{
+	let out = AppOptions::default();
+
+	JsValue::from_serde(&out).unwrap()
+}
+
+#[wasm_bindgen]
+pub fn app_options_lax() -> JsValue
+{
+	let out = AppOptions::default_lax();
+
+	JsValue::from_serde(&out).unwrap()
+}
+
+#[wasm_bindgen]
+pub struct AppJwtRegisterOutput
+{
+	customer_id: String,
+	app_id: String,
+	jwt_id: String,
+	jwt_verify_key: String,
+	jwt_sign_key: String,
+	jwt_alg: String,
+}
+
+impl From<server_api_common::app::AppJwtRegisterOutput> for AppJwtRegisterOutput
+{
+	fn from(out: server_api_common::app::AppJwtRegisterOutput) -> Self
+	{
+		Self {
+			customer_id: out.customer_id,
+			app_id: out.app_id,
+			jwt_id: out.jwt_id,
+			jwt_verify_key: out.jwt_verify_key,
+			jwt_sign_key: out.jwt_sign_key,
+			jwt_alg: out.jwt_alg,
+		}
+	}
+}
+
+#[wasm_bindgen]
+impl AppJwtRegisterOutput
+{
+	pub fn get_customer_id(&self) -> String
+	{
+		self.customer_id.clone()
+	}
+
+	pub fn get_app_id(&self) -> String
+	{
+		self.app_id.clone()
+	}
+
+	pub fn get_jwt_id(&self) -> String
+	{
+		self.jwt_id.clone()
+	}
+
+	pub fn get_jwt_verify_key(&self) -> String
+	{
+		self.jwt_verify_key.clone()
+	}
+
+	pub fn get_jwt_sign_key(&self) -> String
+	{
+		self.jwt_sign_key.clone()
+	}
+
+	pub fn get_jwt_alg(&self) -> String
+	{
+		self.jwt_alg.clone()
+	}
+}
+
+#[wasm_bindgen]
+pub struct AppRegisterOutput
+{
+	customer_id: String,
+	app_id: String,
+	secret_token: String,
+	public_token: String,
+	jwt_data: AppJwtRegisterOutput,
+}
+
+#[wasm_bindgen]
+impl AppRegisterOutput
+{
+	pub fn get_customer_id(&self) -> String
+	{
+		self.customer_id.clone()
+	}
+
+	pub fn get_app_id(&self) -> String
+	{
+		self.app_id.clone()
+	}
+
+	pub fn get_secret_token(&self) -> String
+	{
+		self.secret_token.clone()
+	}
+
+	pub fn get_public_token(&self) -> String
+	{
+		self.public_token.clone()
+	}
+
+	pub fn get_jwt_id(&self) -> String
+	{
+		self.jwt_data.jwt_id.clone()
+	}
+
+	pub fn get_jwt_verify_key(&self) -> String
+	{
+		self.jwt_data.jwt_verify_key.clone()
+	}
+
+	pub fn get_jwt_sign_key(&self) -> String
+	{
+		self.jwt_data.jwt_sign_key.clone()
+	}
+
+	pub fn get_jwt_alg(&self) -> String
+	{
+		self.jwt_data.jwt_alg.clone()
+	}
+}
+
+impl From<server_api_common::app::AppRegisterOutput> for AppRegisterOutput
+{
+	fn from(out: server_api_common::app::AppRegisterOutput) -> Self
+	{
+		Self {
+			customer_id: out.customer_id,
+			app_id: out.app_id,
+			secret_token: out.secret_token,
+			public_token: out.public_token,
+			jwt_data: out.jwt_data.into(),
+		}
+	}
+}
+
+#[wasm_bindgen]
+pub async fn app_create_app(
+	base_url: String,
+	auth_token: String,
+	jwt: String,
+	identifier: String,
+	options: JsValue,
+	file_options: JsValue,
+) -> Result<AppRegisterOutput, JsValue>
+{
+	let identifier = match identifier.as_str() {
+		"" => None,
+		_ => Some(identifier),
+	};
+
+	let options: AppOptions = options.into_serde().unwrap();
+	let file_options: AppFileOptions = file_options.into_serde().unwrap();
+
+	let out = app::create(
+		base_url,
+		auth_token.as_str(),
+		jwt.as_str(),
+		identifier,
+		options,
+		file_options,
+	)
+	.await?;
+
+	Ok(out.into())
 }
