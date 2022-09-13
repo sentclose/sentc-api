@@ -31,6 +31,11 @@ pub async fn init_storage()
 	}
 }
 
+pub fn get_local_storage(path: String) -> Box<dyn FileHandler>
+{
+	Box::new(local_storage::LocalStorage::new(path))
+}
+
 pub async fn get_part(part_id: &str) -> Result<Response, CoreError>
 {
 	let handler = FILE_HANDLER.get().unwrap();
