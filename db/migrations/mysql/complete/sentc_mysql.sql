@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 12. Sep 2022 um 17:40
+-- Erstellungszeit: 13. Sep 2022 um 08:59
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -410,7 +410,8 @@ CREATE TABLE `sentc_user_action_log` (
   `user_id` varchar(36) NOT NULL,
   `time` bigint(20) NOT NULL,
   `action_id` int(11) NOT NULL COMMENT '0 = done login; 1 = refresh token or init client',
-  `app_id` varchar(36) NOT NULL
+  `app_id` varchar(36) NOT NULL,
+  `amount` int(11) NOT NULL COMMENT 'when saving how many'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------

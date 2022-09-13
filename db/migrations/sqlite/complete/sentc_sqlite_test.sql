@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 7:34pm on September 12, 2022 (UTC)
+-- Exported: 8:59am on September 13, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -190,7 +190,7 @@ CREATE TABLE "sentc_user_action_log"
 	user_id   TEXT,
 	time      TEXT,
 	action_id INTEGER,
-	app_id    TEXT,
+	app_id    TEXT, 'amount' INTEGER,
 	constraint sentc_user_action_log_pk
 		primary key (user_id, app_id, time)
 );
