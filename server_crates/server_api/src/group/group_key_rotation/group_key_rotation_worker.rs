@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
-use sentc_crypto_common::{GroupId, SymKeyId};
+use sentc_crypto_common::{AppId, GroupId, SymKeyId};
 
 use crate::group::group_entities::{KeyRotationWorkerKey, UserEphKeyOut, UserGroupPublicKeyData};
 use crate::group::group_key_rotation::group_key_rotation_model;
+use crate::user::user_service;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
-pub async fn start(group_id: GroupId, key_id: SymKeyId) -> AppRes<()>
+pub async fn start(app_id: AppId, group_id: GroupId, key_id: SymKeyId) -> AppRes<()>
 {
 	let key = group_key_rotation_model::get_new_key(group_id.to_string(), key_id.to_string()).await?;
 
@@ -14,6 +15,9 @@ pub async fn start(group_id: GroupId, key_id: SymKeyId) -> AppRes<()>
 
 	let mut last_time_fetched = 0;
 	let mut last_user_id = "".to_string();
+
+	//track how many users are effected by the rotation
+	let mut total_len = 0_usize;
 
 	loop {
 		let key_cap = key_arc.clone();
@@ -26,6 +30,8 @@ pub async fn start(group_id: GroupId, key_id: SymKeyId) -> AppRes<()>
 		)
 		.await?;
 		let len = users.len();
+
+		total_len += len;
 
 		if len == 0 {
 			break;
@@ -70,11 +76,20 @@ pub async fn start(group_id: GroupId, key_id: SymKeyId) -> AppRes<()>
 				})??;
 
 			//save the keys for the parent
-			group_key_rotation_model::save_user_eph_keys(group_id, key_id, user_keys).await?;
+			group_key_rotation_model::save_user_eph_keys(group_id.to_string(), key_id, user_keys).await?;
 		},
 		//no parent group found or the parent group is already done (e.g. was rotation starter)
 		None => {},
 	}
+
+	//save the user action
+	user_service::save_user_action(
+		app_id,
+		group_id, //use the group id as user id
+		user_service::UserAction::KeyRotation,
+		total_len as i64,
+	)
+	.await?;
 
 	Ok(())
 }
