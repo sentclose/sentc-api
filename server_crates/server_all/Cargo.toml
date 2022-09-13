@@ -12,7 +12,7 @@ tokio = { version = "1", features = ["full"] }
 
 server_api = {version = "0.1.0", path = "../server_api", default-features = false}
 server_api_file = {version = "0.1.0", path = "../server_api_file", default-features = false}
-server_dashboard = {version = "0.1.0", path = "../server_dashboard"}
+server_dashboard_backend = {version = "0.1.0", path = "../server_dashboard/server_dashboard_backend"}
 
 [features]
 default = ["mysql"]

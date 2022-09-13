@@ -13,7 +13,7 @@ pub async fn main()
 	let mut router = rest_routes();
 
 	//the static files from the dash board
-	server_dashboard::routes(&mut router);
+	server_dashboard_backend::routes(&mut router);
 
 	server_api_file::routes(&mut router);
 
