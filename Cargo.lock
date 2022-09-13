@@ -727,10 +727,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4eb1a864a501629691edf6c15a593b7a51eebaa1e8468e9ddc623de7c9b58ec6"
 dependencies = [
  "cfg-if",
- "js-sys",
  "libc",
  "wasi",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -1885,22 +1883,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sentc-crypto-full"
-version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#3ce5609346bb118f5a10ddf8b058200a7942aa42"
-dependencies = [
- "base64ct",
- "js-sys",
- "sentc-crypto",
- "sentc-crypto-common 0.1.0 (git+ssh://git@gitlab.com/sentclose/sentc/sdk.git)",
- "serde",
- "serde_json",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
-
-[[package]]
 name = "serde"
 version = "1.0.139"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2063,22 +2045,6 @@ dependencies = [
  "server_api",
  "tokio",
  "tokio-util",
-]
-
-[[package]]
-name = "server_dashboard_frontend"
-version = "0.1.0"
-dependencies = [
- "getrandom",
- "sentc-crypto",
- "sentc-crypto-common 0.1.0",
- "sentc-crypto-full",
- "serde",
- "serde_json",
- "server_api_common",
- "sha2 0.10.2",
- "wasm-bindgen",
- "wasm-bindgen-futures",
 ]
 
 [[package]]
@@ -2491,8 +2457,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c53b543413a17a202f4be280a7e5c62a1c69345f5de525ee64f8cfdbc954994"
 dependencies = [
  "cfg-if",
- "serde",
- "serde_json",
  "wasm-bindgen-macro",
 ]
 
