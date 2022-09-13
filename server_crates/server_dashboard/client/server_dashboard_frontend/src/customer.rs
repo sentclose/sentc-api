@@ -15,6 +15,8 @@ use sentc_crypto_common::ServerOutput;
 use sentc_crypto_full::util::{make_non_auth_req, make_req, HttpMethod};
 use server_api_common::customer::{CustomerRegisterData, CustomerRegisterOutput, CustomerUpdateInput};
 
+use crate::utils;
+
 pub async fn register(base_url: String, auth_token: &str, email: String, password: &str) -> Result<String, String>
 {
 	let register_data = sentc_crypto::user::register(email.as_str(), password)?;
@@ -24,7 +26,7 @@ pub async fn register(base_url: String, auth_token: &str, email: String, passwor
 		email,
 		register_data: register_data.device,
 	};
-	let input = serde_json::to_string(&input).map_err(|_e| SdkError::JsonToStringFailed)?;
+	let input = utils::to_string(&input)?;
 
 	let url = base_url + "/api/v1/customer/register";
 
@@ -66,7 +68,7 @@ pub async fn update(base_url: String, auth_token: &str, jwt: &str, new_email: St
 	let update_data = CustomerUpdateInput {
 		new_email,
 	};
-	let update_data = serde_json::to_string(&update_data).map_err(|_e| SdkError::JsonToStringFailed)?;
+	let update_data = utils::to_string(&update_data)?;
 
 	let url = base_url + "/api/v1/customer";
 
@@ -120,7 +122,7 @@ pub async fn prepare_reset_password(base_url: String, auth_token: &str, email: S
 	let input = server_api_common::customer::CustomerResetPasswordInput {
 		email,
 	};
-	let input = serde_json::to_string(&input).map_err(|_e| SdkError::JsonToStringFailed)?;
+	let input = utils::to_string(&input)?;
 
 	let url = base_url + "/api/v1/customer/password_reset";
 
@@ -152,7 +154,7 @@ pub async fn done_reset_password(base_url: String, auth_token: &str, token: Stri
 		token, //token from the email
 		reset_password_data,
 	};
-	let input = serde_json::to_string(&input).map_err(|_e| SdkError::JsonToStringFailed)?;
+	let input = utils::to_string(&input)?;
 
 	let url = base_url + "/api/v1/customer/password_reset_validation";
 
