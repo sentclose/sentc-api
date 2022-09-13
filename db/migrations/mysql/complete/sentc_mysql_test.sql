@@ -438,7 +438,8 @@ CREATE TABLE `sentc_user_action_log` (
   `user_id` varchar(36) NOT NULL,
   `time` bigint(20) NOT NULL,
   `action_id` int(11) NOT NULL COMMENT '0 = done login; 1 = refresh token or init client',
-  `app_id` varchar(36) NOT NULL
+  `app_id` varchar(36) NOT NULL,
+  `amount` int(11) NOT NULL COMMENT 'when saving how many'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------

@@ -37,7 +37,7 @@ use crate::user::user_entities::{
 	UserPublicKeyDataEntity,
 	UserVerifyKeyDataEntity,
 };
-use crate::user::user_model::UserAction;
+use crate::user::user_service::UserAction;
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 
 pub(crate) async fn exists(mut req: Request) -> JRes<UserIdentifierAvailableServerOutput>
@@ -137,6 +137,7 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerOutput>
 		app_data.app_data.app_id.to_string(),
 		out.device_keys.user_id.to_string(),
 		UserAction::Login,
+		1,
 	)
 	.await?;
 
@@ -286,6 +287,7 @@ pub(crate) async fn init_user(mut req: Request) -> JRes<UserInitEntity>
 		app_data.app_data.app_id.to_string(),
 		user.id.to_string(),
 		UserAction::Init,
+		1,
 	)
 	.await?;
 
@@ -311,6 +313,7 @@ pub(crate) async fn refresh_jwt(mut req: Request) -> JRes<DoneLoginLightServerOu
 		app_data.app_data.app_id.to_string(),
 		out.user_id.to_string(),
 		UserAction::Refresh,
+		1,
 	)
 	.await?;
 
@@ -330,6 +333,7 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 		app.app_data.app_id.to_string(),
 		user.id.to_string(),
 		UserAction::Delete,
+		1,
 	)
 	.await?;
 
@@ -411,6 +415,7 @@ pub(crate) async fn change_password(mut req: Request) -> JRes<ServerSuccessOutpu
 		app_data.app_data.app_id.to_string(),
 		user.id.to_string(),
 		UserAction::ChangePassword,
+		1,
 	)
 	.await?;
 
@@ -432,6 +437,7 @@ pub(crate) async fn reset_password(mut req: Request) -> JRes<ServerSuccessOutput
 		app_data.app_data.app_id.to_string(),
 		user.id.to_string(),
 		UserAction::ResetPassword,
+		1,
 	)
 	.await?;
 

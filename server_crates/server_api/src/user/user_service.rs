@@ -30,6 +30,22 @@ use crate::user::user_model;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::AppData;
 
+pub enum UserAction
+{
+	Login,
+	Refresh,
+	Init,
+	ChangePassword,
+	ResetPassword,
+	Delete,
+	KeyRotation,
+}
+
+pub fn save_user_action(app_id: AppId, user_id: UserId, action: UserAction, amount: i64) -> impl Future<Output = AppRes<()>>
+{
+	user_model::save_user_action(app_id, user_id, action, amount)
+}
+
 pub fn check_user_in_app_by_user_id(app_id: AppId, user_id: UserId) -> impl Future<Output = AppRes<bool>>
 {
 	user_model::check_user_in_app(app_id, user_id)

@@ -4,6 +4,7 @@ use server_core::db::{exec, exec_transaction, query_first, query_string, Params,
 use server_core::{get_time, set_params};
 use uuid::Uuid;
 
+use crate::sentc_user_service::UserAction;
 use crate::user::user_entities::{
 	DoneLoginServerKeysOutputEntity,
 	JwtSignKey,
@@ -703,22 +704,12 @@ WHERE
 
 //__________________________________________________________________________________________________
 
-pub(super) enum UserAction
-{
-	Login,
-	Refresh,
-	Init,
-	ChangePassword,
-	ResetPassword,
-	Delete,
-}
-
-pub(super) async fn save_user_action(app_id: AppId, user_id: UserId, action: UserAction) -> AppRes<()>
+pub(super) async fn save_user_action(app_id: AppId, user_id: UserId, action: UserAction, amount: i64) -> AppRes<()>
 {
 	let time = get_time()?;
 
 	//language=SQL
-	let sql = "INSERT INTO sentc_user_action_log (user_id, time, action_id, app_id) VALUES (?,?,?,?)";
+	let sql = "INSERT INTO sentc_user_action_log (user_id, time, action_id, app_id, amount) VALUES (?,?,?,?,?)";
 
 	let action = match action {
 		UserAction::Login => 0,
@@ -727,9 +718,10 @@ pub(super) async fn save_user_action(app_id: AppId, user_id: UserId, action: Use
 		UserAction::ResetPassword => 3,
 		UserAction::Delete => 4,
 		UserAction::Init => 5,
+		UserAction::KeyRotation => 6,
 	};
 
-	exec(sql, set_params!(user_id, time.to_string(), action, app_id)).await?;
+	exec(sql, set_params!(user_id, time.to_string(), action, app_id, amount)).await?;
 
 	Ok(())
 }
