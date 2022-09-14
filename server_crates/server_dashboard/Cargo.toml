@@ -11,5 +11,5 @@ tokio-util = "0.7.2"
 
 rustgram = "0.1.7"
 
-server_api = {version = "*", path = "../../server_api", default-features = false}
-server-core = {version = "*", path = "../../core", default-features = false}
+server_api = {version = "*", path = "../server_api", default-features = false}
+server-core = {version = "*", path = "../core", default-features = false}

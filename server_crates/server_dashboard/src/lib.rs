@@ -1,3 +1,5 @@
+use std::env;
+
 use rustgram::service::IntoResponse;
 use rustgram::{r, Request, Response, Router};
 use server_api::util::api_res::HttpErr;
@@ -10,7 +12,7 @@ static LOCAL_FILE_HANDLER: OnceCell<Box<dyn FileHandler>> = OnceCell::const_new(
 
 pub async fn start()
 {
-	let path = "server_crates/server_dashboard/client/server_dashboard_frontend/pkg".to_string();
+	let path = env::var("LOCAL_FRONTED_DIR").unwrap();
 
 	LOCAL_FILE_HANDLER
 		.get_or_init(move || async { file::get_local_storage(path) })
