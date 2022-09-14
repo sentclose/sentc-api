@@ -9,11 +9,13 @@ merge every server into one
 pub async fn main()
 {
 	start().await;
+	server_dashboard_backend::start().await;
+
 	//routes from the rest api
 	let mut router = rest_routes();
 
 	//the static files from the dash board
-	server_dashboard::routes(&mut router);
+	server_dashboard_backend::routes(&mut router);
 
 	server_api_file::routes(&mut router);
 

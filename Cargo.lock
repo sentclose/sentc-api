@@ -1840,7 +1840,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#4f614849a409f4aa1600a8b1b5ee09c30e6ffa1d"
+source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#8238f1b558942c67a1419eda91079656e87b54e6"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -1861,7 +1861,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-common"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#4f614849a409f4aa1600a8b1b5ee09c30e6ffa1d"
+source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#8238f1b558942c67a1419eda91079656e87b54e6"
 dependencies = [
  "serde",
  "serde_json",
@@ -1870,7 +1870,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-core"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#4f614849a409f4aa1600a8b1b5ee09c30e6ffa1d"
+source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#8238f1b558942c67a1419eda91079656e87b54e6"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -1967,7 +1967,7 @@ dependencies = [
  "rustgram",
  "server_api",
  "server_api_file",
- "server_dashboard",
+ "server_dashboard_backend",
  "tokio",
 ]
 
@@ -2037,11 +2037,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "server_dashboard"
+name = "server_dashboard_backend"
 version = "0.1.0"
 dependencies = [
- "dotenv",
  "rustgram",
+ "server-core",
+ "server_api",
  "tokio",
  "tokio-util",
 ]
