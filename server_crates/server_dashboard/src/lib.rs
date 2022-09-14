@@ -24,7 +24,7 @@ A Route to load the static files
  */
 pub fn routes(router: &mut Router)
 {
-	router.get("/api/dashboard/*path", r(read_file));
+	router.get("/dashboard/*path", r(read_file));
 }
 
 /**
