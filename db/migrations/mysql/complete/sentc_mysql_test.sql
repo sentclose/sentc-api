@@ -213,15 +213,16 @@ DELIMITER ;
 CREATE TABLE `sentc_file_options` (
   `app_id` varchar(36) NOT NULL,
   `file_storage` int(11) NOT NULL COMMENT '0 = our backend; 1 = customer backend',
-  `storage_url` text DEFAULT NULL COMMENT 'when file_storage != 0'
+  `storage_url` text DEFAULT NULL COMMENT 'when file_storage != 0',
+  `auth_token` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Daten für Tabelle `sentc_file_options`
 --
 
-INSERT INTO `sentc_file_options` (`app_id`, `file_storage`, `storage_url`) VALUES
-('1665eb92-4513-469f-81d8-b72a62e0134c', -1, NULL);
+INSERT INTO `sentc_file_options` (`app_id`, `file_storage`, `storage_url`, `auth_token`) VALUES
+('1665eb92-4513-469f-81d8-b72a62e0134c', -1, NULL, NULL);
 
 -- --------------------------------------------------------
 
