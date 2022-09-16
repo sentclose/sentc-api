@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use std::env;
+use std::time::Duration;
 
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
@@ -496,6 +497,9 @@ pub async fn key_rotation(
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();
+
+	//wait a bit to finish the key rotation in the sub thread
+	tokio::time::sleep(Duration::from_millis(50)).await;
 
 	get_group(secret_token, jwt, out.group_id.as_str(), invoker_private_key, false).await
 }
