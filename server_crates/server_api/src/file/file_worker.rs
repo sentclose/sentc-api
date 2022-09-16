@@ -1,6 +1,9 @@
+use std::collections::HashMap;
+
+use sentc_crypto_common::{AppId, PartId};
 use server_core::get_time;
 
-use crate::file::file_entities::FilePartListItem;
+use crate::file::file_entities::FilePartListItemDelete;
 use crate::file::file_model;
 use crate::util::api_res::AppRes;
 
@@ -37,23 +40,70 @@ pub async fn start() -> AppRes<()>
 	Ok(())
 }
 
-async fn delete_parts(parts: Vec<FilePartListItem>) -> AppRes<()>
+async fn delete_parts(parts: Vec<FilePartListItemDelete>) -> AppRes<()>
 {
 	//split extern and intern
-	let mut extern_storage = Vec::with_capacity(parts.len());
 	let mut intern_storage = Vec::with_capacity(parts.len());
+
+	let mut extern_storage_map: HashMap<AppId, Vec<PartId>> = HashMap::new();
 
 	for part in parts {
 		if part.extern_storage {
-			extern_storage.push(part.part_id);
+			//split the app ids
+			extern_storage_map
+				.entry(part.app_id.to_string())
+				.or_insert(Vec::new())
+				.push(part.part_id);
 		} else {
 			intern_storage.push(part.part_id);
 		}
 	}
 
-	server_core::file::delete_parts(&intern_storage).await?;
+	if intern_storage.len() > 0 {
+		server_core::file::delete_parts(&intern_storage).await?;
+	}
 
-	//TODO make a req to delete the extern parts
+	if extern_storage_map.len() > 0 {
+		delete_external(extern_storage_map).await?;
+	}
+
+	Ok(())
+}
+
+async fn delete_external(map: HashMap<AppId, Vec<PartId>>) -> AppRes<()>
+{
+	//get the app info
+	let app_ids = map.keys().cloned().collect::<Vec<AppId>>();
+
+	let app_info = file_model::get_external_app_file_delete_info(app_ids).await?;
+
+	//iterate over each app which has files to delete from their external storage
+	for (app_id, file_data) in map {
+		let (url, auth_token) = match app_info.iter().find(|x| x.app_id == app_id) {
+			Some(u) => (u.storage_url.as_str(), u.auth_token.clone()),
+			None => continue,
+		};
+
+		//make req to the external storage url delete endpoint
+		// with the part ids in body as json
+		let body = match serde_json::to_string(&file_data) {
+			Err(_e) => continue,
+			Ok(f) => f,
+		};
+
+		let client = reqwest::Client::new();
+
+		// header token
+		let req = client.post(url).body(body);
+
+		let req = match auth_token {
+			Some(at) => req.header("x-sentc-app-token", at),
+			None => req,
+		};
+
+		//don't wait for the res
+		tokio::task::spawn(req.send());
+	}
 
 	Ok(())
 }

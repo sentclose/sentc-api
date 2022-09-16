@@ -58,11 +58,11 @@ rand = "0.8.5"
 # git-fetch-with-cli = true
 sentc-crypto = {version = "0.1.0", git = "ssh://git@gitlab.com/sentclose/sentc/sdk.git", default-features = false, features = ["rust", "server"]}
 
+reqwest = {version = "0.11.11"}
 #_______________________________________________________________________________________________________________________
 
 [dev-dependencies]
-# for making req for integration tests
-reqwest = { version = "0.11.11", features = ["json"] }
+
 sentc-crypto = {version = "0.1.0", git = "ssh://git@gitlab.com/sentclose/sentc/sdk.git", default-features = false, features = ["rust", "server", "server_test"]}
 #sentc-crypto-full = {version = "0.1.0", git = "ssh://git@gitlab.com/sentclose/sentc/sdk.git", default-features = false, features = ["rust"]}
 

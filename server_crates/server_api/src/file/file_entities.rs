@@ -1,3 +1,4 @@
+use sentc_crypto::sdk_common::AppId;
 use sentc_crypto_common::file::BelongsToType;
 use sentc_crypto_common::{FileId, PartId, SymKeyId, UserId};
 use serde::Serialize;
@@ -188,6 +189,87 @@ impl server_core::db::FromSqliteRow for FilePartListItem
 			part_id: take_or_err!(row, 0),
 			sequence: take_or_err!(row, 1),
 			extern_storage: take_or_err!(row, 2),
+		})
+	}
+}
+
+//__________________________________________________________________________________________________
+
+pub struct FilePartListItemDelete
+{
+	pub part_id: PartId,
+	pub sequence: i32,
+	pub extern_storage: bool,
+	pub app_id: AppId,
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for FilePartListItemDelete
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			part_id: take_or_err!(row, 0, String),
+			sequence: take_or_err!(row, 1, i32),
+			extern_storage: take_or_err!(row, 2, bool),
+			app_id: take_or_err!(row, 3, String),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl server_core::db::FromSqliteRow for FilePartListItemDelete
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			part_id: take_or_err!(row, 0),
+			sequence: take_or_err!(row, 1),
+			extern_storage: take_or_err!(row, 2),
+			app_id: take_or_err!(row, 3),
+		})
+	}
+}
+
+//__________________________________________________________________________________________________
+
+pub struct FileExternalStorageUrl
+{
+	pub storage_url: String,
+	pub app_id: AppId,
+	pub auth_token: Option<String>,
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for FileExternalStorageUrl
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			storage_url: take_or_err!(row, 0, String),
+			app_id: take_or_err!(row, 1, String),
+			auth_token: server_core::take_or_err_opt!(row, 2, String),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl server_core::db::FromSqliteRow for FileExternalStorageUrl
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			storage_url: take_or_err!(row, 0),
+			app_id: take_or_err!(row, 1),
+			auth_token: take_or_err!(row, 2),
 		})
 	}
 }

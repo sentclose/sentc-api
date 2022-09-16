@@ -1,9 +1,9 @@
 use sentc_crypto_common::{AppId, CustomerId, FileId, GroupId, SymKeyId, UserId};
 use server_core::db::{exec, exec_string, exec_transaction, get_in, query_first, query_string, TransactionData};
-use server_core::{get_time, set_params, set_params_vec};
+use server_core::{get_time, set_params, set_params_vec, set_params_vec_outer};
 use uuid::Uuid;
 
-use crate::file::file_entities::{FileMetaData, FilePartListItem, FileSessionCheck};
+use crate::file::file_entities::{FileExternalStorageUrl, FileMetaData, FilePartListItem, FilePartListItemDelete, FileSessionCheck};
 use crate::file::file_service::FILE_BELONGS_TO_TYPE_GROUP;
 use crate::group::group_entities::GroupChildren;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
@@ -350,11 +350,30 @@ WHERE
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn get_all_files_marked_to_delete(last_part_id: Option<String>, start_time: u128) -> AppRes<Vec<FilePartListItem>>
+pub(super) async fn get_external_app_file_delete_info(app_ids: Vec<AppId>) -> AppRes<Vec<FileExternalStorageUrl>>
+{
+	let ins = get_in(&app_ids);
+
+	//language=SQLx
+	let sql = format!(
+		"SELECT storage_url,app_id,auth_token FROM sentc_file_options WHERE app_id IN ({})",
+		ins
+	);
+
+	println!("s");
+
+	let res: Vec<FileExternalStorageUrl> = query_string(sql, set_params_vec_outer!(app_ids)).await?;
+
+	println!("e");
+
+	Ok(res)
+}
+
+pub(super) async fn get_all_files_marked_to_delete(last_part_id: Option<String>, start_time: u128) -> AppRes<Vec<FilePartListItemDelete>>
 {
 	//language=SQL
 	let sql = r"
-SELECT fp.id as file_id_part_id, sequence, extern 
+SELECT fp.id as file_id_part_id, sequence, extern, fp.app_id as part_app_id 
 FROM 
     sentc_file_part fp, sentc_file f 
 WHERE 
@@ -374,7 +393,7 @@ WHERE
 		},
 	};
 
-	let file_parts: Vec<FilePartListItem> = query_string(sql, params).await?;
+	let file_parts: Vec<FilePartListItemDelete> = query_string(sql, params).await?;
 
 	Ok(file_parts)
 }
