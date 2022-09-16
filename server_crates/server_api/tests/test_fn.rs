@@ -12,7 +12,7 @@ use sentc_crypto::{PrivateKeyFormat, PublicKeyFormat, SymKeyFormat, UserData};
 use sentc_crypto_common::group::{GroupCreateOutput, KeyRotationStartServerOutput};
 use sentc_crypto_common::user::{RegisterData, UserInitServerOutput};
 use sentc_crypto_common::{CustomerId, GroupId, ServerOutput, UserId};
-use server_api_common::app::{AppFileOptions, AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
+use server_api_common::app::{AppFileOptionsInput, AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
 use server_api_common::customer::{CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput};
 
 pub fn get_url(path: String) -> String
@@ -141,7 +141,7 @@ pub async fn create_app(customer_jwt: &str) -> AppRegisterOutput
 	let input = AppRegisterInput {
 		identifier: None,
 		options: AppOptions::default(),
-		file_options: AppFileOptions::default(),
+		file_options: AppFileOptionsInput::default(),
 	};
 
 	let client = reqwest::Client::new();

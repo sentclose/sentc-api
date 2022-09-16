@@ -1,6 +1,6 @@
 use sentc_crypto_common::{AppId, CustomerId, SignKeyPairId};
 use serde::{Deserialize, Serialize};
-use server_api_common::app::{AppFileOptions, AppOptions};
+use server_api_common::app::AppOptions;
 use server_core::take_or_err;
 
 /**
@@ -20,6 +20,41 @@ pub struct AppData
 	pub auth_with_token: AuthWithToken,
 	pub options: AppOptions,
 	pub file_options: AppFileOptions,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct AppFileOptions
+{
+	pub file_storage: i32,
+	pub storage_url: Option<String>,
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for AppFileOptions
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			file_storage: take_or_err!(row, 0, i32),
+			storage_url: server_core::take_or_err_opt!(row, 1, String),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl server_core::db::FromSqliteRow for AppFileOptions
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			file_storage: take_or_err!(row, 0),
+			storage_url: take_or_err!(row, 1),
+		})
+	}
 }
 
 /**

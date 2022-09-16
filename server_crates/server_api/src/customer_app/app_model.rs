@@ -1,11 +1,12 @@
 use sentc_crypto_common::{AppId, CustomerId, JwtKeyId, UserId};
-use server_api_common::app::{AppFileOptions, AppJwtData, AppOptions, AppRegisterInput};
+use server_api_common::app::{AppFileOptionsInput, AppJwtData, AppOptions, AppRegisterInput};
 use server_core::db::{exec, exec_transaction, query, query_first, Params, TransactionData};
 use server_core::{get_time, set_params};
 use uuid::Uuid;
 
 use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppExistsEntity, AppJwt, AuthWithToken};
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::AppFileOptions;
 
 /**
 # Internal app data
@@ -111,7 +112,7 @@ WHERE
 		},
 	};
 
-	//get app file options
+	//get app file options but without the auth token for external storage
 	//language=SQL
 	let sql = "SELECT file_storage,storage_url FROM sentc_file_options WHERE app_id = ?";
 	let file_options: Option<AppFileOptions> = query_first(sql, set_params!(app_data.app_id.to_string())).await?;
@@ -247,11 +248,12 @@ VALUES (?,?,?,?,?,?,?)";
 	let (sql_options, params_options) = prepare_options_insert(app_id.to_string(), input.options);
 
 	//language=SQL
-	let sql_file_options = "INSERT INTO sentc_file_options (app_id, file_storage, storage_url) VALUES (?,?,?)";
+	let sql_file_options = "INSERT INTO sentc_file_options (app_id, file_storage, storage_url, auth_token) VALUES (?,?,?,?)";
 	let params_file_options = set_params!(
 		app_id.to_string(),
 		input.file_options.file_storage,
-		input.file_options.storage_url
+		input.file_options.storage_url,
+		input.file_options.auth_token
 	);
 
 	exec_transaction(vec![
@@ -380,14 +382,18 @@ pub(super) async fn update_options(customer_id: CustomerId, app_id: AppId, app_o
 	Ok(())
 }
 
-pub(super) async fn update_file_options(customer_id: CustomerId, app_id: AppId, options: AppFileOptions) -> AppRes<()>
+pub(super) async fn update_file_options(customer_id: CustomerId, app_id: AppId, options: AppFileOptionsInput) -> AppRes<()>
 {
 	check_app_exists(customer_id, app_id.to_string()).await?;
 
 	//language=SQL
-	let sql = "UPDATE sentc_file_options SET storage_url = ?, file_storage = ? WHERE app_id = ?";
+	let sql = "UPDATE sentc_file_options SET storage_url = ?, file_storage = ?, auth_token = ? WHERE app_id = ?";
 
-	exec(sql, set_params!(options.storage_url, options.file_storage, app_id)).await?;
+	exec(
+		sql,
+		set_params!(options.storage_url, options.file_storage, options.auth_token, app_id),
+	)
+	.await?;
 
 	Ok(())
 }

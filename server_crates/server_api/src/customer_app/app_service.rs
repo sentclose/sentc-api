@@ -1,5 +1,5 @@
 use sentc_crypto_common::CustomerId;
-use server_api_common::app::{AppFileOptions, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, FILE_STORAGE_OWN};
+use server_api_common::app::{AppFileOptionsInput, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, FILE_STORAGE_OWN};
 
 use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
 use crate::customer_app::{app_model, generate_tokens};
@@ -51,7 +51,7 @@ pub async fn create_app(input: AppRegisterInput, customer_id: CustomerId) -> App
 	Ok(customer_app_data)
 }
 
-pub(super) fn check_file_options(input: &AppFileOptions) -> AppRes<()>
+pub(super) fn check_file_options(input: &AppFileOptionsInput) -> AppRes<()>
 {
 	//check the file option if the right storage is used
 	if input.file_storage > 1 || input.file_storage < -1 {
@@ -70,6 +70,17 @@ pub(super) fn check_file_options(input: &AppFileOptions) -> AppRes<()>
 			"No external storage selected for files".to_string(),
 			None,
 		));
+	}
+
+	if let Some(at) = &input.auth_token {
+		if at.len() > 50 {
+			return Err(HttpErr::new(
+				400,
+				ApiErrorCodes::AppAction,
+				"Auth token for external storage is too long. Max 50 characters".to_string(),
+				None,
+			));
+		}
 	}
 
 	Ok(())
