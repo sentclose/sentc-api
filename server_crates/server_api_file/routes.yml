@@ -32,11 +32,15 @@ routes:
                   p: "/part"
                   gr:
                     - get: {p: "/:part_id", s: server_api::sentc_file_controller::download_part}
-                    - post:
+                    - group:
                         p: "/:session_id/:seq/:end"
-                        s: server_api::sentc_file_controller::upload_part
                         mw:
                           - server_api::sentc_jwt_mw
+                        gr:
+                          # Upload to our backend
+                          - post: {p: "", s: server_api::sentc_file_controller::upload_part}
+                          # upload to customer backend and register the part
+                          - patch: {p: "", s: server_api::sentc_file_controller::register_file_part}
         #_______________________________________________________________________________________________________________
         # handle file in group
         - group:

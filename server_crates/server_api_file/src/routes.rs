@@ -46,6 +46,12 @@ pub(crate) fn routes(router: &mut Router)
 			.add(server_api::sentc_jwt_mw)
 			.add(server_api::sentc_app_mw),
 	);
+	router.patch(
+		"/api/v1/file/part/:session_id/:seq/:end",
+		r(server_api::sentc_file_controller::register_file_part)
+			.add(server_api::sentc_jwt_mw)
+			.add(server_api::sentc_app_mw),
+	);
 	router.post(
 		"/api/v1/group/:group_id/file",
 		r(server_api::sentc_file_controller::register_file_in_group)
