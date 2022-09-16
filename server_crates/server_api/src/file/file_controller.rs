@@ -3,7 +3,7 @@ use rustgram::{Request, Response};
 use sentc_crypto_common::file::{FileNameUpdate, FileRegisterInput, FileRegisterOutput};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::{AppId, FileId, UserId};
-use server_api_common::app::{FILE_STORAGE_NONE, FILE_STORAGE_OWN, FILE_STORAGE_SENTC};
+use server_api_common::app::{FILE_STORAGE_OWN, FILE_STORAGE_SENTC};
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 use uuid::Uuid;
@@ -91,7 +91,7 @@ pub async fn upload_part(req: Request) -> JRes<ServerSuccessOutput>
 	let user = get_jwt_data_from_param(&req)?;
 	let app_id = app.app_data.app_id.to_string();
 
-	if file_options.file_storage == FILE_STORAGE_NONE {
+	if file_options.file_storage != FILE_STORAGE_SENTC {
 		return Err(HttpErr::new(
 			400,
 			ApiErrorCodes::FileUploadAllowed,
@@ -105,18 +105,9 @@ pub async fn upload_part(req: Request) -> JRes<ServerSuccessOutput>
 	//create the id here to upload the right file
 	let part_id = Uuid::new_v4().to_string();
 
-	let (size, extern_storage) = if file_options.file_storage == FILE_STORAGE_SENTC {
-		//when customer uses our backend storage
-		let size = server_core::file::upload_part(req, part_id.as_str(), chunk_size).await?;
+	let size = server_core::file::upload_part(req, part_id.as_str(), chunk_size).await?;
 
-		(size, false)
-	} else {
-		//use the extern upload for extern storage. We are not saving the size of the part for extern storage.
-		//TODO
-		(0, true)
-	};
-
-	file_model::save_part(app_id, file_id, part_id, size, sequence, end, extern_storage).await?;
+	file_model::save_part(app_id, file_id, part_id, size, sequence, end, false).await?;
 
 	echo_success()
 }
