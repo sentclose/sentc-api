@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use sentc_crypto_common::{AppId, PartId};
 use server_core::get_time;
 
-use crate::file::file_entities::FilePartListItemDelete;
+use crate::file::file_entities::{FileExternalStorageUrl, FilePartListItemDelete};
 use crate::file::file_model;
 use crate::util::api_res::AppRes;
 
@@ -79,8 +79,8 @@ async fn delete_external(map: HashMap<AppId, Vec<PartId>>) -> AppRes<()>
 
 	//iterate over each app which has files to delete from their external storage
 	for (app_id, file_data) in map {
-		let (url, auth_token) = match app_info.iter().find(|x| x.app_id == app_id) {
-			Some(u) => (u.storage_url.as_str(), u.auth_token.clone()),
+		let (url, auth_token) = match find_app_info(app_id, &app_info) {
+			Some(u) => (u.0, u.1),
 			None => continue,
 		};
 
@@ -106,4 +106,15 @@ async fn delete_external(map: HashMap<AppId, Vec<PartId>>) -> AppRes<()>
 	}
 
 	Ok(())
+}
+
+fn find_app_info(app_id: AppId, app_info: &Vec<FileExternalStorageUrl>) -> Option<(&str, &Option<String>)>
+{
+	for info in app_info {
+		if info.app_id == app_id {
+			return Some((&info.storage_url, &info.auth_token));
+		}
+	}
+
+	None
 }
