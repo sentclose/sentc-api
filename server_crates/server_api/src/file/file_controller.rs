@@ -1,6 +1,6 @@
 use rustgram::service::IntoResponse;
 use rustgram::{Request, Response};
-use sentc_crypto_common::file::{FileNameUpdate, FileRegisterInput, FileRegisterOutput};
+use sentc_crypto_common::file::{FileNameUpdate, FilePartRegisterOutput, FileRegisterInput, FileRegisterOutput};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::{AppId, FileId, UserId};
 use server_api_common::app::{FILE_STORAGE_OWN, FILE_STORAGE_SENTC};
@@ -52,7 +52,32 @@ pub async fn register_file_in_group(mut req: Request) -> JRes<FileRegisterOutput
 	echo(out)
 }
 
-pub async fn register_file_part(req: Request) -> JRes<ServerSuccessOutput>
+pub async fn delete_registered_file_part(req: Request) -> JRes<ServerSuccessOutput>
+{
+	let app = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(&app, Endpoint::ForceServer)?;
+
+	let file_options = &app.file_options;
+
+	if file_options.file_storage != FILE_STORAGE_OWN {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::FileUploadAllowed,
+			"File upload is not allowed".to_string(),
+			None,
+		));
+	}
+
+	let app_id = &app.app_data.app_id;
+
+	let part_id = get_name_param_from_req(&req, "part_id")?;
+
+	file_model::delete_file_part(app_id.to_string(), part_id.to_string()).await?;
+
+	echo_success()
+}
+
+pub async fn register_file_part(req: Request) -> JRes<FilePartRegisterOutput>
 {
 	//this fn is called from another storage without a file and we give the file part id back, to name the other file
 	let app = get_app_data_from_req(&req)?;
@@ -76,9 +101,11 @@ pub async fn register_file_part(req: Request) -> JRes<ServerSuccessOutput>
 
 	let part_id = Uuid::new_v4().to_string();
 
-	file_model::save_part(app_id.to_string(), file_id, part_id, 0, sequence, end, true).await?;
+	file_model::save_part(app_id.to_string(), file_id, part_id.clone(), 0, sequence, end, true).await?;
 
-	echo_success()
+	echo(FilePartRegisterOutput {
+		part_id,
+	})
 }
 
 pub async fn upload_part(req: Request) -> JRes<ServerSuccessOutput>

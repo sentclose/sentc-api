@@ -40,6 +40,10 @@ pub(crate) fn routes(router: &mut Router)
 		"/api/v1/file/part/:part_id",
 		r(server_api::sentc_file_controller::download_part).add(server_api::sentc_app_mw),
 	);
+	router.delete(
+		"/api/v1/file/part/:part_id",
+		r(server_api::sentc_file_controller::delete_registered_file_part).add(server_api::sentc_app_mw),
+	);
 	router.post(
 		"/api/v1/file/part/:session_id/:seq/:end",
 		r(server_api::sentc_file_controller::upload_part)

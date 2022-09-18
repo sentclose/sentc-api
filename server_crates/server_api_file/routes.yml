@@ -32,6 +32,7 @@ routes:
                   p: "/part"
                   gr:
                     - get: {p: "/:part_id", s: server_api::sentc_file_controller::download_part}
+                    - delete: {p: "/:part_id", s: server_api::sentc_file_controller::delete_registered_file_part}
                     - group:
                         p: "/:session_id/:seq/:end"
                         mw:

@@ -1,4 +1,4 @@
-use sentc_crypto_common::{AppId, CustomerId, FileId, GroupId, SymKeyId, UserId};
+use sentc_crypto_common::{AppId, CustomerId, FileId, GroupId, PartId, SymKeyId, UserId};
 use server_core::db::{exec, exec_string, exec_transaction, get_in, query_first, query_string, TransactionData};
 use server_core::{get_time, set_params, set_params_vec, set_params_vec_outer};
 use uuid::Uuid;
@@ -146,6 +146,16 @@ pub(super) async fn save_part(
 		let sql = "DELETE FROM sentc_file_session WHERE app_id = ? AND file_id = ?";
 		exec(sql, set_params!(app_id, file_id)).await?;
 	}
+
+	Ok(())
+}
+
+pub(super) async fn delete_file_part(app_id: AppId, part_id: PartId) -> AppRes<()>
+{
+	//language=SQL
+	let sql = "DELETE FROM sentc_file_part WHERE app_id = ? AND id = ?";
+
+	exec(sql, set_params!(app_id, part_id)).await?;
 
 	Ok(())
 }
