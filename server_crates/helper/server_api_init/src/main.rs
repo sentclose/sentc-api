@@ -1,6 +1,6 @@
 use std::env;
 
-use server_api_common::app::{AppFileOptions, AppOptions, AppRegisterInput};
+use server_api_common::app::{AppFileOptionsInput, AppOptions, AppRegisterInput};
 
 /**
 Creates new tokens for the base sentc app, to manage the customer mod.
@@ -28,10 +28,7 @@ async fn main_app()
 	let input = AppRegisterInput {
 		identifier: None,
 		options: AppOptions::default_closed(),
-		file_options: AppFileOptions {
-			file_storage: -1,
-			storage_url: None,
-		},
+		file_options: AppFileOptionsInput::default_closed(),
 	};
 
 	let app_data = server_api::sentc_customer_app_service::create_app(input, "sentc_init".to_string())

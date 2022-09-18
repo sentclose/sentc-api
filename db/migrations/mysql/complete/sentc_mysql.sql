@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 13. Sep 2022 um 08:59
+-- Erstellungszeit: 16. Sep 2022 um 20:02
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -192,7 +192,8 @@ DELIMITER ;
 CREATE TABLE `sentc_file_options` (
   `app_id` varchar(36) NOT NULL,
   `file_storage` int(11) NOT NULL COMMENT '0 = our backend; 1 = customer backend',
-  `storage_url` text DEFAULT NULL COMMENT 'when file_storage != 0'
+  `storage_url` text DEFAULT NULL COMMENT 'when file_storage != 0',
+  `auth_token` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------

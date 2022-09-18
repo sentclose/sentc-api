@@ -4,7 +4,6 @@ use server_core::db::{exec, exec_transaction, query_first, query_string, Params,
 use server_core::{get_time, set_params};
 use uuid::Uuid;
 
-use crate::sentc_user_service::UserAction;
 use crate::user::user_entities::{
 	DoneLoginServerKeysOutputEntity,
 	JwtSignKey,
@@ -19,6 +18,7 @@ use crate::user::user_entities::{
 	UserResetPwCheck,
 	UserVerifyKeyDataEntity,
 };
+use crate::user::user_service::UserAction;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 pub(super) async fn get_jwt_sign_key(kid: &str) -> AppRes<String>

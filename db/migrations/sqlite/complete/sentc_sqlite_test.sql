@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 8:59am on September 13, 2022 (UTC)
+-- Exported: 8:05pm on September 16, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -235,12 +235,12 @@ CREATE TABLE 'sentc_file_part' ('id' TEXT PRIMARY KEY NOT NULL, 'file_id' TEXT, 
 ----
 -- Table structure for sentc_file_options
 ----
-CREATE TABLE 'sentc_file_options' ('app_id' TEXT PRIMARY KEY NOT NULL, 'file_storage' INTEGER, 'storage_url' TEXT);
+CREATE TABLE 'sentc_file_options' ('app_id' TEXT PRIMARY KEY NOT NULL, 'file_storage' INTEGER, 'storage_url' TEXT, 'auth_token' TEXT);
 
 ----
 -- Data dump for sentc_file_options, a total of 1 rows
 ----
-INSERT INTO "sentc_file_options" ("app_id","file_storage","storage_url") VALUES ('1665eb92-4513-469f-81d8-b72a62e0134c','0',NULL);
+INSERT INTO "sentc_file_options" ("app_id","file_storage","storage_url","auth_token") VALUES ('1665eb92-4513-469f-81d8-b72a62e0134c','0',NULL,NULL);
 
 ----
 -- Table structure for sentc_file

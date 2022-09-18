@@ -142,6 +142,20 @@ macro_rules! set_params_vec {
 	}};
 }
 
+#[cfg(feature = "mysql")]
+#[macro_export]
+macro_rules! set_params_vec_outer {
+	($vec:expr) => {{
+		let mut out: Vec<mysql_common::value::Value> = Vec::with_capacity($vec.len());
+
+		for inp in $vec {
+			out.push(inp.into());
+		}
+
+		mysql_common::params::Params::Positional(out)
+	}};
+}
+
 /**
 # The sql params for sqlite
 
@@ -168,6 +182,20 @@ macro_rules! set_params_vec {
 
 		for inp in $vec {
 			tmp.push(rusqlite::types::Value::from(inp.0))
+		}
+
+		tmp
+	}};
+}
+
+#[cfg(feature = "sqlite")]
+#[macro_export]
+macro_rules! set_params_vec_outer {
+	($vec:expr) => {{
+		let mut tmp = Vec::with_capacity($vec.len());
+
+		for inp in $vec {
+			tmp.push(rusqlite::types::Value::from(inp))
 		}
 
 		tmp

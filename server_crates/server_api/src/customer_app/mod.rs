@@ -7,7 +7,7 @@ use rand::RngCore;
 use rustgram::Request;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use server_api_common::app::{
-	AppFileOptions,
+	AppFileOptionsInput,
 	AppJwtData,
 	AppJwtRegisterOutput,
 	AppOptions,
@@ -197,7 +197,7 @@ pub(crate) async fn update_options(mut req: Request) -> JRes<ServerSuccessOutput
 pub(crate) async fn update_file_options(mut req: Request) -> JRes<ServerSuccessOutput>
 {
 	let body = get_raw_body(&mut req).await?;
-	let input: AppFileOptions = bytes_to_json(&body)?;
+	let input: AppFileOptionsInput = bytes_to_json(&body)?;
 
 	let app_id = get_name_param_from_req(&req, "app_id")?;
 	let customer = get_jwt_data_from_param(&req)?;

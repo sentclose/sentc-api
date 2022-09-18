@@ -9,6 +9,8 @@ pub static HASH_ALG: &'static str = "SHA256";
 
 pub enum Endpoint
 {
+	ForceServer,
+
 	UserExists,
 	UserRegister,
 	UserDelete,
@@ -161,6 +163,8 @@ pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endp
 		Endpoint::FilePartUpload => options.key_get,
 		Endpoint::FileGet => options.key_get,
 		Endpoint::FilePartDownload => options.key_get,
+
+		Endpoint::ForceServer => 2,
 	};
 
 	let token_needed = match token_needed {

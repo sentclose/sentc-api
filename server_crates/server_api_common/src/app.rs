@@ -327,7 +327,7 @@ pub struct AppRegisterInput
 {
 	pub identifier: Option<String>,
 	pub options: AppOptions, //if no options then use the defaults
-	pub file_options: AppFileOptions,
+	pub file_options: AppFileOptionsInput,
 }
 
 impl AppRegisterInput
@@ -453,50 +453,34 @@ pub static FILE_STORAGE_SENTC: i32 = 0;
 pub static FILE_STORAGE_OWN: i32 = 1;
 
 #[derive(Serialize, Deserialize)]
-pub struct AppFileOptions
+pub struct AppFileOptionsInput
 {
 	pub file_storage: i32,
 	pub storage_url: Option<String>,
+	pub auth_token: Option<String>,
 }
 
-impl Default for AppFileOptions
+impl Default for AppFileOptionsInput
 {
 	fn default() -> Self
 	{
 		Self {
 			file_storage: FILE_STORAGE_SENTC,
 			storage_url: None,
+			auth_token: None,
 		}
 	}
 }
 
-#[cfg(feature = "server")]
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for AppFileOptions
+impl AppFileOptionsInput
 {
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
+	pub fn default_closed() -> Self
 	{
-		Ok(Self {
-			file_storage: take_or_err!(row, 0, i32),
-			storage_url: server_core::take_or_err_opt!(row, 1, String),
-		})
-	}
-}
-
-#[cfg(feature = "server")]
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for AppFileOptions
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			file_storage: take_or_err!(row, 0),
-			storage_url: take_or_err!(row, 1),
-		})
+		Self {
+			file_storage: FILE_STORAGE_NONE,
+			storage_url: None,
+			auth_token: None,
+		}
 	}
 }
 

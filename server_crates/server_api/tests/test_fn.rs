@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use std::env;
+use std::time::Duration;
 
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
@@ -12,7 +13,7 @@ use sentc_crypto::{PrivateKeyFormat, PublicKeyFormat, SymKeyFormat, UserData};
 use sentc_crypto_common::group::{GroupCreateOutput, KeyRotationStartServerOutput};
 use sentc_crypto_common::user::{RegisterData, UserInitServerOutput};
 use sentc_crypto_common::{CustomerId, GroupId, ServerOutput, UserId};
-use server_api_common::app::{AppFileOptions, AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
+use server_api_common::app::{AppFileOptionsInput, AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
 use server_api_common::customer::{CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput};
 
 pub fn get_url(path: String) -> String
@@ -141,7 +142,7 @@ pub async fn create_app(customer_jwt: &str) -> AppRegisterOutput
 	let input = AppRegisterInput {
 		identifier: None,
 		options: AppOptions::default(),
-		file_options: AppFileOptions::default(),
+		file_options: AppFileOptionsInput::default(),
 	};
 
 	let client = reqwest::Client::new();
@@ -496,6 +497,9 @@ pub async fn key_rotation(
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();
+
+	//wait a bit to finish the key rotation in the sub thread
+	tokio::time::sleep(Duration::from_millis(50)).await;
 
 	get_group(secret_token, jwt, out.group_id.as_str(), invoker_private_key, false).await
 }
