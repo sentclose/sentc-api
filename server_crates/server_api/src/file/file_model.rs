@@ -370,11 +370,7 @@ pub(super) async fn get_external_app_file_delete_info(app_ids: Vec<AppId>) -> Ap
 		ins
 	);
 
-	println!("s");
-
 	let res: Vec<FileExternalStorageUrl> = query_string(sql, set_params_vec_outer!(app_ids)).await?;
-
-	println!("e");
 
 	Ok(res)
 }
