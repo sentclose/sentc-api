@@ -23,6 +23,8 @@ pub(crate) async fn upload_part(req: Request) -> &'static str
 
 pub(crate) async fn delete(mut req: Request) -> &'static str
 {
+	println!("delete");
+
 	let body = get_raw_body(&mut req).await.unwrap();
 
 	let input: Vec<PartId> = bytes_to_json(&body).unwrap();
@@ -33,11 +35,11 @@ pub(crate) async fn delete(mut req: Request) -> &'static str
 		.write()
 		.await;
 
-	println!("{:?}", ids);
+	println!("input ids: {:?}", input);
 
-	for id in ids.iter() {
+	for id in input {
 		//every part id must be found
-		let res = input.iter().find(|x| x.as_str() == id.as_str());
+		let res = ids.iter().find(|x| x.as_str() == id.as_str());
 
 		assert_ne!(res, None);
 	}
