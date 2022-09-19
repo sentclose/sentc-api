@@ -93,7 +93,8 @@ SELECT
     user_device_register,
     user_device_delete,
     user_device_list,
-    group_invite_stop
+    group_invite_stop,
+    user_key_update
 FROM sentc_app_options 
 WHERE 
     app_id = ?";
@@ -477,8 +478,9 @@ INSERT INTO sentc_app_options
      user_device_register,
      user_device_delete,
      user_device_list,
-     group_invite_stop
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+     group_invite_stop,
+     user_key_update
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let params_options = set_params!(
 		app_id.to_string(),
@@ -518,7 +520,8 @@ INSERT INTO sentc_app_options
 		app_options.user_device_register,
 		app_options.user_device_delete,
 		app_options.user_device_list,
-		app_options.group_invite_stop
+		app_options.group_invite_stop,
+		app_options.user_key_update
 	);
 
 	(sql, params_options)

@@ -63,6 +63,8 @@ pub struct AppOptions
 	pub user_device_list: i32,
 
 	pub group_invite_stop: i32,
+
+	pub user_key_update: i32,
 }
 
 impl Default for AppOptions
@@ -107,6 +109,7 @@ impl Default for AppOptions
 			user_device_delete: 1,
 			user_device_list: 1,
 			group_invite_stop: 1,
+			user_key_update: 1,
 		}
 	}
 }
@@ -153,6 +156,7 @@ impl AppOptions
 			user_device_delete: 0,
 			user_device_list: 0,
 			group_invite_stop: 0,
+			user_key_update: 0,
 		}
 	}
 
@@ -196,6 +200,7 @@ impl AppOptions
 			user_device_delete: 1,
 			user_device_list: 1,
 			group_invite_stop: 1,
+			user_key_update: 1,
 		}
 	}
 }
@@ -256,6 +261,8 @@ impl mysql_async::prelude::FromRow for AppOptions
 			user_device_delete: take_or_err!(row, 34, i32),
 			user_device_list: take_or_err!(row, 35, i32),
 			group_invite_stop: take_or_err!(row, 36, i32),
+
+			user_key_update: take_or_err!(row, 37, i32),
 		})
 	}
 }
@@ -316,6 +323,8 @@ impl server_core::db::FromSqliteRow for AppOptions
 			user_device_delete: take_or_err!(row, 34),
 			user_device_list: take_or_err!(row, 35),
 			group_invite_stop: take_or_err!(row, 36),
+
+			user_key_update: take_or_err!(row, 37),
 		})
 	}
 }
