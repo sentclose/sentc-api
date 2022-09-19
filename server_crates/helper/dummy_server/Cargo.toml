@@ -8,8 +8,6 @@ edition = "2021"
 [dependencies]
 server-core = {version = "0.1.0", path = "../../core", default-features = false}
 
-sentc-crypto = {version = "0.1.0", git = "ssh://git@gitlab.com/sentclose/sentc/sdk.git", default-features = false, features = ["rust", "server", "server_test"]}
-
 # server impl
 hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
