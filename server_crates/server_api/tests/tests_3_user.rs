@@ -1,6 +1,6 @@
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
-use sentc_crypto::sdk_common::group::GroupAcceptJoinReqServerOutput;
+use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, KeyRotationInput};
 use sentc_crypto::sdk_common::user::UserDeviceRegisterOutput;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::{SdkError, UserData};
@@ -1128,12 +1128,70 @@ async fn test_26_user_group_key_rotation()
 	assert_eq!(out1.len(), 1);
 
 	assert_eq!(out1[0].group_key_id, out[1].group_key_id);
+
+	//TODO encrypt key with the sdk
 }
 
 #[tokio::test]
 async fn test_27_done_key_rotation_for_other_device()
 {
-	//TODO fetch user group key and done it for 2nd device
+	//fetch user group key and done it for 2nd device
+
+	let user = USER_TEST_STATE.get().unwrap().read().await;
+	let jwt = &user.user_data_1.as_ref().unwrap().jwt; //use the jwt from the main device
+
+	//get the data for the rotation
+	let url = get_url("api/v1/user/user_keys/rotation".to_owned());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: Vec<KeyRotationInput> = handle_server_response(body.as_str()).unwrap();
+
+	let device_private_key = &user.user_data_1.as_ref().unwrap().device_keys.private_key;
+	let device_public_key = &user.user_data_1.as_ref().unwrap().device_keys.public_key;
+	let pre_group_key = &user.user_data_1.as_ref().unwrap().user_keys[0].group_key;
+
+	for key in &out {
+		let rotation_out = sentc_crypto::group::done_key_rotation(device_private_key, device_public_key, pre_group_key, key).unwrap();
+
+		//done for each key
+		let url = get_url("api/v1/user/user_keys/rotation/".to_owned() + key.new_group_key_id.as_str());
+		let client = reqwest::Client::new();
+		let res = client
+			.put(url)
+			.header(AUTHORIZATION, auth_header(jwt))
+			.header("x-sentc-app-token", &user.app_data.secret_token)
+			.body(rotation_out)
+			.send()
+			.await
+			.unwrap();
+
+		let body = res.text().await.unwrap();
+		handle_general_server_response(body.as_str()).unwrap();
+	}
+
+	let url = get_url("api/v1/user/user_keys/keys/0/none".to_string());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let out: Vec<GroupKeyServerOutput> = handle_server_response(body.as_str()).unwrap();
+
+	assert_eq!(out.len(), 2);
 }
 
 #[tokio::test]
