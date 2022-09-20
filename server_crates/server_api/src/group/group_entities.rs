@@ -601,6 +601,7 @@ pub struct UserEphKeyOut
 	pub user_id: UserId,
 	pub encrypted_ephemeral_key: String,
 	pub encrypted_eph_key_key_id: EncryptionKeyPairId,
+	pub rotation_err: Option<String>,
 }
 
 //__________________________________________________________________________________________________
