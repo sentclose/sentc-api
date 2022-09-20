@@ -4,6 +4,7 @@ use sentc_crypto::sdk_common::group::GroupAcceptJoinReqServerOutput;
 use sentc_crypto::sdk_common::user::UserDeviceRegisterOutput;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::{SdkError, UserData};
+use sentc_crypto_common::group::{GroupKeyServerOutput, KeyRotationStartServerOutput};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{
 	DoneLoginLightServerOutput,
@@ -1055,7 +1056,88 @@ async fn test_25_get_all_devices()
 }
 
 #[tokio::test]
-async fn test_26_delete_device()
+async fn test_26_user_group_key_rotation()
+{
+	let user = USER_TEST_STATE.get().unwrap().read().await;
+	let jwt = &user.user_data.as_ref().unwrap().jwt; //use the jwt from the main device
+
+	let pre_group_key = &user.user_data.as_ref().unwrap().user_keys[0].group_key;
+	let device_invoker_public_key = &user.user_data.as_ref().unwrap().device_keys.public_key;
+
+	let input = sentc_crypto::group::key_rotation(pre_group_key, device_invoker_public_key).unwrap();
+
+	let url = get_url("api/v1/user/user_keys/rotation".to_string());
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let key_out: KeyRotationStartServerOutput = handle_server_response(body.as_str()).unwrap();
+
+	//fetch the key by id
+	let url = get_url("api/v1/user/user_keys/key/".to_string() + key_out.key_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let _out: GroupKeyServerOutput = handle_server_response(body.as_str()).unwrap();
+
+	//fetch new key by pagination
+	let url = get_url("api/v1/user/user_keys/keys/0/none".to_string());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let out: Vec<GroupKeyServerOutput> = handle_server_response(body.as_str()).unwrap();
+
+	assert_eq!(out.len(), 2);
+	//keys are order by time dec
+	assert_eq!(out[0].group_key_id, key_out.key_id);
+
+	//2nd page
+	let url = get_url("api/v1/user/user_keys/keys/".to_string() + out[0].time.to_string().as_str() + "/" + out[0].group_key_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let out1: Vec<GroupKeyServerOutput> = handle_server_response(body.as_str()).unwrap();
+	assert_eq!(out1.len(), 1);
+
+	assert_eq!(out1[0].group_key_id, out[1].group_key_id);
+}
+
+#[tokio::test]
+async fn test_27_done_key_rotation_for_other_device()
+{
+	//TODO fetch user group key and done it for 2nd device
+}
+
+#[tokio::test]
+async fn test_28_delete_device()
 {
 	let user = USER_TEST_STATE.get().unwrap().read().await;
 	let jwt = &user.user_data.as_ref().unwrap().jwt; //use the jwt from the main device
@@ -1122,7 +1204,7 @@ async fn test_26_delete_device()
 }
 
 #[tokio::test]
-async fn test_27_not_delete_the_last_device()
+async fn test_29_not_delete_the_last_device()
 {
 	let user = USER_TEST_STATE.get().unwrap().read().await;
 	let jwt = &user.user_data.as_ref().unwrap().jwt; //use the jwt from the main device
