@@ -24,6 +24,7 @@ pub enum Endpoint
 	UserDeviceRegister,
 	UserDeviceDelete,
 	UserDeviceList,
+	UserKeyRotation,
 
 	GroupCreate,
 	GroupDelete,
@@ -132,6 +133,7 @@ pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endp
 		Endpoint::UserDeviceRegister => options.user_device_register,
 		Endpoint::UserDeviceDelete => options.user_device_delete,
 		Endpoint::UserDeviceList => options.user_device_list,
+		Endpoint::UserKeyRotation => options.user_key_update,
 
 		Endpoint::GroupCreate => options.group_create,
 		Endpoint::GroupDelete => options.group_delete,
