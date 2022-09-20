@@ -1,6 +1,6 @@
 use std::future::Future;
 
-use sentc_crypto_common::group::GroupKeysForNewMemberServerInput;
+use sentc_crypto_common::group::{GroupKeysForNewMember, GroupKeysForNewMemberServerInput};
 use sentc_crypto_common::{AppId, GroupId, UserId};
 use server_core::cache;
 
@@ -8,6 +8,12 @@ use crate::group::group_entities::{GroupInviteReq, InternalGroupDataComplete};
 use crate::group::group_user::group_user_model;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::util::get_group_user_cache_key;
+
+pub enum InsertNewUserType
+{
+	Invite,
+	Join,
+}
 
 pub fn get_invite_req(app_id: AppId, user_id: UserId, last_fetched_time: u128, last_id: GroupId)
 	-> impl Future<Output = AppRes<Vec<GroupInviteReq>>>
@@ -81,6 +87,36 @@ pub async fn invite_auto(
 	group_user_model::accept_invite(group_data.group_data.id.to_string(), invited_user).await?;
 
 	Ok(session_id)
+}
+
+pub async fn insert_user_keys_via_session(
+	group_id: GroupId,
+	key_session_id: String,
+	insert_type: InsertNewUserType,
+	input: Vec<GroupKeysForNewMember>,
+) -> AppRes<()>
+{
+	if input.len() == 0 {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::GroupNoKeys,
+			"No group keys for the user".to_string(),
+			None,
+		));
+	}
+
+	if input.len() > 100 {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::GroupTooManyKeys,
+			"Too many group keys for the user. Split the keys and use pagination".to_string(),
+			None,
+		));
+	}
+
+	group_user_model::insert_user_keys_via_session(group_id, key_session_id, input, insert_type).await?;
+
+	Ok(())
 }
 
 pub async fn leave_group(group_data: &InternalGroupDataComplete) -> AppRes<()>
