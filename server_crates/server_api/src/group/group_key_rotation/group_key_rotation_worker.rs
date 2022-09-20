@@ -50,7 +50,7 @@ pub async fn start(app_id: AppId, group_id: GroupId, key_id: SymKeyId) -> AppRes
 					"Error in user key rotation".to_string(),
 					Some(format!("error in user key rotation: {}", e)),
 				)
-			})??;
+			})?;
 
 		//save the keys for the user
 		group_key_rotation_model::save_user_eph_keys(group_id.to_string(), key_id.to_string(), user_keys).await?;
@@ -73,7 +73,7 @@ pub async fn start(app_id: AppId, group_id: GroupId, key_id: SymKeyId) -> AppRes
 						"Error in user key rotation".to_string(),
 						Some(format!("error in user key rotation: {}", e)),
 					)
-				})??;
+				})?;
 
 			//save the keys for the parent
 			group_key_rotation_model::save_user_eph_keys(group_id.to_string(), key_id, user_keys).await?;
@@ -94,34 +94,42 @@ pub async fn start(app_id: AppId, group_id: GroupId, key_id: SymKeyId) -> AppRes
 	Ok(())
 }
 
-fn encrypt(eph_key: &KeyRotationWorkerKey, users: Vec<UserGroupPublicKeyData>) -> AppRes<Vec<UserEphKeyOut>>
+fn encrypt(eph_key: &KeyRotationWorkerKey, users: Vec<UserGroupPublicKeyData>) -> Vec<UserEphKeyOut>
 {
 	let mut encrypted_keys: Vec<UserEphKeyOut> = Vec::with_capacity(users.len());
 
 	for user in users {
 		//encrypt with sdk -> import public key data from string
 
-		let encrypted_ephemeral_key = sentc_crypto::util::server::encrypt_ephemeral_group_key_with_public_key(
+		let encrypted_ephemeral_key = match sentc_crypto::util::server::encrypt_ephemeral_group_key_with_public_key(
 			user.public_key.as_str(),
 			user.public_key_alg.as_str(),
 			eph_key.encrypted_ephemeral_key.as_str(),
-		)
-		.map_err(|_e| {
-			HttpErr::new(
-				400,
-				ApiErrorCodes::GroupKeyRotationUserEncrypt,
-				"Error in user key rotation encryption".to_string(),
-				None,
-			)
-		})?;
+		) {
+			Ok(k) => k,
+			Err(e) => {
+				//don't interrupt when err, save it in the db and let the client handle it
+				let ob = UserEphKeyOut {
+					user_id: user.user_id,
+					encrypted_ephemeral_key: "".to_string(),
+					encrypted_eph_key_key_id: user.public_key_id,
+					rotation_err: Some(e.into()),
+				};
+
+				encrypted_keys.push(ob);
+
+				continue;
+			},
+		};
 
 		let ob = UserEphKeyOut {
 			user_id: user.user_id,
 			encrypted_ephemeral_key,
 			encrypted_eph_key_key_id: user.public_key_id,
+			rotation_err: None,
 		};
 		encrypted_keys.push(ob);
 	}
 
-	Ok(encrypted_keys)
+	encrypted_keys
 }
