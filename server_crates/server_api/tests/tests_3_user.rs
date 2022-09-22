@@ -1064,7 +1064,7 @@ async fn test_26_user_group_key_rotation()
 	let pre_group_key = &user.user_data.as_ref().unwrap().user_keys[0].group_key;
 	let device_invoker_public_key = &user.user_data.as_ref().unwrap().device_keys.public_key;
 
-	let input = sentc_crypto::group::key_rotation(pre_group_key, device_invoker_public_key).unwrap();
+	let input = sentc_crypto::group::key_rotation(pre_group_key, device_invoker_public_key, true).unwrap();
 
 	let url = get_url("api/v1/user/user_keys/rotation".to_string());
 	let client = reqwest::Client::new();
@@ -1093,6 +1093,12 @@ async fn test_26_user_group_key_rotation()
 
 	let body = res.text().await.unwrap();
 	let _out: GroupKeyServerOutput = handle_server_response(body.as_str()).unwrap();
+
+	sentc_crypto::user::done_key_fetch(
+		&user.user_data.as_ref().unwrap().device_keys.private_key,
+		body.as_str(),
+	)
+	.unwrap();
 
 	//fetch new key by pagination
 	let url = get_url("api/v1/user/user_keys/keys/0/none".to_string());
@@ -1128,8 +1134,6 @@ async fn test_26_user_group_key_rotation()
 	assert_eq!(out1.len(), 1);
 
 	assert_eq!(out1[0].group_key_id, out[1].group_key_id);
-
-	//TODO encrypt key with the sdk
 }
 
 #[tokio::test]

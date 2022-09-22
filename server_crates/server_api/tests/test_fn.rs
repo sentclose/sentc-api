@@ -477,7 +477,7 @@ pub async fn key_rotation(
 	invoker_private_key: &PrivateKeyFormat,
 ) -> (GroupOutData, Vec<DoneGettingGroupKeysOutput>)
 {
-	let input = sentc_crypto::group::key_rotation(pre_group_key, invoker_public_key).unwrap();
+	let input = sentc_crypto::group::key_rotation(pre_group_key, invoker_public_key, false).unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group_id + "/key_rotation");
 	let client = reqwest::Client::new();
