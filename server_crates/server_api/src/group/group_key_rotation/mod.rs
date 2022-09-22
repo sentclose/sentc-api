@@ -1,4 +1,5 @@
 mod group_key_rotation_model;
+pub mod group_key_rotation_service;
 pub(crate) mod group_key_rotation_worker;
 
 use rustgram::Request;
@@ -22,25 +23,14 @@ pub(crate) async fn start_key_rotation(mut req: Request) -> JRes<KeyRotationStar
 
 	let input: KeyRotationData = bytes_to_json(&body)?;
 
-	let key_id = group_key_rotation_model::start_key_rotation(
-		group_data.group_data.app_id.to_string(),
-		group_data.group_data.id.to_string(),
-		group_data.user_data.user_id.to_string(),
+	let out = group_key_rotation_service::start_key_rotation(
+		group_data.group_data.app_id.clone(),
+		group_data.group_data.id.clone(),
+		group_data.user_data.user_id.clone(),
 		input,
+		None,
 	)
 	.await?;
-
-	//dont wait for the response
-	tokio::task::spawn(group_key_rotation_worker::start(
-		group_data.group_data.app_id.to_string(),
-		group_data.group_data.id.to_string(),
-		key_id.to_string(),
-	));
-
-	let out = KeyRotationStartServerOutput {
-		key_id,
-		group_id: group_data.group_data.id.to_string(),
-	};
 
 	echo(out)
 }
@@ -51,10 +41,10 @@ pub(crate) async fn get_keys_for_update(req: Request) -> JRes<Vec<GroupKeyUpdate
 
 	let group_data = get_group_user_data_from_req(&req)?;
 
-	let update = group_key_rotation_model::get_keys_for_key_update(
-		group_data.group_data.app_id.to_string(),
-		group_data.group_data.id.to_string(),
-		group_data.user_data.user_id.to_string(),
+	let update = group_key_rotation_service::get_keys_for_update(
+		group_data.group_data.app_id.clone(),
+		group_data.group_data.id.clone(),
+		group_data.user_data.user_id.clone(),
 	)
 	.await?;
 
@@ -73,9 +63,9 @@ pub(crate) async fn done_key_rotation_for_user(mut req: Request) -> JRes<ServerS
 
 	let input: DoneKeyRotationData = bytes_to_json(&body)?;
 
-	group_key_rotation_model::done_key_rotation_for_user(
-		group_data.group_data.id.to_string(),
-		group_data.user_data.user_id.to_string(),
+	group_key_rotation_service::done_key_rotation_for_user(
+		group_data.group_data.id.clone(),
+		group_data.user_data.user_id.clone(),
 		key_id.to_string(),
 		input,
 	)

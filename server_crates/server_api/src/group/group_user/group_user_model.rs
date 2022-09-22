@@ -15,6 +15,7 @@ use crate::group::group_entities::{
 };
 use crate::group::group_model;
 use crate::group::group_model::check_group_rank;
+use crate::group::group_user_service::InsertNewUserType;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 pub(super) async fn get_group_member(
@@ -557,12 +558,6 @@ pub(super) async fn update_rank(group_id: GroupId, admin_rank: i32, changed_user
 }
 
 //__________________________________________________________________________________________________
-
-pub(super) enum InsertNewUserType
-{
-	Invite,
-	Join,
-}
 
 /**
 Where there are too many keys used in this group.

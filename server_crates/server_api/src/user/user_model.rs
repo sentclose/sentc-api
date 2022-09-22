@@ -702,6 +702,16 @@ WHERE
 	Ok(list)
 }
 
+pub(super) async fn prepare_user_key_rotation(app_id: AppId, user_id: UserId) -> AppRes<Option<UserResetPwCheck>>
+{
+	//language=SQL
+	let sql = "SELECT user_group_id FROM sentc_user WHERE app_id = ? AND id = ?";
+
+	let check: Option<UserResetPwCheck> = query_first(sql, set_params!(app_id, user_id)).await?;
+
+	Ok(check)
+}
+
 //__________________________________________________________________________________________________
 
 pub(super) async fn save_user_action(app_id: AppId, user_id: UserId, action: UserAction, amount: i64) -> AppRes<()>

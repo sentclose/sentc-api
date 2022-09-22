@@ -1,5 +1,5 @@
 use sentc_crypto_common::group::{DoneKeyRotationData, KeyRotationData};
-use sentc_crypto_common::{AppId, EncryptionKeyPairId, GroupId, SymKeyId, UserId};
+use sentc_crypto_common::{AppId, DeviceId, EncryptionKeyPairId, GroupId, SymKeyId, UserId};
 use server_core::db::{bulk_insert, exec, exec_transaction, query, query_first, query_string, TransactionData};
 use server_core::{get_time, set_params};
 use uuid::Uuid;
@@ -232,7 +232,7 @@ WHERE
 			sql,
 			set_params!(
 				group_id,
-				key_id.to_string(),
+				key_id.clone(),
 				key_id,
 				last_fetched.to_string(),
 				last_fetched.to_string(),
@@ -242,7 +242,7 @@ WHERE
 		)
 	} else {
 		let sql = sql + " ORDER BY gu.time DESC, gu.user_id LIMIT 100";
-		(sql, set_params!(group_id, key_id.to_string(), key_id,))
+		(sql, set_params!(group_id, key_id.clone(), key_id))
 	};
 
 	let users: Vec<UserGroupPublicKeyData> = query_string(sql1, params).await?;
@@ -283,6 +283,59 @@ LIMIT 1
 	let keys: Option<UserGroupPublicKeyData> = query_first(sql, set_params!(group_id, key_id.to_string(), key_id)).await?;
 
 	Ok(keys)
+}
+
+pub(super) async fn get_device_keys(user_id: UserId, key_id: SymKeyId, last_fetched: u128, last_id: DeviceId) -> AppRes<Vec<UserGroupPublicKeyData>>
+{
+	//device keys for user key rotation
+
+	//language=SQL
+	let sql = r"
+SELECT ud.id as device_id, ud.id as key_id, public_key, keypair_encrypt_alg, ud.time 
+FROM sentc_user_device ud, sentc_user u
+WHERE 
+    user_id = u.id AND 
+    user_id = ? AND 
+    NOT EXISTS(
+          -- this device is done -> skip
+          SELECT  1 FROM sentc_group_user_keys gk
+          WHERE 
+              gk.k_id = ? AND 
+              gk.user_id = ud.id AND 
+              group_id = u.user_group_id
+    ) AND 
+    NOT EXISTS(
+        -- this device got a rotation, but needs to done it in the client -> skip
+        SELECT 1 FROM sentc_group_user_key_rotation grk
+        WHERE 
+            grk.key_id = ? AND 
+            grk.user_id = ud.id AND 
+            grk.group_id = u.user_group_id
+    )"
+	.to_string();
+
+	let (sql, params) = if last_fetched > 0 {
+		let sql = sql + " AND ud.time <= ? AND (ud.time < ? OR (ud.time = ? AND ud.id > ?)) ORDER BY ud.time DESC, ud.id LIMIT 100";
+		(
+			sql,
+			set_params!(
+				user_id,
+				key_id.clone(),
+				key_id,
+				last_fetched.to_string(),
+				last_fetched.to_string(),
+				last_fetched.to_string(),
+				last_id
+			),
+		)
+	} else {
+		let sql = sql + " ORDER BY ud.time DESC, ud.id LIMIT 100";
+		(sql, set_params!(user_id, key_id.clone(), key_id))
+	};
+
+	let devices: Vec<UserGroupPublicKeyData> = query_string(sql, params).await?;
+
+	Ok(devices)
 }
 
 pub(super) async fn save_user_eph_keys(group_id: GroupId, key_id: EncryptionKeyPairId, keys: Vec<UserEphKeyOut>) -> AppRes<()>

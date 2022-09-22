@@ -169,18 +169,6 @@ pub(crate) fn routes(router: &mut Router)
 		r(crate::key_management::get_sym_key_by_id).add(app_token::app_token_transform),
 	);
 	router.get(
-		"/api/v1/user/user_keys",
-		r(crate::user::get_user_keys)
-			.add(jwt::jwt_transform)
-			.add(app_token::app_token_transform),
-	);
-	router.get(
-		"/api/v1/user/user_key/:key_id",
-		r(crate::user::get_user_key)
-			.add(jwt::jwt_transform)
-			.add(app_token::app_token_transform),
-	);
-	router.get(
 		"/api/v1/user/device/:last_fetched_time/:last_id",
 		r(crate::user::get_devices)
 			.add(jwt::jwt_transform)
@@ -219,6 +207,42 @@ pub(crate) fn routes(router: &mut Router)
 	router.delete(
 		"/api/v1/user/device/:device_id",
 		r(crate::user::delete_device)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/user/user_keys/rotation",
+		r(crate::user::user_group_key_rotation)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/user/user_keys/rotation",
+		r(crate::user::get_user_group_keys_for_update)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.put(
+		"/api/v1/user/user_keys/rotation/:key_id",
+		r(crate::user::done_key_rotation_for_device)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/user/user_keys/key/:key_id",
+		r(crate::user::get_user_key)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/user/user_keys/keys/:last_fetched_time/:last_k_id",
+		r(crate::user::get_user_keys)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.put(
+		"/api/v1/user/user_keys/session/:key_session_id",
+		r(crate::user::device_key_upload)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);

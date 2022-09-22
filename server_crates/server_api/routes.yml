@@ -112,8 +112,6 @@ routes:
               - group:
                   p: "/user"
                   gr:
-                    - get: {p: "/user_keys", s: crate::user::get_user_keys}
-                    - get: {p: "/user_key/:key_id", s: crate::user::get_user_key}
                     - get: {p: "/device/:last_fetched_time/:last_id", s: crate::user::get_devices}
                     - put: {p: "", s: crate::user::update}
                     - put: {p: "/done_register_device", s: crate::user::done_register_device}
@@ -122,6 +120,16 @@ routes:
                     # check the api token for delete action, maybe the app creator only wants to trigger delete from the own backend
                     - delete: {p: "", s: crate::user::delete}
                     - delete: {p: "/device/:device_id", s: crate::user::delete_device}
+                    #___________________________________________________________________________________________________
+                    - group:
+                        p: "/user_keys"
+                        gr:
+                          - post: {p: "/rotation", s: crate::user::user_group_key_rotation}
+                          - get: {p: "/rotation", s: crate::user::get_user_group_keys_for_update}
+                          - put: {p: "/rotation/:key_id", s: crate::user::done_key_rotation_for_device}
+                          - get: {p: "/key/:key_id", s: crate::user::get_user_key}
+                          - get: {p: "/keys/:last_fetched_time/:last_k_id", s: crate::user::get_user_keys}
+                          - put: {p: "/session/:key_session_id", s: crate::user::device_key_upload}
               #_________________________________________________________________________________________________________
               # group routes in the group mod, check always the app token for this actions
               - group:
