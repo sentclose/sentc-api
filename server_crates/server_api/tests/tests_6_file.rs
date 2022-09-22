@@ -1130,28 +1130,33 @@ async fn test_30_chunked_filed()
 	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/0/false");
 
 	let client = reqwest::Client::new();
-	let res = client
+	match client
 		.post(url)
 		.header("x-sentc-app-token", state.app_data.public_token.as_str())
 		.header(AUTHORIZATION, auth_header(state.user_data.jwt.as_str()))
 		.body(encrypted_part)
 		.send()
 		.await
-		.unwrap();
+	{
+		Ok(res) => {
+			let body = res.text().await.unwrap();
 
-	let body = res.text().await.unwrap();
-
-	match handle_general_server_response(body.as_str()) {
-		Ok(_) => {
-			panic!("Should be an error")
-		},
-		Err(e) => {
-			match e {
-				SdkError::ServerErr(s, _) => {
-					assert_eq!(s, 502);
+			match handle_general_server_response(body.as_str()) {
+				Ok(_) => {
+					panic!("Should be an error")
 				},
-				_ => panic!("must be server error"),
+				Err(e) => {
+					match e {
+						SdkError::ServerErr(s, _) => {
+							assert_eq!(s, 502);
+						},
+						_ => panic!("must be server error"),
+					}
+				},
 			}
+		},
+		Err(_e) => {
+			//err here is ok because the server can just close the connection for wrong parts
 		},
 	}
 
