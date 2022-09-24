@@ -1,8 +1,10 @@
 use std::env;
+use std::ffi::OsStr;
+use std::path::Path;
 
 use rustgram::service::IntoResponse;
 use rustgram::{r, Request, Response, Router};
-use server_api::util::api_res::HttpErr;
+use server_api::util::api_res::{ApiErrorCodes, HttpErr};
 use server_core::file;
 use server_core::file::FileHandler;
 use server_core::url_helper::get_name_param_from_req;
@@ -24,6 +26,7 @@ A Route to load the static files
  */
 pub fn routes(router: &mut Router)
 {
+	router.get("/dashboard", r(read_file));
 	router.get("/dashboard/*path", r(read_file));
 }
 
@@ -32,14 +35,36 @@ Load the static file from the static dir.
  */
 async fn read_file(req: Request) -> Response
 {
-	let file = match get_name_param_from_req(&req, "path") {
+	let mut file = match get_name_param_from_req(&req, "path") {
 		Ok(f) => f,
-		Err(e) => return Into::<HttpErr>::into(e).into_response(),
+		Err(_e) => "index.html",
+	};
+
+	if file == "" || file == "/" {
+		file = "index.html"
+	}
+
+	let ext = match Path::new(file).extension() {
+		Some(e) => {
+			match OsStr::to_str(e) {
+				Some(s) => s,
+				None => return HttpErr::new(404, ApiErrorCodes::PageNotFound, "Page not found".to_string(), None).into_response(),
+			}
+		},
+		None => return HttpErr::new(404, ApiErrorCodes::PageNotFound, "Page not found".to_string(), None).into_response(),
+	};
+
+	let content_type = match ext {
+		"html" => "text/html",
+		"js" => "application/javascript",
+		"wasm" => "application/wasm",
+		"ico" => "image/x-icon",
+		_ => return HttpErr::new(404, ApiErrorCodes::PageNotFound, "Page not found".to_string(), None).into_response(),
 	};
 
 	let handler = LOCAL_FILE_HANDLER.get().unwrap();
 
-	match handler.get_part(file).await {
+	match handler.get_part(file, Some(content_type)).await {
 		Ok(res) => res,
 		Err(e) => Into::<HttpErr>::into(e).into_response(),
 	}
