@@ -41,7 +41,7 @@ impl LocalStorage
 #[async_trait]
 impl FileHandler for LocalStorage
 {
-	async fn get_part(&self, part_id: &str) -> Result<Response, CoreError>
+	async fn get_part(&self, part_id: &str, content_type: Option<&str>) -> Result<Response, CoreError>
 	{
 		let path = self.path.to_string() + "/" + part_id;
 
@@ -57,8 +57,13 @@ impl FileHandler for LocalStorage
 		let stream = FramedRead::new(file, BytesCodec::new());
 		let body = Body::wrap_stream(stream);
 
+		let content_type = match content_type {
+			Some(c) => c,
+			None => "application/octet-stream",
+		};
+
 		hyper::Response::builder()
-			.header("Content-Type", "application/octet-stream")
+			.header("Content-Type", content_type)
 			.header("Access-Control-Allow-Origin", "*")
 			.body(body)
 			.map_err(|_e| {

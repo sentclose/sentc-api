@@ -13,7 +13,7 @@ static FILE_HANDLER: OnceCell<Box<dyn FileHandler>> = OnceCell::const_new();
 #[async_trait]
 pub trait FileHandler: Send + Sync
 {
-	async fn get_part(&self, part_id: &str) -> Result<Response, CoreError>;
+	async fn get_part(&self, part_id: &str, content_type: Option<&str>) -> Result<Response, CoreError>;
 
 	async fn upload_part(&self, req: Request, part_id: &str, max_chunk_size: usize) -> Result<usize, CoreError>;
 
@@ -40,7 +40,7 @@ pub async fn get_part(part_id: &str) -> Result<Response, CoreError>
 {
 	let handler = FILE_HANDLER.get().unwrap();
 
-	handler.get_part(part_id).await
+	handler.get_part(part_id, None).await
 }
 
 pub async fn upload_part(req: Request, part_id: &str, max_chunk_size: usize) -> Result<usize, CoreError>
