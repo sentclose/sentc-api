@@ -44,14 +44,20 @@ async fn read_file(req: Request) -> Response
 		file = "index.html"
 	}
 
-	let ext = match Path::new(file).extension() {
+	let mut file = file.to_owned();
+
+	let ext = match Path::new(&file).extension() {
 		Some(e) => {
 			match OsStr::to_str(e) {
 				Some(s) => s,
 				None => return HttpErr::new(404, ApiErrorCodes::PageNotFound, "Page not found".to_string(), None).into_response(),
 			}
 		},
-		None => return HttpErr::new(404, ApiErrorCodes::PageNotFound, "Page not found".to_string(), None).into_response(),
+		None => {
+			file = file + "/index.html";
+
+			"html"
+		},
 	};
 
 	let content_type = match ext {
@@ -64,7 +70,7 @@ async fn read_file(req: Request) -> Response
 
 	let handler = LOCAL_FILE_HANDLER.get().unwrap();
 
-	match handler.get_part(file, Some(content_type)).await {
+	match handler.get_part(&file, Some(content_type)).await {
 		Ok(res) => res,
 		Err(e) => Into::<HttpErr>::into(e).into_response(),
 	}
