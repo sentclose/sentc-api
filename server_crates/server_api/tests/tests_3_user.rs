@@ -941,7 +941,7 @@ async fn test_24_user_add_device()
 	}
 
 	//now transfer the output to the main device to add it
-	let input = sentc_crypto::user::prepare_register_device(body.as_str(), &group_keys_ref, false).unwrap();
+	let (input, _) = sentc_crypto::user::prepare_register_device(body.as_str(), &group_keys_ref, false).unwrap();
 
 	let url = get_url("api/v1/user/done_register_device".to_owned());
 
