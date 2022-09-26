@@ -5,6 +5,7 @@ use rand::RngCore;
 use sentc_crypto::util::public::HashedAuthenticationKey;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
+	DoneLoginLightOutput,
 	DoneLoginLightServerOutput,
 	DoneLoginServerInput,
 	JwtRefreshInput,
@@ -205,7 +206,7 @@ pub async fn prepare_login(app_data: &AppData, user_identifier: PrepareLoginServ
 /**
 Only the jwt and user id, no keys
 */
-pub async fn done_login_light(app_data: &AppData, done_login: DoneLoginServerInput, aud: &str) -> AppRes<DoneLoginLightServerOutput>
+pub async fn done_login_light(app_data: &AppData, done_login: DoneLoginServerInput, aud: &str) -> AppRes<DoneLoginLightOutput>
 {
 	auth_user(
 		app_data.app_data.app_id.to_string(),
@@ -244,10 +245,21 @@ pub async fn done_login_light(app_data: &AppData, done_login: DoneLoginServerInp
 	)
 	.await?;
 
-	let out = DoneLoginLightServerOutput {
+	let refresh_token = create_refresh_token()?;
+
+	//activate refresh token
+	user_model::insert_refresh_token(
+		app_data.app_data.app_id.to_string(),
+		id.device_id.to_string(),
+		refresh_token.to_string(),
+	)
+	.await?;
+
+	let out = DoneLoginLightOutput {
 		user_id: id.user_id,
 		jwt,
 		device_id: id.device_id,
+		refresh_token,
 	};
 
 	Ok(out)
