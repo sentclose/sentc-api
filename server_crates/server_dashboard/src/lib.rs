@@ -65,6 +65,10 @@ async fn read_file(req: Request) -> Response
 		"js" => "application/javascript",
 		"wasm" => "application/wasm",
 		"ico" => "image/x-icon",
+		"png" => "image/png",
+		"jpg" => "image/jpeg",
+		"jpeg" => "image/jpeg",
+		"svg" => "image/svg+xml",
 		_ => return HttpErr::new(404, ApiErrorCodes::PageNotFound, "Page not found".to_string(), None).into_response(),
 	};
 
