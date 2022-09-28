@@ -2,11 +2,13 @@ use std::time::Duration;
 
 use hyper::header::AUTHORIZATION;
 use reqwest::StatusCode;
+use sentc_crypto::util::public::handle_server_response;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::RegisterServerOutput;
 use sentc_crypto_common::ServerOutput;
 use server_api::util::api_res::ApiErrorCodes;
 use server_api_common::app::{
+	AppDetails,
 	AppJwtData,
 	AppJwtRegisterOutput,
 	AppOptions,
@@ -300,6 +302,30 @@ async fn test_16_get_all_apps()
 
 	assert_eq!(out.len(), 1);
 	assert_eq!(out[0].id.to_string(), app_id.to_string());
+}
+
+#[tokio::test]
+async fn test_17_get_single_app()
+{
+	let app = APP_TEST_STATE.get().unwrap().read().await;
+
+	let customer_jwt = &app.customer_data.user_keys.jwt;
+	let app_id = &app.app_id;
+
+	let url = get_url("api/v1/customer/app/".to_owned() + app_id);
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(customer_jwt))
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: AppDetails = handle_server_response(body.as_str()).unwrap();
+
+	assert_eq!(out.options.group_list, 1);
 }
 
 #[tokio::test]
