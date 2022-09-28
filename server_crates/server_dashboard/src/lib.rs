@@ -76,6 +76,12 @@ async fn read_file(req: Request) -> Response
 
 	match handler.get_part(&file, Some(content_type)).await {
 		Ok(res) => res,
-		Err(e) => Into::<HttpErr>::into(e).into_response(),
+		Err(_e) => {
+			//try index
+			match handler.get_part("index.html", Some("html")).await {
+				Ok(res) => res,
+				Err(e) => Into::<HttpErr>::into(e).into_response(),
+			}
+		},
 	}
 }
