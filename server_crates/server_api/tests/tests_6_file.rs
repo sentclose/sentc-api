@@ -227,30 +227,35 @@ async fn test_10_upload_small_file_for_non_target()
 
 	//buffered req
 	let client = reqwest::Client::new();
-	let res = client
+	match client
 		.post(url)
 		.header("x-sentc-app-token", state.app_data.public_token.as_str())
 		.header(AUTHORIZATION, auth_header(state.user_data_1.jwt.as_str()))
 		.body(encrypted_small_file_1)
 		.send()
 		.await
-		.unwrap();
+	{
+		Ok(res) => {
+			let body = res.text().await.unwrap();
 
-	let body = res.text().await.unwrap();
-
-	match handle_general_server_response(body.as_str()) {
-		Ok(_) => {
-			panic!("Should be an error");
-		},
-		Err(e) => {
-			match e {
-				SdkError::ServerErr(s, _msg) => {
-					assert_eq!(s, 510); //session not found error for the
+			match handle_general_server_response(body.as_str()) {
+				Ok(_) => {
+					panic!("Should be an error");
 				},
-				_ => {
-					panic!("Should be server error")
+				Err(e) => {
+					match e {
+						SdkError::ServerErr(s, _msg) => {
+							assert_eq!(s, 510); //session not found error for the
+						},
+						_ => {
+							panic!("Should be server error")
+						},
+					}
 				},
 			}
+		},
+		Err(_e) => {
+			//err here is ok because the server can just close the connection for wrong parts
 		},
 	}
 
