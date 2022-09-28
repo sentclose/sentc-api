@@ -58,11 +58,15 @@ pub(crate) fn routes(router: &mut Router)
 	);
 	router.get(
 		"/api/v1/customer/apps/:last_fetched_time/:last_app_id",
-		r(crate::customer::get_all_apps).add(jwt::jwt_app_check_transform),
+		r(crate::customer_app::get_all_apps).add(jwt::jwt_app_check_transform),
 	);
 	router.post(
 		"/api/v1/customer/app",
 		r(crate::customer_app::create_app).add(jwt::jwt_app_check_transform),
+	);
+	router.get(
+		"/api/v1/customer/app/:app_id",
+		r(crate::customer_app::get_app_details).add(jwt::jwt_app_check_transform),
 	);
 	router.put(
 		"/api/v1/customer/app/:app_id",

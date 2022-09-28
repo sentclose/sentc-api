@@ -1,6 +1,7 @@
 use sentc_crypto_common::{AppId, CustomerId, JwtKeyId, UserId};
 use server_api_common::app::{AppFileOptionsInput, AppJwtData, AppOptions, AppRegisterInput};
-use server_core::db::{exec, exec_transaction, query, query_first, Params, TransactionData};
+use server_api_common::customer::CustomerAppList;
+use server_core::db::{exec, exec_transaction, query, query_first, query_string, Params, TransactionData};
 use server_core::{get_time, set_params};
 use uuid::Uuid;
 
@@ -8,51 +9,8 @@ use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppExistsEntity
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::AppFileOptions;
 
-/**
-# Internal app data
-
-cached in the app token middleware
-*/
-pub(crate) async fn get_app_data(hashed_token: &str) -> AppRes<AppData>
+pub(super) async fn get_app_options(app_id: AppId) -> AppRes<AppOptions>
 {
-	//language=SQL
-	let sql = r"
-SELECT id as app_id, customer_id, hashed_secret_token, hashed_public_token, hash_alg 
-FROM sentc_app 
-WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
-
-	let app_data: Option<AppDataGeneral> = query_first(sql, set_params!(hashed_token.to_string(), hashed_token.to_string())).await?;
-
-	let app_data = match app_data {
-		Some(d) => d,
-		None => {
-			return Err(HttpErr::new(
-				401,
-				ApiErrorCodes::AppTokenNotFound,
-				"App token not found".to_string(),
-				None,
-			))
-		},
-	};
-
-	//language=SQL
-	let sql = "SELECT id, alg, time FROM sentc_app_jwt_keys WHERE app_id = ? ORDER BY time DESC LIMIT 10";
-
-	let jwt_data: Vec<AppJwt> = query(sql, set_params!(app_data.app_id.to_string())).await?;
-
-	let auth_with_token = if hashed_token == app_data.hashed_public_token {
-		AuthWithToken::Public
-	} else if hashed_token == app_data.hashed_secret_token {
-		AuthWithToken::Secret
-	} else {
-		return Err(HttpErr::new(
-			401,
-			ApiErrorCodes::AppTokenNotFound,
-			"App token not found".to_string(),
-			None,
-		));
-	};
-
 	//get the options
 	//language=SQL
 	let sql = r"
@@ -99,10 +57,40 @@ FROM sentc_app_options
 WHERE 
     app_id = ?";
 
-	let options: Option<AppOptions> = query_first(sql, set_params!(app_data.app_id.to_string())).await?;
+	let options: Option<AppOptions> = query_first(sql, set_params!(app_id.to_string())).await?;
 
 	let options = match options {
 		Some(o) => o,
+		None => {
+			return Err(HttpErr::new(
+				401,
+				ApiErrorCodes::AppNotFound,
+				"App not found".to_string(),
+				None,
+			))
+		},
+	};
+
+	Ok(options)
+}
+
+/**
+# Internal app data
+
+cached in the app token middleware
+*/
+pub(crate) async fn get_app_data(hashed_token: &str) -> AppRes<AppData>
+{
+	//language=SQL
+	let sql = r"
+SELECT id as app_id, customer_id, hashed_secret_token, hashed_public_token, hash_alg 
+FROM sentc_app 
+WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
+
+	let app_data: Option<AppDataGeneral> = query_first(sql, set_params!(hashed_token.to_string(), hashed_token.to_string())).await?;
+
+	let app_data = match app_data {
+		Some(d) => d,
 		None => {
 			return Err(HttpErr::new(
 				401,
@@ -112,6 +100,26 @@ WHERE
 			))
 		},
 	};
+
+	//language=SQL
+	let sql = "SELECT id, alg, time FROM sentc_app_jwt_keys WHERE app_id = ? ORDER BY time DESC LIMIT 10";
+
+	let jwt_data: Vec<AppJwt> = query(sql, set_params!(app_data.app_id.to_string())).await?;
+
+	let auth_with_token = if hashed_token == app_data.hashed_public_token {
+		AuthWithToken::Public
+	} else if hashed_token == app_data.hashed_secret_token {
+		AuthWithToken::Secret
+	} else {
+		return Err(HttpErr::new(
+			401,
+			ApiErrorCodes::AppTokenNotFound,
+			"App token not found".to_string(),
+			None,
+		));
+	};
+
+	let options = get_app_options(app_data.app_id.to_string()).await?;
 
 	//get app file options but without the auth token for external storage
 	//language=SQL
@@ -123,8 +131,8 @@ WHERE
 		None => {
 			return Err(HttpErr::new(
 				401,
-				ApiErrorCodes::AppTokenNotFound,
-				"App token not found".to_string(),
+				ApiErrorCodes::AppNotFound,
+				"App not found".to_string(),
 				None,
 			))
 		},
@@ -190,6 +198,75 @@ ORDER BY ak.time DESC";
 
 	Ok(jwt_data)
 }
+
+pub(super) async fn get_all_apps(customer_id: CustomerId, last_fetched_time: u128, last_app_id: AppId) -> AppRes<Vec<CustomerAppList>>
+{
+	//language=SQL
+	let sql = "SELECT id,identifier, time FROM sentc_app WHERE customer_id = ?".to_string();
+
+	let (sql, params) = if last_fetched_time > 0 {
+		let sql = sql + " AND time >=? AND (time > ? OR (time = ? AND id > ?)) ORDER BY time, id LIMIT 20";
+		(
+			sql,
+			set_params!(
+				customer_id,
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_app_id
+			),
+		)
+	} else {
+		let sql = sql + " ORDER BY time, id LIMIT 20";
+		(sql, set_params!(customer_id))
+	};
+
+	let list: Vec<CustomerAppList> = query_string(sql, params).await?;
+
+	Ok(list)
+}
+
+pub(super) async fn get_app_view(customer_id: CustomerId, app_id: AppId) -> AppRes<CustomerAppList>
+{
+	//language=SQL
+	let sql = "SELECT id,identifier, time FROM sentc_app WHERE customer_id = ? AND id = ?";
+
+	let out: Option<CustomerAppList> = query_first(sql, set_params!(customer_id, app_id)).await?;
+
+	match out {
+		Some(o) => Ok(o),
+		None => {
+			Err(HttpErr::new(
+				400,
+				ApiErrorCodes::AppNotFound,
+				"App not found".to_string(),
+				None,
+			))
+		},
+	}
+}
+
+pub(super) async fn get_app_file_options(app_id: AppId) -> AppRes<AppFileOptionsInput>
+{
+	//language=SQL
+	let sql = "SELECT file_storage,storage_url,auth_token FROM sentc_file_options WHERE app_id = ?";
+
+	let out: Option<AppFileOptionsInput> = query_first(sql, set_params!(app_id)).await?;
+
+	match out {
+		Some(o) => Ok(o),
+		None => {
+			Err(HttpErr::new(
+				400,
+				ApiErrorCodes::AppNotFound,
+				"App not found".to_string(),
+				None,
+			))
+		},
+	}
+}
+
+//__________________________________________________________________________________________________
 
 pub(super) async fn create_app(
 	customer_id: &UserId,
