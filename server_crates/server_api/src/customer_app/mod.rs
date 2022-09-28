@@ -7,6 +7,7 @@ use rand::RngCore;
 use rustgram::Request;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use server_api_common::app::{
+	AppDetails,
 	AppFileOptionsInput,
 	AppJwtData,
 	AppJwtRegisterOutput,
@@ -16,6 +17,7 @@ use server_api_common::app::{
 	AppTokenRenewOutput,
 	AppUpdateInput,
 };
+use server_api_common::customer::CustomerAppList;
 use server_core::cache;
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
@@ -28,6 +30,27 @@ use crate::user::jwt::{create_jwt_keys, get_jwt_data_from_param};
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 use crate::util::APP_TOKEN_CACHE;
 
+pub(crate) async fn get_all_apps(req: Request) -> JRes<Vec<CustomerAppList>>
+{
+	let user = get_jwt_data_from_param(&req)?;
+
+	let params = get_params(&req)?;
+	let last_app_id = get_name_param_from_params(&params, "last_app_id")?;
+	let last_fetched_time = get_name_param_from_params(&params, "last_fetched_time")?;
+	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
+		HttpErr::new(
+			400,
+			ApiErrorCodes::UnexpectedTime,
+			"last fetched time is wrong".to_string(),
+			None,
+		)
+	})?;
+
+	let list = app_model::get_all_apps(user.id.to_string(), last_fetched_time, last_app_id.to_string()).await?;
+
+	echo(list)
+}
+
 pub(crate) async fn get_jwt_details(req: Request) -> JRes<Vec<AppJwtData>>
 {
 	let customer = get_jwt_data_from_param(&req)?;
@@ -38,6 +61,26 @@ pub(crate) async fn get_jwt_details(req: Request) -> JRes<Vec<AppJwtData>>
 	let jwt_data = app_model::get_jwt_data(customer_id.to_string(), app_id.to_string()).await?;
 
 	echo(jwt_data)
+}
+
+pub(crate) async fn get_app_details(req: Request) -> JRes<AppDetails>
+{
+	let customer = get_jwt_data_from_param(&req)?;
+	let customer_id = &customer.id;
+
+	let app_id = get_name_param_from_req(&req, "app_id")?;
+
+	let details = app_model::get_app_view(customer_id.clone(), app_id.to_string()).await?;
+
+	let options = app_model::get_app_options(app_id.to_string()).await?;
+
+	let file_options = app_model::get_app_file_options(app_id.to_string()).await?;
+
+	echo(AppDetails {
+		options,
+		file_options,
+		details,
+	})
 }
 
 pub(crate) async fn create_app(mut req: Request) -> JRes<AppRegisterOutput>

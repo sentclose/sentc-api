@@ -66,6 +66,7 @@ cargo test --features=sqlite --no-default-features -- --test-threads=1
    1. insert it / update app options in the db table: `app_options`
    2. add new endpoint in select app options and create app in `server_crates/server_api/src/customer_app/app_model.rs`
    3. add to the AppOptions input incl. the default fn in: `server_crates/server_api_common/src/app.rs`
+   4. add it to the dashboard in the type and app option comp
 
 ## Entity and common data
 

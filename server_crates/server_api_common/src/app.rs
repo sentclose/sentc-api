@@ -4,6 +4,8 @@ use serde_json::to_string;
 #[cfg(feature = "server")]
 use server_core::take_or_err;
 
+use crate::customer::CustomerAppList;
+
 /**
 The options to control the access to the api.
 
@@ -329,6 +331,14 @@ impl server_core::db::FromSqliteRow for AppOptions
 	}
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct AppDetails
+{
+	pub options: AppOptions,
+	pub file_options: AppFileOptionsInput,
+	pub details: CustomerAppList,
+}
+
 //__________________________________________________________________________________________________
 
 #[derive(Serialize, Deserialize)]
@@ -490,6 +500,38 @@ impl AppFileOptionsInput
 			storage_url: None,
 			auth_token: None,
 		}
+	}
+}
+
+#[cfg(feature = "server")]
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for AppFileOptionsInput
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			file_storage: take_or_err!(row, 0, i32),
+			storage_url: server_core::take_or_err_opt!(row, 1, String),
+			auth_token: server_core::take_or_err_opt!(row, 2, String),
+		})
+	}
+}
+
+#[cfg(feature = "server")]
+#[cfg(feature = "sqlite")]
+impl server_core::db::FromSqliteRow for AppFileOptionsInput
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			file_storage: take_or_err!(row, 0),
+			storage_url: take_or_err!(row, 1),
+			auth_token: take_or_err!(row, 2),
+		})
 	}
 }
 
