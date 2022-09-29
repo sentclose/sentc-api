@@ -161,10 +161,10 @@ pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endp
 		Endpoint::KeyRegister => options.key_register,
 		Endpoint::KeyGet => options.key_get,
 
-		Endpoint::FileRegister => options.key_get,
-		Endpoint::FilePartUpload => options.key_get,
-		Endpoint::FileGet => options.key_get,
-		Endpoint::FilePartDownload => options.key_get,
+		Endpoint::FileRegister => options.file_register,
+		Endpoint::FilePartUpload => options.file_part_upload,
+		Endpoint::FileGet => options.file_get,
+		Endpoint::FilePartDownload => options.file_part_download,
 
 		Endpoint::ForceServer => 2,
 	};
