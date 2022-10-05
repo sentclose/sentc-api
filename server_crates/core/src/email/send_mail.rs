@@ -1,7 +1,7 @@
 use std::env;
 use std::future::Future;
 
-use lettre::message::Mailbox;
+use lettre::message::{header, Mailbox, MultiPart, SinglePart};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 use tokio::sync::OnceCell;
@@ -24,11 +24,16 @@ pub async fn init_email_register()
 		.await;
 }
 
-pub fn send_mail_registration<'a>(to: &'a str, subject: &'a str, body: String) -> impl Future<Output = Result<(), CoreError>> + 'a
+pub fn send_mail_registration<'a>(
+	to: &'a str,
+	subject: &'a str,
+	body_txt: String,
+	body_html: String,
+) -> impl Future<Output = Result<(), CoreError>> + 'a
 {
 	let email = EMAIL_SENDER_REGISTER.get().unwrap();
 
-	email.send_email_smpt(to, subject, body)
+	email.send_email_smpt(to, subject, body_txt, body_html)
 }
 
 struct Email
@@ -60,7 +65,7 @@ impl Email
 		}
 	}
 
-	pub async fn send_email_smpt(&self, to: &str, subject: &str, body: String) -> Result<(), CoreError>
+	pub async fn send_email_smpt(&self, to: &str, subject: &str, body_txt: String, body_html: String) -> Result<(), CoreError>
 	{
 		let smtp_credentials = Credentials::new(self.user.to_string(), self.pw.to_string());
 		let mailer = AsyncSmtpTransport::<Tokio1Executor>::relay(self.server.as_str())
@@ -82,7 +87,20 @@ impl Email
 			.from(self.from.clone())
 			.to(to)
 			.subject(subject)
-			.body(body)
+			.multipart(
+				MultiPart::alternative()
+					.singlepart(
+						//plain text fallback
+						SinglePart::builder()
+							.header(header::ContentType::TEXT_PLAIN)
+							.body(body_txt),
+					)
+					.singlepart(
+						SinglePart::builder()
+							.header(header::ContentType::TEXT_HTML)
+							.body(body_html),
+					),
+			)
 			.map_err(|_e| {
 				CoreError::new(
 					400,

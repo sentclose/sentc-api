@@ -21,12 +21,8 @@ use server_api_common::customer::{
 	CustomerUpdateInput,
 };
 use server_core::email;
-#[cfg(feature = "send_mail")]
-use server_core::email::send_mail::send_mail_registration;
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 
-#[cfg(feature = "send_mail")]
-use crate::customer::customer_entities::RegisterEmailStatus;
 use crate::customer_app::app_util::get_app_data_from_req;
 use crate::file::file_service;
 use crate::user;
@@ -36,6 +32,9 @@ use crate::util::api_res::{echo, echo_success, ApiErrorCodes, AppRes, HttpErr, J
 pub mod customer_entities;
 pub(crate) mod customer_model;
 pub mod customer_util;
+
+#[cfg(feature = "send_mail")]
+mod send_mail;
 
 pub(crate) async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 {
@@ -71,7 +70,7 @@ pub(crate) async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 	.await?;
 
 	#[cfg(feature = "send_mail")]
-	send_mail(email, validate_token, customer_id.to_string(), EmailTopic::Register).await;
+	send_mail::send_mail(email, validate_token, customer_id.to_string(), EmailTopic::Register).await;
 
 	let out = CustomerRegisterOutput {
 		customer_id,
@@ -82,7 +81,7 @@ pub(crate) async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 
 pub(crate) async fn done_register(mut req: Request) -> JRes<ServerSuccessOutput>
 {
-	//app id check here because the first req is called from an email via get parameter but to the frontend dashboard.
+	//the first req is called from an email via get parameter but to the frontend dashboard.
 	//then the dashboard calls this route with an app token
 	//the customer must be logged in in the dashboard when sending this req
 
@@ -116,7 +115,7 @@ pub(crate) async fn resend_email(req: Request) -> JRes<ServerSuccessOutput>
 	let _token = customer_model::get_email_token(customer_id.to_string()).await?;
 
 	#[cfg(feature = "send_mail")]
-	send_mail(
+	send_mail::send_mail(
 		_token.email.as_str(),
 		_token.email_token,
 		customer_id.to_string(),
@@ -238,7 +237,7 @@ pub(crate) async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 	customer_model::update(update_data, user.id.to_string(), validate_token.to_string()).await?;
 
 	#[cfg(feature = "send_mail")]
-	send_mail(
+	send_mail::send_mail(
 		email.as_str(),
 		validate_token,
 		user.id.to_string(),
@@ -303,7 +302,7 @@ pub(crate) async fn prepare_reset_password(mut req: Request) -> JRes<ServerSucce
 	customer_model::reset_password_token_save(email_data.id.to_string(), validate_token.to_string()).await?;
 
 	#[cfg(feature = "send_mail")]
-	send_mail(email.as_str(), validate_token, email_data.id, EmailTopic::PwReset).await;
+	send_mail::send_mail(email.as_str(), validate_token, email_data.id, EmailTopic::PwReset).await;
 
 	echo_success()
 }
@@ -333,50 +332,6 @@ enum EmailTopic
 	Register,
 	PwReset,
 	EmailUpdate,
-}
-
-/**
-Send the validation email.
-*/
-#[cfg(feature = "send_mail")]
-async fn send_mail(email: &str, token: String, customer_id: sentc_crypto_common::CustomerId, topic: EmailTopic)
-{
-	let text = match topic {
-		EmailTopic::Register => {
-			format!(
-				"Thanks for registration at sentc. Here is your e-mail validation token: {}",
-				token
-			)
-		},
-		EmailTopic::PwReset => {
-			format!("Here is your password reset token: {}", token)
-		},
-		EmailTopic::EmailUpdate => {
-			format!("Here is your e-mail validation token: {}", token)
-		},
-	};
-
-	//don't wait for the response
-	tokio::task::spawn(process_send_mail(email.to_string(), text, customer_id));
-}
-
-#[cfg(feature = "send_mail")]
-async fn process_send_mail(email: String, text: String, customer_id: sentc_crypto_common::CustomerId) -> AppRes<()>
-{
-	let status = match send_mail_registration(email.as_str(), "Validate email address for sentc", text).await {
-		Ok(_) => RegisterEmailStatus::Success,
-		Err(e) => {
-			let err: HttpErr = e.into();
-
-			match err.api_error_code {
-				ApiErrorCodes::EmailMessage => RegisterEmailStatus::FailedMessage(err.msg),
-				ApiErrorCodes::EmailSend => RegisterEmailStatus::FailedSend(err.msg),
-				_ => RegisterEmailStatus::Other(err.msg),
-			}
-		},
-	};
-
-	customer_model::sent_mail(customer_id, status).await
 }
 
 fn generate_email_validate_token() -> AppRes<String>

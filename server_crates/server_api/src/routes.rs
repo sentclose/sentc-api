@@ -36,8 +36,8 @@ pub(crate) fn routes(router: &mut Router)
 			.add(jwt::jwt_expire_transform)
 			.add(app_token::app_token_base_app_transform),
 	);
-	router.get(
-		"/api/v1/customer/register/:email_key",
+	router.post(
+		"/api/v1/customer/register_validation",
 		r(crate::customer::done_register).add(jwt::jwt_app_check_transform),
 	);
 	router.patch(

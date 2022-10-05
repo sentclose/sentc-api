@@ -31,7 +31,7 @@ routes:
               - jwt::jwt_app_check_transform
             gr:
               # customer must be logged in, in the dashboard when sending this req
-              - get: {p: "/register/:email_key", s: crate::customer::done_register}
+              - post: {p: "/register_validation", s: crate::customer::done_register}
               - patch: {p: "/email_resend", s: crate::customer::resend_email}
               - put: {p: "", s: crate::customer::update}
               - put: {p: "/password", s: crate::customer::change_password}
