@@ -44,28 +44,28 @@ fn get_text(token: String, topic: EmailTopic) -> (String, String, &'static str)
 			(
 				"Thanks for registration at sentc. Please verify your Email.",
 				"Sentc Email validation for registration",
-				url + "",
+				url + "/dashboard/customer/validation/register",
 			)
 		},
 		EmailTopic::PwReset => {
 			(
 				"Your forgot your password at sentc? Please verify your Email before resetting the password.",
 				"Sentc Password reset",
-				url + "",
+				url + "/dashboard/customer/validation/pw_reset",
 			)
 		},
 		EmailTopic::EmailUpdate => {
 			(
 				"You updated your Email address for sentc. Please verify your new Email address.",
 				"Sentc Email update",
-				url + "",
+				url + "/dashboard/customer/validation/register",
 			)
 		},
 	};
 
 	let text_body = format!(
 		r"{}
-Go to {}/{} or enter your token: {}
+Go to {}/?token={} or enter your token: {}
 	",
 		text, url, token, token
 	);
@@ -89,7 +89,7 @@ Go to {}/{} or enter your token: {}
 			</p>
 	
 			<p>
-				<a href="{}/{}">Click here</a> 
+				<a href="{}/?token={}">Click here</a> 
 				<br>
 				<br>
 				Or enter your token: <br>
