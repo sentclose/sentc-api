@@ -42,24 +42,21 @@ fn get_text(token: String, topic: EmailTopic) -> (String, String, &'static str)
 	let (text, title, url) = match topic {
 		EmailTopic::Register => {
 			(
-				format!(
-					"Thanks for registration at sentc. Here is your e-mail validation token: {}",
-					token
-				),
+				"Thanks for registration at sentc. Please verify your Email.",
 				"Sentc Email validation for registration",
 				url + "",
 			)
 		},
 		EmailTopic::PwReset => {
 			(
-				format!("Here is your password reset token: {}", token),
+				"Your forgot your password at sentc? Please verify your Email before resetting the password.",
 				"Sentc Password reset",
 				url + "",
 			)
 		},
 		EmailTopic::EmailUpdate => {
 			(
-				format!("Here is your e-mail validation token: {}", token),
+				"You updated your Email address for sentc. Please verify your new Email address.",
 				"Sentc Email update",
 				url + "",
 			)
@@ -70,10 +67,7 @@ fn get_text(token: String, topic: EmailTopic) -> (String, String, &'static str)
 		r"{}
 Go to {}/{} or enter your token: {}
 	",
-		text.as_str(),
-		url,
-		token,
-		token
+		text, url, token, token
 	);
 
 	//language=HTML
@@ -87,18 +81,21 @@ Go to {}/{} or enter your token: {}
 </head>
 <body>
 	<div style="display: flex; flex-direction: column; align-items: center">
-		<h1>{}</h1>
-
-		<p>
-			{}
-		</p>
-
-		<p>
-			<a href="{}/{}">Click here</a> 
-			<br>
-			<br>
-			Or enter your token: {}
-		</p>
+		<div style="text-align: left;">
+			<h1>{}</h1>
+	
+			<p>
+				{}
+			</p>
+	
+			<p>
+				<a href="{}/{}">Click here</a> 
+				<br>
+				<br>
+				Or enter your token: <br>
+				{}
+			</p>
+		</div>
 	</div>
 </body>
 </html>"#,
