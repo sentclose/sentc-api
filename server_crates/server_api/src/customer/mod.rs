@@ -81,7 +81,7 @@ pub(crate) async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 
 pub(crate) async fn done_register(mut req: Request) -> JRes<ServerSuccessOutput>
 {
-	//app id check here because the first req is called from an email via get parameter but to the frontend dashboard.
+	//the first req is called from an email via get parameter but to the frontend dashboard.
 	//then the dashboard calls this route with an app token
 	//the customer must be logged in in the dashboard when sending this req
 
