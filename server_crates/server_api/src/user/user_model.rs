@@ -5,6 +5,7 @@ use server_core::{get_time, set_params};
 use uuid::Uuid;
 
 use crate::user::user_entities::{
+	CaptchaEntity,
 	DoneLoginServerKeysOutputEntity,
 	JwtSignKey,
 	JwtVerifyKey,
@@ -732,6 +733,45 @@ pub(super) async fn save_user_action(app_id: AppId, user_id: UserId, action: Use
 	};
 
 	exec(sql, set_params!(user_id, time.to_string(), action, app_id, amount)).await?;
+
+	Ok(())
+}
+
+//__________________________________________________________________________________________________
+
+pub(super) async fn save_captcha_solution(app_id: AppId, solution: String) -> AppRes<String>
+{
+	let time = get_time()?;
+	let captcha_id = Uuid::new_v4().to_string();
+
+	//language=SQL
+	let sql = "INSERT INTO sentc_captcha (id, app_id, solution, time) VALUES (?,?,?,?)";
+
+	exec(
+		sql,
+		set_params!(captcha_id.to_string(), app_id, solution, time.to_string()),
+	)
+	.await?;
+
+	Ok(captcha_id)
+}
+
+pub(super) async fn get_captcha_solution(id: String, app_id: AppId) -> AppRes<Option<CaptchaEntity>>
+{
+	//language=SQL
+	let sql = "SELECT solution, time FROM sentc_captcha WHERE id = ? AND app_id = ?";
+
+	let out: Option<CaptchaEntity> = query_first(sql, set_params!(id, app_id)).await?;
+
+	Ok(out)
+}
+
+pub(super) async fn delete_captcha(app_id: AppId, id: String) -> AppRes<()>
+{
+	//language=SQL
+	let sql = "DELETE FROM sentc_captcha WHERE id = ? AND app_id = ?";
+
+	exec(sql, set_params!(id, app_id)).await?;
 
 	Ok(())
 }
