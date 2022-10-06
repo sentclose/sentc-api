@@ -46,6 +46,31 @@ pub(crate) struct CustomerDataEntity
 	pub email_valid: i32,
 	pub email_send: u128,
 	pub email_status: i32,
+	pub name: String,
+	pub first_name: String,
+	pub company: Option<String>,
+}
+
+impl Into<server_api_common::customer::CustomerDataOutput> for CustomerDataEntity
+{
+	fn into(self) -> server_api_common::customer::CustomerDataOutput
+	{
+		let validate_email = match self.email_valid {
+			0 => false,
+			1 => true,
+			_ => false,
+		};
+
+		server_api_common::customer::CustomerDataOutput {
+			validate_email,
+			email: self.email,
+			email_send: self.email_send,
+			email_status: self.email_status,
+			name: self.name,
+			first_name: self.first_name,
+			company: self.company,
+		}
+	}
 }
 
 #[cfg(feature = "mysql")]
@@ -60,6 +85,9 @@ impl mysql_async::prelude::FromRow for CustomerDataEntity
 			email_valid: take_or_err!(row, 1, i32),
 			email_send: take_or_err!(row, 2, u128),
 			email_status: take_or_err!(row, 3, i32),
+			name: take_or_err!(row, 6, String),
+			first_name: take_or_err!(row, 5, String),
+			company: server_core::take_or_err_opt!(row, 4, String),
 		})
 	}
 }
@@ -76,6 +104,9 @@ impl server_core::db::FromSqliteRow for CustomerDataEntity
 			email_valid: take_or_err!(row, 1),
 			email_send: server_core::take_or_err_u128!(row, 2),
 			email_status: take_or_err!(row, 3),
+			name: take_or_err!(row, 6),
+			first_name: take_or_err!(row, 5),
+			company: take_or_err!(row, 4),
 		})
 	}
 }
