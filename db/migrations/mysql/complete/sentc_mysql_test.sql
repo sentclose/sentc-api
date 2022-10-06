@@ -153,6 +153,19 @@ INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_u
 -- --------------------------------------------------------
 
 --
+-- Tabellenstruktur für Tabelle `sentc_captcha`
+--
+
+CREATE TABLE `sentc_captcha` (
+ `id` varchar(36) NOT NULL,
+ `app_id` varchar(36) NOT NULL,
+ `solution` text NOT NULL,
+ `time` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Tabellenstruktur für Tabelle `sentc_customer`
 --
 
@@ -528,6 +541,12 @@ ALTER TABLE `sentc_app_jwt_keys`
 --
 ALTER TABLE `sentc_app_options`
   ADD PRIMARY KEY (`app_id`);
+
+--
+-- Indizes für die Tabelle `sentc_captcha`
+--
+ALTER TABLE `sentc_captcha`
+	ADD PRIMARY KEY (`id`);
 
 --
 -- Indizes für die Tabelle `sentc_customer`

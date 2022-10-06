@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 19. Sep 2022 um 14:29
+-- Erstellungszeit: 06. Okt 2022 um 10:53
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -128,6 +128,19 @@ CREATE TABLE `sentc_app_options` (
   `group_invite_stop` int(11) NOT NULL,
   `user_key_update` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='option: 0 = not allowed,  1 = public token, 2 = secret token';
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_captcha`
+--
+
+CREATE TABLE `sentc_captcha` (
+  `id` varchar(36) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
+  `solution` text NOT NULL,
+  `time` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -500,6 +513,12 @@ ALTER TABLE `sentc_app_jwt_keys`
 --
 ALTER TABLE `sentc_app_options`
   ADD PRIMARY KEY (`app_id`);
+
+--
+-- Indizes für die Tabelle `sentc_captcha`
+--
+ALTER TABLE `sentc_captcha`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indizes für die Tabelle `sentc_customer`
