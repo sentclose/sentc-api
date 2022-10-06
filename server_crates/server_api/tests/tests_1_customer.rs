@@ -14,7 +14,7 @@ use server_api::util::api_res::ApiErrorCodes;
 use server_api_common::customer::{CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput, CustomerUpdateInput};
 use tokio::sync::{OnceCell, RwLock};
 
-use crate::test_fn::{auth_header, get_url, login_customer};
+use crate::test_fn::{auth_header, get_captcha, get_url, login_customer};
 
 mod test_fn;
 
@@ -44,12 +44,15 @@ async fn test_0_register_customer_with_email()
 	let register_data = sentc_crypto::user::register(email.as_str(), "12345").unwrap();
 	let register_data = RegisterData::from_string(register_data.as_str()).unwrap();
 
+	let public_token = env::var("SENTC_PUBLIC_TOKEN").unwrap();
+
+	let captcha_input = get_captcha(public_token.as_str()).await;
+
 	let input = CustomerRegisterData {
 		email,
 		register_data: register_data.device,
+		captcha_input,
 	};
-
-	let public_token = env::var("SENTC_PUBLIC_TOKEN").unwrap();
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -105,12 +108,15 @@ async fn test_10_register_without_valid_email()
 	let register_data = sentc_crypto::user::register(wrong_email.as_str(), "12345").unwrap();
 	let register_data = RegisterData::from_string(register_data.as_str()).unwrap();
 
+	let public_token = customer.public_token.as_str();
+
+	let captcha_input = get_captcha(public_token).await;
+
 	let input = CustomerRegisterData {
 		email: wrong_email,
 		register_data: register_data.device,
+		captcha_input,
 	};
-
-	let public_token = customer.public_token.as_str();
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -144,12 +150,15 @@ async fn test_11_register_customer()
 	let register_data = sentc_crypto::user::register(email.as_str(), "12345").unwrap();
 	let register_data = RegisterData::from_string(register_data.as_str()).unwrap();
 
+	let public_token = customer.public_token.as_str();
+
+	let captcha_input = get_captcha(public_token).await;
+
 	let input = CustomerRegisterData {
 		email: email.to_string(),
 		register_data: register_data.device,
+		captcha_input,
 	};
-
-	let public_token = customer.public_token.as_str();
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -606,8 +615,6 @@ fn get_fake_login_data(old_pw: &str) -> (String, String)
 
 fn get_fake_pw_change_data(prepare_login_auth_key_input: &str, old_pw: &str, new_pw: &str) -> String
 {
-	//TODo do this in the dashboard client
-
 	let (prepare_login_user_data, done_login_user_data) = get_fake_login_data(old_pw);
 
 	let pw_change_data = sentc_crypto::user::change_password(
