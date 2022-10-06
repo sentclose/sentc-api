@@ -12,6 +12,7 @@ use sentc_crypto_common::user::{
 	UserUpdateServerInput,
 };
 use server_api_common::customer::{
+	CustomerData,
 	CustomerDoneLoginOutput,
 	CustomerDonePasswordResetInput,
 	CustomerDoneRegistrationInput,
@@ -338,6 +339,18 @@ pub(crate) async fn done_reset_password(mut req: Request) -> JRes<ServerSuccessO
 	let token_data = customer_model::get_email_by_token(input.token).await?;
 
 	user::user_service::reset_password(token_data.id, token_data.device_id, input.reset_password_data).await?;
+
+	echo_success()
+}
+
+pub(crate) async fn update_data(mut req: Request) -> JRes<ServerSuccessOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+	let input: CustomerData = bytes_to_json(&body)?;
+
+	let user = get_jwt_data_from_param(&req)?;
+
+	customer_model::update_data(user.id.clone(), input).await?;
 
 	echo_success()
 }

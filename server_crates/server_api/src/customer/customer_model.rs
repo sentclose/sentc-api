@@ -257,3 +257,13 @@ pub(super) async fn reset_password_token_save(customer_id: CustomerId, validate_
 }
 
 //__________________________________________________________________________________________________
+
+pub(super) async fn update_data(id: CustomerId, data: CustomerData) -> AppRes<()>
+{
+	//language=SQL
+	let sql = "UPDATE sentc_customer SET name = ?, first_name = ?, company = ? WHERE id = ?";
+
+	exec(sql, set_params!(data.name, data.first_name, data.company, id)).await?;
+
+	Ok(())
+}

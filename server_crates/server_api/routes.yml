@@ -35,6 +35,7 @@ routes:
               - post: {p: "/register_validation", s: crate::customer::done_register}
               - patch: {p: "/email_resend", s: crate::customer::resend_email}
               - put: {p: "", s: crate::customer::update}
+              - put: {p: "/data", s: crate::customer::update_data}
               - put: {p: "/password", s: crate::customer::change_password}
               - delete: {p: "", s: crate::customer::delete}
 

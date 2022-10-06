@@ -53,6 +53,10 @@ pub(crate) fn routes(router: &mut Router)
 		r(crate::customer::update).add(jwt::jwt_app_check_transform),
 	);
 	router.put(
+		"/api/v1/customer/data",
+		r(crate::customer::update_data).add(jwt::jwt_app_check_transform),
+	);
+	router.put(
 		"/api/v1/customer/password",
 		r(crate::customer::change_password).add(jwt::jwt_app_check_transform),
 	);
