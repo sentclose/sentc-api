@@ -294,6 +294,16 @@ pub(crate) async fn prepare_reset_password(mut req: Request) -> JRes<ServerSucce
 	let body = get_raw_body(&mut req).await?;
 	let data: CustomerResetPasswordInput = bytes_to_json(&body)?;
 
+	let app_data = get_app_data_from_req(&req)?;
+
+	//check the captcha
+	user::captcha::validate_captcha(
+		app_data.app_data.app_id.clone(),
+		data.captcha_input.captcha_id,
+		data.captcha_input.captcha_solution,
+	)
+	.await?;
+
 	let email = data.email.to_string();
 
 	let email_check = email::check_email(email.as_str());

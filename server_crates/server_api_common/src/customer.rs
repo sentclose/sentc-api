@@ -9,7 +9,7 @@ pub struct CustomerRegisterData
 {
 	pub email: String,
 	pub register_data: UserDeviceRegisterInput,
-	pub captcha_input: CaptchaInput
+	pub captcha_input: CaptchaInput,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -50,6 +50,7 @@ pub struct CustomerUpdateInput
 pub struct CustomerResetPasswordInput
 {
 	pub email: String,
+	pub captcha_input: CaptchaInput,
 }
 
 #[derive(Serialize, Deserialize)]
