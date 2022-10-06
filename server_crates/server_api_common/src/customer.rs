@@ -1,4 +1,4 @@
-use sentc_crypto_common::user::{DoneLoginLightOutput, ResetPasswordData, UserDeviceRegisterInput};
+use sentc_crypto_common::user::{CaptchaInput, DoneLoginLightOutput, ResetPasswordData, UserDeviceRegisterInput};
 use sentc_crypto_common::{AppId, CustomerId};
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "server")]
@@ -9,6 +9,7 @@ pub struct CustomerRegisterData
 {
 	pub email: String,
 	pub register_data: UserDeviceRegisterInput,
+	pub captcha_input: CaptchaInput
 }
 
 #[derive(Serialize, Deserialize)]
