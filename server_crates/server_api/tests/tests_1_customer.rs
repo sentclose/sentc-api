@@ -651,8 +651,11 @@ async fn test_16_reset_customer_password()
 
 	let new_pw = "123456789";
 
+	let captcha_input = get_captcha(public_token).await;
+
 	let input = server_api_common::customer::CustomerResetPasswordInput {
 		email: email.to_string(),
+		captcha_input,
 	};
 
 	let url = get_url("api/v1/customer/password_reset".to_owned());
