@@ -16,7 +16,7 @@ use sentc_crypto_common::group::{GroupCreateOutput, KeyRotationStartServerOutput
 use sentc_crypto_common::user::{CaptchaCreateOutput, CaptchaInput, RegisterData, UserInitServerOutput};
 use sentc_crypto_common::{CustomerId, GroupId, ServerOutput, UserId};
 use server_api_common::app::{AppFileOptionsInput, AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
-use server_api_common::customer::{CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput};
+use server_api_common::customer::{CustomerData, CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput};
 
 pub fn get_url(path: String) -> String
 {
@@ -142,6 +142,11 @@ pub async fn register_customer(email: String, pw: &str) -> CustomerId
 	let captcha_input = get_captcha(public_token.as_str()).await;
 
 	let input = CustomerRegisterData {
+		customer_data: CustomerData {
+			name: "abc".to_string(),
+			first_name: "abc".to_string(),
+			company: None,
+		},
 		email,
 		register_data: register_data.device,
 		captcha_input,

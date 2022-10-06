@@ -11,7 +11,7 @@ use sentc_crypto_common::user::{
 };
 use sentc_crypto_common::ServerOutput;
 use server_api::util::api_res::ApiErrorCodes;
-use server_api_common::customer::{CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput, CustomerUpdateInput};
+use server_api_common::customer::{CustomerData, CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput, CustomerUpdateInput};
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{auth_header, get_captcha, get_url, login_customer};
@@ -49,6 +49,11 @@ async fn test_0_register_customer_with_email()
 	let captcha_input = get_captcha(public_token.as_str()).await;
 
 	let input = CustomerRegisterData {
+		customer_data: CustomerData {
+			name: "abc".to_string(),
+			first_name: "abc".to_string(),
+			company: None,
+		},
 		email,
 		register_data: register_data.device,
 		captcha_input,
@@ -113,6 +118,11 @@ async fn test_10_register_without_valid_email()
 	let captcha_input = get_captcha(public_token).await;
 
 	let input = CustomerRegisterData {
+		customer_data: CustomerData {
+			name: "abc".to_string(),
+			first_name: "abc".to_string(),
+			company: None,
+		},
 		email: wrong_email,
 		register_data: register_data.device,
 		captcha_input,
@@ -155,6 +165,11 @@ async fn test_11_register_customer()
 	let captcha_input = get_captcha(public_token).await;
 
 	let input = CustomerRegisterData {
+		customer_data: CustomerData {
+			name: "abc".to_string(),
+			first_name: "abc".to_string(),
+			company: None,
+		},
 		email: email.to_string(),
 		register_data: register_data.device,
 		captcha_input,
