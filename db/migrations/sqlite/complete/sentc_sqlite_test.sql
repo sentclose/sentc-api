@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 2:31pm on September 19, 2022 (UTC)
+-- Exported: 10:53am on October 6, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -287,6 +287,15 @@ CREATE TABLE sentc_user_token
 ----
 
 ----
+-- Table structure for sentc_captcha
+----
+CREATE TABLE 'sentc_captcha' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'solution' TEXT, 'time' TEXT);
+
+----
+-- Data dump for sentc_captcha, a total of 0 rows
+----
+
+----
 -- structure for index sqlite_autoindex_test_1 on table test
 ----
 ;
@@ -435,6 +444,11 @@ CREATE INDEX 'app_id' ON "sentc_user" ("app_id");
 -- structure for index token on table sentc_user_device
 ----
 CREATE INDEX 'token' ON "sentc_user_device" ("token");
+
+----
+-- structure for index sqlite_autoindex_sentc_captcha_1 on table sentc_captcha
+----
+;
 
 ----
 -- structure for trigger group_delete_invites on table sentc_group

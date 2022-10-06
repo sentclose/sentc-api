@@ -3,15 +3,17 @@
 use std::env;
 use std::time::Duration;
 
+#[cfg(feature = "mysql")]
+use mysql_async::prelude::Queryable;
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::group::{DoneGettingGroupKeysOutput, GroupKeyData, GroupOutData};
 use sentc_crypto::sdk_common::file::FileData;
 use sentc_crypto::sdk_common::group::GroupAcceptJoinReqServerOutput;
-use sentc_crypto::util::public::handle_server_response;
+use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::{PrivateKeyFormat, PublicKeyFormat, SymKeyFormat, UserData};
 use sentc_crypto_common::group::{GroupCreateOutput, KeyRotationStartServerOutput};
-use sentc_crypto_common::user::{RegisterData, UserInitServerOutput};
+use sentc_crypto_common::user::{CaptchaCreateOutput, CaptchaInput, RegisterData, UserInitServerOutput};
 use sentc_crypto_common::{CustomerId, GroupId, ServerOutput, UserId};
 use server_api_common::app::{AppFileOptionsInput, AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
 use server_api_common::customer::{CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput};
@@ -26,27 +28,129 @@ pub fn auth_header(jwt: &str) -> String
 	format!("Bearer {}", jwt)
 }
 
+pub struct CaptchaInfoOut
+{
+	solution: String,
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for CaptchaInfoOut
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			solution: server_core::take_or_err!(row, 0, String),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl server_core::db::FromSqliteRow for CaptchaInfoOut
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			solution: server_core::take_or_err!(row, 0),
+		})
+	}
+}
+
+pub async fn get_captcha(token: &str) -> CaptchaInput
+{
+	//make the captcha req first
+	let url = get_url("api/v1/customer/captcha".to_string());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header("x-sentc-app-token", token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: CaptchaCreateOutput = handle_server_response(body.as_str()).unwrap();
+
+	//get the captcha data from the db
+
+	//change the db path of sqlite
+	dotenv::dotenv().ok();
+	env::set_var("DB_PATH", env::var("DB_PATH_TEST").unwrap());
+
+	//language=SQL
+	let sql = "SELECT solution FROM sentc_captcha WHERE id = ?";
+
+	let sol;
+
+	/*
+		Use single conn here because of the pool conn limit from mysql
+	*/
+	#[cfg(feature = "mysql")]
+	{
+		let user = env::var("DB_USER").unwrap();
+		let pw = env::var("DB_PASS").unwrap();
+		let mysql_host = env::var("DB_HOST").unwrap();
+		let db = env::var("DB_NAME").unwrap();
+
+		let mut conn =
+			mysql_async::Conn::new(mysql_async::Opts::try_from(format!("mysql://{}:{}@{}/{}", user, pw, mysql_host, db).as_str()).unwrap())
+				.await
+				.unwrap();
+
+		let solution: Option<CaptchaInfoOut> = conn
+			.exec_first(sql, server_core::set_params!(out.captcha_id.clone()))
+			.await
+			.unwrap();
+
+		sol = solution.unwrap();
+	}
+
+	#[cfg(feature = "sqlite")]
+	{
+		server_core::db::init_db().await;
+
+		let solution: Option<CaptchaInfoOut> = server_core::db::query_first(sql, server_core::set_params!(out.captcha_id.clone()))
+			.await
+			.unwrap();
+
+		sol = solution.unwrap();
+	}
+
+	CaptchaInput {
+		captcha_solution: sol.solution,
+		captcha_id: out.captcha_id,
+	}
+}
+
 /**
 Register customer but without the email check
 */
 pub async fn register_customer(email: String, pw: &str) -> CustomerId
 {
+	let public_token = env::var("SENTC_PUBLIC_TOKEN").unwrap();
+
 	let url = get_url("api/v1/customer/register".to_string());
 
 	let register_data = sentc_crypto::user::register(email.as_str(), pw).unwrap();
 	let register_data = RegisterData::from_string(register_data.as_str()).unwrap();
 
-	let public_token = env::var("SENTC_PUBLIC_TOKEN").unwrap();
+	let captcha_input = get_captcha(public_token.as_str()).await;
 
 	let input = CustomerRegisterData {
 		email,
 		register_data: register_data.device,
+		captcha_input,
 	};
 
 	let client = reqwest::Client::new();
 	let res = client
 		.post(url)
-		.header("x-sentc-app-token", public_token)
+		.header("x-sentc-app-token", public_token.as_str())
 		.body(serde_json::to_string(&input).unwrap())
 		.send()
 		.await
@@ -122,7 +226,7 @@ pub async fn customer_delete(customer_jwt: &str)
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 }
 
 pub async fn create_test_customer(email: &str, pw: &str) -> (CustomerId, CustomerDoneLoginOutput)
@@ -209,7 +313,7 @@ pub async fn delete_app_jwt_key(customer_jwt: &str, app_id: &str, jwt_id: &str)
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 }
 
 pub async fn delete_app(customer_jwt: &str, app_id: &str)
@@ -225,7 +329,7 @@ pub async fn delete_app(customer_jwt: &str, app_id: &str)
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 }
 
 //__________________________________________________________________________________________________
@@ -272,7 +376,7 @@ pub async fn delete_user(app_secret_token: &str, jwt: &str)
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 }
 
 pub async fn login_user(public_token: &str, username: &str, pw: &str) -> UserData
@@ -553,7 +657,7 @@ pub async fn done_key_rotation(
 			.unwrap();
 
 		let body = res.text().await.unwrap();
-		sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+		handle_general_server_response(body.as_str()).unwrap();
 
 		//fetch just the new key
 		let url = get_url("api/v1/group/".to_owned() + group_id + "/key/" + key.new_group_key_id.as_str());

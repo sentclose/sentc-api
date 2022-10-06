@@ -74,6 +74,43 @@ pub struct UserJwtEntity
 }
 
 //__________________________________________________________________________________________________
+//Captcha
+
+pub struct CaptchaEntity
+{
+	pub solution: String,
+	pub time: u128,
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for CaptchaEntity
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			solution: take_or_err!(row, 0, String),
+			time: take_or_err!(row, 1, u128),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl server_core::db::FromSqliteRow for CaptchaEntity
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			solution: take_or_err!(row, 0),
+			time: server_core::take_or_err_u128!(row, 1),
+		})
+	}
+}
+
+//__________________________________________________________________________________________________
 //User exists
 
 #[derive(Serialize, Deserialize)]

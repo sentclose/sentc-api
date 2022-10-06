@@ -2,6 +2,7 @@ use rand::RngCore;
 use rustgram::Request;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{
+	CaptchaCreateOutput,
 	ChangePasswordData,
 	DoneLoginLightServerOutput,
 	DoneLoginServerInput,
@@ -36,15 +37,36 @@ pub mod customer_util;
 #[cfg(feature = "send_mail")]
 mod send_mail;
 
+pub(crate) async fn customer_captcha(req: Request) -> JRes<CaptchaCreateOutput>
+{
+	//in extra controller fn because we need the internal app id
+	let app_data = get_app_data_from_req(&req)?;
+
+	let (id, png) = user::captcha::captcha(app_data.app_data.app_id.clone()).await?;
+
+	echo(CaptchaCreateOutput {
+		captcha_id: id,
+		png,
+	})
+}
+
 pub(crate) async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 {
 	let body = get_raw_body(&mut req).await?;
 
 	let register_data: CustomerRegisterData = bytes_to_json(&body)?;
 
-	let email = register_data.email.as_str();
-
 	let app_data = get_app_data_from_req(&req)?;
+
+	//check the captcha
+	user::captcha::validate_captcha(
+		app_data.app_data.app_id.clone(),
+		register_data.captcha_input.captcha_id,
+		register_data.captcha_input.captcha_solution,
+	)
+	.await?;
+
+	let email = register_data.email.as_str();
 
 	let email_check = email::check_email(email);
 
@@ -271,6 +293,16 @@ pub(crate) async fn prepare_reset_password(mut req: Request) -> JRes<ServerSucce
 
 	let body = get_raw_body(&mut req).await?;
 	let data: CustomerResetPasswordInput = bytes_to_json(&body)?;
+
+	let app_data = get_app_data_from_req(&req)?;
+
+	//check the captcha
+	user::captcha::validate_captcha(
+		app_data.app_data.app_id.clone(),
+		data.captcha_input.captcha_id,
+		data.captcha_input.captcha_solution,
+	)
+	.await?;
 
 	let email = data.email.to_string();
 

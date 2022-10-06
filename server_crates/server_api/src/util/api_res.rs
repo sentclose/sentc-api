@@ -87,6 +87,11 @@ pub enum ApiErrorCodes
 	FileNotFound,
 	FileUploadAllowed,
 	FileAccess,
+
+	CaptchaCreate,
+	CaptchaNotFound,
+	CaptchaTooOld,
+	CaptchaWrong,
 }
 
 impl From<CoreErrorCodes> for ApiErrorCodes
@@ -201,6 +206,11 @@ impl ApiErrorCodes
 			ApiErrorCodes::FileNotFound => 512,
 			ApiErrorCodes::FileUploadAllowed => 520,
 			ApiErrorCodes::FileAccess => 521,
+
+			ApiErrorCodes::CaptchaCreate => 600,
+			ApiErrorCodes::CaptchaNotFound => 601,
+			ApiErrorCodes::CaptchaTooOld => 602,
+			ApiErrorCodes::CaptchaWrong => 603,
 		}
 	}
 }
