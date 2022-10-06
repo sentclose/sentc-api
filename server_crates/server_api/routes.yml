@@ -15,6 +15,7 @@ routes:
               - post: {p: "/register", s: crate::customer::register}
               - post: {p: "/prepare_login", s: crate::customer::prepare_login}
               - post: {p: "/done_login", s: crate::customer::done_login}
+              - get: {p: "/captcha", s: crate::customer::customer_captcha}
               - put: {p: "/password_reset", s: crate::customer::prepare_reset_password}
               - put: {p: "/password_reset_validation", s: crate::customer::done_reset_password}
               - put:

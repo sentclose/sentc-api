@@ -22,6 +22,10 @@ pub(crate) fn routes(router: &mut Router)
 		"/api/v1/customer/done_login",
 		r(crate::customer::done_login).add(app_token::app_token_base_app_transform),
 	);
+	router.get(
+		"/api/v1/customer/captcha",
+		r(crate::customer::customer_captcha).add(app_token::app_token_base_app_transform),
+	);
 	router.put(
 		"/api/v1/customer/password_reset",
 		r(crate::customer::prepare_reset_password).add(app_token::app_token_base_app_transform),
