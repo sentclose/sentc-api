@@ -1,6 +1,7 @@
 use std::env;
 
 use reqwest::header::AUTHORIZATION;
+use sentc_crypto::util::public::handle_server_response;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
 	DoneLoginServerInput,
@@ -11,7 +12,7 @@ use sentc_crypto_common::user::{
 };
 use sentc_crypto_common::ServerOutput;
 use server_api::util::api_res::ApiErrorCodes;
-use server_api_common::customer::{CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput, CustomerUpdateInput};
+use server_api_common::customer::{CustomerData, CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput, CustomerUpdateInput};
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{auth_header, get_captcha, get_url, login_customer};
@@ -49,6 +50,11 @@ async fn test_0_register_customer_with_email()
 	let captcha_input = get_captcha(public_token.as_str()).await;
 
 	let input = CustomerRegisterData {
+		customer_data: CustomerData {
+			name: "abc".to_string(),
+			first_name: "abc".to_string(),
+			company: None,
+		},
 		email,
 		register_data: register_data.device,
 		captcha_input,
@@ -113,6 +119,11 @@ async fn test_10_register_without_valid_email()
 	let captcha_input = get_captcha(public_token).await;
 
 	let input = CustomerRegisterData {
+		customer_data: CustomerData {
+			name: "abc".to_string(),
+			first_name: "abc".to_string(),
+			company: None,
+		},
 		email: wrong_email,
 		register_data: register_data.device,
 		captcha_input,
@@ -155,6 +166,11 @@ async fn test_11_register_customer()
 	let captcha_input = get_captcha(public_token).await;
 
 	let input = CustomerRegisterData {
+		customer_data: CustomerData {
+			name: "abc".to_string(),
+			first_name: "abc".to_string(),
+			company: None,
+		},
 		email: email.to_string(),
 		register_data: register_data.device,
 		captcha_input,
@@ -233,6 +249,77 @@ async fn test_12_login_customer()
 	let login_data = out.result.unwrap();
 
 	customer.customer_data = Some(login_data);
+}
+
+#[tokio::test]
+async fn test_13_aa_update_data()
+{
+	let mut customer = CUSTOMER_TEST_STATE.get().unwrap().write().await;
+	let public_token = customer.public_token.as_str();
+	let jwt = &customer.customer_data.as_ref().unwrap().user_keys.jwt;
+	let email = &customer.customer_email;
+	let pw = &customer.customer_pw;
+
+	let input = CustomerData {
+		name: "hello".to_string(),
+		first_name: "my friend".to_string(),
+		company: Some("abc".to_string()),
+	};
+
+	let url = get_url("api/v1/customer/data".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header("x-sentc-app-token", public_token)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.body(serde_json::to_string(&input).unwrap())
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+
+	//get the new values from log in
+
+	let url = get_url("api/v1/customer/prepare_login".to_owned());
+
+	let prep_server_input = sentc_crypto::user::prepare_login_start(email).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(prep_server_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let (auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
+
+	// //done login
+	let url = get_url("api/v1/customer/done_login".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(auth_key)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: CustomerDoneLoginOutput = handle_server_response(body.as_str()).unwrap();
+
+	assert_eq!(out.email_data.name, "hello".to_string());
+
+	customer.customer_data = Some(out);
 }
 
 #[tokio::test]

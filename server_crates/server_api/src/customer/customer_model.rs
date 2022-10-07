@@ -1,5 +1,5 @@
 use sentc_crypto_common::CustomerId;
-use server_api_common::customer::CustomerUpdateInput;
+use server_api_common::customer::{CustomerData, CustomerUpdateInput};
 use server_core::db::{exec, query_first};
 use server_core::{get_time, set_params};
 
@@ -36,14 +36,14 @@ pub(super) async fn check_customer_valid(customer_id: CustomerId) -> AppRes<Cust
 	Ok(valid)
 }
 
-pub(super) async fn register_customer(email: String, customer_id: CustomerId, validate_token: String) -> AppRes<()>
+pub(super) async fn register_customer(email: String, data: CustomerData, customer_id: CustomerId, validate_token: String) -> AppRes<()>
 {
 	//customer id comes from the user register before
 
 	let time = get_time()?;
 
 	//language=SQL
-	let sql = "INSERT INTO sentc_customer (id, email, email_validate_sent, email_validate, email_status, email_token) VALUES (?,?,?,?,?,?)";
+	let sql = "INSERT INTO sentc_customer (id, email, name, first_name, company, email_validate_sent, email_validate, email_status, email_token) VALUES (?,?,?,?,?,?,?,?,?)";
 
 	#[cfg(feature = "send_mail")]
 	let email_status = 0;
@@ -61,6 +61,9 @@ pub(super) async fn register_customer(email: String, customer_id: CustomerId, va
 		set_params!(
 			customer_id,
 			email,
+			data.name,
+			data.first_name,
+			data.company,
 			time.to_string(),
 			email_validate,
 			email_status,
@@ -147,10 +150,10 @@ WHERE
 	}
 }
 
-pub(super) async fn get_customer_email_data(customer_id: CustomerId) -> AppRes<CustomerDataEntity>
+pub(super) async fn get_customer_data(customer_id: CustomerId) -> AppRes<CustomerDataEntity>
 {
 	//language=SQL
-	let sql = "SELECT email,email_validate, email_validate_sent, email_status FROM sentc_customer WHERE id= ?";
+	let sql = "SELECT email,email_validate, email_validate_sent, email_status, company, first_name, name FROM sentc_customer WHERE id= ?";
 
 	let customer: Option<CustomerDataEntity> = query_first(sql, set_params!(customer_id)).await?;
 
@@ -254,3 +257,13 @@ pub(super) async fn reset_password_token_save(customer_id: CustomerId, validate_
 }
 
 //__________________________________________________________________________________________________
+
+pub(super) async fn update_data(id: CustomerId, data: CustomerData) -> AppRes<()>
+{
+	//language=SQL
+	let sql = "UPDATE sentc_customer SET name = ?, first_name = ?, company = ? WHERE id = ?";
+
+	exec(sql, set_params!(data.name, data.first_name, data.company, id)).await?;
+
+	Ok(())
+}

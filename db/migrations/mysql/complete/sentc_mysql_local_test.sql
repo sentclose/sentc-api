@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 19. Sep 2022 um 14:29
+-- Erstellungszeit: 06. Okt 2022 um 21:30
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -160,14 +160,13 @@ INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_u
 --
 
 CREATE TABLE `sentc_captcha` (
- `id` varchar(36) NOT NULL,
- `app_id` varchar(36) NOT NULL,
- `solution` text NOT NULL,
- `time` bigint(20) NOT NULL
+  `id` varchar(36) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
+  `solution` text NOT NULL,
+  `time` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
-
 
 --
 -- Tabellenstruktur für Tabelle `sentc_customer`
@@ -176,6 +175,9 @@ CREATE TABLE `sentc_captcha` (
 CREATE TABLE `sentc_customer` (
   `id` varchar(36) NOT NULL COMMENT 'the user_id from user table because customer and user are related',
   `email` text NOT NULL,
+  `name` text NOT NULL,
+  `first_name` text NOT NULL,
+  `company` text DEFAULT NULL,
   `email_validate_sent` bigint(20) NOT NULL,
   `email_validate` tinyint(1) NOT NULL DEFAULT 0,
   `email_status` int(11) NOT NULL DEFAULT 1 COMMENT 'the status of the send email: 1 = normal, other value = error code',
@@ -551,7 +553,7 @@ ALTER TABLE `sentc_app_options`
 -- Indizes für die Tabelle `sentc_captcha`
 --
 ALTER TABLE `sentc_captcha`
-	ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indizes für die Tabelle `sentc_customer`

@@ -5,8 +5,18 @@ use serde::{Deserialize, Serialize};
 use server_core::take_or_err;
 
 #[derive(Serialize, Deserialize)]
+pub struct CustomerData
+{
+	pub name: String,
+	pub first_name: String,
+	pub company: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct CustomerRegisterData
 {
+	pub customer_data: CustomerData,
+
 	pub email: String,
 	pub register_data: UserDeviceRegisterInput,
 	pub captcha_input: CaptchaInput,
@@ -28,16 +38,19 @@ pub struct CustomerDoneRegistrationInput
 pub struct CustomerDoneLoginOutput
 {
 	pub user_keys: DoneLoginLightOutput,
-	pub email_data: CustomerEmailData,
+	pub email_data: CustomerDataOutput,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct CustomerEmailData
+pub struct CustomerDataOutput
 {
 	pub validate_email: bool,
 	pub email: String,
 	pub email_send: u128,
 	pub email_status: i32,
+	pub name: String,
+	pub first_name: String,
+	pub company: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]

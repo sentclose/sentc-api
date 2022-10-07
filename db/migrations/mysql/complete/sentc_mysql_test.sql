@@ -172,6 +172,9 @@ CREATE TABLE `sentc_captcha` (
 CREATE TABLE `sentc_customer` (
   `id` varchar(36) NOT NULL COMMENT 'the user_id from user table because customer and user are related',
   `email` text NOT NULL,
+  `name` text NOT NULL,
+  `first_name` text NOT NULL,
+  `company` text DEFAULT NULL,
   `email_validate_sent` bigint(20) NOT NULL,
   `email_validate` tinyint(1) NOT NULL DEFAULT 0,
   `email_status` int(11) NOT NULL DEFAULT 1 COMMENT 'the status of the send email: 1 = normal, other value = error code',

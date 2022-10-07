@@ -12,10 +12,10 @@ use sentc_crypto_common::user::{
 	UserUpdateServerInput,
 };
 use server_api_common::customer::{
+	CustomerData,
 	CustomerDoneLoginOutput,
 	CustomerDonePasswordResetInput,
 	CustomerDoneRegistrationInput,
-	CustomerEmailData,
 	CustomerRegisterData,
 	CustomerRegisterOutput,
 	CustomerResetPasswordInput,
@@ -86,6 +86,7 @@ pub(crate) async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 
 	customer_model::register_customer(
 		register_data.email.to_string(),
+		register_data.customer_data,
 		customer_id.to_string(),
 		validate_token.to_string(),
 	)
@@ -170,23 +171,11 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<CustomerDoneLoginOutput
 
 	let user_keys = user::user_service::done_login_light(app_data, done_login, "customer").await?;
 
-	let customer_data = customer_model::get_customer_email_data(user_keys.user_id.to_string()).await?;
-
-	let validate_email = match customer_data.email_valid {
-		0 => false,
-		1 => true,
-		_ => false,
-	};
+	let customer_data = customer_model::get_customer_data(user_keys.user_id.to_string()).await?;
 
 	let out = CustomerDoneLoginOutput {
 		user_keys,
-
-		email_data: CustomerEmailData {
-			validate_email,
-			email: customer_data.email,
-			email_send: customer_data.email_send,
-			email_status: customer_data.email_status,
-		},
+		email_data: customer_data.into(),
 	};
 
 	echo(out)
@@ -354,7 +343,17 @@ pub(crate) async fn done_reset_password(mut req: Request) -> JRes<ServerSuccessO
 	echo_success()
 }
 
-//TODO save real data, e.g. real name or company, address, etc, update this data separately from email
+pub(crate) async fn update_data(mut req: Request) -> JRes<ServerSuccessOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+	let input: CustomerData = bytes_to_json(&body)?;
+
+	let user = get_jwt_data_from_param(&req)?;
+
+	customer_model::update_data(user.id.clone(), input).await?;
+
+	echo_success()
+}
 
 //__________________________________________________________________________________________________
 

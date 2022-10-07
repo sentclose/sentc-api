@@ -5,6 +5,7 @@ use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::ServerOutput;
 use serde::Serialize;
 use server_core::error::{CoreError, CoreErrorCodes};
+use server_core::get_time;
 use server_core::input_helper::json_to_string;
 
 #[derive(Debug)]
@@ -260,10 +261,10 @@ impl IntoResponse<Response> for HttpErr
 		};
 
 		//msg for the developer only
-		//this could later be logged
+		//for std out to get logged with 3rd party service.
 		if self.debug_msg.is_some() {
-			//TODO handle debug msg
-			println!("Http Error: {:?}", self.debug_msg);
+			let time = get_time().unwrap_or(0);
+			println!("Http Error at time: {} Error: {:?}", time, self.debug_msg);
 		}
 
 		let body = ServerOutput::<String> {
