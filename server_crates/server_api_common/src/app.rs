@@ -74,7 +74,7 @@ impl Default for AppOptions
 	fn default() -> Self
 	{
 		Self {
-			group_create: 2,
+			group_create: 1,
 			group_get: 1,
 			group_user_keys: 1,
 			group_user_update_check: 1,
@@ -87,7 +87,7 @@ impl Default for AppOptions
 			group_reject_join_req: 1,
 			group_key_rotation: 1,
 			group_user_delete: 1,
-			group_delete: 2,
+			group_delete: 1,
 			group_leave: 1,
 			group_change_rank: 1,
 			user_exists: 1,
