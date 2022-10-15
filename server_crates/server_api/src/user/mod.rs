@@ -37,14 +37,7 @@ use crate::customer_app::app_util::{check_endpoint_with_app_options, get_app_dat
 use crate::group::group_entities::{GroupKeyUpdate, GroupUserKeys};
 use crate::group::{group_key_rotation_service, group_user_service};
 use crate::user::jwt::get_jwt_data_from_param;
-use crate::user::user_entities::{
-	DoneLoginServerOutput,
-	UserDeviceList,
-	UserInitEntity,
-	UserPublicData,
-	UserPublicKeyDataEntity,
-	UserVerifyKeyDataEntity,
-};
+use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
 use crate::user::user_service::UserAction;
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 
@@ -217,19 +210,6 @@ pub(crate) async fn get_user_key(req: Request) -> JRes<GroupUserKeys>
 
 //__________________________________________________________________________________________________
 
-pub(crate) async fn get(req: Request) -> JRes<UserPublicData>
-{
-	let app_data = get_app_data_from_req(&req)?;
-
-	check_endpoint_with_app_options(app_data, Endpoint::UserPublicData)?;
-
-	let user_id = get_name_param_from_req(&req, "user_id")?;
-
-	let data = user_model::get_public_data(app_data.app_data.app_id.clone(), user_id.to_string()).await?;
-
-	echo(data)
-}
-
 pub(crate) async fn get_public_key_by_id(req: Request) -> JRes<UserPublicKeyDataEntity>
 {
 	let app_data = get_app_data_from_req(&req)?;
@@ -279,19 +259,6 @@ pub(crate) async fn get_verify_key_by_id(req: Request) -> JRes<UserVerifyKeyData
 	.await?;
 
 	echo(out)
-}
-
-pub(crate) async fn get_verify_key_data(req: Request) -> JRes<UserVerifyKeyDataEntity>
-{
-	let app_data = get_app_data_from_req(&req)?;
-
-	check_endpoint_with_app_options(app_data, Endpoint::UserPublicData)?;
-
-	let user_id = get_name_param_from_req(&req, "user_id")?;
-
-	let data = user_model::get_verify_key_data(app_data.app_data.app_id.clone(), user_id.to_string()).await?;
-
-	echo(data)
 }
 
 //__________________________________________________________________________________________________

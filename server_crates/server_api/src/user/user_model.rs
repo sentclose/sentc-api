@@ -13,7 +13,6 @@ use crate::user::user_entities::{
 	UserExistsEntity,
 	UserLoginDataEntity,
 	UserLoginLightEntity,
-	UserPublicData,
 	UserPublicKeyDataEntity,
 	UserRefreshTokenCheck,
 	UserResetPwCheck,
@@ -204,45 +203,6 @@ WHERE ut.app_id = ? AND
 
 //__________________________________________________________________________________________________
 
-/**
-Get the public and verify key data from this user.
-
-The public data are from the user group.
-*/
-pub(super) async fn get_public_data(app_id: AppId, user_id: UserId) -> AppRes<UserPublicData>
-{
-	//verify and sign keys are always set for user group
-
-	//join on group and not group user because we only need the group keys here and not the user group keys
-
-	//language=SQL
-	let sql = r"
-SELECT gk.id, public_key, private_key_pair_alg, verify_key, keypair_sign_alg
-FROM 
-    sentc_user u, 
-    sentc_group_keys gk
-WHERE 
-    user_group_id = group_id AND 
-    u.app_id = ? AND 
-    u.id = ? 
-ORDER BY gk.time DESC 
-LIMIT 1";
-
-	let data: Option<UserPublicData> = query_first(sql, set_params!(app_id, user_id)).await?;
-
-	match data {
-		Some(d) => Ok(d),
-		None => {
-			Err(HttpErr::new(
-				400,
-				ApiErrorCodes::UserNotFound,
-				"Public data from this user not found".to_string(),
-				None,
-			))
-		},
-	}
-}
-
 pub(super) async fn get_public_key_by_id(app_id: AppId, user_id: UserId, public_key_id: EncryptionKeyPairId) -> AppRes<UserPublicKeyDataEntity>
 {
 	//language=SQL
@@ -320,39 +280,6 @@ WHERE
     gk.id = ?";
 
 	let data: Option<UserVerifyKeyDataEntity> = query_first(sql, set_params!(app_id, user_id, verify_key_id)).await?;
-
-	match data {
-		Some(d) => Ok(d),
-		None => {
-			Err(HttpErr::new(
-				400,
-				ApiErrorCodes::UserNotFound,
-				"Verify key from this user not found".to_string(),
-				None,
-			))
-		},
-	}
-}
-
-/**
-Get just the verify key data for this user
- */
-pub(super) async fn get_verify_key_data(app_id: AppId, user_id: UserId) -> AppRes<UserVerifyKeyDataEntity>
-{
-	//language=SQL
-	let sql = r"
-SELECT gk.id,verify_key, keypair_sign_alg
-FROM 
-    sentc_user u, 
-    sentc_group_keys gk
-WHERE 
-    user_group_id = group_id AND 
-    u.app_id = ? AND 
-    u.id = ? 
-ORDER BY gk.time DESC 
-LIMIT 1";
-
-	let data: Option<UserVerifyKeyDataEntity> = query_first(sql, set_params!(app_id, user_id)).await?;
 
 	match data {
 		Some(d) => Ok(d),
