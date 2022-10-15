@@ -15,7 +15,6 @@ use sentc_crypto_common::user::{
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
 	UserInitServerOutput,
-	UserPublicData,
 	UserPublicKeyDataServerOutput,
 	UserUpdateServerInput,
 	UserVerifyKeyDataServerOutput,
@@ -694,39 +693,6 @@ async fn test_21_get_user_public_data()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 
-	let url = get_url("api/v1/user/".to_owned() + user.user_id.as_str());
-	let client = reqwest::Client::new();
-	let res = client
-		.get(url)
-		.header("x-sentc-app-token", &user.app_data.secret_token)
-		.send()
-		.await
-		.unwrap();
-
-	let body = res.text().await.unwrap();
-
-	let out = ServerOutput::<UserPublicData>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-
-	let out = out.result.unwrap();
-
-	assert_eq!(
-		out.public_key_id,
-		user.user_data.as_ref().unwrap().user_keys[0]
-			.public_key
-			.key_id
-			.to_string()
-	);
-
-	assert_eq!(
-		out.verify_key_id,
-		user.user_data.as_ref().unwrap().user_keys[0]
-			.verify_key
-			.key_id
-			.to_string()
-	);
-
 	//get user public key
 	let url = get_url("api/v1/user/".to_owned() + user.user_id.as_str() + "/public_key");
 	let client = reqwest::Client::new();
@@ -753,8 +719,8 @@ async fn test_21_get_user_public_data()
 			.to_string()
 	);
 
-	//get user verify key
-	let url = get_url("api/v1/user/".to_owned() + user.user_id.as_str() + "/verify_key");
+	//get user verify key by id
+	let url = get_url("api/v1/user/".to_owned() + user.user_id.as_str() + "/verify_key/" + out.public_key_id.as_str());
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)

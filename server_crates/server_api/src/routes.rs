@@ -109,20 +109,12 @@ pub(crate) fn routes(router: &mut Router)
 		r(crate::customer_app::delete_jwt_keys).add(jwt::jwt_app_check_transform),
 	);
 	router.get(
-		"/api/v1/user/:user_id",
-		r(crate::user::get).add(app_token::app_token_transform),
-	);
-	router.get(
 		"/api/v1/user/:user_id/public_key",
 		r(crate::user::get_public_key_data).add(app_token::app_token_transform),
 	);
 	router.get(
 		"/api/v1/user/:user_id/public_key/:key_id",
 		r(crate::user::get_public_key_by_id).add(app_token::app_token_transform),
-	);
-	router.get(
-		"/api/v1/user/:user_id/verify_key",
-		r(crate::user::get_verify_key_data).add(app_token::app_token_transform),
 	);
 	router.get(
 		"/api/v1/user/:user_id/verify_key/:key_id",
