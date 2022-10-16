@@ -109,6 +109,7 @@ async fn create_file()
 	let file_key = &state.keys[0].group_key;
 
 	let (input, _) = sentc_crypto::file::prepare_register_file(
+		file_key.key_id.clone(),
 		file_key,
 		None,
 		sentc_crypto::sdk_common::file::BelongsToType::None,
