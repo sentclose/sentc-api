@@ -1950,7 +1950,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#0edaa316fbc4dd8653e3926db307916584e5f20a"
+source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#e1bd8296a03698a213002493083bf4e6c3ab4849"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -1971,7 +1971,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-common"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#0edaa316fbc4dd8653e3926db307916584e5f20a"
+source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#e1bd8296a03698a213002493083bf4e6c3ab4849"
 dependencies = [
  "serde",
  "serde_json",
@@ -1980,7 +1980,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-core"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#0edaa316fbc4dd8653e3926db307916584e5f20a"
+source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#e1bd8296a03698a213002493083bf4e6c3ab4849"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -2210,9 +2210,9 @@ dependencies = [
 
 [[package]]
 name = "signature"
-version = "1.6.3"
+version = "1.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "deb766570a2825fa972bceff0d195727876a9cdf2460ab2e52d455dc2de47fd9"
+checksum = "74233d3b3b2f6d4b006dc19dee745e73e2a6bfb6f93607cd3b02bd5b00797d7c"
 
 [[package]]
 name = "slab"
