@@ -54,6 +54,7 @@ impl server_core::db::FromSqliteRow for FileSessionCheck
 pub struct FileMetaData
 {
 	pub file_id: FileId,
+	pub master_key_id: String,
 	pub owner: UserId,
 	pub belongs_to: Option<String>,
 	pub belongs_to_type: BelongsToType,
@@ -75,6 +76,7 @@ impl Into<sentc_crypto_common::file::FileData> for FileMetaData
 
 		sentc_crypto_common::file::FileData {
 			file_id: self.file_id,
+			master_key_id: self.master_key_id,
 			owner: self.owner,
 			belongs_to: self.belongs_to,
 			belongs_to_type: self.belongs_to_type,
@@ -109,6 +111,7 @@ impl mysql_async::prelude::FromRow for FileMetaData
 			time: take_or_err!(row, 5, u128),
 			part_list: Vec::new(),
 			encrypted_file_name: server_core::take_or_err_opt!(row, 6, String),
+			master_key_id: take_or_err!(row, 7, String),
 		})
 	}
 }
@@ -137,6 +140,7 @@ impl server_core::db::FromSqliteRow for FileMetaData
 			time: server_core::take_or_err_u128!(row, 5),
 			encrypted_file_name: take_or_err!(row, 6),
 			part_list: Vec::new(),
+			master_key_id: take_or_err!(row, 7),
 		})
 	}
 }

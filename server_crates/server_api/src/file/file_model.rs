@@ -16,6 +16,7 @@ static FILE_STATUS_TO_DELETE: i32 = 0;
 
 pub(super) async fn register_file(
 	key_id: SymKeyId,
+	master_key_id: String,
 	file_name: Option<String>,
 	belongs_to_id: Option<String>,
 	belongs_to_type: i32,
@@ -29,7 +30,7 @@ pub(super) async fn register_file(
 	let time = get_time()?;
 
 	//language=SQL
-	let sql = "INSERT INTO sentc_file (id, owner, belongs_to, belongs_to_type, app_id, key_id, time, status, delete_at, encrypted_file_name) VALUES (?,?,?,?,?,?,?,?,?,?)";
+	let sql = "INSERT INTO sentc_file (id, owner, belongs_to, belongs_to_type, app_id, key_id, time, status, delete_at, encrypted_file_name, master_key_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
 	let params = set_params!(
 		file_id.to_string(),
 		user_id,
@@ -40,7 +41,8 @@ pub(super) async fn register_file(
 		time.to_string(),
 		FILE_STATUS_AVAILABLE.to_string(),
 		0.to_string(),
-		file_name
+		file_name,
+		master_key_id
 	);
 
 	//language=SQL
@@ -181,7 +183,8 @@ SELECT
     belongs_to_type, 
     key_id, 
     time, 
-    encrypted_file_name 
+    encrypted_file_name,
+    master_key_id
 FROM sentc_file 
 WHERE 
     app_id = ? AND 
