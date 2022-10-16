@@ -193,6 +193,7 @@ async fn test_10_upload_small_file_for_non_target()
 
 	//normally create a new sym key for a file but here it is ok
 	let (input, _) = sentc_crypto::file::prepare_register_file(
+		file_key.key_id.clone(),
 		file_key,
 		None,
 		sentc_crypto::sdk_common::file::BelongsToType::None,
@@ -423,6 +424,7 @@ async fn test_12_upload_small_file_for_group()
 
 	//normally create a new sym key for a file but here it is ok
 	let (input, _) = sentc_crypto::file::prepare_register_file(
+		file_key.key_id.clone(),
 		file_key,
 		Some(state.group_data.id.to_string()),
 		sentc_crypto::sdk_common::file::BelongsToType::Group,
@@ -559,6 +561,7 @@ async fn test_15_not_upload_file_in_a_group_without_access()
 
 	//normally create a new sym key for a file but here it is ok
 	let (input, _) = sentc_crypto::file::prepare_register_file(
+		file_key.key_id.clone(),
 		file_key,
 		Some(state.group_data.id.to_string()),
 		sentc_crypto::sdk_common::file::BelongsToType::Group,
@@ -654,6 +657,7 @@ async fn test_17_file_access_from_parent_to_child_group()
 
 	//normally create a new sym key for a file but here it is ok
 	let (input, _) = sentc_crypto::file::prepare_register_file(
+		file_key.key_id.clone(),
 		file_key,
 		Some(state.child_group_data.id.to_string()),
 		sentc_crypto::sdk_common::file::BelongsToType::Group,
@@ -1105,6 +1109,7 @@ async fn test_30_chunked_filed()
 
 	//normally create a new sym key for a file but here it is ok
 	let (input, _) = sentc_crypto::file::prepare_register_file(
+		file_key.key_id.clone(),
 		file_key,
 		None,
 		sentc_crypto::sdk_common::file::BelongsToType::None,
@@ -1327,6 +1332,7 @@ async fn test_0_large_file()
 
 	let file_key = &group_keys[0].group_key;
 	let (input, _) = sentc_crypto::file::prepare_register_file(
+		file_key.key_id.clone(),
 		file_key,
 		None,
 		sentc_crypto::sdk_common::file::BelongsToType::None,

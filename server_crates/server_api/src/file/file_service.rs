@@ -51,6 +51,7 @@ pub async fn register_file(input: FileRegisterInput, app_id: AppId, user_id: Use
 
 	let (file_id, session_id) = file_model::register_file(
 		input.key_id,
+		input.master_key_id,
 		input.encrypted_file_name,
 		belongs_to,
 		belongs_to_type,
