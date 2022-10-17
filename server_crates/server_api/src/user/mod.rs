@@ -296,7 +296,7 @@ pub(crate) async fn refresh_jwt(mut req: Request) -> JRes<DoneLoginLightServerOu
 	//to get the old token in the client when init the user client -> save the old jwt in the client like the keys
 	let user = get_jwt_data_from_param(&req)?;
 
-	let out = user_service::refresh_jwt(app_data, user.device_id.clone(), input, "user").await?;
+	let out = user_service::refresh_jwt(app_data, user.device_id.clone(), input).await?;
 
 	user_model::save_user_action(
 		app_data.app_data.app_id.clone(),

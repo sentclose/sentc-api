@@ -206,7 +206,7 @@ pub async fn prepare_login(app_data: &AppData, user_identifier: PrepareLoginServ
 /**
 Only the jwt and user id, no keys
 */
-pub async fn done_login_light(app_data: &AppData, done_login: DoneLoginServerInput, aud: &str) -> AppRes<DoneLoginLightOutput>
+pub async fn done_login_light(app_data: &AppData, done_login: DoneLoginServerInput) -> AppRes<DoneLoginLightOutput>
 {
 	auth_user(
 		app_data.app_data.app_id.to_string(),
@@ -237,10 +237,7 @@ pub async fn done_login_light(app_data: &AppData, done_login: DoneLoginServerInp
 		id.user_id.to_string(),
 		id.group_id,
 		id.device_id.to_string(),
-		done_login.device_identifier,
-		app_data.app_data.app_id.as_str(),
 		&app_data.jwt_data[0], //use always the latest created jwt data
-		aud,
 		true,
 	)
 	.await?;
@@ -297,10 +294,7 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 		device_keys.user_id.to_string(),
 		device_keys.user_group_id.to_string(),
 		device_keys.device_id.to_string(),
-		done_login.device_identifier,
-		app_data.app_data.app_id.as_str(),
 		&app_data.jwt_data[0], //use always the latest created jwt data
-		"user",
 		true,
 	)
 	.await?;
@@ -367,7 +361,7 @@ pub fn get_user_key(user: &UserJwtEntity, app_id: AppId, key_id: SymKeyId) -> im
 pub async fn init_user(app_data: &AppData, device_id: DeviceId, input: JwtRefreshInput) -> AppRes<UserInitEntity>
 {
 	//first refresh the user
-	let jwt = refresh_jwt(app_data, device_id.to_string(), input, "user").await?;
+	let jwt = refresh_jwt(app_data, device_id.to_string(), input).await?;
 
 	//2nd get all group invites
 	let invites = group_user_service::get_invite_req(
@@ -384,7 +378,7 @@ pub async fn init_user(app_data: &AppData, device_id: DeviceId, input: JwtRefres
 	})
 }
 
-pub async fn refresh_jwt(app_data: &AppData, device_id: DeviceId, input: JwtRefreshInput, aud: &str) -> AppRes<DoneLoginLightServerOutput>
+pub async fn refresh_jwt(app_data: &AppData, device_id: DeviceId, input: JwtRefreshInput) -> AppRes<DoneLoginLightServerOutput>
 {
 	//get the token from the db
 	let check = user_model::check_refresh_token(
@@ -410,10 +404,7 @@ pub async fn refresh_jwt(app_data: &AppData, device_id: DeviceId, input: JwtRefr
 		device_identifier.user_id.to_string(),
 		device_identifier.group_id,
 		device_id.to_string(),
-		device_identifier.device_identifier,
-		app_data.app_data.app_id.as_str(),
 		&app_data.jwt_data[0], //use always the latest created jwt data
-		aud,
 		false,
 	)
 	.await?;
@@ -534,10 +525,21 @@ pub async fn change_password(user: &UserJwtEntity, app_id: AppId, input: ChangeP
 	}
 
 	let user_id = &user.id;
-	let user_identifier = &user.identifier;
 	let device_id = &user.device_id;
 
-	let old_hashed_auth_key = auth_user(app_id, user_identifier, input.old_auth_key.to_string()).await?;
+	let device_identifier = match user_model::get_device_identifier(app_id.clone(), user_id.clone(), device_id.clone()).await? {
+		Some(i) => i.0,
+		None => {
+			return Err(HttpErr::new(
+				401,
+				ApiErrorCodes::WrongJwtAction,
+				"No device found for this jwt".to_string(),
+				None,
+			))
+		},
+	};
+
+	let old_hashed_auth_key = auth_user(app_id, device_identifier.as_str(), input.old_auth_key.to_string()).await?;
 
 	user_model::change_password(user_id.to_string(), device_id.to_string(), input, old_hashed_auth_key).await?;
 
