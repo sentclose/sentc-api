@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use crate::user::user_entities::{
 	CaptchaEntity,
+	DeviceIdentifier,
 	DoneLoginServerKeysOutputEntity,
 	JwtSignKey,
 	JwtVerifyKey,
@@ -638,6 +639,16 @@ pub(super) async fn prepare_user_key_rotation(app_id: AppId, user_id: UserId) ->
 	let check: Option<UserResetPwCheck> = query_first(sql, set_params!(app_id, user_id)).await?;
 
 	Ok(check)
+}
+
+pub(super) async fn get_device_identifier(app_id: AppId, user_id: UserId, device_id: DeviceId) -> AppRes<Option<DeviceIdentifier>>
+{
+	//language=SQL
+	let sql = "SELECT device_identifier FROM sentc_user_device WHERE id = ? AND user_id = ? AND app_id = ?";
+
+	let device: Option<DeviceIdentifier> = query_first(sql, set_params!(device_id, user_id, app_id)).await?;
+
+	Ok(device)
 }
 
 //__________________________________________________________________________________________________
