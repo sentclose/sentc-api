@@ -23,25 +23,28 @@ routes:
                   s: crate::customer::refresh_jwt
                   mw:
                     - jwt::jwt_expire_transform
+              - group:
+                  p: ""
+                  mw:
+                    - jwt::jwt_transform
+                  gr:
+                    # customer must be logged in, in the dashboard when sending this req
+                    - post: { p: "/register_validation", s: crate::customer::done_register }
+                    - patch: { p: "/email_resend", s: crate::customer::resend_email }
+                    - put: { p: "", s: crate::customer::update }
+                    - put: { p: "/data", s: crate::customer::update_data }
+                    - put: { p: "/password", s: crate::customer::change_password }
+                    - delete: { p: "", s: crate::customer::delete }
         #_______________________________________________________________________________________________________________
-        # customer routes with the jwt check, but no app check because the jwt got already the app reference,
+        # customer routes with the jwt check,
         # and we are only using public token for dashboard routes
+        # App routes
         - group:
             p: "/customer"
             mw:
-              - jwt::jwt_app_check_transform
+              - jwt::jwt_transform
             gr:
-              # customer must be logged in, in the dashboard when sending this req
-              - post: {p: "/register_validation", s: crate::customer::done_register}
-              - patch: {p: "/email_resend", s: crate::customer::resend_email}
-              - put: {p: "", s: crate::customer::update}
-              - put: {p: "/data", s: crate::customer::update_data}
-              - put: {p: "/password", s: crate::customer::change_password}
-              - delete: {p: "", s: crate::customer::delete}
-
-              - get: {p: "/apps/:last_fetched_time/:last_app_id", s: crate::customer_app::get_all_apps}
-              # ________________________________________________________________________________________________________
-              # App routes
+              - get: { p: "/apps/:last_fetched_time/:last_app_id", s: crate::customer_app::get_all_apps }
               - post: { p: "/app", s: crate::customer_app::create_app }
               - group:
                   p: "/app/:app_id"
