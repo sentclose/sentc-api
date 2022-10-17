@@ -66,10 +66,6 @@ pub struct UserJwtEntity
 	pub id: UserId,
 	pub device_id: DeviceId,
 	pub group_id: GroupId,
-	pub identifier: String,
-	//aud if it is an app user or an customer
-	pub aud: String,
-	pub sub: String, //the app id
 	pub fresh: bool,
 }
 
@@ -135,6 +131,32 @@ impl server_core::db::FromSqliteRow for UserExistsEntity
 		Self: Sized,
 	{
 		Ok(UserExistsEntity(take_or_err!(row, 0)))
+	}
+}
+
+//__________________________________________________________________________________________________
+
+pub struct DeviceIdentifier(pub String);
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for DeviceIdentifier
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(DeviceIdentifier(take_or_err!(row, 0, String)))
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl server_core::db::FromSqliteRow for DeviceIdentifier
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(DeviceIdentifier(take_or_err!(row, 0)))
 	}
 }
 

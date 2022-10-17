@@ -20,16 +20,11 @@ pub static JWT_ALG: &'static str = "ES384";
 struct Claims
 {
 	//jwt defaults
-	aud: String,
-	sub: String, //the app id
+	aud: UserId,   //the user id
+	sub: DeviceId, //the device id
 	exp: usize,
 	iat: usize,
-
-	//sentc
-	internal_user_id: UserId,
 	group_id: GroupId,
-	device_id: DeviceId,
-	device_identifier: String,
 	fresh: bool, //was this token from refresh jwt or from login
 }
 
@@ -65,10 +60,7 @@ pub(crate) async fn create_jwt(
 	internal_user_id: UserId,
 	group_id: GroupId,
 	device_id: DeviceId,
-	device_identifier: String,
-	app_id: &str,
 	customer_jwt_data: &AppJwt,
-	aud: &str,
 	fresh: bool,
 ) -> Result<String, HttpErr>
 {
@@ -77,13 +69,10 @@ pub(crate) async fn create_jwt(
 
 	let claims = Claims {
 		iat: iat as usize,
-		aud: aud.to_string(),
-		sub: app_id.to_string(),
+		aud: internal_user_id,
+		sub: device_id,
 		exp: expiration as usize,
-		internal_user_id,
 		group_id,
-		device_id,
-		device_identifier,
 		fresh,
 	};
 
@@ -145,12 +134,9 @@ pub async fn auth(jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), 
 
 	Ok((
 		UserJwtEntity {
-			id: decoded.claims.internal_user_id,
-			device_id: decoded.claims.device_id,
+			id: decoded.claims.aud,
+			device_id: decoded.claims.sub,
 			group_id: decoded.claims.group_id,
-			identifier: decoded.claims.device_identifier,
-			aud: decoded.claims.aud,
-			sub: decoded.claims.sub,
 			fresh: decoded.claims.fresh,
 		},
 		decoded.claims.exp,
@@ -214,10 +200,7 @@ mod test
 			aud: "jo".to_string(),
 			sub: "12345".to_string(),
 			exp: expiration as usize,
-			internal_user_id: "12345".to_string(),
 			group_id: "12345".to_string(),
-			device_id: "12345".to_string(),
-			device_identifier: "username".to_string(),
 			fresh: false,
 		};
 
@@ -249,7 +232,7 @@ mod test
 
 		let decoded = decode::<Claims>(&jwt, &DecodingKey::from_ec_der(&verify_key), &validation).unwrap();
 
-		assert_eq!(decoded.claims.device_identifier, claims.device_identifier);
+		assert_eq!(decoded.claims.aud, claims.aud);
 		assert_eq!(key_id, key_id_str);
 		assert_eq!(decoded.claims.fresh, false);
 	}
