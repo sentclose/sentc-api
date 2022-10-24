@@ -28,8 +28,8 @@ pub async fn validate_captcha(app_id: AppId, captcha_id: String, solution: Strin
 		},
 	};
 
-	//captcha is 2 min valid
-	if captcha.time + (1000 * 2 * 60) < get_time()? {
+	//captcha is 20 min valid
+	if captcha.time + (1000 * 20 * 60) < get_time()? {
 		user_model::delete_captcha(app_id, captcha_id).await?;
 
 		return Err(HttpErr::new(
