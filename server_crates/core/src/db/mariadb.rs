@@ -1,7 +1,7 @@
 use std::env;
 
 use mysql_async::prelude::{FromRow, Queryable};
-use mysql_async::{from_value, Params, Pool, Row, TxOpts};
+use mysql_async::{Params, Pool, TxOpts};
 
 use crate::db::{db_bulk_insert_err, db_exec_err, db_query_err, db_tx_err, MARIA_DB_COMM};
 use crate::error::{CoreError, CoreErrorCodes};
@@ -56,21 +56,6 @@ pub async fn create_db() -> Pool
 	let db = env::var("DB_NAME").unwrap();
 
 	let pool = Pool::new(format!("mysql://{}:{}@{}/{}", user, pw, mysql_host, db).as_str());
-
-	//test the connection
-	let result = pool
-		.get_conn()
-		.await
-		.unwrap()
-		.query_first::<Row, _>("SELECT 1")
-		.await
-		.unwrap()
-		.unwrap()
-		.unwrap();
-
-	let result: i32 = from_value(result[0].clone());
-
-	assert_eq!(result, 1);
 
 	println!("init mariadb");
 
