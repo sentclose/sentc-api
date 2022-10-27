@@ -2,6 +2,7 @@ use std::env;
 use std::ffi::OsStr;
 use std::path::Path;
 
+use hyper::http::HeaderValue;
 use rustgram::service::IntoResponse;
 use rustgram::{r, Request, Response, Router};
 use server_api::util::api_res::{ApiErrorCodes, HttpErr};
@@ -76,7 +77,12 @@ async fn read_file(req: Request) -> Response
 	let handler = LOCAL_FILE_HANDLER.get().unwrap();
 
 	match handler.get_part(&file, Some(content_type)).await {
-		Ok(res) => res,
+		Ok(mut res) => {
+			res.headers_mut()
+				.insert("Cache-Control", HeaderValue::from_static("public, max-age=31536000"));
+
+			res
+		},
 		Err(_e) => {
 			//try index
 			match handler.get_part("index.html", Some("html")).await {

@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 tokio-util = "0.7.2"
+hyper = { version = "0.14", features = ["full"] }
 
 rustgram = "0.1.7"
 

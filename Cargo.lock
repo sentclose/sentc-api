@@ -2151,6 +2151,7 @@ dependencies = [
 name = "server_dashboard_backend"
 version = "0.1.0"
 dependencies = [
+ "hyper",
  "rustgram",
  "server-core",
  "server_api",
