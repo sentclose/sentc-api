@@ -167,6 +167,15 @@ pub(crate) async fn add_jwt_keys(req: Request) -> JRes<AppJwtRegisterOutput>
 		jwt_alg: alg.to_string(),
 	};
 
+	//delete the app data cache
+	let app_general_data = app_model::get_app_general_data(customer_id.to_string(), app_id.to_string()).await?;
+
+	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
+	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
+
+	cache::delete(old_hashed_secret.as_str()).await;
+	cache::delete(old_hashed_public_token.as_str()).await;
+
 	echo(out)
 }
 
@@ -180,6 +189,15 @@ pub(crate) async fn delete_jwt_keys(req: Request) -> JRes<ServerSuccessOutput>
 	let jwt_id = get_name_param_from_params(req_params, "jwt_id")?;
 
 	app_model::delete_jwt_keys(customer_id.to_string(), app_id.to_string(), jwt_id.to_string()).await?;
+
+	//delete the app data cache
+	let app_general_data = app_model::get_app_general_data(customer_id.to_string(), app_id.to_string()).await?;
+
+	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
+	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
+
+	cache::delete(old_hashed_secret.as_str()).await;
+	cache::delete(old_hashed_public_token.as_str()).await;
 
 	echo_success()
 }

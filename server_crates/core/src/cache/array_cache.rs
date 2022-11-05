@@ -55,6 +55,8 @@ impl<T: 'static + Clone + Send + Sync> Cache<T> for ArrayCache<T>
 
 	async fn add(&self, key: String, value: T, ttl: usize)
 	{
+		let ttl = ttl + get_time_in_sec().unwrap() as usize;
+
 		self.cache.write().await.insert(
 			key,
 			CacheData {

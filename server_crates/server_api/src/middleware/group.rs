@@ -114,7 +114,18 @@ async fn get_group(app_id: &str, group_id: &str, user_id: &str) -> AppRes<Intern
 		match user_data.get_values_from_parent {
 			Some(id) => {
 				let (result, _) = get_group_user(app_id, id.as_str(), user_id).await?;
-				result
+
+				//create the user data from parent (rank in the parent group and jointed time)
+				// and the user data of the child group
+				let user_data = InternalUserGroupData {
+					user_id: id.to_string(),
+					real_user_id: user_id.to_string(),
+					joined_time: result.joined_time,
+					rank: result.rank,
+					get_values_from_parent: Some(id),
+				};
+
+				user_data
 			},
 			None => user_data,
 		}
@@ -217,9 +228,9 @@ async fn get_user_from_parent(group_id: &str, user_id: &str) -> AppRes<InternalU
 		Some(v) => bytes_to_json(v.as_bytes())?,
 		None => {
 			//get the ref from the db
-			let user_from_parent = match group_model::get_user_from_parent_groups(group_id.to_string(), user_id.to_string()).await {
-				Ok(u) => u,
-				Err(e) => {
+			let user_from_parent = match group_model::get_user_from_parent_groups(group_id.to_string(), user_id.to_string()).await? {
+				Some(u) => u,
+				None => {
 					//cache wrong input too,
 					// but only for 5 min because we don't know when the user joined any of the parent groups.
 					cache::add(
@@ -229,7 +240,12 @@ async fn get_user_from_parent(group_id: &str, user_id: &str) -> AppRes<InternalU
 					)
 					.await;
 
-					return Err(e);
+					return Err(HttpErr::new(
+						400,
+						ApiErrorCodes::GroupAccess,
+						"No access to this group".to_string(),
+						None,
+					));
 				},
 			};
 
