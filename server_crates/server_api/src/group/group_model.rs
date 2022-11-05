@@ -35,7 +35,7 @@ pub(crate) async fn get_internal_group_data(app_id: AppId, group_id: GroupId) ->
 	}
 }
 
-pub(crate) async fn get_user_from_parent_groups(group_id: GroupId, user_id: UserId) -> AppRes<InternalUserGroupDataFromParent>
+pub(crate) async fn get_user_from_parent_groups(group_id: GroupId, user_id: UserId) -> AppRes<Option<InternalUserGroupDataFromParent>>
 {
 	//search via recursion all parent ids for this group.
 	//https://www.mysqltutorial.org/mysql-adjacency-list-tree/
@@ -72,18 +72,7 @@ SELECT group_id, time, `rank` FROM sentc_group_user WHERE user_id = ? AND group_
 
 	let group_data: Option<InternalUserGroupDataFromParent> = query_first(sql, set_params!(user_id, group_id)).await?;
 
-	match group_data {
-		Some(d) => Ok(d),
-		None => {
-			//user was never found in any of the parent groups
-			Err(HttpErr::new(
-				400,
-				ApiErrorCodes::GroupAccess,
-				"No access to this group".to_string(),
-				None,
-			))
-		},
-	}
+	Ok(group_data)
 }
 
 pub(crate) async fn get_internal_group_user_data(group_id: GroupId, user_id: UserId) -> AppRes<Option<InternalUserGroupData>>
