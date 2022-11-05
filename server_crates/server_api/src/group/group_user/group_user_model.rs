@@ -655,19 +655,11 @@ async fn check_user_in_group(group_id: GroupId, user_id: UserId) -> AppRes<bool>
 	}
 
 	//check if the user is in a parent group
-	//this fn will return err if the user is not in the group
-	let exists = group_model::get_user_from_parent_groups(group_id, user_id).await;
+	let exists = group_model::get_user_from_parent_groups(group_id, user_id).await?;
 
 	match exists {
-		Ok(_) => Ok(true),
-		Err(e) => {
-			match e.api_error_code {
-				//if this is just group access error then suer is not in the group
-				//if not then it is a db error and must be thrown
-				ApiErrorCodes::GroupAccess => Ok(false),
-				_ => Err(e),
-			}
-		},
+		Some(_) => Ok(true),
+		None => Ok(false),
 	}
 }
 
