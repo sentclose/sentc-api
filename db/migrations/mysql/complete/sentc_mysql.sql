@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 16. Okt 2022 um 09:03
+-- Erstellungszeit: 06. Nov 2022 um 17:43
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -312,7 +312,7 @@ CREATE TABLE `sentc_group_user` (
   `time` bigint(20) NOT NULL COMMENT 'joined time',
   `rank` int(11) NOT NULL,
   `key_upload_session_id` varchar(36) DEFAULT NULL COMMENT 'this is used when there are many keys used in this group. then upload the keys via pagination. this is only used for accept join req',
-  `type` tinyint(4) NOT NULL DEFAULT 0 COMMENT '0 = normal user, 1 = group from parent group'
+  `type` tinyint(4) NOT NULL DEFAULT 0 COMMENT '0 = normal user, 1 = group from parent group, 2 = a group as member'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
@@ -338,7 +338,8 @@ CREATE TABLE `sentc_group_user_invites_and_join_req` (
   `group_id` varchar(36) NOT NULL,
   `type` int(11) NOT NULL COMMENT '0 = invite (keys needed); 1 = join req (no keys needed)',
   `time` bigint(20) NOT NULL,
-  `key_upload_session_id` varchar(36) DEFAULT NULL COMMENT 'if there are too many keys used in this group -> upload the keys via session. this is only used for invite req'
+  `key_upload_session_id` varchar(36) DEFAULT NULL COMMENT 'if there are too many keys used in this group -> upload the keys via session. this is only used for invite req',
+  `user_type` int(11) NOT NULL COMMENT '0 = normal user, 1 = group as member'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='the invite req from the group to an user';
 
 -- --------------------------------------------------------
