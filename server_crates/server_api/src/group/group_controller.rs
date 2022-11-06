@@ -1,7 +1,7 @@
 use std::future::Future;
 
 use rustgram::Request;
-use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDataCheckUpdateServerOutput};
+use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDataCheckUpdateServerOutput, GroupUserAccessBy};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::GroupId;
 use server_core::cache;
@@ -17,7 +17,7 @@ use crate::util::get_group_cache_key;
 
 pub(crate) fn create(req: Request) -> impl Future<Output = JRes<GroupCreateOutput>>
 {
-	create_group(req, None, None)
+	create_group(req, None, None, None)
 }
 
 pub(crate) async fn create_child_group(req: Request) -> JRes<GroupCreateOutput>
@@ -27,10 +27,25 @@ pub(crate) async fn create_child_group(req: Request) -> JRes<GroupCreateOutput>
 	let parent_group_id = Some(group_data.group_data.id.to_string());
 	let user_rank = Some(group_data.user_data.rank);
 
-	create_group(req, parent_group_id, user_rank).await
+	create_group(req, parent_group_id, user_rank, None).await
 }
 
-async fn create_group(mut req: Request, parent_group_id: Option<GroupId>, user_rank: Option<i32>) -> JRes<GroupCreateOutput>
+pub(crate) async fn create_connected_group_from_group(req: Request) -> JRes<GroupCreateOutput>
+{
+	//the same as parent group, but this time with the group as member, not as parent
+	let group_data = get_group_user_data_from_req(&req)?;
+	let connected_group_id = Some(group_data.group_data.id.to_string());
+	let user_rank = Some(group_data.user_data.rank);
+
+	create_group(req, None, user_rank, connected_group_id).await
+}
+
+async fn create_group(
+	mut req: Request,
+	parent_group_id: Option<GroupId>,
+	user_rank: Option<i32>,
+	connected_group: Option<GroupId>,
+) -> JRes<GroupCreateOutput>
 {
 	let body = get_raw_body(&mut req).await?;
 
@@ -49,6 +64,7 @@ async fn create_group(mut req: Request, parent_group_id: Option<GroupId>, user_r
 		GROUP_TYPE_NORMAL,
 		parent_group_id,
 		user_rank,
+		connected_group,
 	)
 	.await?;
 
@@ -101,6 +117,23 @@ pub(crate) async fn get_user_group_data(req: Request) -> JRes<GroupServerData>
 		None => None,
 	};
 
+	//tell the frontend how thi group as access
+	let access_by = match (
+		&group_data.user_data.get_values_from_group_as_member,
+		&group_data.user_data.get_values_from_parent,
+	) {
+		//the user is in a group which is member in a parent group
+		(Some(v_as_member), Some(v_as_parent)) => {
+			GroupUserAccessBy::GroupAsUserAsParent {
+				group_as_user: v_as_member.to_string(),
+				parent: v_as_parent.to_string(),
+			}
+		},
+		(Some(v_as_member), None) => GroupUserAccessBy::GroupAsUser(v_as_member.to_string()),
+		(None, Some(v_as_parent)) => GroupUserAccessBy::Parent(v_as_parent.to_string()),
+		(None, None) => GroupUserAccessBy::User,
+	};
+
 	let out = GroupServerData {
 		group_id: group_id.to_string(),
 		parent_group_id: parent,
@@ -109,6 +142,7 @@ pub(crate) async fn get_user_group_data(req: Request) -> JRes<GroupServerData>
 		rank: group_data.user_data.rank,
 		created_time: group_data.group_data.time,
 		joined_time: group_data.user_data.joined_time,
+		access_by,
 	};
 
 	echo(out)

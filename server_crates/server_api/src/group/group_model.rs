@@ -230,16 +230,22 @@ pub(super) async fn create(
 	parent_group_id: Option<GroupId>,
 	user_rank: Option<i32>,
 	group_type: i32,
+	connected_group: Option<GroupId>,
 ) -> AppRes<GroupId>
 {
-	let (insert_user_id, user_type) = match (&parent_group_id, user_rank) {
-		(None, None) => (user_id, 0),
-		(Some(p), Some(r)) => {
+	let (insert_user_id, user_type) = match (&parent_group_id, user_rank, connected_group) {
+		(Some(p), Some(r), None) => {
 			//test here if the user has access to create a child group in this group
 			check_group_rank(r, 1)?;
 
 			//when it is a parent group -> use this id as user id for the group user insert
 			(p.to_string(), 1)
+		},
+		(None, Some(r), Some(c)) => {
+			check_group_rank(r, 1)?;
+
+			// user type is group as member
+			(c.to_string(), 2)
 		},
 		//when parent group is some then user rank must be some too,
 		// because this is set by the controller and not the user.

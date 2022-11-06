@@ -1,4 +1,4 @@
-use sentc_crypto_common::group::{GroupInviteReqList, GroupJoinReqList, GroupKeyServerOutput, KeyRotationInput};
+use sentc_crypto_common::group::{GroupInviteReqList, GroupJoinReqList, GroupKeyServerOutput, GroupUserAccessBy, KeyRotationInput};
 use sentc_crypto_common::{AppId, EncryptionKeyPairId, GroupId, SignKeyPairId, SymKeyId, UserId};
 use serde::{Deserialize, Serialize};
 use server_core::take_or_err;
@@ -77,6 +77,9 @@ pub struct InternalUserGroupData
 	pub joined_time: u128,
 	pub rank: i32,
 	pub get_values_from_parent: Option<GroupId>, //if the user is in a parent group -> get the user data of this parent to get the rank
+	//if the user enters this group from another group as member (can be from parent too)
+	//store the id because the user id can be overwritten by the parent
+	pub get_values_from_group_as_member: Option<GroupId>,
 }
 
 #[cfg(feature = "mysql")]
@@ -94,6 +97,7 @@ impl mysql_async::prelude::FromRow for InternalUserGroupData
 			joined_time: take_or_err!(row, 1, u128),
 			rank: take_or_err!(row, 2, i32),
 			get_values_from_parent: None,
+			get_values_from_group_as_member: None,
 		})
 	}
 }
@@ -113,6 +117,7 @@ impl server_core::db::FromSqliteRow for InternalUserGroupData
 			joined_time: server_core::take_or_err_u128!(row, 1),
 			rank: take_or_err!(row, 2),
 			get_values_from_parent: None,
+			get_values_from_group_as_member: None,
 		})
 	}
 }
@@ -266,6 +271,7 @@ pub struct GroupServerData
 	pub rank: i32,
 	pub created_time: u128,
 	pub joined_time: u128,
+	pub access_by: GroupUserAccessBy,
 }
 
 impl Into<sentc_crypto_common::group::GroupServerData> for GroupServerData
@@ -286,6 +292,7 @@ impl Into<sentc_crypto_common::group::GroupServerData> for GroupServerData
 			rank: self.rank,
 			created_time: self.created_time,
 			joined_time: self.joined_time,
+			access_by: self.access_by,
 		}
 	}
 }
@@ -398,6 +405,7 @@ pub struct GroupJoinReq
 {
 	pub user_id: UserId,
 	pub time: u128,
+	pub user_type: i32,
 }
 
 impl Into<GroupJoinReqList> for GroupJoinReq
@@ -407,6 +415,7 @@ impl Into<GroupJoinReqList> for GroupJoinReq
 		GroupJoinReqList {
 			user_id: self.user_id,
 			time: self.time,
+			user_type: self.user_type,
 		}
 	}
 }
@@ -421,6 +430,7 @@ impl mysql_async::prelude::FromRow for GroupJoinReq
 		Ok(Self {
 			user_id: take_or_err!(row, 0, String),
 			time: take_or_err!(row, 1, u128),
+			user_type: take_or_err!(row, 2, i32),
 		})
 	}
 }
@@ -435,6 +445,7 @@ impl server_core::db::FromSqliteRow for GroupJoinReq
 		Ok(Self {
 			user_id: take_or_err!(row, 0),
 			time: server_core::take_or_err_u128!(row, 1),
+			user_type: take_or_err!(row, 2),
 		})
 	}
 }
