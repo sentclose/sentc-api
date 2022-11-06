@@ -154,6 +154,24 @@ async fn get_group(app_id: &str, group_id: &str, user_id: &str, group_as_member_
 		user_data
 	};
 
+	//now check if the user got access to the group which from he/she tries to enter
+	//check also parent access
+	match group_as_member_id {
+		Some(id) => {
+			let (user_data, search_again) = get_group_user(app_id, id, user_id, None).await?;
+
+			if search_again {
+				match user_data.get_values_from_parent {
+					Some(id) => {
+						get_group_user(app_id, id.as_str(), user_id, None).await?;
+					},
+					None => {},
+				}
+			}
+		},
+		None => {},
+	}
+
 	let group_data = InternalGroupDataComplete {
 		group_data: entity_group,
 		user_data,
@@ -203,13 +221,9 @@ async fn get_group_user(app_id: &str, group_id: &str, user_id: &str, group_as_me
 		None => {
 			let data = match group_model::get_internal_group_user_data(group_id.to_string(), check_user_id.to_string()).await? {
 				Some(mut d) => {
-					d.get_values_from_group_as_member = match group_as_member_id {
-						Some(v) => Some(v.to_string()),
-						None => None,
-					};
-
-					//set always the real user id. just in case if user enters this group with another group
-					d.real_user_id = user_id.to_string();
+					if let Some(v) = group_as_member_id {
+						d.get_values_from_group_as_member = Some(v.to_string());
+					}
 
 					d
 				},
@@ -219,7 +233,7 @@ async fn get_group_user(app_id: &str, group_id: &str, user_id: &str, group_as_me
 
 					let d = InternalUserGroupData {
 						user_id: parent_ref.get_values_from_parent.to_string(), //the the parent group id as user id when user comes from parent
-						real_user_id: user_id.to_string(),
+						real_user_id: check_user_id.to_string(),
 						joined_time: parent_ref.joined_time,
 						rank: parent_ref.rank,
 						//only set the ref to parent group here
