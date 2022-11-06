@@ -64,7 +64,7 @@ async fn cors_handler(_req: Request) -> Response
 		.header("Access-Control-Allow-Credentials", "true")
 		.header(
 			"Access-Control-Allow-Headers",
-			"x-sentc-app-token, Content-Type, Accept, Origin, Authorization",
+			"x-sentc-app-token, x-sentc-group-access-id, Content-Type, Accept, Origin, Authorization",
 		)
 		.body(Body::from(""))
 		.unwrap()
