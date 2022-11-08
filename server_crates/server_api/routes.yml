@@ -164,12 +164,20 @@ routes:
                           - get: { p: "/key/:key_id", s: crate::group::get_user_group_key }
                           - get: {p: "/member/:last_fetched_time/:last_user_id", s: crate::group::get_group_member}
                           - post: {p: "/child", s: crate::group::create_child_group}
+                          - post: {p: "/connected", s: crate::group::create_connected_group_from_group}
                           - delete: {p: "", s: crate::group::delete}
                           - delete: {p: "/leave", s: crate::group::leave_group}
                           - delete: {p: "/kick/:user_id", s: crate::group::kick_user_from_group}
 
+                          # gets the invites for group as user
+                          - get: {p: "/invite/:last_fetched_time/:last_group_id", s: crate::group::get_invite_req_for_group}
+                          - delete: { p: "/invite/:group_id_to_reject", s: crate::group::reject_invite_group }
+                          - patch: { p: "/invite/:group_id_to_join", s: crate::group::accept_invite_group }
+                          # the normal invite to the actual group endpoints
                           - put: {p: "/invite/:invited_user", s: crate::group::invite_request}
+                          - put: {p: "/invite_group/:invited_group", s: crate::group::invite_request_to_group}
                           - put: {p: "/invite_auto/:invited_user", s: crate::group::invite_auto}
+                          - put: {p: "/invite_group_auto/:invited_group", s: crate::group::invite_auto_group}
                           - put: {p: "/invite/session/:key_session_id", s: crate::group::insert_user_keys_via_session_invite}
 
                           - put: {p: "/change_rank", s: crate::group::change_rank}
@@ -179,6 +187,7 @@ routes:
                           - group:
                               p: "/join_req"
                               gr:
+                                - patch: {p: "/:group_id_to_join", s: crate::group::join_req_as_group}
                                 - get: {p: "/:last_fetched_time/:last_user_id", s: crate::group::get_join_req}
                                 - put: {p: "/:join_user", s: crate::group::accept_join_req}
                                 - delete: {p: "/:join_user", s: crate::group::reject_join_req}

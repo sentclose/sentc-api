@@ -15,6 +15,12 @@ pub enum InsertNewUserType
 	Join,
 }
 
+pub enum NewUserType
+{
+	Normal,
+	Group,
+}
+
 pub fn get_invite_req(app_id: AppId, user_id: UserId, last_fetched_time: u128, last_id: GroupId)
 	-> impl Future<Output = AppRes<Vec<GroupInviteReq>>>
 {
@@ -30,6 +36,7 @@ pub async fn invite_request(
 	group_data: &InternalGroupDataComplete,
 	input: GroupKeysForNewMemberServerInput,
 	invited_user: UserId,
+	user_type: NewUserType,
 ) -> AppRes<Option<String>>
 {
 	if input.keys.len() == 0 {
@@ -65,6 +72,7 @@ pub async fn invite_request(
 		input.keys,
 		input.key_session,
 		group_data.user_data.rank,
+		user_type,
 	)
 	.await?;
 
@@ -80,9 +88,10 @@ pub async fn invite_auto(
 	group_data: &InternalGroupDataComplete,
 	input: GroupKeysForNewMemberServerInput,
 	invited_user: UserId,
+	user_type: NewUserType,
 ) -> AppRes<Option<String>>
 {
-	let session_id = invite_request(group_data, input, invited_user.to_string()).await?;
+	let session_id = invite_request(group_data, input, invited_user.to_string(), user_type).await?;
 
 	group_user_model::accept_invite(group_data.group_data.id.to_string(), invited_user).await?;
 

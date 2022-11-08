@@ -694,6 +694,7 @@ pub struct GroupUserListItem
 	pub user_id: UserId,
 	pub rank: i32,
 	pub joined_time: u128,
+	pub user_type: i32,
 }
 
 impl Into<sentc_crypto_common::group::GroupUserListItem> for GroupUserListItem
@@ -704,6 +705,7 @@ impl Into<sentc_crypto_common::group::GroupUserListItem> for GroupUserListItem
 			user_id: self.user_id,
 			rank: self.rank,
 			joined_time: self.joined_time,
+			user_type: self.user_type,
 		}
 	}
 }
@@ -719,6 +721,7 @@ impl mysql_async::prelude::FromRow for GroupUserListItem
 			user_id: take_or_err!(row, 0, String),
 			rank: take_or_err!(row, 1, i32),
 			joined_time: take_or_err!(row, 2, u128),
+			user_type: take_or_err!(row, 3, i32),
 		})
 	}
 }
@@ -734,6 +737,7 @@ impl server_core::db::FromSqliteRow for GroupUserListItem
 			user_id: take_or_err!(row, 0),
 			rank: take_or_err!(row, 1),
 			joined_time: server_core::take_or_err_u128!(row, 2),
+			user_type: take_or_err!(row, 3),
 		})
 	}
 }
