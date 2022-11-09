@@ -250,6 +250,68 @@ WHERE
 	Ok(users)
 }
 
+pub(super) async fn get_group_as_member_public_key(
+	group_id: GroupId,
+	key_id: SymKeyId,
+	last_fetched: u128,
+	last_id: GroupId,
+) -> AppRes<Vec<UserGroupPublicKeyData>>
+{
+	//get here the public key data from a group as member
+
+	//language=SQL
+	let sql = r"
+SELECT k.group_id, k.id, public_key, private_key_pair_alg, k.time
+FROM 
+    sentc_group_user gu, 
+    sentc_group_keys k 
+WHERE 
+    gu.user_id = k.group_id AND 
+    gu.type = 2 AND 
+    gu.group_id = ? AND 
+    NOT EXISTS(
+        SELECT 1 
+        FROM sentc_group_user_keys gk 
+        WHERE 
+            gk.k_id = ? AND 
+            gk.user_id = gu.user_id AND 
+            gk.group_id = gu.group_id
+    ) AND 
+    NOT EXISTS(
+        SELECT 1 
+        FROM sentc_group_user_key_rotation grk 
+        WHERE 
+            grk.key_id = ? AND 
+            grk.user_id = gu.user_id AND 
+            grk.group_id = gu.group_id
+    )"
+	.to_string();
+
+	let (sql1, params) = if last_fetched > 0 {
+		//there is a last fetched time time
+		let sql = sql + " AND gu.time <= ? AND (gu.time < ? OR (gu.time = ? AND gu.user_id > ?)) ORDER BY gu.time DESC, gu.user_id LIMIT 100";
+		(
+			sql,
+			set_params!(
+				group_id,
+				key_id.clone(),
+				key_id,
+				last_fetched.to_string(),
+				last_fetched.to_string(),
+				last_fetched.to_string(),
+				last_id
+			),
+		)
+	} else {
+		let sql = sql + " ORDER BY gu.time DESC, gu.user_id LIMIT 100";
+		(sql, set_params!(group_id, key_id.clone(), key_id))
+	};
+
+	let keys: Vec<UserGroupPublicKeyData> = query_string(sql1, params).await?;
+
+	Ok(keys)
+}
+
 pub(super) async fn get_parent_group_and_public_key(group_id: GroupId, key_id: SymKeyId) -> AppRes<Option<UserGroupPublicKeyData>>
 {
 	//no pagination needed because there is only one parent group
