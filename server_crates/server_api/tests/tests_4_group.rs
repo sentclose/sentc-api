@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
@@ -1185,6 +1186,9 @@ async fn test_31_start_key_rotation()
 	group
 		.decrypted_group_keys
 		.insert(user.user_id.to_string(), data_user_0.1);
+
+	//wait a bit to finish the key rotation in the sub thread
+	tokio::time::sleep(Duration::from_millis(50)).await;
 }
 
 #[tokio::test]
