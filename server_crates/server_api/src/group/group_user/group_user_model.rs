@@ -113,7 +113,7 @@ pub(super) async fn invite_request(
 
 	let user_type = match user_type {
 		NewUserType::Normal => 0,
-		NewUserType::Group => 1,
+		NewUserType::Group => 2,
 	};
 
 	let (sql, params, session_id) = if key_session && keys_for_new_user.len() == 100 {
@@ -287,7 +287,7 @@ pub(super) async fn join_req(app_id: AppId, group_id: GroupId, user_id: UserId, 
 
 	let user_type = match user_type {
 		NewUserType::Normal => 0,
-		NewUserType::Group => 1,
+		NewUserType::Group => 2,
 	};
 
 	exec(
