@@ -4,6 +4,7 @@ use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupInviteServerOutput};
+use sentc_crypto::util::public::handle_server_response;
 use sentc_crypto::{SdkError, UserData};
 use sentc_crypto_common::group::{
 	GroupChangeRankServerInput,
@@ -39,6 +40,7 @@ use crate::test_fn::{
 	get_url,
 	init_user,
 	key_rotation,
+	user_key_rotation,
 };
 
 mod test_fn;
@@ -242,7 +244,7 @@ async fn test_11_z_get_group_update()
 
 	let body = res.text().await.unwrap();
 
-	let out: GroupDataCheckUpdateServerOutput = sentc_crypto::util::public::handle_server_response(body.as_str()).unwrap();
+	let out: GroupDataCheckUpdateServerOutput = handle_server_response(body.as_str()).unwrap();
 
 	assert_eq!(out.rank, 0);
 	assert_eq!(out.key_update, false);
@@ -399,7 +401,7 @@ async fn test_14_not_send_invite_or_join_when_invite_is_disabled()
 
 	let body = res.text().await.unwrap();
 
-	match sentc_crypto::util::public::handle_server_response::<GroupInviteServerOutput>(body.as_str()) {
+	match handle_server_response::<GroupInviteServerOutput>(body.as_str()) {
 		Ok(_) => panic!("Should be an error"),
 		Err(e) => {
 			match e {
@@ -480,7 +482,7 @@ async fn test_16_invite_user()
 
 	let body = res.text().await.unwrap();
 
-	let invite_res: GroupInviteServerOutput = sentc_crypto::util::public::handle_server_response(body.as_str()).unwrap();
+	let invite_res: GroupInviteServerOutput = handle_server_response(body.as_str()).unwrap();
 
 	assert_eq!(invite_res.session_id, None);
 }
@@ -670,7 +672,7 @@ async fn test_21_invite_user_an_reject_invite()
 
 	let body = res.text().await.unwrap();
 
-	let invite_res: GroupInviteServerOutput = sentc_crypto::util::public::handle_server_response(body.as_str()).unwrap();
+	let invite_res: GroupInviteServerOutput = handle_server_response(body.as_str()).unwrap();
 	assert_eq!(invite_res.session_id, None);
 
 	//______________________________________________________________________________________________
@@ -1107,7 +1109,7 @@ async fn test_30_accept_join_req()
 		.unwrap();
 
 	let body = res.text().await.unwrap();
-	let join_res: GroupAcceptJoinReqServerOutput = sentc_crypto::util::public::handle_server_response(body.as_str()).unwrap();
+	let join_res: GroupAcceptJoinReqServerOutput = handle_server_response(body.as_str()).unwrap();
 	assert_eq!(join_res.session_id, None);
 
 	//user is already saved
@@ -1228,6 +1230,9 @@ async fn test_32_done_key_rotation_for_other_user()
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();
+
+	//only one new key, not for each user key!
+	assert_eq!(out.len(), 1);
 
 	//done it for each key
 	for key in &out {
@@ -1494,7 +1499,7 @@ async fn test_37_get_group_user()
 
 	let body = res.text().await.unwrap();
 
-	let res: Vec<GroupUserListItem> = sentc_crypto::util::public::handle_server_response(body.as_str()).unwrap();
+	let res: Vec<GroupUserListItem> = handle_server_response(body.as_str()).unwrap();
 
 	assert_eq!(res.len(), 2);
 
@@ -1526,7 +1531,7 @@ async fn test_37_get_group_user()
 
 	let body = res.text().await.unwrap();
 
-	let res: Vec<GroupUserListItem> = sentc_crypto::util::public::handle_server_response(body.as_str()).unwrap();
+	let res: Vec<GroupUserListItem> = handle_server_response(body.as_str()).unwrap();
 
 	assert_eq!(res.len(), 1);
 	assert_ne!(res[0].user_id, creator.user_id);
@@ -1546,7 +1551,7 @@ async fn test_37_get_group_user()
 
 	let body = res.text().await.unwrap();
 
-	let res: Vec<GroupUserListItem> = sentc_crypto::util::public::handle_server_response(body.as_str()).unwrap();
+	let res: Vec<GroupUserListItem> = handle_server_response(body.as_str()).unwrap();
 
 	assert_eq!(res.len(), 2);
 
@@ -1758,11 +1763,92 @@ async fn test_40_key_rotation_in_child_group_by_user()
 	}
 }
 
+#[tokio::test]
+async fn test_41_key_rotation_with_multiple_user_keys()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let mut group = GROUP_TEST_STATE.get().unwrap().write().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+
+	let user = &users[0];
+	let user_1 = &users[1];
+
+	let jwt = &user_1.user_data.jwt;
+	let pre_group_key = &user_1.user_data.user_keys[0].group_key;
+	let device_invoker_public_key = &user_1.user_data.device_keys.public_key;
+	let device_invoker_private_key = &user_1.user_data.device_keys.private_key;
+
+	//first do a key rotation in a user group to test if only the latest key of a user will be used
+
+	user_key_rotation(
+		secret_token,
+		jwt,
+		pre_group_key,
+		device_invoker_public_key,
+		device_invoker_private_key,
+	)
+	.await;
+
+	//then do a key rotation in the group
+
+	let pre_group_key = &group
+		.decrypted_group_keys
+		.get(user.user_id.as_str())
+		.unwrap()[1]
+		.group_key;
+
+	let new_group_data = key_rotation(
+		secret_token,
+		user.user_data.jwt.as_str(),
+		group.group_id.as_str(),
+		pre_group_key,
+		&user.user_data.user_keys[0].public_key,
+		&user.user_data.user_keys[0].private_key,
+	)
+	.await;
+
+	group
+		.decrypted_group_keys
+		.insert(user.user_id.to_string(), new_group_data.1);
+
+	//now get the key rotation for other user
+
+	//check if user needs a rotation
+	let _data_user = get_group(
+		secret_token,
+		jwt,
+		group.group_id.as_str(),
+		&user_1.user_data.user_keys[0].private_key,
+		true,
+	)
+	.await;
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key_rotation");
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: Vec<sentc_crypto::sdk_common::group::KeyRotationInput> = handle_server_response(body.as_str()).unwrap();
+
+	//only one key here, even when the user got multiple keys in his/her user group
+	assert_eq!(out.len(), 1);
+
+	//no need to done the rotation. this test is all about the right key count
+}
+
 //__________________________________________________________________________________________________
 //delete group
 
 #[tokio::test]
-async fn test_41_delete_group()
+async fn test_42_delete_group()
 {
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
 
@@ -1788,7 +1874,7 @@ async fn test_41_delete_group()
 }
 
 #[tokio::test]
-async fn test_42_get_all_groups_to_user()
+async fn test_43_get_all_groups_to_user()
 {
 	let creator = USERS_TEST_STATE.get().unwrap().read().await;
 	let creator = &creator[0];

@@ -11,8 +11,9 @@ use sentc_crypto::group::{DoneGettingGroupKeysOutput, GroupKeyData, GroupOutData
 use sentc_crypto::sdk_common::file::FileData;
 use sentc_crypto::sdk_common::group::GroupAcceptJoinReqServerOutput;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
+use sentc_crypto::util::UserKeyDataInt;
 use sentc_crypto::{PrivateKeyFormat, PublicKeyFormat, SymKeyFormat, UserData};
-use sentc_crypto_common::group::{GroupCreateOutput, KeyRotationStartServerOutput};
+use sentc_crypto_common::group::{GroupCreateOutput, GroupKeyServerOutput, KeyRotationStartServerOutput};
 use sentc_crypto_common::user::{CaptchaCreateOutput, CaptchaInput, RegisterData, UserInitServerOutput};
 use sentc_crypto_common::{CustomerId, GroupId, ServerOutput, UserId};
 use server_api_common::app::{AppFileOptionsInput, AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
@@ -684,6 +685,51 @@ pub async fn done_key_rotation(
 	}
 
 	new_keys
+}
+
+pub async fn user_key_rotation(
+	secret_token: &str,
+	jwt: &str,
+	pre_group_key: &SymKeyFormat,
+	device_invoker_public_key: &PublicKeyFormat,
+	device_invoker_private_key: &PrivateKeyFormat,
+) -> UserKeyDataInt
+{
+	let input = sentc_crypto::group::key_rotation(pre_group_key, device_invoker_public_key, true).unwrap();
+
+	let url = get_url("api/v1/user/user_keys/rotation".to_string());
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let key_out: KeyRotationStartServerOutput = handle_server_response(body.as_str()).unwrap();
+
+	//wait a bit to finish the key rotation in the sub thread
+	tokio::time::sleep(Duration::from_millis(50)).await;
+
+	//fetch the key by id
+
+	let url = get_url("api/v1/user/user_keys/key/".to_string() + key_out.key_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let _out: GroupKeyServerOutput = handle_server_response(body.as_str()).unwrap();
+
+	sentc_crypto::user::done_key_fetch(device_invoker_private_key, body.as_str()).unwrap()
 }
 
 pub async fn get_file(file_id: &str, jwt: &str, token: &str, group_id: Option<&str>) -> FileData
