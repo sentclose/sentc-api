@@ -151,6 +151,7 @@ routes:
                           - patch: { p: "/invite", s: crate::group::accept_invite }
                           - delete: { p: "/invite", s: crate::group::reject_invite }
                           - patch: {p: "/join_req", s: crate::group::join_req}
+                          - get: { p: "/public_key", s: crate::group::get_public_key_data }
                     #___________________________________________________________________________________________________
                     # group mw check needed here
                     - group:

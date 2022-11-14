@@ -14,6 +14,7 @@ use crate::group::group_entities::{
 	ListGroups,
 };
 use crate::group::{GROUP_TYPE_NORMAL, GROUP_TYPE_USER};
+use crate::user::user_entities::UserPublicKeyDataEntity;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 pub(crate) async fn get_internal_group_data(app_id: AppId, group_id: GroupId) -> AppRes<InternalGroupData>
@@ -525,4 +526,32 @@ WHERE
 	let list: Vec<ListGroups> = query_string(sql, params).await?;
 
 	Ok(list)
+}
+
+pub(super) async fn get_public_key_data(app_id: AppId, group_id: GroupId) -> AppRes<UserPublicKeyDataEntity>
+{
+	//language=SQL
+	let sql = r"
+SELECT id, public_key, private_key_pair_alg 
+FROM sentc_group_keys 
+WHERE 
+    app_id = ? AND 
+    group_id = ? 
+ORDER BY time DESC 
+LIMIT 1";
+
+	//the same as user keys, because in this case the group is like a user
+	let data: Option<UserPublicKeyDataEntity> = query_first(sql, set_params!(app_id, group_id)).await?;
+
+	match data {
+		Some(d) => Ok(d),
+		None => {
+			Err(HttpErr::new(
+				400,
+				ApiErrorCodes::GroupKeyNotFound,
+				"Public key from this group was not found".to_string(),
+				None,
+			))
+		},
+	}
 }

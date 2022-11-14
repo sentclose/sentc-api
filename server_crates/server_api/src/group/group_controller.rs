@@ -12,6 +12,7 @@ use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpo
 use crate::group::group_entities::{GroupServerData, GroupUserKeys, ListGroups};
 use crate::group::{get_group_user_data_from_req, group_model, group_service, GROUP_TYPE_NORMAL};
 use crate::user::jwt::get_jwt_data_from_param;
+use crate::user::user_entities::UserPublicKeyDataEntity;
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 use crate::util::get_group_cache_key;
 
@@ -279,4 +280,19 @@ pub(crate) async fn stop_invite(req: Request) -> JRes<ServerSuccessOutput>
 	cache::delete(key_group.as_str()).await;
 
 	echo_success()
+}
+
+pub(crate) async fn get_public_key_data(req: Request) -> JRes<UserPublicKeyDataEntity>
+{
+	//called from outside of the group mw
+
+	let app_data = get_app_data_from_req(&req)?;
+
+	check_endpoint_with_app_options(app_data, Endpoint::UserPublicData)?;
+
+	let group_id = get_name_param_from_req(&req, "group_id")?;
+
+	let data = group_model::get_public_key_data(app_data.app_data.app_id.clone(), group_id.to_string()).await?;
+
+	echo(data)
 }

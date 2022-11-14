@@ -299,6 +299,12 @@ pub(crate) fn routes(router: &mut Router)
 			.add(app_token::app_token_transform),
 	);
 	router.get(
+		"/api/v1/group/:group_id/public_key",
+		r(crate::group::get_public_key_data)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
 		"/api/v1/group/:group_id",
 		r(crate::group::get_user_group_data)
 			.add(group::group_transform)
