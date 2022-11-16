@@ -246,7 +246,7 @@ pub(super) async fn create(
 			check_group_rank(r, 1)?;
 
 			// user type is group as member
-			(c.to_string(), 2)
+			(c, 2)
 		},
 		//when parent group is some then user rank must be some too,
 		// because this is set by the controller and not the user.
