@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
+use reqwest::header::AUTHORIZATION;
 use sentc_crypto::group::GroupKeyData;
+use sentc_crypto::util::public::handle_server_response;
 use sentc_crypto::UserData;
+use sentc_crypto_common::group::GroupCreateOutput;
 use sentc_crypto_common::{GroupId, UserId};
 use server_api_common::app::AppRegisterOutput;
 use server_api_common::customer::CustomerDoneLoginOutput;
@@ -9,6 +12,7 @@ use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{
 	add_group_by_invite,
+	auth_header,
 	create_app,
 	create_group,
 	create_test_customer,
@@ -17,6 +21,8 @@ use crate::test_fn::{
 	delete_app,
 	delete_user,
 	get_group,
+	get_group_from_group_as_member,
+	get_url,
 };
 
 /**
@@ -194,7 +200,7 @@ async fn test_01_create_groups()
 
 		children.push(GroupState {
 			group_id,
-			group_member: vec![],
+			group_member: vec![user.user_id.to_string()],
 			decrypted_group_keys,
 		});
 	}
@@ -215,6 +221,8 @@ async fn test_01_create_groups()
 #[tokio::test]
 async fn test_10_connect_group_to_other_group()
 {
+	//connect group 1 and 2 to group 3
+
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -229,6 +237,11 @@ async fn test_10_connect_group_to_other_group()
 
 	let group_2 = &groups[1];
 	let creator_group_2 = &users[1];
+	let group_2_private_key = &group_2
+		.decrypted_group_keys
+		.get(&group_2.group_member[0])
+		.unwrap()[0]
+		.private_group_key;
 
 	let group_to_connect = &groups[2];
 	let creator_group_to_connect = &users[2];
@@ -248,24 +261,157 @@ async fn test_10_connect_group_to_other_group()
 		&group_1_private_key,
 	)
 	.await;
+
+	add_group_by_invite(
+		secret_token,
+		&creator_group_to_connect.user_data.jwt,
+		&group_to_connect.group_id,
+		&user_keys,
+		&group_2.group_id,
+		&creator_group_2.user_data.jwt,
+		&group_2_private_key,
+	)
+	.await;
 }
 
 #[tokio::test]
-async fn test_11_connect_group_to_other_group_with_a_child_group()
+async fn test_11_connect_child_group_to_other_group()
 {
-	//
+	//connect the child group from group 4 to group 3
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let children = CHILD_GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let group_1 = &children[0];
+	let creator_group_1 = &users[3];
+	let group_1_private_key = &group_1
+		.decrypted_group_keys
+		.get(&group_1.group_member[0])
+		.unwrap()[0]
+		.private_group_key;
+
+	let group_to_connect = &groups[2];
+	let creator_group_to_connect = &users[2];
+
+	let user_keys = group_to_connect
+		.decrypted_group_keys
+		.get(&group_to_connect.group_member[0])
+		.unwrap();
+
+	//user should got access by group 4
+	add_group_by_invite(
+		secret_token,
+		&creator_group_to_connect.user_data.jwt,
+		&group_to_connect.group_id,
+		&user_keys,
+		&group_1.group_id,
+		&creator_group_1.user_data.jwt,
+		&group_1_private_key,
+	)
+	.await;
 }
 
 #[tokio::test]
-async fn test_12_connect_child_group_to_other_group()
+async fn test_12_connect_group_to_other_group_with_a_child_group()
 {
-	//
+	//connect group 1 to group 5 to check the access to the child of group 5
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let children = CHILD_GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let group_1 = &groups[0];
+	let creator_group_1 = &users[0];
+	let group_1_private_key = &group_1
+		.decrypted_group_keys
+		.get(&group_1.group_member[0])
+		.unwrap()[0]
+		.private_group_key;
+
+	let group_to_connect = &groups[4];
+	let creator_group_to_connect = &users[4];
+
+	let user_keys = group_to_connect
+		.decrypted_group_keys
+		.get(&group_to_connect.group_member[0])
+		.unwrap();
+
+	let data = add_group_by_invite(
+		secret_token,
+		&creator_group_to_connect.user_data.jwt,
+		&group_to_connect.group_id,
+		&user_keys,
+		&group_1.group_id,
+		&creator_group_1.user_data.jwt,
+		&group_1_private_key,
+	)
+	.await;
+
+	//now check the access to the child group of group 5
+	let private_key_from_parent_group = &data.1[0].private_group_key;
+
+	get_group_from_group_as_member(
+		secret_token,
+		&creator_group_1.user_data.jwt,
+		&children[1].group_id,
+		&group_1.group_id,
+		private_key_from_parent_group,
+	)
+	.await;
 }
 
 #[tokio::test]
 async fn test_13_connect_group_by_creating_from_other_group()
 {
-	//
+	//create a new connected group by another group
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let group_1 = &groups[0];
+	let creator_group_1 = &users[0];
+	let group_1_private_key = &group_1
+		.decrypted_group_keys
+		.get(&group_1.group_member[0])
+		.unwrap()[0]
+		.private_group_key;
+	let group_1_public_key = &group_1
+		.decrypted_group_keys
+		.get(&group_1.group_member[0])
+		.unwrap()[0]
+		.public_group_key;
+
+	let url = get_url("api/v1/group".to_owned() + "/" + group_1.group_id.as_str() + "/connected");
+
+	let group_input = sentc_crypto::group::prepare_create(group_1_public_key).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(&creator_group_1.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.body(group_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: GroupCreateOutput = handle_server_response(&body).unwrap();
+
+	//now get the group
+	get_group_from_group_as_member(
+		secret_token,
+		&creator_group_1.user_data.jwt,
+		&out.group_id,
+		&group_1.group_id,
+		group_1_private_key,
+	)
+	.await;
 }
 
 //TODO join req, invite req, reject join, reject invite, accept join, accept invite
