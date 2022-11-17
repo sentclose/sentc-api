@@ -717,6 +717,7 @@ pub async fn done_key_rotation(
 	pre_group_key: &SymKeyFormat,
 	public_key: &PublicKeyFormat,
 	private_key: &PrivateKeyFormat,
+	group_as_member_id: Option<&str>,
 ) -> Vec<DoneGettingGroupKeysOutput>
 {
 	//get the data for the rotation
@@ -726,10 +727,14 @@ pub async fn done_key_rotation(
 	let res = client
 		.get(url)
 		.header(AUTHORIZATION, auth_header(jwt))
-		.header("x-sentc-app-token", secret_token)
-		.send()
-		.await
-		.unwrap();
+		.header("x-sentc-app-token", secret_token);
+
+	let res = match group_as_member_id {
+		Some(id) => res.header("x-sentc-group-access-id", id),
+		None => res,
+	};
+
+	let res = res.send().await.unwrap();
 
 	let body = res.text().await.unwrap();
 
@@ -753,10 +758,14 @@ pub async fn done_key_rotation(
 			.put(url)
 			.header(AUTHORIZATION, auth_header(jwt))
 			.header("x-sentc-app-token", secret_token)
-			.body(rotation_out)
-			.send()
-			.await
-			.unwrap();
+			.body(rotation_out);
+
+		let res = match group_as_member_id {
+			Some(id) => res.header("x-sentc-group-access-id", id),
+			None => res,
+		};
+
+		let res = res.send().await.unwrap();
 
 		let body = res.text().await.unwrap();
 		handle_general_server_response(body.as_str()).unwrap();
@@ -768,10 +777,14 @@ pub async fn done_key_rotation(
 		let res = client
 			.get(url)
 			.header(AUTHORIZATION, auth_header(jwt))
-			.header("x-sentc-app-token", secret_token)
-			.send()
-			.await
-			.unwrap();
+			.header("x-sentc-app-token", secret_token);
+
+		let res = match group_as_member_id {
+			Some(id) => res.header("x-sentc-group-access-id", id),
+			None => res,
+		};
+
+		let res = res.send().await.unwrap();
 
 		let body = res.text().await.unwrap();
 
@@ -782,6 +795,8 @@ pub async fn done_key_rotation(
 
 	new_keys
 }
+
+//__________________________________________________________________________________________________
 
 pub async fn user_key_rotation(
 	secret_token: &str,
@@ -827,6 +842,8 @@ pub async fn user_key_rotation(
 
 	sentc_crypto::user::done_key_fetch(device_invoker_private_key, body.as_str()).unwrap()
 }
+
+//__________________________________________________________________________________________________
 
 pub async fn get_file(file_id: &str, jwt: &str, token: &str, group_id: Option<&str>) -> FileData
 {
