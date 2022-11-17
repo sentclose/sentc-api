@@ -20,9 +20,11 @@ use crate::test_fn::{
 	customer_delete,
 	delete_app,
 	delete_user,
+	done_key_rotation,
 	get_group,
 	get_group_from_group_as_member,
 	get_url,
+	key_rotation,
 };
 
 /**
@@ -216,8 +218,6 @@ async fn test_01_create_groups()
 
 //__________________________________________________________________________________________________
 
-//TODO test key rotation when a group or a user group got multiple keys, which key is sused or all keys are used
-
 #[tokio::test]
 async fn test_10_connect_group_to_other_group()
 {
@@ -251,7 +251,7 @@ async fn test_10_connect_group_to_other_group()
 		.get(&group_to_connect.group_member[0])
 		.unwrap();
 
-	add_group_by_invite(
+	let data_1 = add_group_by_invite(
 		secret_token,
 		&creator_group_to_connect.user_data.jwt,
 		&group_to_connect.group_id,
@@ -262,7 +262,9 @@ async fn test_10_connect_group_to_other_group()
 	)
 	.await;
 
-	add_group_by_invite(
+	assert_eq!(data_1.0.rank, 4);
+
+	let data_2 = add_group_by_invite(
 		secret_token,
 		&creator_group_to_connect.user_data.jwt,
 		&group_to_connect.group_id,
@@ -272,6 +274,8 @@ async fn test_10_connect_group_to_other_group()
 		&group_2_private_key,
 	)
 	.await;
+
+	assert_eq!(data_2.0.rank, 4);
 }
 
 #[tokio::test]
@@ -412,6 +416,179 @@ async fn test_13_connect_group_by_creating_from_other_group()
 		group_1_private_key,
 	)
 	.await;
+}
+
+#[tokio::test]
+async fn test_14_key_rotation()
+{
+	//do a key rotation in a connected group (group 3) and check if group 1 and 2 got new keys
+	//this test is about to test the key rotation of group as member
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let group_1 = &groups[0];
+	let creator_group_1 = &users[0];
+	let group_1_private_key = &group_1
+		.decrypted_group_keys
+		.get(&group_1.group_member[0])
+		.unwrap()[0]
+		.private_group_key;
+
+	let group_2 = &groups[1];
+	let creator_group_2 = &users[1];
+	let group_2_private_key = &group_2
+		.decrypted_group_keys
+		.get(&group_2.group_member[0])
+		.unwrap()[0]
+		.private_group_key;
+
+	let group_to_connect = &groups[2];
+	let creator_group_to_connect = &users[2];
+	let pre_group_key = &group_to_connect
+		.decrypted_group_keys
+		.get(&creator_group_to_connect.user_id)
+		.unwrap()[0]
+		.group_key;
+
+	//do the rotation for group 3
+	key_rotation(
+		secret_token,
+		&creator_group_to_connect.user_data.jwt,
+		&group_to_connect.group_id,
+		pre_group_key,
+		&creator_group_to_connect.user_data.user_keys[0].public_key,
+		&creator_group_to_connect.user_data.user_keys[0].private_key,
+	)
+	.await;
+
+	let data_1 = get_group_from_group_as_member(
+		secret_token,
+		&creator_group_1.user_data.jwt,
+		&group_to_connect.group_id,
+		&group_1.group_id,
+		group_1_private_key,
+	)
+	.await;
+
+	assert_eq!(data_1.0.key_update, true);
+
+	done_key_rotation(
+		secret_token,
+		&creator_group_1.user_data.jwt,
+		&group_to_connect.group_id,
+		pre_group_key,
+		&group_1
+			.decrypted_group_keys
+			.get(&creator_group_1.user_id)
+			.unwrap()[0]
+			.public_group_key,
+		&group_1
+			.decrypted_group_keys
+			.get(&creator_group_1.user_id)
+			.unwrap()[0]
+			.private_group_key,
+		Some(&group_1.group_id),
+	)
+	.await;
+
+	let data_2 = get_group_from_group_as_member(
+		secret_token,
+		&creator_group_2.user_data.jwt,
+		&group_to_connect.group_id,
+		&group_2.group_id,
+		group_2_private_key,
+	)
+	.await;
+
+	assert_eq!(data_2.0.key_update, true);
+
+	done_key_rotation(
+		secret_token,
+		&creator_group_2.user_data.jwt,
+		&group_to_connect.group_id,
+		pre_group_key,
+		&group_2
+			.decrypted_group_keys
+			.get(&creator_group_2.user_id)
+			.unwrap()[0]
+			.public_group_key,
+		&group_2
+			.decrypted_group_keys
+			.get(&creator_group_2.user_id)
+			.unwrap()[0]
+			.private_group_key,
+		Some(&group_2.group_id),
+	)
+	.await;
+}
+
+#[tokio::test]
+async fn test_15_key_rotation_with_multiple_keys()
+{
+	//do a key rotation in group 1. then do a rotation in group 3 (the connected group)
+	//later check if there is only one new key to rotate and not 2
+	// (which would be the case if not only the newest key was used but all group keys)
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let group_1 = &groups[0];
+	let creator_group_1 = &users[0];
+	let pre_group_key_group_1 = &group_1
+		.decrypted_group_keys
+		.get(&group_1.group_member[0])
+		.unwrap()[0]
+		.group_key;
+
+	let group_to_connect = &groups[2];
+	let creator_group_to_connect = &users[2];
+	let pre_group_key_group_connected = &group_to_connect
+		.decrypted_group_keys
+		.get(&creator_group_to_connect.user_id)
+		.unwrap()[0]
+		.group_key;
+
+	//key rotation of group 1
+	key_rotation(
+		secret_token,
+		&creator_group_1.user_data.jwt,
+		&group_1.group_id,
+		pre_group_key_group_1,
+		&creator_group_1.user_data.user_keys[0].public_key,
+		&creator_group_1.user_data.user_keys[0].private_key,
+	)
+	.await;
+
+	//just get the key rotation data (not done it) to check how many keys are in (should be just one)
+	key_rotation(
+		secret_token,
+		&creator_group_to_connect.user_data.jwt,
+		&group_to_connect.group_id,
+		pre_group_key_group_connected,
+		&creator_group_to_connect.user_data.user_keys[0].public_key,
+		&creator_group_to_connect.user_data.user_keys[0].private_key,
+	)
+	.await;
+
+	let url = get_url("api/v1/group/".to_owned() + group_to_connect.group_id.as_str() + "/key_rotation");
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(&creator_group_1.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", &group_1.group_id)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: Vec<sentc_crypto::sdk_common::group::KeyRotationInput> = handle_server_response(body.as_str()).unwrap();
+
+	assert_eq!(out.len(), 1);
 }
 
 //TODO join req, invite req, reject join, reject invite, accept join, accept invite
