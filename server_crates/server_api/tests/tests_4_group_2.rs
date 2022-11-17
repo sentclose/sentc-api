@@ -2,10 +2,11 @@ use std::collections::HashMap;
 
 use reqwest::header::AUTHORIZATION;
 use sentc_crypto::group::GroupKeyData;
-use sentc_crypto::util::public::handle_server_response;
+use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::UserData;
 use sentc_crypto_common::group::GroupCreateOutput;
-use sentc_crypto_common::{GroupId, UserId};
+use sentc_crypto_common::server_default::ServerSuccessOutput;
+use sentc_crypto_common::{GroupId, ServerOutput, UserId};
 use server_api_common::app::AppRegisterOutput;
 use server_api_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
@@ -591,8 +592,88 @@ async fn test_15_key_rotation_with_multiple_keys()
 	assert_eq!(out.len(), 1);
 }
 
-//TODO join req, invite req, reject join, reject invite, accept join, accept invite
-//TODO delete group from other group
+#[tokio::test]
+async fn test_16_kick_group_as_member()
+{
+	//kick group 1 from group 3
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let group = &groups[2];
+	let creator = &users[2];
+
+	let group_to_kick = &groups[0];
+	let user_to_kick = &users[0];
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/kick/" + &group_to_kick.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
+
+	//user should not get group data
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user_to_kick.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", &group_to_kick.group_id)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, false);
+}
+
+#[tokio::test]
+async fn test_17_invite_another_group()
+{
+	//invite send from the group to connect (group 3) to group 1
+}
+
+#[tokio::test]
+async fn test_18_reject_invite()
+{
+	//should be the same as normal invite
+}
+
+#[tokio::test]
+async fn test_19_accept_invite()
+{
+	//
+}
+
+#[tokio::test]
+async fn test_20_join_req_to_join_a_group()
+{
+	//
+}
+
+#[tokio::test]
+async fn test_21_reject_join_req_from_group()
+{
+	//
+}
+
+#[tokio::test]
+async fn test_22_accept_join_req_from_group()
+{
+	//
+}
 
 //__________________________________________________________________________________________________
 //clean up
