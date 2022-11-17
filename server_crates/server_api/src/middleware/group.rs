@@ -156,20 +156,14 @@ async fn get_group(app_id: &str, group_id: &str, user_id: &str, group_as_member_
 
 	//now check if the user got access to the group which from he/she tries to enter
 	//check also parent access
-	match group_as_member_id {
-		Some(id) => {
-			let (user_data, search_again) = get_group_user(app_id, id, user_id, None).await?;
+	if let Some(id) = group_as_member_id {
+		let (user_data, search_again) = get_group_user(app_id, id, user_id, None).await?;
 
-			if search_again {
-				match user_data.get_values_from_parent {
-					Some(id) => {
-						get_group_user(app_id, id.as_str(), user_id, None).await?;
-					},
-					None => {},
-				}
+		if search_again {
+			if let Some(id) = user_data.get_values_from_parent {
+				get_group_user(app_id, id.as_str(), user_id, None).await?;
 			}
-		},
-		None => {},
+		}
 	}
 
 	let group_data = InternalGroupDataComplete {
