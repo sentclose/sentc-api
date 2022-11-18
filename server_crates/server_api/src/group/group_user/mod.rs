@@ -247,7 +247,7 @@ async fn accept_invite_pri(req: Request, user_type: NewUserType) -> JRes<ServerS
 
 			group_model::check_group_rank(group_data.user_data.rank, 1)?;
 
-			("group_id_to_reject", &group_data.group_data.id)
+			("group_id_to_join", &group_data.group_data.id)
 		},
 	};
 
