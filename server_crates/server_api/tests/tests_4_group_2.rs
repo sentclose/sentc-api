@@ -3,10 +3,11 @@ use std::collections::HashMap;
 use reqwest::header::AUTHORIZATION;
 use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::UserData;
+use sentc_crypto::{SdkError, UserData};
 use sentc_crypto_common::group::{GroupCreateOutput, GroupInviteReqList, GroupInviteServerOutput};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::{GroupId, ServerOutput, UserId};
+use server_api::util::api_res::ApiErrorCodes;
 use server_api_common::app::AppRegisterOutput;
 use server_api_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
@@ -868,19 +869,58 @@ async fn test_19_accept_invite()
 }
 
 #[tokio::test]
-async fn test_20_join_req_to_join_a_group()
+async fn test_20_not_send_join_req_if_group_is_already_group_member()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let group = &groups[2];
+
+	let group_to_invite = &groups[0];
+	let user_to_invite = &users[0];
+
+	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/join_req/" + &group.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.patch(url)
+		.header(AUTHORIZATION, auth_header(&user_to_invite.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	match handle_general_server_response(&body) {
+		Ok(_) => panic!("Should be error"),
+		Err(e) => {
+			//
+			match e {
+				SdkError::ServerErr(c, _m) => {
+					assert_eq!(c, ApiErrorCodes::GroupUserExists.get_int_code());
+				},
+				_ => panic!("Should be server error"),
+			}
+		},
+	}
+}
+
+#[tokio::test]
+async fn test_21_join_req_to_join_a_group()
 {
 	//
 }
 
 #[tokio::test]
-async fn test_21_reject_join_req_from_group()
+async fn test_22_reject_join_req_from_group()
 {
 	//
 }
 
 #[tokio::test]
-async fn test_22_accept_join_req_from_group()
+async fn test_23_accept_join_req_from_group()
 {
 	//
 }
