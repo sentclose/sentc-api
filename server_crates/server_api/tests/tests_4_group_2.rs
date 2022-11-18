@@ -4,7 +4,7 @@ use reqwest::header::AUTHORIZATION;
 use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::{SdkError, UserData};
-use sentc_crypto_common::group::{GroupCreateOutput, GroupInviteReqList, GroupInviteServerOutput};
+use sentc_crypto_common::group::{GroupAcceptJoinReqServerOutput, GroupCreateOutput, GroupInviteReqList, GroupInviteServerOutput, GroupJoinReqList};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::{GroupId, ServerOutput, UserId};
 use server_api::util::api_res::ApiErrorCodes;
@@ -910,19 +910,175 @@ async fn test_20_not_send_join_req_if_group_is_already_group_member()
 #[tokio::test]
 async fn test_21_join_req_to_join_a_group()
 {
-	//
+	//use group 4 here to test join req, so we don't need to kick the other group again
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let group = &groups[2];
+
+	let group_to_invite = &groups[3];
+	let user_to_invite = &users[3];
+
+	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/join_req/" + &group.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.patch(url)
+		.header(AUTHORIZATION, auth_header(&user_to_invite.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(&body).unwrap();
 }
 
 #[tokio::test]
 async fn test_22_reject_join_req_from_group()
 {
-	//
+	//reject the join req from group 4
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let group = &groups[2];
+	let creator = &users[2];
+
+	let group_to_invite = &groups[3];
+
+	//first get the join reqs
+
+	let url = get_url("api/v1/group/".to_owned() + &group.group_id + "/join_req/0/none");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(&creator.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let list: Vec<GroupJoinReqList> = handle_server_response(&body).unwrap();
+
+	assert_eq!(list.len(), 1);
+
+	assert_eq!(list[0].user_id, group_to_invite.group_id);
+	assert_eq!(list[0].user_type, 2); //group as member not user
+
+	//now reject the join req, should work like normal user
+
+	let url = get_url("api/v1/group/".to_owned() + &group.group_id + "/join_req/" + &list[0].user_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(&creator.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	handle_general_server_response(&body).unwrap();
 }
 
 #[tokio::test]
 async fn test_23_accept_join_req_from_group()
 {
-	//
+	//send the join req again
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let group = &groups[2];
+	let creator = &users[2];
+
+	let group_to_invite = &groups[3];
+	let user_to_invite = &users[3];
+	let group_to_invite_private_key = &group_to_invite
+		.decrypted_group_keys
+		.get(&user_to_invite.user_id)
+		.unwrap()[0]
+		.private_group_key;
+
+	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/join_req/" + &group.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.patch(url)
+		.header(AUTHORIZATION, auth_header(&user_to_invite.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(&body).unwrap();
+
+	//accept the join req
+	let keys = group
+		.decrypted_group_keys
+		.get(&group.group_member[0])
+		.unwrap();
+
+	let mut group_keys_ref = vec![];
+
+	for decrypted_group_key in keys {
+		group_keys_ref.push(&decrypted_group_key.group_key);
+	}
+
+	//fetch the public key data like user for a group which should connect to group
+	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/public_key");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(&creator.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let group_to_invite_public_key = sentc_crypto::util::public::import_public_key_from_string_into_format(&body).unwrap();
+
+	let join = sentc_crypto::group::prepare_group_keys_for_new_member(&group_to_invite_public_key, &group_keys_ref, false).unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req/" + &group_to_invite.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(join)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let join_res: GroupAcceptJoinReqServerOutput = handle_server_response(body.as_str()).unwrap();
+	assert_eq!(join_res.session_id, None);
+
+	//should get the group
+	let _data = get_group_from_group_as_member(
+		secret_token,
+		&user_to_invite.user_data.jwt,
+		&group.group_id,
+		&group_to_invite.group_id,
+		group_to_invite_private_key,
+	)
+	.await;
 }
 
 //__________________________________________________________________________________________________
