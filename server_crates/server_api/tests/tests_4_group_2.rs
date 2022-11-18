@@ -4,7 +4,7 @@ use reqwest::header::AUTHORIZATION;
 use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::UserData;
-use sentc_crypto_common::group::GroupCreateOutput;
+use sentc_crypto_common::group::{GroupCreateOutput, GroupInviteReqList, GroupInviteServerOutput};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::{GroupId, ServerOutput, UserId};
 use server_api_common::app::AppRegisterOutput;
@@ -534,7 +534,7 @@ async fn test_15_key_rotation_with_multiple_keys()
 
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
-	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let mut groups = GROUP_TEST_STATE.get().unwrap().write().await;
 
 	let group_1 = &groups[0];
 	let creator_group_1 = &users[0];
@@ -553,7 +553,7 @@ async fn test_15_key_rotation_with_multiple_keys()
 		.group_key;
 
 	//key rotation of group 1
-	key_rotation(
+	let (_, keys) = key_rotation(
 		secret_token,
 		&creator_group_1.user_data.jwt,
 		&group_1.group_id,
@@ -562,6 +562,8 @@ async fn test_15_key_rotation_with_multiple_keys()
 		&creator_group_1.user_data.user_keys[0].private_key,
 	)
 	.await;
+
+	assert_eq!(keys.len(), 2);
 
 	//just get the key rotation data (not done it) to check how many keys are in (should be just one)
 	key_rotation(
@@ -590,6 +592,10 @@ async fn test_15_key_rotation_with_multiple_keys()
 	let out: Vec<sentc_crypto::sdk_common::group::KeyRotationInput> = handle_server_response(body.as_str()).unwrap();
 
 	assert_eq!(out.len(), 1);
+
+	groups[0]
+		.decrypted_group_keys
+		.insert(creator_group_1.user_id.to_string(), keys);
 }
 
 #[tokio::test]
@@ -643,18 +649,222 @@ async fn test_16_kick_group_as_member()
 async fn test_17_invite_another_group()
 {
 	//invite send from the group to connect (group 3) to group 1
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let group = &groups[2];
+	let creator = &users[2];
+
+	let group_to_invite = &groups[0];
+	let user_to_invite = &users[0];
+
+	let keys = group
+		.decrypted_group_keys
+		.get(&group.group_member[0])
+		.unwrap();
+
+	let mut group_keys_ref = vec![];
+
+	for decrypted_group_key in keys {
+		group_keys_ref.push(&decrypted_group_key.group_key);
+	}
+
+	//fetch the public key data like user for a group which should connect to group
+	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/public_key");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(&creator.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let group_to_invite_public_key = sentc_crypto::util::public::import_public_key_from_string_into_format(&body).unwrap();
+
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(&group_to_invite_public_key, &group_keys_ref, false).unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + &group.group_id + "/invite_group/" + &group_to_invite.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(&creator.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.body(invite)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let invite_res: GroupInviteServerOutput = handle_server_response(&body).unwrap();
+
+	assert_eq!(invite_res.session_id, None);
+
+	//get the invite list for the group
+
+	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/invite/0/none");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(&user_to_invite.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let invites: Vec<GroupInviteReqList> = handle_server_response(&body).unwrap();
+
+	assert_eq!(invites.len(), 1);
+
+	assert_eq!(&invites[0].group_id, &group.group_id);
 }
 
 #[tokio::test]
 async fn test_18_reject_invite()
 {
 	//should be the same as normal invite
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let group = &groups[2];
+
+	let group_to_invite = &groups[0];
+	let user_to_invite = &users[0];
+
+	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/invite/" + &group.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(&user_to_invite.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(&body).unwrap();
+
+	//group should not be on the invite list
+	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/invite/0/none");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(&user_to_invite.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let invites: Vec<GroupInviteReqList> = handle_server_response(&body).unwrap();
+
+	assert_eq!(invites.len(), 0);
 }
 
 #[tokio::test]
 async fn test_19_accept_invite()
 {
-	//
+	//invite the group again to accept the invite
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let group = &groups[2];
+	let creator = &users[2];
+
+	let group_to_invite = &groups[0];
+	let user_to_invite = &users[0];
+	let group_to_invite_private_key = &group_to_invite
+		.decrypted_group_keys
+		.get(&user_to_invite.user_id)
+		.unwrap()[0]
+		.private_group_key;
+
+	let keys = group
+		.decrypted_group_keys
+		.get(&group.group_member[0])
+		.unwrap();
+
+	let mut group_keys_ref = vec![];
+
+	for decrypted_group_key in keys {
+		group_keys_ref.push(&decrypted_group_key.group_key);
+	}
+
+	//fetch the public key data like user for a group which should connect to group
+	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/public_key");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(&creator.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let group_to_invite_public_key = sentc_crypto::util::public::import_public_key_from_string_into_format(&body).unwrap();
+
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(&group_to_invite_public_key, &group_keys_ref, false).unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + &group.group_id + "/invite_group/" + &group_to_invite.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(&creator.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.body(invite)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let _invite_res: GroupInviteServerOutput = handle_server_response(&body).unwrap();
+
+	//now accept the invite
+	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/invite/" + &group.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.patch(url)
+		.header(AUTHORIZATION, auth_header(&user_to_invite.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(&body).unwrap();
+
+	//user of the invited group should access the group
+	let _data = get_group_from_group_as_member(
+		secret_token,
+		&user_to_invite.user_data.jwt,
+		&group.group_id,
+		&group_to_invite.group_id,
+		group_to_invite_private_key,
+	)
+	.await;
 }
 
 #[tokio::test]
