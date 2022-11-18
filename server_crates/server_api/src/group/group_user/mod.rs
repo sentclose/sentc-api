@@ -14,9 +14,10 @@ use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 
 use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
-use crate::group::get_group_user_data_from_req;
 use crate::group::group_entities::{GroupInviteReq, GroupJoinReq, GroupUserListItem};
 use crate::group::group_user_service::InsertNewUserType;
+use crate::group::{get_group_user_data_from_req, group_model};
+use crate::sentc_group_user_service::NewUserType;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 use crate::util::get_group_user_cache_key;
@@ -53,7 +54,17 @@ pub(crate) async fn get_group_member(req: Request) -> JRes<Vec<GroupUserListItem
 
 //__________________________________________________________________________________________________
 
-pub(crate) async fn invite_auto(mut req: Request) -> JRes<GroupInviteServerOutput>
+pub(crate) fn invite_auto(req: Request) -> impl Future<Output = JRes<GroupInviteServerOutput>>
+{
+	auto_invite(req, NewUserType::Normal)
+}
+
+pub(crate) fn invite_auto_group(req: Request) -> impl Future<Output = JRes<GroupInviteServerOutput>>
+{
+	auto_invite(req, NewUserType::Group)
+}
+
+async fn auto_invite(mut req: Request, user_type: NewUserType) -> JRes<GroupInviteServerOutput>
 {
 	let body = get_raw_body(&mut req).await?;
 
@@ -61,53 +72,97 @@ pub(crate) async fn invite_auto(mut req: Request) -> JRes<GroupInviteServerOutpu
 
 	let group_data = get_group_user_data_from_req(&req)?;
 
-	let invited_user = get_name_param_from_req(&req, "invited_user")?;
+	let (key, msg) = match user_type {
+		NewUserType::Normal => ("invited_user", "Group"),
+		NewUserType::Group => ("invited_group", "User"),
+	};
+
+	let to_invite = get_name_param_from_req(&req, key)?;
 
 	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
 
-	let session_id = group_user_service::invite_auto(group_data, input, invited_user.to_string()).await?;
+	let session_id = group_user_service::invite_auto(group_data, input, to_invite.to_string(), user_type).await?;
 
 	let out = GroupInviteServerOutput {
 		session_id,
-		message: "User was invited. Please wait until the user accepts the invite.".to_string(),
+		message: msg.to_string() + " was invited. Please wait until the user accepts the invite.",
 	};
 
 	echo(out)
 }
 
-pub(crate) async fn invite_request(mut req: Request) -> JRes<GroupInviteServerOutput>
+pub(crate) fn invite_request(req: Request) -> impl Future<Output = JRes<GroupInviteServerOutput>>
 {
 	//no the accept invite, but the keys are prepared for the invited user
 	//don't save this values in the group user keys table, but in the invite table
 
+	invite(req, NewUserType::Normal)
+}
+
+pub(crate) fn invite_request_to_group(req: Request) -> impl Future<Output = JRes<GroupInviteServerOutput>>
+{
+	invite(req, NewUserType::Group)
+}
+
+async fn invite(mut req: Request, user_type: NewUserType) -> JRes<GroupInviteServerOutput>
+{
 	let body = get_raw_body(&mut req).await?;
 
 	check_endpoint_with_req(&req, Endpoint::GroupInvite)?;
 
 	let group_data = get_group_user_data_from_req(&req)?;
 
-	let invited_user = get_name_param_from_req(&req, "invited_user")?;
+	let (key, msg) = match user_type {
+		NewUserType::Normal => ("invited_user", "Group"),
+		NewUserType::Group => ("invited_group", "User"),
+	};
+
+	let to_invite = get_name_param_from_req(&req, key)?;
 
 	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
 
-	let session_id = group_user_service::invite_request(group_data, input, invited_user.to_string()).await?;
+	let session_id = group_user_service::invite_request(group_data, input, to_invite.to_string(), user_type).await?;
 
 	let out = GroupInviteServerOutput {
 		session_id,
-		message: "User was invited. Please wait until the user accepts the invite.".to_string(),
+		message: msg.to_string() + " was invited. Please wait until the user accepts the invite.",
 	};
 
 	echo(out)
 }
 
-pub(crate) async fn get_invite_req(req: Request) -> JRes<Vec<GroupInviteReq>>
+pub(crate) fn get_invite_req(req: Request) -> impl Future<Output = JRes<Vec<GroupInviteReq>>>
+{
+	get_invite_req_pri(req, NewUserType::Normal)
+}
+
+pub(crate) fn get_invite_req_for_group(req: Request) -> impl Future<Output = JRes<Vec<GroupInviteReq>>>
+{
+	//call this from the group which gets all the invite req
+
+	get_invite_req_pri(req, NewUserType::Group)
+}
+
+async fn get_invite_req_pri(req: Request, user_type: NewUserType) -> JRes<Vec<GroupInviteReq>>
 {
 	let app = get_app_data_from_req(&req)?;
 	check_endpoint_with_app_options(&app, Endpoint::GroupInvite)?;
 
-	//called from the invited user not the group admin
+	let id_to_check = match user_type {
+		NewUserType::Normal => {
+			let user = get_jwt_data_from_param(&req)?;
 
-	let user = get_jwt_data_from_param(&req)?;
+			&user.id
+		},
+		NewUserType::Group => {
+			let group_data = get_group_user_data_from_req(&req)?;
+
+			group_model::check_group_rank(group_data.user_data.rank, 1)?;
+
+			&group_data.group_data.id
+		},
+	};
+
 	let params = get_params(&req)?;
 	let last_group_id = get_name_param_from_params(&params, "last_group_id")?;
 	let last_fetched_time = get_name_param_from_params(&params, "last_fetched_time")?;
@@ -122,7 +177,7 @@ pub(crate) async fn get_invite_req(req: Request) -> JRes<Vec<GroupInviteReq>>
 
 	let out = group_user_service::get_invite_req(
 		app.app_data.app_id.to_string(),
-		user.id.to_string(),
+		id_to_check.to_string(),
 		last_fetched_time,
 		last_group_id.to_string(),
 	)
@@ -131,30 +186,76 @@ pub(crate) async fn get_invite_req(req: Request) -> JRes<Vec<GroupInviteReq>>
 	echo(out)
 }
 
-pub(crate) async fn reject_invite(req: Request) -> JRes<ServerSuccessOutput>
+pub(crate) fn reject_invite(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
+{
+	reject_invite_pri(req, NewUserType::Normal)
+}
+
+pub(crate) fn reject_invite_group(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
+{
+	reject_invite_pri(req, NewUserType::Group)
+}
+
+async fn reject_invite_pri(req: Request, user_type: NewUserType) -> JRes<ServerSuccessOutput>
 {
 	check_endpoint_with_req(&req, Endpoint::GroupRejectInvite)?;
 
-	let user = get_jwt_data_from_param(&req)?;
-	let group_id = get_name_param_from_req(&req, "group_id")?;
+	let (key_id_to_reject, user_id) = match user_type {
+		NewUserType::Normal => {
+			let user = get_jwt_data_from_param(&req)?;
+			("group_id", &user.id)
+		},
+		NewUserType::Group => {
+			let group_data = get_group_user_data_from_req(&req)?;
 
-	group_user_model::reject_invite(group_id.to_string(), user.id.to_string()).await?;
+			group_model::check_group_rank(group_data.user_data.rank, 1)?;
+
+			("group_id_to_reject", &group_data.group_data.id)
+		},
+	};
+
+	let group_id = get_name_param_from_req(&req, key_id_to_reject)?;
+
+	group_user_model::reject_invite(group_id.to_string(), user_id.to_string()).await?;
 
 	echo_success()
 }
 
-pub(crate) async fn accept_invite(req: Request) -> JRes<ServerSuccessOutput>
+pub(crate) fn accept_invite(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
+{
+	accept_invite_pri(req, NewUserType::Normal)
+}
+
+pub(crate) fn accept_invite_group(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
+{
+	accept_invite_pri(req, NewUserType::Group)
+}
+
+async fn accept_invite_pri(req: Request, user_type: NewUserType) -> JRes<ServerSuccessOutput>
 {
 	let app = get_app_data_from_req(&req)?;
 	check_endpoint_with_app_options(&app, Endpoint::GroupAcceptInvite)?;
 
-	let user = get_jwt_data_from_param(&req)?;
-	let group_id = get_name_param_from_req(&req, "group_id")?;
+	let (key_id_to_accept, user_id) = match user_type {
+		NewUserType::Normal => {
+			let user = get_jwt_data_from_param(&req)?;
 
-	group_user_model::accept_invite(group_id.to_string(), user.id.to_string()).await?;
+			("group_id", &user.id)
+		},
+		NewUserType::Group => {
+			let group_data = get_group_user_data_from_req(&req)?;
+
+			group_model::check_group_rank(group_data.user_data.rank, 1)?;
+
+			("group_id_to_join", &group_data.group_data.id)
+		},
+	};
+
+	let group_id = get_name_param_from_req(&req, key_id_to_accept)?;
+	group_user_model::accept_invite(group_id.to_string(), user_id.to_string()).await?;
 
 	//delete the cache here so the user can join the group
-	let key_user = get_group_user_cache_key(app.app_data.app_id.as_str(), group_id, user.id.as_str());
+	let key_user = get_group_user_cache_key(app.app_data.app_id.as_str(), group_id, user_id);
 
 	cache::delete(&key_user).await;
 
@@ -163,18 +264,44 @@ pub(crate) async fn accept_invite(req: Request) -> JRes<ServerSuccessOutput>
 
 //__________________________________________________________________________________________________
 
-pub(crate) async fn join_req(req: Request) -> JRes<ServerSuccessOutput>
+pub(crate) fn join_req(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
+{
+	join_req_pri(req, NewUserType::Normal)
+}
+
+pub(crate) fn join_req_as_group(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
+{
+	//doing join req from a group to another group to join it as member
+	join_req_pri(req, NewUserType::Group)
+}
+
+async fn join_req_pri(req: Request, user_type: NewUserType) -> JRes<ServerSuccessOutput>
 {
 	let app = get_app_data_from_req(&req)?;
 	check_endpoint_with_app_options(app, Endpoint::GroupJoinReq)?;
 
-	let user = get_jwt_data_from_param(&req)?;
-	let group_id = get_name_param_from_req(&req, "group_id")?;
+	let (key_for_group_id_to_join, id) = match user_type {
+		NewUserType::Group => {
+			let group_data = get_group_user_data_from_req(&req)?;
+			//only high member can send join req
+			group_model::check_group_rank(group_data.user_data.rank, 1)?;
+
+			("group_id_to_join", &group_data.group_data.id)
+		},
+		NewUserType::Normal => {
+			let user = get_jwt_data_from_param(&req)?;
+
+			("group_id", &user.id)
+		},
+	};
+
+	let group_id_to_join = get_name_param_from_req(&req, key_for_group_id_to_join)?;
 
 	group_user_model::join_req(
 		app.app_data.app_id.to_string(),
-		group_id.to_string(),
-		user.id.to_string(),
+		group_id_to_join.to_string(),
+		id.to_string(),
+		user_type,
 	)
 	.await?;
 
@@ -227,6 +354,7 @@ pub(crate) async fn reject_join_req(req: Request) -> JRes<ServerSuccessOutput>
 
 	echo_success()
 }
+
 pub(crate) async fn accept_join_req(mut req: Request) -> JRes<GroupAcceptJoinReqServerOutput>
 {
 	let body = get_raw_body(&mut req).await?;

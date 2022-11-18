@@ -9,10 +9,11 @@ use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::group::{DoneGettingGroupKeysOutput, GroupKeyData, GroupOutData};
 use sentc_crypto::sdk_common::file::FileData;
-use sentc_crypto::sdk_common::group::GroupAcceptJoinReqServerOutput;
+use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupInviteServerOutput};
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
+use sentc_crypto::util::UserKeyDataInt;
 use sentc_crypto::{PrivateKeyFormat, PublicKeyFormat, SymKeyFormat, UserData};
-use sentc_crypto_common::group::{GroupCreateOutput, KeyRotationStartServerOutput};
+use sentc_crypto_common::group::{GroupCreateOutput, GroupKeyServerOutput, KeyRotationStartServerOutput};
 use sentc_crypto_common::user::{CaptchaCreateOutput, CaptchaInput, RegisterData, UserInitServerOutput};
 use sentc_crypto_common::{CustomerId, GroupId, ServerOutput, UserId};
 use server_api_common::app::{AppFileOptionsInput, AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
@@ -525,6 +526,38 @@ pub async fn get_group(
 	(data, data_keys)
 }
 
+pub async fn get_group_from_group_as_member(
+	secret_token: &str,
+	jwt: &str,
+	group_id: &str,
+	group_to_access: &str,
+	private_group_key: &PrivateKeyFormat,
+) -> (GroupOutData, Vec<GroupKeyData>)
+{
+	let url = get_url("api/v1/group/".to_owned() + group_id);
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", group_to_access)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let data = sentc_crypto::group::get_group_data(body.as_str()).unwrap();
+
+	let mut data_keys = Vec::with_capacity(data.keys.len());
+
+	for key in &data.keys {
+		data_keys.push(sentc_crypto::group::decrypt_group_keys(private_group_key, key).unwrap());
+	}
+
+	(data, data_keys)
+}
+
 pub async fn add_user_by_invite(
 	secret_token: &str,
 	jwt: &str,
@@ -577,6 +610,70 @@ pub async fn add_user_by_invite(
 	data
 }
 
+pub async fn add_group_by_invite(
+	secret_token: &str,
+	jwt: &str,
+	group_id: &str,
+	keys: &Vec<GroupKeyData>,
+	group_to_invite_id: &str,
+	group_to_invite_member_jwt: &str,
+	group_to_invite_private_key: &PrivateKeyFormat,
+) -> (GroupOutData, Vec<GroupKeyData>)
+{
+	let mut group_keys_ref = vec![];
+
+	for decrypted_group_key in keys {
+		group_keys_ref.push(&decrypted_group_key.group_key);
+	}
+
+	//fetch the public key data like user for a group which should connect to group
+	let url = get_url("api/v1/group/".to_owned() + group_to_invite_id + "/public_key");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let group_to_invite_public_key = sentc_crypto::util::public::import_public_key_from_string_into_format(&body).unwrap();
+
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(&group_to_invite_public_key, &group_keys_ref, false).unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + group_id + "/invite_group_auto/" + group_to_invite_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", secret_token)
+		.body(invite)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let invite_res: GroupInviteServerOutput = handle_server_response(&body).unwrap();
+
+	assert_eq!(invite_res.session_id, None);
+
+	let data = get_group_from_group_as_member(
+		secret_token,
+		group_to_invite_member_jwt,
+		group_id,
+		group_to_invite_id,
+		group_to_invite_private_key,
+	)
+	.await;
+
+	data
+}
+
 pub async fn key_rotation(
 	secret_token: &str,
 	jwt: &str,
@@ -620,6 +717,7 @@ pub async fn done_key_rotation(
 	pre_group_key: &SymKeyFormat,
 	public_key: &PublicKeyFormat,
 	private_key: &PrivateKeyFormat,
+	group_as_member_id: Option<&str>,
 ) -> Vec<DoneGettingGroupKeysOutput>
 {
 	//get the data for the rotation
@@ -629,10 +727,14 @@ pub async fn done_key_rotation(
 	let res = client
 		.get(url)
 		.header(AUTHORIZATION, auth_header(jwt))
-		.header("x-sentc-app-token", secret_token)
-		.send()
-		.await
-		.unwrap();
+		.header("x-sentc-app-token", secret_token);
+
+	let res = match group_as_member_id {
+		Some(id) => res.header("x-sentc-group-access-id", id),
+		None => res,
+	};
+
+	let res = res.send().await.unwrap();
 
 	let body = res.text().await.unwrap();
 
@@ -656,10 +758,14 @@ pub async fn done_key_rotation(
 			.put(url)
 			.header(AUTHORIZATION, auth_header(jwt))
 			.header("x-sentc-app-token", secret_token)
-			.body(rotation_out)
-			.send()
-			.await
-			.unwrap();
+			.body(rotation_out);
+
+		let res = match group_as_member_id {
+			Some(id) => res.header("x-sentc-group-access-id", id),
+			None => res,
+		};
+
+		let res = res.send().await.unwrap();
 
 		let body = res.text().await.unwrap();
 		handle_general_server_response(body.as_str()).unwrap();
@@ -671,10 +777,14 @@ pub async fn done_key_rotation(
 		let res = client
 			.get(url)
 			.header(AUTHORIZATION, auth_header(jwt))
-			.header("x-sentc-app-token", secret_token)
-			.send()
-			.await
-			.unwrap();
+			.header("x-sentc-app-token", secret_token);
+
+		let res = match group_as_member_id {
+			Some(id) => res.header("x-sentc-group-access-id", id),
+			None => res,
+		};
+
+		let res = res.send().await.unwrap();
 
 		let body = res.text().await.unwrap();
 
@@ -685,6 +795,55 @@ pub async fn done_key_rotation(
 
 	new_keys
 }
+
+//__________________________________________________________________________________________________
+
+pub async fn user_key_rotation(
+	secret_token: &str,
+	jwt: &str,
+	pre_group_key: &SymKeyFormat,
+	device_invoker_public_key: &PublicKeyFormat,
+	device_invoker_private_key: &PrivateKeyFormat,
+) -> UserKeyDataInt
+{
+	let input = sentc_crypto::group::key_rotation(pre_group_key, device_invoker_public_key, true).unwrap();
+
+	let url = get_url("api/v1/user/user_keys/rotation".to_string());
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let key_out: KeyRotationStartServerOutput = handle_server_response(body.as_str()).unwrap();
+
+	//wait a bit to finish the key rotation in the sub thread
+	tokio::time::sleep(Duration::from_millis(50)).await;
+
+	//fetch the key by id
+
+	let url = get_url("api/v1/user/user_keys/key/".to_string() + key_out.key_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let _out: GroupKeyServerOutput = handle_server_response(body.as_str()).unwrap();
+
+	sentc_crypto::user::done_key_fetch(device_invoker_private_key, body.as_str()).unwrap()
+}
+
+//__________________________________________________________________________________________________
 
 pub async fn get_file(file_id: &str, jwt: &str, token: &str, group_id: Option<&str>) -> FileData
 {

@@ -195,14 +195,21 @@ pub(super) async fn get_user_and_public_key(
 	//get the public key from the user group
 	//language=SQL
 	let sql = r"
-SELECT user_id, ugk.id, public_key, private_key_pair_alg, gu.time
+SELECT user_id, uk.id, public_key, private_key_pair_alg, gu.time
 FROM 
-    sentc_group_user gu, 
-    sentc_group_keys ugk, 
-    sentc_user u 
+    sentc_group_user gu,
+    (
+        -- get only the latest key of the user, list here every user with his/her latest public key
+        SELECT MAX(ugk.time), ugk.id, u.id as id_user, public_key, private_key_pair_alg
+        FROM 
+            sentc_user u, 
+            sentc_group_keys ugk
+        WHERE 
+            user_group_id = ugk.group_id
+        GROUP BY ugk.group_id
+    ) uk
 WHERE 
-    gu.user_id = u.id AND 
-    user_group_id = ugk.group_id AND 
+    gu.user_id = uk.id_user AND
     gu.type = 0 AND -- only real user
     gu.group_id = ? AND
     NOT EXISTS(
@@ -248,6 +255,72 @@ WHERE
 	let users: Vec<UserGroupPublicKeyData> = query_string(sql1, params).await?;
 
 	Ok(users)
+}
+
+pub(super) async fn get_group_as_member_public_key(
+	group_id: GroupId,
+	key_id: SymKeyId,
+	last_fetched: u128,
+	last_id: GroupId,
+) -> AppRes<Vec<UserGroupPublicKeyData>>
+{
+	//get here the public key data from a group as member
+
+	//language=SQL
+	let sql = r"
+SELECT k.group_id, k.id, public_key, private_key_pair_alg, gu.time
+FROM 
+    sentc_group_user gu, 
+    (
+        SELECT MAX(time), group_id, id, public_key, private_key_pair_alg, time
+        FROM sentc_group_keys
+        GROUP BY group_id
+    ) k
+WHERE 
+    gu.user_id = k.group_id AND 
+    gu.type = 2 AND 
+    gu.group_id = ? AND 
+    NOT EXISTS(
+        SELECT 1 
+        FROM sentc_group_user_keys gk 
+        WHERE 
+            gk.k_id = ? AND 
+            gk.user_id = gu.user_id AND 
+            gk.group_id = gu.group_id
+    ) AND 
+    NOT EXISTS(
+        SELECT 1 
+        FROM sentc_group_user_key_rotation grk 
+        WHERE 
+            grk.key_id = ? AND 
+            grk.user_id = gu.user_id AND 
+            grk.group_id = gu.group_id
+    )"
+	.to_string();
+
+	let (sql1, params) = if last_fetched > 0 {
+		//there is a last fetched time time
+		let sql = sql + " AND gu.time <= ? AND (gu.time < ? OR (gu.time = ? AND gu.user_id > ?)) ORDER BY gu.time DESC, gu.user_id LIMIT 100";
+		(
+			sql,
+			set_params!(
+				group_id,
+				key_id.clone(),
+				key_id,
+				last_fetched.to_string(),
+				last_fetched.to_string(),
+				last_fetched.to_string(),
+				last_id
+			),
+		)
+	} else {
+		let sql = sql + " ORDER BY gu.time DESC, gu.user_id LIMIT 100";
+		(sql, set_params!(group_id, key_id.clone(), key_id))
+	};
+
+	let keys: Vec<UserGroupPublicKeyData> = query_string(sql1, params).await?;
+
+	Ok(keys)
 }
 
 pub(super) async fn get_parent_group_and_public_key(group_id: GroupId, key_id: SymKeyId) -> AppRes<Option<UserGroupPublicKeyData>>

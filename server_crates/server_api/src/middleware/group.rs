@@ -56,14 +56,34 @@ async fn get_group_from_req(req: &mut Request) -> AppRes<()>
 	let user = get_jwt_data_from_param(&req)?;
 	let group_id = get_name_param_from_req(&req, "group_id")?;
 
-	let group_data = get_group(app.app_data.app_id.as_str(), group_id, user.id.as_str()).await?;
+	//when access a group as group member not normal member
+	let headers = req.headers();
+	let group_as_member_id = match headers.get("x-sentc-group-access-id") {
+		Some(v) => {
+			let v = match std::str::from_utf8(v.as_bytes()) {
+				Ok(v) => Some(v),
+				Err(_e) => None,
+			};
+
+			v
+		},
+		None => None,
+	};
+
+	let group_data = get_group(
+		app.app_data.app_id.as_str(),
+		group_id,
+		user.id.as_str(),
+		group_as_member_id,
+	)
+	.await?;
 
 	req.extensions_mut().insert(group_data);
 
 	Ok(())
 }
 
-async fn get_group(app_id: &str, group_id: &str, user_id: &str) -> AppRes<InternalGroupDataComplete>
+async fn get_group(app_id: &str, group_id: &str, user_id: &str, group_as_member_id: Option<&str>) -> AppRes<InternalGroupDataComplete>
 {
 	let key_group = get_group_cache_key(app_id, group_id);
 
@@ -107,22 +127,23 @@ async fn get_group(app_id: &str, group_id: &str, user_id: &str) -> AppRes<Intern
 		},
 	};
 
-	let (user_data, search_again) = get_group_user(app_id, group_id, user_id).await?;
+	let (user_data, search_again) = get_group_user(app_id, group_id, user_id, group_as_member_id).await?;
 
 	let user_data = if search_again {
 		//when there was just a ref to a parent group for the user data -> get the parent group user data
 		match user_data.get_values_from_parent {
 			Some(id) => {
-				let (result, _) = get_group_user(app_id, id.as_str(), user_id).await?;
+				let (result, _) = get_group_user(app_id, id.as_str(), user_id, group_as_member_id).await?;
 
 				//create the user data from parent (rank in the parent group and jointed time)
 				// and the user data of the child group
 				let user_data = InternalUserGroupData {
 					user_id: id.to_string(),
 					real_user_id: user_id.to_string(),
-					joined_time: result.joined_time,
+					joined_time: user_data.joined_time,
 					rank: result.rank,
 					get_values_from_parent: Some(id),
+					get_values_from_group_as_member: user_data.get_values_from_group_as_member,
 				};
 
 				user_data
@@ -132,6 +153,18 @@ async fn get_group(app_id: &str, group_id: &str, user_id: &str) -> AppRes<Intern
 	} else {
 		user_data
 	};
+
+	//now check if the user got access to the group which from he/she tries to enter
+	//check also parent access
+	if let Some(id) = group_as_member_id {
+		let (user_data, search_again) = get_group_user(app_id, id, user_id, None).await?;
+
+		if search_again {
+			if let Some(id) = user_data.get_values_from_parent {
+				get_group_user(app_id, id.as_str(), user_id, None).await?;
+			}
+		}
+	}
 
 	let group_data = InternalGroupDataComplete {
 		group_data: entity_group,
@@ -167,26 +200,42 @@ Example usage:
 		 - return the data,
 		 - in get_group fn we are searching for the real user data from the ref parent group again (mostly via cache), to see if the cache is still valid
 */
-async fn get_group_user(app_id: &str, group_id: &str, user_id: &str) -> AppRes<(InternalUserGroupData, bool)>
+async fn get_group_user(app_id: &str, group_id: &str, user_id: &str, group_as_member_id: Option<&str>) -> AppRes<(InternalUserGroupData, bool)>
 {
-	let key_user = get_group_user_cache_key(app_id, group_id, user_id);
+	//when the user wants to access the group by a group as member
+	let check_user_id = match group_as_member_id {
+		Some(v) => v,
+		None => user_id,
+	};
+
+	let key_user = get_group_user_cache_key(app_id, group_id, check_user_id);
 
 	let (entity, search_again) = match cache::get(key_user.as_str()).await {
 		Some(j) => (bytes_to_json(j.as_bytes())?, true),
 		None => {
-			let data = match group_model::get_internal_group_user_data(group_id.to_string(), user_id.to_string()).await? {
-				Some(d) => d,
+			let data = match group_model::get_internal_group_user_data(group_id.to_string(), check_user_id.to_string()).await? {
+				Some(mut d) => {
+					if let Some(v) = group_as_member_id {
+						d.get_values_from_group_as_member = Some(v.to_string());
+					}
+
+					d
+				},
 				None => {
 					//check the parent ref to this group and user.
-					let parent_ref = get_user_from_parent(group_id, user_id).await?;
+					let parent_ref = get_user_from_parent(group_id, check_user_id).await?;
 
 					let d = InternalUserGroupData {
 						user_id: parent_ref.get_values_from_parent.to_string(), //the the parent group id as user id when user comes from parent
-						real_user_id: user_id.to_string(),
+						real_user_id: check_user_id.to_string(),
 						joined_time: parent_ref.joined_time,
 						rank: parent_ref.rank,
 						//only set the ref to parent group here
 						get_values_from_parent: Some(parent_ref.get_values_from_parent),
+						get_values_from_group_as_member: match group_as_member_id {
+							Some(v) => Some(v.to_string()),
+							None => None,
+						},
 					};
 
 					d

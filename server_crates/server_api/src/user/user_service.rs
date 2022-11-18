@@ -25,6 +25,7 @@ use sentc_crypto_common::{AppId, DeviceId, GroupId, SymKeyId, UserId};
 
 use crate::group::group_entities::{GroupUserKeys, InternalGroupData, InternalGroupDataComplete, InternalUserGroupData};
 use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
+use crate::sentc_group_user_service::NewUserType;
 use crate::user::jwt::create_jwt;
 use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserJwtEntity, SERVER_RANDOM_VALUE};
 use crate::user::user_model;
@@ -90,6 +91,7 @@ pub async fn register(app_id: AppId, register_input: RegisterData) -> AppRes<Reg
 		device_id.to_string(),
 		group_data,
 		GROUP_TYPE_USER,
+		None,
 		None,
 		None,
 	)
@@ -182,10 +184,12 @@ pub async fn done_register_device(
 				joined_time: 0,
 				rank: 0, //Rank must be 0
 				get_values_from_parent: None,
+				get_values_from_group_as_member: None,
 			},
 		},
 		input.user_keys,
 		device_id.to_string(), //invite the new device
+		NewUserType::Normal,
 	)
 	.await?;
 
@@ -470,6 +474,7 @@ pub async fn delete_device(user: &UserJwtEntity, app_id: AppId, device_id: Devic
 			joined_time: 0,
 			rank: 4,
 			get_values_from_parent: None,
+			get_values_from_group_as_member: None,
 		},
 	})
 	.await

@@ -17,9 +17,18 @@ pub fn create_group(
 	group_type: i32,
 	parent_group_id: Option<GroupId>,
 	user_rank: Option<i32>,
+	connected_group: Option<GroupId>,
 ) -> impl Future<Output = AppRes<GroupId>>
 {
-	group_model::create(app_id, user_id, input, parent_group_id, user_rank, group_type)
+	group_model::create(
+		app_id,
+		user_id,
+		input,
+		parent_group_id,
+		user_rank,
+		group_type,
+		connected_group,
+	)
 }
 
 pub async fn delete_group(app_id: AppId, group_id: GroupId, user_rank: i32) -> AppRes<()>

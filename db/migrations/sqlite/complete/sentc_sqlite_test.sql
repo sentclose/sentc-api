@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 9:03am on October 16, 2022 (UTC)
+-- Exported: 5:44pm on November 6, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -109,7 +109,7 @@ CREATE TABLE sentc_group_user_invites_and_join_req
 	user_id  text,
 	group_id text,
 	type     text,
-	time     text, 'key_upload_session_id' TEXT,
+	time     text, 'key_upload_session_id' TEXT, 'user_type' INTEGER,
 	constraint sentc_group_user_invites_and_join_req_pk
 		primary key (user_id, group_id)
 );
