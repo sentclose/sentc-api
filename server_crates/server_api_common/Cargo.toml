@@ -15,7 +15,7 @@ serde = { version = "1.0", default-features = false, features = ["derive", "allo
 
 server-core = {version = "0.1.0", default-features = false, optional = true, path = "../core"}
 
-mysql_async = { version = "0.30.0", optional = true }
+mysql_async = { version = "0.31.0", optional = true, default-features = false, features = ["default-rustls"]}
 rusqlite = { version = "0.28.0", features = ["bundled"], optional = true }
 
 [features]
