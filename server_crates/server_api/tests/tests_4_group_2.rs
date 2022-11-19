@@ -938,7 +938,38 @@ async fn test_21_join_req_to_join_a_group()
 }
 
 #[tokio::test]
-async fn test_22_reject_join_req_from_group()
+async fn test_22_sent_join_req_for_group()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let group = &groups[2];
+
+	let group_to_invite = &groups[3];
+	let user_to_invite = &users[3];
+
+	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/joins/0/none");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user_to_invite.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let out: Vec<GroupInviteReqList> = handle_server_response(&body).unwrap();
+
+	//should get the join req to this group
+	assert_eq!(out.len(), 1);
+	assert_eq!(out[0].group_id, group.group_id);
+}
+
+#[tokio::test]
+async fn test_23_reject_join_req_from_group()
 {
 	//reject the join req from group 4
 
@@ -991,7 +1022,7 @@ async fn test_22_reject_join_req_from_group()
 }
 
 #[tokio::test]
-async fn test_23_accept_join_req_from_group()
+async fn test_24_accept_join_req_from_group()
 {
 	//send the join req again
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;

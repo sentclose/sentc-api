@@ -853,12 +853,7 @@ async fn test_25_get_join_req()
 
 	let body = res.text().await.unwrap();
 
-	let out = ServerOutput::<Vec<GroupJoinReqList>>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
-
-	let out = out.result.unwrap();
+	let out: Vec<GroupJoinReqList> = handle_server_response(&body).unwrap();
 
 	assert_eq!(out.len(), 1);
 	assert_eq!(out[0].user_id.to_string(), users[1].user_id.to_string());
@@ -880,8 +875,52 @@ async fn test_25_get_join_req()
 
 	let body = res.text().await.unwrap();
 
-	let out = ServerOutput::<Vec<GroupJoinReqList>>::from_string(body.as_str()).unwrap();
-	let out = out.result.unwrap();
+	let out: Vec<GroupJoinReqList> = handle_server_response(&body).unwrap();
+
+	assert_eq!(out.len(), 0);
+}
+
+#[tokio::test]
+async fn test_25_sent_join_req_for_user()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let user = &users[1];
+
+	let url = get_url("api/v1/group/joins/0/none".to_owned());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: Vec<GroupInviteReqList> = handle_server_response(&body).unwrap();
+
+	//should get the join req to this group
+	assert_eq!(out.len(), 1);
+	assert_eq!(out[0].group_id, group.group_id);
+
+	//no join req for page 2
+	let url = get_url("api/v1/group/joins/".to_owned() + out[0].time.to_string().as_str() + "/" + out[0].group_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: Vec<GroupInviteReqList> = handle_server_response(&body).unwrap();
 
 	assert_eq!(out.len(), 0);
 }
@@ -912,6 +951,25 @@ async fn test_26_send_join_req_aging()
 	let body = res.text().await.unwrap();
 	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
+	//should still get one join req
+	let url = get_url("api/v1/group/joins/0/none".to_owned());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: Vec<GroupInviteReqList> = handle_server_response(&body).unwrap();
+
+	//should get the join req to this group
+	assert_eq!(out.len(), 1);
+	assert_eq!(out[0].group_id, group.group_id);
+
 	//______________________________________________________________________________________________
 	let creator = &users[0];
 
@@ -931,12 +989,7 @@ async fn test_26_send_join_req_aging()
 
 	let body = res.text().await.unwrap();
 
-	let out = ServerOutput::<Vec<GroupJoinReqList>>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
-
-	let out = out.result.unwrap();
+	let out: Vec<GroupJoinReqList> = handle_server_response(&body).unwrap();
 
 	assert_eq!(out.len(), 1);
 	assert_eq!(out[0].user_id.to_string(), users[1].user_id.to_string());
@@ -998,6 +1051,25 @@ async fn test_28_get_not_join_req_after_reject()
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();
+
+	assert_eq!(out.len(), 0);
+
+	//should not get the rejected join req in the sent join req list
+	let user = &users[1];
+
+	let url = get_url("api/v1/group/joins/0/none".to_owned());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: Vec<GroupInviteReqList> = handle_server_response(&body).unwrap();
 
 	assert_eq!(out.len(), 0);
 }
