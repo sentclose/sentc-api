@@ -337,6 +337,61 @@ pub(crate) async fn get_join_req(req: Request) -> JRes<Vec<GroupJoinReq>>
 	echo(reqs)
 }
 
+pub(crate) fn get_sent_join_req_for_user(req: Request) -> impl Future<Output = JRes<Vec<GroupInviteReq>>>
+{
+	//list all join req of the user
+	get_sent_join_req(req, NewUserType::Normal)
+}
+
+pub(crate) fn get_sent_join_req_for_group(req: Request) -> impl Future<Output = JRes<Vec<GroupInviteReq>>>
+{
+	//list all join req of a group as member
+	get_sent_join_req(req, NewUserType::Group)
+}
+
+async fn get_sent_join_req(req: Request, user_type: NewUserType) -> JRes<Vec<GroupInviteReq>>
+{
+	let app = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(&app, Endpoint::GroupJoinReq)?;
+
+	let id_to_check = match user_type {
+		NewUserType::Normal => {
+			let user = get_jwt_data_from_param(&req)?;
+
+			&user.id
+		},
+		NewUserType::Group => {
+			let group_data = get_group_user_data_from_req(&req)?;
+
+			group_model::check_group_rank(group_data.user_data.rank, 1)?;
+
+			&group_data.group_data.id
+		},
+	};
+
+	let params = get_params(&req)?;
+	let last_group_id = get_name_param_from_params(&params, "last_group_id")?;
+	let last_fetched_time = get_name_param_from_params(&params, "last_fetched_time")?;
+	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
+		HttpErr::new(
+			400,
+			ApiErrorCodes::UnexpectedTime,
+			"last fetched time is wrong".to_string(),
+			None,
+		)
+	})?;
+
+	let out = group_user_model::get_sent_join_req(
+		app.app_data.app_id.clone(),
+		id_to_check.clone(),
+		last_fetched_time,
+		last_group_id.to_string(),
+	)
+	.await?;
+
+	echo(out)
+}
+
 pub(crate) async fn reject_join_req(req: Request) -> JRes<ServerSuccessOutput>
 {
 	check_endpoint_with_req(&req, Endpoint::GroupRejectJoinReq)?;
