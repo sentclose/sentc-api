@@ -452,6 +452,49 @@ WHERE group_id = ? AND type = ?"
 	Ok(join_req)
 }
 
+pub(super) async fn get_sent_join_req(app_id: AppId, user_id: UserId, last_fetched_time: u128, last_id: GroupId) -> AppRes<Vec<GroupInviteReq>>
+{
+	//the same as get_invite_req_to_user but with another search type: join req instead of invites
+
+	//language=SQL
+	let sql = r"
+SELECT group_id, i.time 
+FROM 
+    sentc_group_user_invites_and_join_req i, 
+    sentc_group g 
+WHERE  
+    user_id = ? AND 
+    i.type = ? AND 
+    app_id = ? AND
+    group_id = id"
+		.to_string();
+
+	let (sql1, params) = if last_fetched_time > 0 {
+		//there is a last fetched time time -> set the last fetched time to the params list
+		//order by time first -> then group id if multiple group ids got the same time
+		let sql = sql + " AND i.time <= ? AND (i.time < ? OR (i.time = ? AND group_id > ?)) ORDER BY i.time DESC, group_id LIMIT 50";
+		(
+			sql,
+			set_params!(
+				user_id,
+				GROUP_INVITE_TYPE_JOIN_REQ,
+				app_id,
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_id
+			),
+		)
+	} else {
+		let sql = sql + " ORDER BY i.time DESC, group_id LIMIT 50";
+		(sql, set_params!(user_id, GROUP_INVITE_TYPE_JOIN_REQ, app_id))
+	};
+
+	let invite_req: Vec<GroupInviteReq> = query_string(sql1, params).await?;
+
+	Ok(invite_req)
+}
+
 //__________________________________________________________________________________________________
 
 pub(super) async fn user_leave_group(group_id: GroupId, user_id: UserId, rank: i32) -> AppRes<()>

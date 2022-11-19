@@ -280,6 +280,12 @@ pub(crate) fn routes(router: &mut Router)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
+	router.get(
+		"/api/v1/group/joins/:last_fetched_time/:last_group_id",
+		r(crate::group::get_sent_join_req_for_user)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
 	router.patch(
 		"/api/v1/group/:group_id/invite",
 		r(crate::group::accept_invite)
@@ -377,6 +383,13 @@ pub(crate) fn routes(router: &mut Router)
 	router.get(
 		"/api/v1/group/:group_id/invite/:last_fetched_time/:last_group_id",
 		r(crate::group::get_invite_req_for_group)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/group/:group_id/joins/:last_fetched_time/:last_group_id",
+		r(crate::group::get_sent_join_req_for_group)
 			.add(group::group_transform)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
