@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments, clippy::manual_map, clippy::tabs_in_doc_comments)]
+
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub mod cache;

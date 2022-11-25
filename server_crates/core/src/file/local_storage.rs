@@ -57,10 +57,7 @@ impl FileHandler for LocalStorage
 		let stream = FramedRead::new(file, BytesCodec::new());
 		let body = Body::wrap_stream(stream);
 
-		let content_type = match content_type {
-			Some(c) => c,
-			None => "application/octet-stream",
-		};
+		let content_type = content_type.unwrap_or("application/octet-stream");
 
 		hyper::Response::builder()
 			.header("Content-Type", content_type)
@@ -84,7 +81,7 @@ impl FileHandler for LocalStorage
 			CoreError::new(
 				400,
 				CoreErrorCodes::FileLocalOpen,
-				format!("error in creating file"),
+				"error in creating file".to_string(),
 				None,
 			)
 		})?;
@@ -138,7 +135,8 @@ impl FileHandler for LocalStorage
 		self.remove_file(path.as_str()).await
 	}
 
-	async fn delete_parts(&self, parts: &Vec<String>) -> Result<(), CoreError>
+	#[allow(clippy::single_match)]
+	async fn delete_parts(&self, parts: &[String]) -> Result<(), CoreError>
 	{
 		//delete every part
 		for part in parts {
