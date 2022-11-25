@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![allow(dead_code, clippy::bool_assert_comparison)]
 
 use std::env;
 use std::time::Duration;
@@ -445,7 +445,7 @@ pub async fn init_user(app_secret_token: &str, jwt: &str, refresh_token: &str) -
 
 	let out = ServerOutput::<UserInitServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status);
+	assert_eq!(out.status, true);
 
 	out.result.unwrap()
 }
@@ -737,7 +737,7 @@ pub async fn done_key_rotation(
 
 	let out = ServerOutput::<Vec<sentc_crypto::sdk_common::group::KeyRotationInput>>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status);
+	assert_eq!(out.status, true);
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();
@@ -891,7 +891,5 @@ pub async fn get_and_decrypt_file_part(part_id: &str, jwt: &str, token: &str, fi
 {
 	let buffer = get_file_part(part_id, jwt, token).await;
 
-	let decrypted_file = sentc_crypto::crypto::decrypt_symmetric(file_key, &buffer, None).unwrap();
-
-	decrypted_file
+	sentc_crypto::crypto::decrypt_symmetric(file_key, &buffer, None).unwrap()
 }
