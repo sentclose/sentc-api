@@ -52,9 +52,9 @@ pub fn group_transform<S>(inner: S) -> GroupMiddleware<S>
 
 async fn get_group_from_req(req: &mut Request) -> AppRes<()>
 {
-	let app = get_app_data_from_req(&req)?;
-	let user = get_jwt_data_from_param(&req)?;
-	let group_id = get_name_param_from_req(&req, "group_id")?;
+	let app = get_app_data_from_req(req)?;
+	let user = get_jwt_data_from_param(req)?;
+	let group_id = get_name_param_from_req(req, "group_id")?;
 
 	//when access a group as group member not normal member
 	let headers = req.headers();
@@ -137,16 +137,14 @@ async fn get_group(app_id: &str, group_id: &str, user_id: &str, group_as_member_
 
 				//create the user data from parent (rank in the parent group and jointed time)
 				// and the user data of the child group
-				let user_data = InternalUserGroupData {
+				InternalUserGroupData {
 					user_id: id.to_string(),
 					real_user_id: user_id.to_string(),
 					joined_time: user_data.joined_time,
 					rank: result.rank,
 					get_values_from_parent: Some(id),
 					get_values_from_group_as_member: user_data.get_values_from_group_as_member,
-				};
-
-				user_data
+				}
 			},
 			None => user_data,
 		}
@@ -225,7 +223,7 @@ async fn get_group_user(app_id: &str, group_id: &str, user_id: &str, group_as_me
 					//check the parent ref to this group and user.
 					let parent_ref = get_user_from_parent(group_id, check_user_id).await?;
 
-					let d = InternalUserGroupData {
+					InternalUserGroupData {
 						user_id: parent_ref.get_values_from_parent.to_string(), //the the parent group id as user id when user comes from parent
 						real_user_id: check_user_id.to_string(),
 						joined_time: parent_ref.joined_time,
@@ -236,9 +234,7 @@ async fn get_group_user(app_id: &str, group_id: &str, user_id: &str, group_as_me
 							Some(v) => Some(v.to_string()),
 							None => None,
 						},
-					};
-
-					d
+					}
 				},
 			};
 

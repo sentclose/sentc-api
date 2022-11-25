@@ -41,7 +41,7 @@ async fn read_file(req: Request) -> Response
 		Err(_e) => "index.html",
 	};
 
-	if file == "" || file == "/" {
+	if file.is_empty() || file == "/" {
 		file = "index.html"
 	}
 
@@ -55,7 +55,7 @@ async fn read_file(req: Request) -> Response
 			}
 		},
 		None => {
-			file = file + "/index.html";
+			file += "/index.html";
 
 			"html"
 		},

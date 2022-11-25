@@ -167,7 +167,7 @@ WHERE customer_id = ? AND id = ? LIMIT 1";
 	match app_data {
 		Some(d) => Ok(d),
 		None => {
-			return Err(HttpErr::new(
+			Err(HttpErr::new(
 				401,
 				ApiErrorCodes::AppTokenNotFound,
 				"App token not found".to_string(),
@@ -560,7 +560,7 @@ INSERT INTO sentc_app_options
      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let params_options = set_params!(
-		app_id.to_string(),
+		app_id,
 		app_options.group_create,
 		app_options.group_get,
 		app_options.group_user_keys,

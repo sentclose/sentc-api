@@ -35,8 +35,8 @@ pub(crate) async fn get_all_apps(req: Request) -> JRes<Vec<CustomerAppList>>
 	let user = get_jwt_data_from_param(&req)?;
 
 	let params = get_params(&req)?;
-	let last_app_id = get_name_param_from_params(&params, "last_app_id")?;
-	let last_fetched_time = get_name_param_from_params(&params, "last_fetched_time")?;
+	let last_app_id = get_name_param_from_params(params, "last_app_id")?;
+	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
 	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
 		HttpErr::new(
 			400,

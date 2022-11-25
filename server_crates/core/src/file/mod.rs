@@ -19,7 +19,7 @@ pub trait FileHandler: Send + Sync
 
 	async fn delete_part(&self, part_id: &str) -> Result<(), CoreError>;
 
-	async fn delete_parts(&self, parts: &Vec<String>) -> Result<(), CoreError>;
+	async fn delete_parts(&self, parts: &[String]) -> Result<(), CoreError>;
 }
 
 pub async fn init_storage()
@@ -57,7 +57,7 @@ pub async fn delete_part(part_id: &str) -> Result<(), CoreError>
 	handler.delete_part(part_id).await
 }
 
-pub async fn delete_parts(parts: &Vec<String>) -> Result<(), CoreError>
+pub async fn delete_parts(parts: &[String]) -> Result<(), CoreError>
 {
 	let handler = FILE_HANDLER.get().unwrap();
 

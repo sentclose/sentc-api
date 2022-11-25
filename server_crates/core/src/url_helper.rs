@@ -19,11 +19,11 @@ pub fn get_params(req: &Request) -> Result<&RouteParams, CoreError>
 
 pub fn get_name_param_from_req<'a>(req: &'a Request, name: &str) -> Result<&'a str, CoreError>
 {
-	let params = get_params(&req)?;
+	let params = get_params(req)?;
 
 	match params.get(name) {
 		None => {
-			return Err(CoreError::new(
+			Err(CoreError::new(
 				400,
 				CoreErrorCodes::NoParameter,
 				"Parameter not found".to_owned(),
@@ -39,7 +39,7 @@ pub fn get_name_param_from_params<'a>(params: &'a RouteParams, name: &str) -> Re
 	//this is useful if we need more than one params, so we don't need to get it from req multiple times
 	match params.get(name) {
 		None => {
-			return Err(CoreError::new(
+			Err(CoreError::new(
 				400,
 				CoreErrorCodes::NoParameter,
 				"Parameter not found".to_owned(),

@@ -20,7 +20,7 @@ pub async fn register_file(mut req: Request) -> JRes<FileRegisterOutput>
 	let body = get_raw_body(&mut req).await?;
 	let app = get_app_data_from_req(&req)?;
 
-	check_endpoint_with_app_options(&app, Endpoint::FileRegister)?;
+	check_endpoint_with_app_options(app, Endpoint::FileRegister)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 
@@ -55,7 +55,7 @@ pub async fn register_file_in_group(mut req: Request) -> JRes<FileRegisterOutput
 pub async fn delete_registered_file_part(req: Request) -> JRes<ServerSuccessOutput>
 {
 	let app = get_app_data_from_req(&req)?;
-	check_endpoint_with_app_options(&app, Endpoint::ForceServer)?;
+	check_endpoint_with_app_options(app, Endpoint::ForceServer)?;
 
 	let file_options = &app.file_options;
 
@@ -81,7 +81,7 @@ pub async fn register_file_part(req: Request) -> JRes<FilePartRegisterOutput>
 {
 	//this fn is called from another storage without a file and we give the file part id back, to name the other file
 	let app = get_app_data_from_req(&req)?;
-	check_endpoint_with_app_options(&app, Endpoint::ForceServer)?;
+	check_endpoint_with_app_options(app, Endpoint::ForceServer)?;
 
 	let file_options = &app.file_options;
 
@@ -113,7 +113,7 @@ pub async fn upload_part(req: Request) -> JRes<ServerSuccessOutput>
 	let app = get_app_data_from_req(&req)?;
 	let file_options = &app.file_options;
 
-	check_endpoint_with_app_options(&app, Endpoint::FilePartUpload)?;
+	check_endpoint_with_app_options(app, Endpoint::FilePartUpload)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 	let app_id = app.app_data.app_id.to_string();
@@ -142,8 +142,8 @@ pub async fn upload_part(req: Request) -> JRes<ServerSuccessOutput>
 async fn check_session(req: &Request, app_id: AppId, user_id: UserId) -> AppRes<(FileId, usize, i32, bool)>
 {
 	let params = get_params(req)?;
-	let session_id = get_name_param_from_params(&params, "session_id")?;
-	let sequence = get_name_param_from_params(&params, "seq")?;
+	let session_id = get_name_param_from_params(params, "session_id")?;
+	let sequence = get_name_param_from_params(params, "seq")?;
 	let sequence: i32 = sequence.parse().map_err(|_e| {
 		HttpErr::new(
 			400,
@@ -152,7 +152,7 @@ async fn check_session(req: &Request, app_id: AppId, user_id: UserId) -> AppRes<
 			None,
 		)
 	})?;
-	let end = get_name_param_from_params(&params, "end")?;
+	let end = get_name_param_from_params(params, "end")?;
 	let end: bool = end.parse().map_err(|_e| {
 		HttpErr::new(
 			400,
@@ -172,7 +172,7 @@ async fn check_session(req: &Request, app_id: AppId, user_id: UserId) -> AppRes<
 pub async fn get_file(req: Request) -> JRes<FileMetaData>
 {
 	let app = get_app_data_from_req(&req)?;
-	check_endpoint_with_app_options(&app, Endpoint::FileGet)?;
+	check_endpoint_with_app_options(app, Endpoint::FileGet)?;
 
 	//use optional user id
 	let user_id = match get_jwt_data_from_param(&req) {
@@ -217,11 +217,11 @@ pub async fn get_parts(req: Request) -> JRes<Vec<FilePartListItem>>
 {
 	let app_data = get_app_data_from_req(&req)?;
 
-	check_endpoint_with_app_options(&app_data, Endpoint::FileGet)?;
+	check_endpoint_with_app_options(app_data, Endpoint::FileGet)?;
 
 	let params = get_params(&req)?;
-	let file_id = get_name_param_from_params(&params, "file_id")?;
-	let last_sequence = get_name_param_from_params(&params, "last_sequence")?;
+	let file_id = get_name_param_from_params(params, "file_id")?;
+	let last_sequence = get_name_param_from_params(params, "last_sequence")?;
 	let last_sequence: i32 = last_sequence.parse().map_err(|_e| {
 		HttpErr::new(
 			400,
@@ -263,7 +263,7 @@ pub async fn update_file_name(mut req: Request) -> JRes<ServerSuccessOutput>
 	let body = get_raw_body(&mut req).await?;
 
 	let app = get_app_data_from_req(&req)?;
-	check_endpoint_with_app_options(&app, Endpoint::FileRegister)?;
+	check_endpoint_with_app_options(app, Endpoint::FileRegister)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 	let part_id = get_name_param_from_req(&req, "file_id")?;
@@ -287,7 +287,7 @@ pub async fn delete_file(req: Request) -> JRes<ServerSuccessOutput>
 {
 	let app = get_app_data_from_req(&req)?;
 
-	check_endpoint_with_app_options(&app, Endpoint::FilePartDownload)?;
+	check_endpoint_with_app_options(app, Endpoint::FilePartDownload)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 
@@ -307,7 +307,7 @@ pub async fn delete_file_in_group(req: Request) -> JRes<ServerSuccessOutput>
 	let file_id = get_name_param_from_req(&req, "file_id")?;
 
 	file_service::delete_file(
-		&file_id,
+		file_id,
 		&group_data.group_data.app_id,
 		group_data.user_data.user_id.to_string(),
 		Some(group_data),

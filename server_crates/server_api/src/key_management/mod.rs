@@ -18,7 +18,7 @@ pub(crate) async fn register_sym_key(mut req: Request) -> JRes<GeneratedSymKeyHe
 	let input: GeneratedSymKeyHeadServerInput = bytes_to_json(&body)?;
 
 	let app = get_app_data_from_req(&req)?;
-	check_endpoint_with_app_options(&app, Endpoint::KeyRegister)?;
+	check_endpoint_with_app_options(app, Endpoint::KeyRegister)?;
 	let user = get_jwt_data_from_param(&req)?;
 
 	let key_id = key_model::register_sym_key(app.app_data.app_id.to_string(), user.id.to_string(), input).await?;
@@ -33,7 +33,7 @@ pub(crate) async fn register_sym_key(mut req: Request) -> JRes<GeneratedSymKeyHe
 pub(crate) async fn delete_sym_key(req: Request) -> JRes<ServerSuccessOutput>
 {
 	let app = get_app_data_from_req(&req)?;
-	check_endpoint_with_app_options(&app, Endpoint::KeyRegister)?;
+	check_endpoint_with_app_options(app, Endpoint::KeyRegister)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 
@@ -68,9 +68,9 @@ pub(crate) async fn get_all_sym_keys_to_master_key(req: Request) -> JRes<Vec<Sym
 
 	let params = get_params(&req)?;
 
-	let master_key_id = get_name_param_from_params(&params, "master_key_id")?;
-	let last_key_id = get_name_param_from_params(&params, "last_key_id")?;
-	let last_fetched_time = get_name_param_from_params(&params, "last_fetched_time")?;
+	let master_key_id = get_name_param_from_params(params, "master_key_id")?;
+	let last_key_id = get_name_param_from_params(params, "last_key_id")?;
+	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
 	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
 		HttpErr::new(
 			400,

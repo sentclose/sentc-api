@@ -7,7 +7,7 @@ use crate::group::group_entities::{GroupInviteReq, GroupUserKeys};
 
 //generated with browser console: btoa(String.fromCharCode.apply(null, window.crypto.getRandomValues(new Uint8Array(128/8))));
 //the value with the used alg
-pub static SERVER_RANDOM_VALUE: (&'static str, &'static str) = ("zx4AKPCMHkeZnh21ciQ62w==", sentc_crypto::util::public::ARGON_2_OUTPUT);
+pub static SERVER_RANDOM_VALUE: (&str, &str) = ("zx4AKPCMHkeZnh21ciQ62w==", sentc_crypto::util::public::ARGON_2_OUTPUT);
 
 //__________________________________________________________________________________________________
 //Jwt
@@ -292,7 +292,7 @@ impl mysql_async::prelude::FromRow for DoneLoginServerKeysOutputEntity
 			keypair_encrypt_id,
 			keypair_sign_id,
 			user_id: take_or_err!(row, 8, String),
-			device_id: k_id.to_string(),
+			device_id: k_id,
 			user_group_id: take_or_err!(row, 9, String),
 		})
 	}
@@ -320,7 +320,7 @@ impl server_core::db::FromSqliteRow for DoneLoginServerKeysOutputEntity
 			keypair_encrypt_id,
 			keypair_sign_id,
 			user_id: take_or_err!(row, 8),
-			device_id: k_id.to_string(),
+			device_id: k_id,
 			user_group_id: take_or_err!(row, 9),
 		})
 	}

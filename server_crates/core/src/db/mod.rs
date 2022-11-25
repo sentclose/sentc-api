@@ -47,6 +47,7 @@ pub async fn init_db()
 	MARIA_DB_COMM.get_or_init(mariadb::create_db).await;
 }
 
+#[allow(clippy::useless_format)]
 /**
 # Returns a ? string for multiple parameter
 
@@ -60,7 +61,7 @@ pub async fn init_db()
 	//prints "?,?,?"
 ````
  */
-pub fn get_in<T>(objects: &Vec<T>) -> String
+pub fn get_in<T>(objects: &[T]) -> String
 {
 	format!(
 		"{}",

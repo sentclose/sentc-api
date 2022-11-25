@@ -70,7 +70,7 @@ pub(crate) async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 
 	let email_check = email::check_email(email);
 
-	if email_check == false {
+	if !email_check {
 		return Err(HttpErr::new(
 			400,
 			ApiErrorCodes::CustomerEmailSyntax,
@@ -224,7 +224,7 @@ pub(crate) async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 
 	let email_check = email::check_email(email.as_str());
 
-	if email_check == false {
+	if !email_check {
 		return Err(HttpErr::new(
 			400,
 			ApiErrorCodes::CustomerEmailSyntax,
@@ -301,7 +301,7 @@ pub(crate) async fn prepare_reset_password(mut req: Request) -> JRes<ServerSucce
 
 	let email_check = email::check_email(email.as_str());
 
-	if email_check == false {
+	if !email_check {
 		return Err(HttpErr::new(
 			400,
 			ApiErrorCodes::CustomerEmailSyntax,

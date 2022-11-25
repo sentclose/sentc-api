@@ -30,8 +30,8 @@ pub(crate) async fn get_group_member(req: Request) -> JRes<Vec<GroupUserListItem
 	let group_data = get_group_user_data_from_req(&req)?;
 
 	let params = get_params(&req)?;
-	let last_user_id = get_name_param_from_params(&params, "last_user_id")?;
-	let last_fetched_time = get_name_param_from_params(&params, "last_fetched_time")?;
+	let last_user_id = get_name_param_from_params(params, "last_user_id")?;
+	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
 	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
 		HttpErr::new(
 			400,
@@ -146,7 +146,7 @@ pub(crate) fn get_invite_req_for_group(req: Request) -> impl Future<Output = JRe
 async fn get_invite_req_pri(req: Request, user_type: NewUserType) -> JRes<Vec<GroupInviteReq>>
 {
 	let app = get_app_data_from_req(&req)?;
-	check_endpoint_with_app_options(&app, Endpoint::GroupInvite)?;
+	check_endpoint_with_app_options(app, Endpoint::GroupInvite)?;
 
 	let id_to_check = match user_type {
 		NewUserType::Normal => {
@@ -164,8 +164,8 @@ async fn get_invite_req_pri(req: Request, user_type: NewUserType) -> JRes<Vec<Gr
 	};
 
 	let params = get_params(&req)?;
-	let last_group_id = get_name_param_from_params(&params, "last_group_id")?;
-	let last_fetched_time = get_name_param_from_params(&params, "last_fetched_time")?;
+	let last_group_id = get_name_param_from_params(params, "last_group_id")?;
+	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
 	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
 		HttpErr::new(
 			400,
@@ -234,7 +234,7 @@ pub(crate) fn accept_invite_group(req: Request) -> impl Future<Output = JRes<Ser
 async fn accept_invite_pri(req: Request, user_type: NewUserType) -> JRes<ServerSuccessOutput>
 {
 	let app = get_app_data_from_req(&req)?;
-	check_endpoint_with_app_options(&app, Endpoint::GroupAcceptInvite)?;
+	check_endpoint_with_app_options(app, Endpoint::GroupAcceptInvite)?;
 
 	let (key_id_to_accept, user_id) = match user_type {
 		NewUserType::Normal => {
@@ -315,8 +315,8 @@ pub(crate) async fn get_join_req(req: Request) -> JRes<Vec<GroupJoinReq>>
 	let group_data = get_group_user_data_from_req(&req)?;
 
 	let params = get_params(&req)?;
-	let last_user_id = get_name_param_from_params(&params, "last_user_id")?;
-	let last_fetched_time = get_name_param_from_params(&params, "last_fetched_time")?;
+	let last_user_id = get_name_param_from_params(params, "last_user_id")?;
+	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
 	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
 		HttpErr::new(
 			400,
@@ -352,7 +352,7 @@ pub(crate) fn get_sent_join_req_for_group(req: Request) -> impl Future<Output = 
 async fn get_sent_join_req(req: Request, user_type: NewUserType) -> JRes<Vec<GroupInviteReq>>
 {
 	let app = get_app_data_from_req(&req)?;
-	check_endpoint_with_app_options(&app, Endpoint::GroupJoinReq)?;
+	check_endpoint_with_app_options(app, Endpoint::GroupJoinReq)?;
 
 	let id_to_check = match user_type {
 		NewUserType::Normal => {
@@ -370,8 +370,8 @@ async fn get_sent_join_req(req: Request, user_type: NewUserType) -> JRes<Vec<Gro
 	};
 
 	let params = get_params(&req)?;
-	let last_group_id = get_name_param_from_params(&params, "last_group_id")?;
-	let last_fetched_time = get_name_param_from_params(&params, "last_fetched_time")?;
+	let last_group_id = get_name_param_from_params(params, "last_group_id")?;
+	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
 	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
 		HttpErr::new(
 			400,
@@ -422,7 +422,7 @@ pub(crate) async fn accept_join_req(mut req: Request) -> JRes<GroupAcceptJoinReq
 
 	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
 
-	if input.keys.len() == 0 {
+	if input.keys.is_empty() {
 		return Err(HttpErr::new(
 			400,
 			ApiErrorCodes::GroupNoKeys,

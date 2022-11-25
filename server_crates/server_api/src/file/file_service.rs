@@ -122,7 +122,7 @@ pub async fn get_file(app_id: AppId, user_id: Option<UserId>, file_id: FileId, g
 						},
 						Some(user_id) => {
 							//valid jwt but user got no access
-							if user_id != id.to_string() && user_id != file.owner {
+							if user_id != *id && user_id != file.owner {
 								return Err(HttpErr::new(
 									400,
 									ApiErrorCodes::FileAccess,

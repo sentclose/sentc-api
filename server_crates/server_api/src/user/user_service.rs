@@ -345,7 +345,7 @@ pub fn get_user_keys(
 		user.group_id.to_string(),
 		user.device_id.to_string(), //call it with the device id to decrypt the keys
 		last_fetched_time,
-		last_k_id.to_string(),
+		last_k_id,
 	)
 }
 
@@ -425,7 +425,7 @@ pub async fn refresh_jwt(app_data: &AppData, device_id: DeviceId, input: JwtRefr
 pub async fn delete(user: &UserJwtEntity, app_id: AppId) -> AppRes<()>
 {
 	//the user needs a jwt which was created from login and no refreshed jwt
-	if user.fresh == false {
+	if !user.fresh {
 		return Err(HttpErr::new(
 			401,
 			ApiErrorCodes::WrongJwtAction,
@@ -447,7 +447,7 @@ pub async fn delete(user: &UserJwtEntity, app_id: AppId) -> AppRes<()>
 pub async fn delete_device(user: &UserJwtEntity, app_id: AppId, device_id: DeviceId) -> AppRes<()>
 {
 	//this can be any device don't need to be the device to delete
-	if user.fresh == false {
+	if !user.fresh {
 		return Err(HttpErr::new(
 			401,
 			ApiErrorCodes::WrongJwtAction,
@@ -520,7 +520,7 @@ pub async fn update(user: &UserJwtEntity, app_id: AppId, update_input: UserUpdat
 pub async fn change_password(user: &UserJwtEntity, app_id: AppId, input: ChangePasswordData) -> AppRes<()>
 {
 	//the user needs a jwt which was created from login and no refreshed jwt
-	if user.fresh == false {
+	if !user.fresh {
 		return Err(HttpErr::new(
 			401,
 			ApiErrorCodes::WrongJwtAction,

@@ -39,7 +39,7 @@ pub async fn invite_request(
 	user_type: NewUserType,
 ) -> AppRes<Option<String>>
 {
-	if input.keys.len() == 0 {
+	if input.keys.is_empty() {
 		return Err(HttpErr::new(
 			400,
 			ApiErrorCodes::GroupNoKeys,
@@ -105,7 +105,7 @@ pub async fn insert_user_keys_via_session(
 	input: Vec<GroupKeysForNewMember>,
 ) -> AppRes<()>
 {
-	if input.len() == 0 {
+	if input.is_empty() {
 		return Err(HttpErr::new(
 			400,
 			ApiErrorCodes::GroupNoKeys,

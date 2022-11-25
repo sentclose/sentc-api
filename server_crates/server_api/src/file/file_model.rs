@@ -229,7 +229,7 @@ WHERE
 
 	let file_parts: Vec<FilePartListItem> = query_string(sql, params).await?;
 
-	if file_parts.len() == 0 {
+	if file_parts.is_empty() {
 		return Err(HttpErr::new(
 			400,
 			ApiErrorCodes::FileNotFound,
@@ -335,7 +335,7 @@ WHERE
 	.await?;
 
 	//update children, can't use mysql recursion here, because it says the rec table doesn't exist
-	if children.len() > 0 {
+	if !children.is_empty() {
 		let get_in = get_in(&children);
 
 		//language=SQLx

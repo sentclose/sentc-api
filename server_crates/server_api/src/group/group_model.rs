@@ -410,7 +410,7 @@ pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_rank: i32) -> 
 
 	let mut children_out = Vec::with_capacity(children.len());
 
-	if children.len() > 0 {
+	if !children.is_empty() {
 		for child in &children {
 			children_out.push(child.0.to_string());
 		}
