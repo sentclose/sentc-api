@@ -52,7 +52,7 @@ async fn create_group(
 
 	let app = get_app_data_from_req(&req)?;
 
-	check_endpoint_with_app_options(&app, Endpoint::GroupCreate)?;
+	check_endpoint_with_app_options(app, Endpoint::GroupCreate)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 
@@ -187,8 +187,8 @@ pub(crate) async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupUserKeys>
 	let group_data = get_group_user_data_from_req(&req)?;
 
 	let params = get_params(&req)?;
-	let last_k_id = get_name_param_from_params(&params, "last_k_id")?;
-	let last_fetched_time = get_name_param_from_params(&params, "last_fetched_time")?;
+	let last_k_id = get_name_param_from_params(params, "last_k_id")?;
+	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
 	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
 		HttpErr::new(
 			400,
@@ -234,12 +234,12 @@ pub(crate) async fn get_all_groups_for_user(req: Request) -> JRes<Vec<ListGroups
 	//this is called from the user without a group id
 
 	let app = get_app_data_from_req(&req)?;
-	check_endpoint_with_app_options(&app, Endpoint::GroupList)?;
+	check_endpoint_with_app_options(app, Endpoint::GroupList)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 	let params = get_params(&req)?;
-	let last_group_id = get_name_param_from_params(&params, "last_group_id")?;
-	let last_fetched_time = get_name_param_from_params(&params, "last_fetched_time")?;
+	let last_group_id = get_name_param_from_params(params, "last_group_id")?;
+	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
 	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
 		HttpErr::new(
 			400,

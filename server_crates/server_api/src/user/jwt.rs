@@ -14,7 +14,7 @@ use crate::user::user_entities::UserJwtEntity;
 use crate::user::user_model;
 use crate::util::api_res::{ApiErrorCodes, HttpErr};
 
-pub static JWT_ALG: &'static str = "ES384";
+pub static JWT_ALG: &str = "ES384";
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Claims
@@ -28,6 +28,7 @@ struct Claims
 	fresh: bool, //was this token from refresh jwt or from login
 }
 
+#[allow(clippy::collapsible_match)]
 pub fn get_jwt_data_from_param(req: &Request) -> Result<&UserJwtEntity, HttpErr>
 {
 	match req.extensions().get::<Option<UserJwtEntity>>() {
@@ -146,10 +147,9 @@ pub async fn auth(jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), 
 pub fn create_jwt_keys() -> Result<(String, String, &'static str), HttpErr>
 {
 	let rng = rand::SystemRandom::new();
-	let bytes = signature::EcdsaKeyPair::generate_pkcs8(&signature::ECDSA_P384_SHA384_FIXED_SIGNING, &rng).map_err(|e| map_create_key_err(e))?;
+	let bytes = signature::EcdsaKeyPair::generate_pkcs8(&signature::ECDSA_P384_SHA384_FIXED_SIGNING, &rng).map_err(map_create_key_err)?;
 
-	let keypair =
-		signature::EcdsaKeyPair::from_pkcs8(&signature::ECDSA_P384_SHA384_FIXED_SIGNING, bytes.as_ref()).map_err(|e| map_create_key_err(e))?;
+	let keypair = signature::EcdsaKeyPair::from_pkcs8(&signature::ECDSA_P384_SHA384_FIXED_SIGNING, bytes.as_ref()).map_err(map_create_key_err)?;
 
 	let verify_key = keypair.public_key();
 
@@ -234,6 +234,6 @@ mod test
 
 		assert_eq!(decoded.claims.aud, claims.aud);
 		assert_eq!(key_id, key_id_str);
-		assert_eq!(decoded.claims.fresh, false);
+		assert_eq!(decoded.claims.fresh);
 	}
 }

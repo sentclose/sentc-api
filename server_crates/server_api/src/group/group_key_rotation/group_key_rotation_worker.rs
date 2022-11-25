@@ -42,24 +42,20 @@ pub async fn start(app_id: AppId, group_id: GroupId, key_id: SymKeyId, user_grou
 	}
 
 	//key rotation for parent group. check first if this is already done for parent group (like user)
-	match group_key_rotation_model::get_parent_group_and_public_key(group_id.clone(), key_id.clone()).await? {
-		Some(item) => {
-			let user_keys = tokio::task::spawn_blocking(move || encrypt(&key_arc, vec![item]))
-				.await
-				.map_err(|e| {
-					HttpErr::new(
-						400,
-						ApiErrorCodes::GroupKeyRotationThread,
-						"Error in user key rotation".to_string(),
-						Some(format!("error in user key rotation: {}", e)),
-					)
-				})?;
+	if let Some(item) = group_key_rotation_model::get_parent_group_and_public_key(group_id.clone(), key_id.clone()).await? {
+		let user_keys = tokio::task::spawn_blocking(move || encrypt(&key_arc, vec![item]))
+			.await
+			.map_err(|e| {
+				HttpErr::new(
+					400,
+					ApiErrorCodes::GroupKeyRotationThread,
+					"Error in user key rotation".to_string(),
+					Some(format!("error in user key rotation: {}", e)),
+				)
+			})?;
 
-			//save the keys for the parent
-			group_key_rotation_model::save_user_eph_keys(group_id.clone(), key_id, user_keys).await?;
-		},
-		//no parent group found or the parent group is already done (e.g. was rotation starter)
-		None => {},
+		//save the keys for the parent
+		group_key_rotation_model::save_user_eph_keys(group_id.clone(), key_id, user_keys).await?;
 	}
 
 	//save the user action

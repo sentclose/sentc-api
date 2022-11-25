@@ -52,18 +52,18 @@ async fn delete_parts(parts: Vec<FilePartListItemDelete>) -> AppRes<()>
 			//split the app ids
 			extern_storage_map
 				.entry(part.app_id.to_string())
-				.or_insert(Vec::new())
+				.or_default()
 				.push(part.part_id);
 		} else {
 			intern_storage.push(part.part_id);
 		}
 	}
 
-	if intern_storage.len() > 0 {
+	if !intern_storage.is_empty() {
 		server_core::file::delete_parts(&intern_storage).await?;
 	}
 
-	if extern_storage_map.len() > 0 {
+	if !extern_storage_map.is_empty() {
 		delete_external(extern_storage_map).await?;
 	}
 

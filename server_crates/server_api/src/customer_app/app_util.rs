@@ -5,7 +5,7 @@ use crate::customer_app::app_entities::AppData;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::AuthWithToken;
 
-pub static HASH_ALG: &'static str = "SHA256";
+pub static HASH_ALG: &str = "SHA256";
 
 pub enum Endpoint
 {
@@ -94,7 +94,7 @@ pub fn hash_token(token: &[u8]) -> AppRes<[u8; 32]>
 
 pub fn hash_token_to_string(token: &[u8]) -> AppRes<String>
 {
-	let token = hash_token(&token)?;
+	let token = hash_token(token)?;
 
 	Ok(base64::encode(token))
 }

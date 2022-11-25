@@ -57,7 +57,7 @@ pub fn get_user_group_keys(
 	last_k_id: SymKeyId,
 ) -> impl Future<Output = AppRes<Vec<GroupUserKeys>>>
 {
-	group_model::get_user_group_keys(app_id, group_id, user_id, last_fetched_time, last_k_id.to_string())
+	group_model::get_user_group_keys(app_id, group_id, user_id, last_fetched_time, last_k_id)
 }
 
 /**

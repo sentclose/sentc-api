@@ -445,11 +445,9 @@ pub async fn init_user(app_secret_token: &str, jwt: &str, refresh_token: &str) -
 
 	let out = ServerOutput::<UserInitServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert_eq!(out.status);
 
-	let out = out.result.unwrap();
-
-	out
+	out.result.unwrap()
 }
 
 pub async fn create_test_user(secret_token: &str, public_token: &str, username: &str, pw: &str) -> (UserId, UserData)
@@ -558,6 +556,7 @@ pub async fn get_group_from_group_as_member(
 	(data, data_keys)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn add_user_by_invite(
 	secret_token: &str,
 	jwt: &str,
@@ -662,16 +661,14 @@ pub async fn add_group_by_invite(
 
 	assert_eq!(invite_res.session_id, None);
 
-	let data = get_group_from_group_as_member(
+	get_group_from_group_as_member(
 		secret_token,
 		group_to_invite_member_jwt,
 		group_id,
 		group_to_invite_id,
 		group_to_invite_private_key,
 	)
-	.await;
-
-	data
+	.await
 }
 
 pub async fn key_rotation(
@@ -740,7 +737,7 @@ pub async fn done_key_rotation(
 
 	let out = ServerOutput::<Vec<sentc_crypto::sdk_common::group::KeyRotationInput>>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert_eq!(out.status);
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();
@@ -887,9 +884,7 @@ pub async fn get_file_part(part_id: &str, jwt: &str, token: &str) -> Vec<u8>
 		panic!("error in fetching part: {:?}", text);
 	}
 
-	let buffer = res.bytes().await.unwrap().to_vec();
-
-	buffer
+	res.bytes().await.unwrap().to_vec()
 }
 
 pub async fn get_and_decrypt_file_part(part_id: &str, jwt: &str, token: &str, file_key: &SymKeyFormat) -> Vec<u8>

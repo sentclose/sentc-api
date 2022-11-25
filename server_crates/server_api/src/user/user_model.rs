@@ -752,7 +752,7 @@ INSERT INTO sentc_user_device
 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let key_params = set_params!(
-		device_id.to_string(),
+		device_id,
 		user_id,
 		app_id,
 		device_identifier,

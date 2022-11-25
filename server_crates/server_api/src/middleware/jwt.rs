@@ -83,7 +83,7 @@ async fn jwt_check(req: &mut Request, optional: bool, check_exp: bool) -> Result
 	//get and validate the jwt. then save it in the req param.
 	//cache the jwt under with the jwt hash as key to save the validation process everytime. save false jwt too
 
-	let user = match get_jwt_from_req(&req) {
+	let user = match get_jwt_from_req(req) {
 		Err(e) => {
 			if !optional {
 				return Err(e);

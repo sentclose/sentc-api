@@ -56,12 +56,14 @@ pub async fn validate_captcha(app_id: AppId, captcha_id: String, solution: Strin
 
 fn create_captcha() -> AppRes<(String, String)>
 {
-	let (solution, png) = gen(Difficulty::Easy).as_tuple().ok_or(HttpErr::new(
-		400,
-		ApiErrorCodes::CaptchaCreate,
-		"Can't create a captcha".to_string(),
-		None,
-	))?;
+	let (solution, png) = gen(Difficulty::Easy).as_tuple().ok_or_else(|| {
+		HttpErr::new(
+			400,
+			ApiErrorCodes::CaptchaCreate,
+			"Can't create a captcha".to_string(),
+			None,
+		)
+	})?;
 
 	let png = encode(png);
 

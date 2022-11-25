@@ -76,7 +76,7 @@ pub(super) async fn invite_request(
 	//2. check if the user is already in the group
 	let check = check_user_in_group(group_id.to_string(), invited_user.to_string()).await?;
 
-	if check == true {
+	if check {
 		return Err(HttpErr::new(
 			400,
 			ApiErrorCodes::GroupUserExists,
@@ -263,7 +263,7 @@ pub(super) async fn join_req(app_id: AppId, group_id: GroupId, user_id: UserId, 
 {
 	let check = check_user_in_group(group_id.to_string(), user_id.to_string()).await?;
 
-	if check == true {
+	if check {
 		return Err(HttpErr::new(
 			400,
 			ApiErrorCodes::GroupUserExists,
@@ -331,7 +331,7 @@ pub(super) async fn accept_join_req(
 	//this check in important (see invite user req -> check if there is an invite). we would insert the keys even if the user is already member
 	let check = check_user_in_group(group_id.to_string(), user_id.to_string()).await?;
 
-	if check == true {
+	if check {
 		return Err(HttpErr::new(
 			400,
 			ApiErrorCodes::GroupUserExists,
@@ -503,7 +503,7 @@ pub(super) async fn user_leave_group(group_id: GroupId, user_id: UserId, rank: i
 	if rank <= 1 {
 		let only_admin = check_for_only_one_admin(group_id.to_string(), user_id.to_string()).await?;
 
-		if only_admin == true {
+		if only_admin {
 			return Err(HttpErr::new(
 				400,
 				ApiErrorCodes::GroupOnlyOneAdmin,
@@ -644,15 +644,11 @@ pub(super) async fn insert_user_keys_via_session(
 	let sql = match insert_type {
 		InsertNewUserType::Invite => {
 			//language=SQL
-			let sql = "SELECT user_id FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND key_upload_session_id = ?";
-
-			sql
+			"SELECT user_id FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND key_upload_session_id = ?"
 		},
 		InsertNewUserType::Join => {
 			//language=SQL
-			let sql = "SELECT user_id FROM sentc_group_user WHERE group_id = ? AND key_upload_session_id = ?";
-
-			sql
+			"SELECT user_id FROM sentc_group_user WHERE group_id = ? AND key_upload_session_id = ?"
 		},
 	};
 
@@ -741,7 +737,7 @@ async fn check_for_invite(user_id: UserId, group_id: GroupId) -> AppRes<i32>
 	match check {
 		Some(user_type) => Ok(user_type.0),
 		None => {
-			return Err(HttpErr::new(
+			Err(HttpErr::new(
 				400,
 				ApiErrorCodes::GroupInviteNotFound,
 				"No invite found".to_string(),

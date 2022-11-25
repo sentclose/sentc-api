@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments, clippy::manual_map, clippy::tabs_in_doc_comments, clippy::from_over_into)]
+
 use hyper::Body;
 use rustgram::{r, Request, Response, Router};
 

@@ -88,7 +88,7 @@ pub(crate) async fn done_register_device(mut req: Request) -> JRes<GroupAcceptJo
 	let app = get_app_data_from_req(&req)?;
 	let user = get_jwt_data_from_param(&req)?;
 
-	check_endpoint_with_app_options(&app, Endpoint::UserDeviceRegister)?;
+	check_endpoint_with_app_options(app, Endpoint::UserDeviceRegister)?;
 
 	let session_id = user_service::done_register_device(
 		app.app_data.app_id.clone(),
@@ -168,13 +168,13 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerOutput>
 pub(crate) async fn get_user_keys(req: Request) -> JRes<Vec<GroupUserKeys>>
 {
 	let app = get_app_data_from_req(&req)?;
-	check_endpoint_with_app_options(&app, Endpoint::UserDoneLogin)?;
+	check_endpoint_with_app_options(app, Endpoint::UserDoneLogin)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 
 	let params = get_params(&req)?;
-	let last_k_id = get_name_param_from_params(&params, "last_k_id")?;
-	let last_fetched_time = get_name_param_from_params(&params, "last_fetched_time")?;
+	let last_k_id = get_name_param_from_params(params, "last_k_id")?;
+	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
 	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
 		HttpErr::new(
 			400,
@@ -198,7 +198,7 @@ pub(crate) async fn get_user_keys(req: Request) -> JRes<Vec<GroupUserKeys>>
 pub(crate) async fn get_user_key(req: Request) -> JRes<GroupUserKeys>
 {
 	let app = get_app_data_from_req(&req)?;
-	check_endpoint_with_app_options(&app, Endpoint::UserDoneLogin)?;
+	check_endpoint_with_app_options(app, Endpoint::UserDoneLogin)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 	let key_id = get_name_param_from_req(&req, "key_id")?;
@@ -312,7 +312,7 @@ pub(crate) async fn refresh_jwt(mut req: Request) -> JRes<DoneLoginLightServerOu
 pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 {
 	let app = get_app_data_from_req(&req)?;
-	check_endpoint_with_app_options(&app, Endpoint::UserDelete)?;
+	check_endpoint_with_app_options(app, Endpoint::UserDelete)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 
@@ -332,7 +332,7 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 pub(crate) async fn delete_device(req: Request) -> JRes<ServerSuccessOutput>
 {
 	let app = get_app_data_from_req(&req)?;
-	check_endpoint_with_app_options(&app, Endpoint::UserDeviceDelete)?;
+	check_endpoint_with_app_options(app, Endpoint::UserDeviceDelete)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 	let device_id = get_name_param_from_req(&req, "device_id")?;
@@ -346,13 +346,13 @@ pub(crate) async fn get_devices(req: Request) -> JRes<Vec<UserDeviceList>>
 {
 	let app = get_app_data_from_req(&req)?;
 
-	check_endpoint_with_app_options(&app, Endpoint::UserDeviceList)?;
+	check_endpoint_with_app_options(app, Endpoint::UserDeviceList)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 
 	let params = get_params(&req)?;
-	let last_id = get_name_param_from_params(&params, "last_id")?;
-	let last_fetched_time = get_name_param_from_params(&params, "last_fetched_time")?;
+	let last_id = get_name_param_from_params(params, "last_id")?;
+	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
 	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
 		HttpErr::new(
 			400,
@@ -381,7 +381,7 @@ pub(crate) async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 	let app = get_app_data_from_req(&req)?;
 	let user = get_jwt_data_from_param(&req)?;
 
-	check_endpoint_with_app_options(&app, Endpoint::UserUpdate)?;
+	check_endpoint_with_app_options(app, Endpoint::UserUpdate)?;
 
 	user_service::update(user, app.app_data.app_id.clone(), update_input).await?;
 
@@ -396,7 +396,7 @@ pub(crate) async fn change_password(mut req: Request) -> JRes<ServerSuccessOutpu
 
 	let input: ChangePasswordData = bytes_to_json(&body)?;
 
-	check_endpoint_with_app_options(&app_data, Endpoint::UserChangePassword)?;
+	check_endpoint_with_app_options(app_data, Endpoint::UserChangePassword)?;
 
 	user_service::change_password(user, app_data.app_data.app_id.to_string(), input).await?;
 
@@ -418,7 +418,7 @@ pub(crate) async fn reset_password(mut req: Request) -> JRes<ServerSuccessOutput
 	let app_data = get_app_data_from_req(&req)?;
 	let input: ResetPasswordData = bytes_to_json(&body)?;
 
-	check_endpoint_with_app_options(&app_data, Endpoint::UserResetPassword)?;
+	check_endpoint_with_app_options(app_data, Endpoint::UserResetPassword)?;
 
 	user_service::reset_password(user.id.clone(), user.device_id.clone(), input).await?;
 
@@ -441,7 +441,7 @@ pub(crate) async fn user_group_key_rotation(mut req: Request) -> JRes<KeyRotatio
 	let user = get_jwt_data_from_param(&req)?;
 	let app_data = get_app_data_from_req(&req)?;
 
-	check_endpoint_with_app_options(&app_data, Endpoint::UserKeyRotation)?;
+	check_endpoint_with_app_options(app_data, Endpoint::UserKeyRotation)?;
 
 	let input: KeyRotationData = bytes_to_json(&body)?;
 
@@ -476,7 +476,7 @@ pub(crate) async fn get_user_group_keys_for_update(req: Request) -> JRes<Vec<Gro
 	let user = get_jwt_data_from_param(&req)?;
 	let app_data = get_app_data_from_req(&req)?;
 
-	check_endpoint_with_app_options(&app_data, Endpoint::UserKeyRotation)?;
+	check_endpoint_with_app_options(app_data, Endpoint::UserKeyRotation)?;
 
 	let update = group_key_rotation_service::get_keys_for_update(
 		app_data.app_data.app_id.clone(),
@@ -495,7 +495,7 @@ pub(crate) async fn done_key_rotation_for_device(mut req: Request) -> JRes<Serve
 	let user = get_jwt_data_from_param(&req)?;
 	let app_data = get_app_data_from_req(&req)?;
 
-	check_endpoint_with_app_options(&app_data, Endpoint::UserKeyRotation)?;
+	check_endpoint_with_app_options(app_data, Endpoint::UserKeyRotation)?;
 
 	let key_id = get_name_param_from_req(&req, "key_id")?;
 

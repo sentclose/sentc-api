@@ -1,10 +1,10 @@
 pub mod api_res;
 
-pub static JWT_CACHE: &'static str = "jwtcache_";
-pub static APP_TOKEN_CACHE: &'static str = "apptokencache_";
-pub static INTERNAL_GROUP_DATA_CACHE: &'static str = "internalgroupdatacache_";
-pub static INTERNAL_GROUP_USER_DATA_CACHE: &'static str = "internalgroupuserdatacache_";
-pub static INTERNAL_GROUP_USER_PARENT_REF_CACHE: &'static str = "internalgroupuserparentrefcache_";
+pub static JWT_CACHE: &str = "jwtcache_";
+pub static APP_TOKEN_CACHE: &str = "apptokencache_";
+pub static INTERNAL_GROUP_DATA_CACHE: &str = "internalgroupdatacache_";
+pub static INTERNAL_GROUP_USER_DATA_CACHE: &str = "internalgroupuserdatacache_";
+pub static INTERNAL_GROUP_USER_PARENT_REF_CACHE: &str = "internalgroupuserparentrefcache_";
 
 pub(crate) fn get_group_cache_key(app_id: &str, group_id: &str) -> String
 {
