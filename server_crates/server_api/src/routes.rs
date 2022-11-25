@@ -132,6 +132,10 @@ pub(crate) fn routes(router: &mut Router)
 		"/api/v1/user/:user_id/verify_key/:key_id",
 		r(crate::user::get_verify_key_by_id).add(app_token::app_token_transform),
 	);
+	router.get(
+		"/api/v1/group/:group_id/public_key",
+		r(crate::group::get_public_key_data).add(app_token::app_token_transform),
+	);
 	router.post(
 		"/api/v1/exists",
 		r(crate::user::exists).add(app_token::app_token_transform),
@@ -301,12 +305,6 @@ pub(crate) fn routes(router: &mut Router)
 	router.patch(
 		"/api/v1/group/:group_id/join_req",
 		r(crate::group::join_req)
-			.add(jwt::jwt_transform)
-			.add(app_token::app_token_transform),
-	);
-	router.get(
-		"/api/v1/group/:group_id/public_key",
-		r(crate::group::get_public_key_data)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);

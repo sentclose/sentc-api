@@ -677,7 +677,6 @@ async fn test_17_invite_another_group()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
-		.header(AUTHORIZATION, auth_header(&creator.user_data.jwt))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -813,7 +812,6 @@ async fn test_19_accept_invite()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
-		.header(AUTHORIZATION, auth_header(&creator.user_data.jwt))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
@@ -1073,7 +1071,6 @@ async fn test_24_accept_join_req_from_group()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
-		.header(AUTHORIZATION, auth_header(&creator.user_data.jwt))
 		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await

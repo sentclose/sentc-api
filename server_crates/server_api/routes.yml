@@ -69,6 +69,7 @@ routes:
               - get: { p: "/user/:user_id/public_key", s: crate::user::get_public_key_data }
               - get: { p: "/user/:user_id/public_key/:key_id", s: crate::user::get_public_key_by_id }
               - get: { p: "/user/:user_id/verify_key/:key_id", s: crate::user::get_verify_key_by_id }
+              - get: { p: "/group/:group_id/public_key", s: crate::group::get_public_key_data }
               - post: {p: "/exists", s: crate::user::exists}
               - post: {p: "/register", s: crate::user::register}
               - post: {p: "/prepare_login", s: crate::user::prepare_login}
@@ -153,7 +154,6 @@ routes:
                           - patch: { p: "/invite", s: crate::group::accept_invite }
                           - delete: { p: "/invite", s: crate::group::reject_invite }
                           - patch: {p: "/join_req", s: crate::group::join_req}
-                          - get: { p: "/public_key", s: crate::group::get_public_key_data }
                     #___________________________________________________________________________________________________
                     # group mw check needed here
                     - group:
