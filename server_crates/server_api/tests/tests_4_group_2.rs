@@ -257,10 +257,10 @@ async fn test_10_connect_group_to_other_group()
 		secret_token,
 		&creator_group_to_connect.user_data.jwt,
 		&group_to_connect.group_id,
-		&user_keys,
+		user_keys,
 		&group_1.group_id,
 		&creator_group_1.user_data.jwt,
-		&group_1_private_key,
+		group_1_private_key,
 	)
 	.await;
 
@@ -270,10 +270,10 @@ async fn test_10_connect_group_to_other_group()
 		secret_token,
 		&creator_group_to_connect.user_data.jwt,
 		&group_to_connect.group_id,
-		&user_keys,
+		user_keys,
 		&group_2.group_id,
 		&creator_group_2.user_data.jwt,
-		&group_2_private_key,
+		group_2_private_key,
 	)
 	.await;
 
@@ -311,10 +311,10 @@ async fn test_11_connect_child_group_to_other_group()
 		secret_token,
 		&creator_group_to_connect.user_data.jwt,
 		&group_to_connect.group_id,
-		&user_keys,
+		user_keys,
 		&group_1.group_id,
 		&creator_group_1.user_data.jwt,
-		&group_1_private_key,
+		group_1_private_key,
 	)
 	.await;
 }
@@ -349,10 +349,10 @@ async fn test_12_connect_group_to_other_group_with_a_child_group()
 		secret_token,
 		&creator_group_to_connect.user_data.jwt,
 		&group_to_connect.group_id,
-		&user_keys,
+		user_keys,
 		&group_1.group_id,
 		&creator_group_1.user_data.jwt,
-		&group_1_private_key,
+		group_1_private_key,
 	)
 	.await;
 

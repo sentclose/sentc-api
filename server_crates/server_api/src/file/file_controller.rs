@@ -38,13 +38,14 @@ pub async fn register_file_in_group(mut req: Request) -> JRes<FileRegisterOutput
 	check_endpoint_with_req(&req, Endpoint::FileRegister)?;
 
 	let group_data = get_group_user_data_from_req(&req)?;
+	let user = get_jwt_data_from_param(&req)?;
 
 	let input: FileRegisterInput = bytes_to_json(&body)?;
 
 	let out = file_service::register_file(
 		input,
 		group_data.group_data.app_id.to_string(),
-		group_data.user_data.user_id.to_string(),
+		user.id.to_string(),
 		Some(group_data.group_data.id.to_string()),
 	)
 	.await?;
@@ -303,13 +304,14 @@ pub async fn delete_file_in_group(req: Request) -> JRes<ServerSuccessOutput>
 	check_endpoint_with_req(&req, Endpoint::FilePartDownload)?;
 
 	let group_data = get_group_user_data_from_req(&req)?;
+	let user = get_jwt_data_from_param(&req)?;
 
 	let file_id = get_name_param_from_req(&req, "file_id")?;
 
 	file_service::delete_file(
 		file_id,
 		&group_data.group_data.app_id,
-		group_data.user_data.user_id.to_string(),
+		user.id.clone(),
 		Some(group_data),
 	)
 	.await?;
