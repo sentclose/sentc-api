@@ -1,10 +1,18 @@
 use std::collections::HashMap;
 
 use reqwest::header::AUTHORIZATION;
+use reqwest::StatusCode;
 use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::{SdkError, UserData};
-use sentc_crypto_common::group::{GroupAcceptJoinReqServerOutput, GroupCreateOutput, GroupInviteReqList, GroupInviteServerOutput, GroupJoinReqList};
+use sentc_crypto_common::group::{
+	GroupAcceptJoinReqServerOutput,
+	GroupCreateOutput,
+	GroupInviteReqList,
+	GroupInviteServerOutput,
+	GroupJoinReqList,
+	GroupServerData,
+};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::{GroupId, ServerOutput, UserId};
 use server_api::util::api_res::ApiErrorCodes;
@@ -14,6 +22,7 @@ use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{
 	add_group_by_invite,
+	add_user_by_invite,
 	auth_header,
 	create_app,
 	create_group,
@@ -376,7 +385,7 @@ async fn test_13_connect_group_by_creating_from_other_group()
 
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
-	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let mut groups = GROUP_TEST_STATE.get().unwrap().write().await;
 
 	let group_1 = &groups[0];
 	let creator_group_1 = &users[0];
@@ -410,7 +419,7 @@ async fn test_13_connect_group_by_creating_from_other_group()
 	let out: GroupCreateOutput = handle_server_response(&body).unwrap();
 
 	//now get the group
-	get_group_from_group_as_member(
+	let data = get_group_from_group_as_member(
 		secret_token,
 		&creator_group_1.user_data.jwt,
 		&out.group_id,
@@ -418,6 +427,70 @@ async fn test_13_connect_group_by_creating_from_other_group()
 		group_1_private_key,
 	)
 	.await;
+
+	let mut decrypted_group_keys = HashMap::new();
+
+	decrypted_group_keys.insert(creator_group_1.user_id.to_string(), data.1);
+
+	//index 5
+	groups.push(GroupState {
+		group_id: out.group_id.clone(),
+		group_member: vec![creator_group_1.user_id.to_string()],
+		decrypted_group_keys,
+	})
+}
+
+#[tokio::test]
+async fn test_13_rank_from_member_of_connected_group()
+{
+	//auto invite a member to the main group and then access the connected group
+	//check the rank of this member. this should not be the creator rank but the rank of the connected group
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let creator_group_1 = &users[0];
+	let group = &groups[0];
+	let group_to_connect = &groups[5];
+	let user_to_invite = &users[6];
+
+	let user_keys = group
+		.decrypted_group_keys
+		.get(creator_group_1.user_id.as_str())
+		.unwrap();
+
+	add_user_by_invite(
+		secret_token,
+		&creator_group_1.user_data.jwt,
+		&group.group_id,
+		user_keys,
+		&user_to_invite.user_id,
+		&user_to_invite.user_data.jwt,
+		&user_to_invite.user_data.user_keys[0].exported_public_key,
+		&user_to_invite.user_data.user_keys[0].private_key,
+	)
+	.await;
+
+	//now check the access and the rank in the connected group
+	let group_1_private_key = &group
+		.decrypted_group_keys
+		.get(&group.group_member[0])
+		.unwrap()[0]
+		.private_group_key;
+
+	let data = get_group_from_group_as_member(
+		secret_token,
+		&user_to_invite.user_data.jwt,
+		&group_to_connect.group_id,
+		&group.group_id,
+		group_1_private_key,
+	)
+	.await;
+
+	//should be 4 not 0 (0 because the connected group is also the creator),
+	// but 4 because user is also rank 4 in the connected group
+	assert_eq!(data.0.rank, 4);
 }
 
 #[tokio::test]
@@ -474,7 +547,7 @@ async fn test_14_key_rotation()
 	)
 	.await;
 
-	assert_eq!(data_1.0.key_update, true);
+	assert!(data_1.0.key_update);
 
 	done_key_rotation(
 		secret_token,
@@ -504,7 +577,7 @@ async fn test_14_key_rotation()
 	)
 	.await;
 
-	assert_eq!(data_2.0.key_update, true);
+	assert!(data_2.0.key_update);
 
 	done_key_rotation(
 		secret_token,
@@ -643,7 +716,7 @@ async fn test_16_kick_group_as_member()
 
 	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, false);
+	assert!(!out.status);
 }
 
 #[tokio::test]
@@ -1099,7 +1172,7 @@ async fn test_24_accept_join_req_from_group()
 	assert_eq!(join_res.session_id, None);
 
 	//should get the group
-	let _data = get_group_from_group_as_member(
+	let data = get_group_from_group_as_member(
 		secret_token,
 		&user_to_invite.user_data.jwt,
 		&group.group_id,
@@ -1107,6 +1180,62 @@ async fn test_24_accept_join_req_from_group()
 		group_to_invite_private_key,
 	)
 	.await;
+
+	//should be the lowest rank for joined member
+	assert_eq!(data.0.rank, 4);
+}
+
+#[tokio::test]
+async fn test_25_not_leave_groups_without_rights()
+{
+	//TODO
+}
+
+#[tokio::test]
+async fn test_26_leave_group()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let group = &groups[3];
+	let creator = &users[3];
+	let group_to_leave = &groups[2];
+
+	let url = get_url("api/v1/group/".to_owned() + group_to_leave.group_id.as_str() + "/leave");
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", group.group_id.as_str())
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
+
+	//this user should not get the group data
+	let url = get_url("api/v1/group/".to_owned() + group_to_leave.group_id.as_str());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", group.group_id.as_str())
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<GroupServerData>::from_string(body.as_str()).unwrap();
+
+	assert!(!out.status);
+	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::GroupAccess.get_int_code());
 }
 
 //__________________________________________________________________________________________________
