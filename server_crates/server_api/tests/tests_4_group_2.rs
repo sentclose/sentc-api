@@ -1188,7 +1188,63 @@ async fn test_24_accept_join_req_from_group()
 #[tokio::test]
 async fn test_25_not_leave_groups_without_rights()
 {
-	//TODO
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let public_token_str = &APP_TEST_STATE.get().unwrap().read().await.public_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	//create a new user and set it as a member in the group to live
+	let (user_id, key_data) = create_test_user(secret_token, public_token_str, "hi_123", "123").await;
+
+	let group = &groups[3];
+	let creator = &users[3];
+	let group_to_leave = &groups[2];
+
+	let user_keys = group
+		.decrypted_group_keys
+		.get(creator.user_id.as_str())
+		.unwrap();
+
+	add_user_by_invite(
+		secret_token,
+		&creator.user_data.jwt,
+		&group.group_id,
+		user_keys,
+		&user_id,
+		&key_data.jwt,
+		&key_data.user_keys[0].exported_public_key,
+		&key_data.user_keys[0].private_key,
+	)
+	.await;
+
+	//now try to leave the group as member
+	let url = get_url("api/v1/group/".to_owned() + group_to_leave.group_id.as_str() + "/leave");
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(key_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", group.group_id.as_str())
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	//delete the test user before checking because after the user wont get deleted when there are still errors
+	delete_user(secret_token, key_data.jwt.as_str()).await;
+
+	match handle_general_server_response(&body) {
+		Ok(_) => panic!("should be an error"),
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(c, _) => {
+					assert_eq!(c, ApiErrorCodes::GroupUserRank.get_int_code())
+				},
+				_ => panic!("Should be server error"),
+			}
+		},
+	}
 }
 
 #[tokio::test]
