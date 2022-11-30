@@ -5,6 +5,7 @@ use sentc_crypto_common::{AppId, GroupId, UserId};
 use server_core::cache;
 
 use crate::group::group_entities::{GroupInviteReq, InternalGroupDataComplete};
+use crate::group::group_model;
 use crate::group::group_user::group_user_model;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::util::get_group_user_cache_key;
@@ -128,8 +129,31 @@ pub async fn insert_user_keys_via_session(
 	Ok(())
 }
 
-pub async fn leave_group(group_data: &InternalGroupDataComplete) -> AppRes<()>
+pub async fn leave_group(group_data: &InternalGroupDataComplete, real_user_id: Option<UserId>) -> AppRes<()>
 {
+	if let (Some(g_a_m), Some(id)) = (&group_data.user_data.get_values_from_group_as_member, real_user_id) {
+		//if user got access by group as member -> check the rank of the user in the real group.
+		// this is important because only group admins can leave a connected group
+
+		//do this check everytime with db look up
+		// because the rank in the group data only shows the relative rank in the connected group, not the real rank in the group.
+		let group_as_member_user_data = group_model::get_internal_group_user_data(g_a_m.clone(), id.clone()).await?;
+
+		match group_as_member_user_data {
+			Some(data) => {
+				group_model::check_group_rank(data.rank, 1)?;
+			},
+			None => {
+				return Err(HttpErr::new(
+					400,
+					ApiErrorCodes::GroupUserRank,
+					"Wrong group rank for this action".to_string(),
+					None,
+				));
+			},
+		}
+	}
+
 	group_user_model::user_leave_group(
 		group_data.group_data.id.to_string(),
 		group_data.user_data.user_id.to_string(),

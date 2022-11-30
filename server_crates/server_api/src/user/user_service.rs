@@ -460,23 +460,26 @@ pub async fn delete_device(user: &UserJwtEntity, app_id: AppId, device_id: Devic
 
 	user_model::delete_device(user_id.to_string(), app_id.to_string(), device_id).await?;
 
-	group_user_service::leave_group(&InternalGroupDataComplete {
-		group_data: InternalGroupData {
-			app_id,
-			id: user.group_id.to_string(),
-			time: 0,
-			parent: None,
-			invite: 0,
+	group_user_service::leave_group(
+		&InternalGroupDataComplete {
+			group_data: InternalGroupData {
+				app_id,
+				id: user.group_id.to_string(),
+				time: 0,
+				parent: None,
+				invite: 0,
+			},
+			user_data: InternalUserGroupData {
+				user_id: user_id.to_string(),
+				real_user_id: "".to_string(),
+				joined_time: 0,
+				rank: 4,
+				get_values_from_parent: None,
+				get_values_from_group_as_member: None,
+			},
 		},
-		user_data: InternalUserGroupData {
-			user_id: user_id.to_string(),
-			real_user_id: "".to_string(),
-			joined_time: 0,
-			rank: 4,
-			get_values_from_parent: None,
-			get_values_from_group_as_member: None,
-		},
-	})
+		None,
+	)
 	.await
 }
 

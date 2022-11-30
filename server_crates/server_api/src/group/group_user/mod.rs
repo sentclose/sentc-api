@@ -486,8 +486,9 @@ pub(crate) async fn leave_group(req: Request) -> JRes<ServerSuccessOutput>
 	check_endpoint_with_req(&req, Endpoint::GroupLeave)?;
 
 	let group_data = get_group_user_data_from_req(&req)?;
+	let user = get_jwt_data_from_param(&req)?;
 
-	group_user_service::leave_group(group_data).await?;
+	group_user_service::leave_group(group_data, Some(user.id.clone())).await?;
 
 	echo_success()
 }
