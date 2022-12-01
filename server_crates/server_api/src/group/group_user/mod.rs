@@ -19,7 +19,7 @@ use crate::group::group_user_service::InsertNewUserType;
 use crate::group::{get_group_user_data_from_req, group_model};
 use crate::sentc_group_user_service::NewUserType;
 use crate::user::jwt::get_jwt_data_from_param;
-use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
+use crate::util::api_res::{echo, echo_success, ApiErrorCodes, AppRes, HttpErr, JRes};
 use crate::util::get_group_user_cache_key;
 
 mod group_user_model;
@@ -354,20 +354,7 @@ async fn get_sent_join_req(req: Request, user_type: NewUserType) -> JRes<Vec<Gro
 	let app = get_app_data_from_req(&req)?;
 	check_endpoint_with_app_options(app, Endpoint::GroupJoinReq)?;
 
-	let id_to_check = match user_type {
-		NewUserType::Normal => {
-			let user = get_jwt_data_from_param(&req)?;
-
-			&user.id
-		},
-		NewUserType::Group => {
-			let group_data = get_group_user_data_from_req(&req)?;
-
-			group_model::check_group_rank(group_data.user_data.rank, 1)?;
-
-			&group_data.group_data.id
-		},
-	};
+	let id_to_check = check_join_req_access(&req, user_type)?;
 
 	let params = get_params(&req)?;
 	let last_group_id = get_name_param_from_params(params, "last_group_id")?;
@@ -465,6 +452,48 @@ pub(crate) async fn accept_join_req(mut req: Request) -> JRes<GroupAcceptJoinReq
 	cache::delete(&key_user).await;
 
 	echo(out)
+}
+
+pub(crate) fn delete_sent_join_req_for_user(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
+{
+	delete_sent_join_req(req, NewUserType::Normal)
+}
+
+pub(crate) fn delete_sent_join_req_for_group(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
+{
+	delete_sent_join_req(req, NewUserType::Group)
+}
+
+async fn delete_sent_join_req(req: Request, user_type: NewUserType) -> JRes<ServerSuccessOutput>
+{
+	let app = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(app, Endpoint::GroupJoinReq)?;
+
+	let id_to_check = check_join_req_access(&req, user_type)?;
+
+	let id = get_name_param_from_req(&req, "join_req_id")?;
+
+	group_user_model::delete_sent_join_req(app.app_data.app_id.clone(), id_to_check.to_string(), id.to_string()).await?;
+
+	echo_success()
+}
+
+fn check_join_req_access(req: &Request, user_type: NewUserType) -> AppRes<&String>
+{
+	match user_type {
+		NewUserType::Normal => {
+			let user = get_jwt_data_from_param(req)?;
+
+			Ok(&user.id)
+		},
+		NewUserType::Group => {
+			let group_data = get_group_user_data_from_req(req)?;
+
+			group_model::check_group_rank(group_data.user_data.rank, 1)?;
+
+			Ok(&group_data.group_data.id)
+		},
+	}
 }
 
 //__________________________________________________________________________________________________
