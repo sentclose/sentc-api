@@ -5,7 +5,7 @@ use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupInviteServerOutput};
-use sentc_crypto::util::public::handle_server_response;
+use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::{SdkError, UserData};
 use sentc_crypto_common::group::{
 	GroupChangeRankServerInput,
@@ -171,7 +171,7 @@ async fn test_10_create_group()
 	let body = res.text().await.unwrap();
 	let out = ServerOutput::<GroupCreateOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();
@@ -204,7 +204,7 @@ async fn test_11_get_group_data()
 
 	let out = ServerOutput::<GroupServerData>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
 	//check if result is there
@@ -248,7 +248,7 @@ async fn test_11_z_get_group_update()
 	let out: GroupDataCheckUpdateServerOutput = handle_server_response(body.as_str()).unwrap();
 
 	assert_eq!(out.rank, 0);
-	assert_eq!(out.key_update, false);
+	assert!(!out.key_update);
 }
 
 #[tokio::test]
@@ -328,7 +328,7 @@ async fn test_13_stop_group_invite()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 }
 
 #[tokio::test]
@@ -353,7 +353,7 @@ async fn test_14_not_send_invite_or_join_when_invite_is_disabled()
 
 	let body = res.text().await.unwrap();
 
-	match sentc_crypto::util::public::handle_general_server_response(body.as_str()) {
+	match handle_general_server_response(body.as_str()) {
 		Ok(_) => panic!("Should be an error"),
 		Err(e) => {
 			match e {
@@ -437,7 +437,7 @@ async fn test_15_enable_group_invite()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 }
 
 #[tokio::test]
@@ -531,7 +531,7 @@ async fn test_17_not_invite_user_without_keys()
 	let body = res.text().await.unwrap();
 	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, false);
+	assert!(!out.status);
 	assert_eq!(out.err_code, Some(303));
 }
 
@@ -559,7 +559,7 @@ async fn test_18_get_invite_for_user()
 	let body = res.text().await.unwrap();
 	let out = ServerOutput::<Vec<GroupInviteReqList>>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();
@@ -608,7 +608,7 @@ async fn test_20_accept_invite()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 
 	//test get group as new user
 	let data = get_group(
@@ -691,7 +691,7 @@ async fn test_21_invite_user_an_reject_invite()
 		.unwrap();
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
 	//the rejected user should not get the group data
@@ -712,7 +712,7 @@ async fn test_21_invite_user_an_reject_invite()
 
 	let out = ServerOutput::<GroupServerData>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, false);
+	assert!(!out.status);
 	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::GroupAccess.get_int_code());
 }
 
@@ -743,7 +743,7 @@ async fn test_22_not_leave_group_when_user_is_the_only_admin()
 	let body = res.text().await.unwrap();
 
 	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
-	assert_eq!(out.status, false);
+	assert!(!out.status);
 
 	//should get the data without error
 	let _data = get_group(
@@ -778,7 +778,7 @@ async fn test_23_leave_group()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 
 	//this user should not get the group data
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str());
@@ -797,7 +797,7 @@ async fn test_23_leave_group()
 
 	let out = ServerOutput::<GroupServerData>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, false);
+	assert!(!out.status);
 	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::GroupAccess.get_int_code());
 }
 
@@ -826,7 +826,7 @@ async fn test_24_join_req()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 }
 
 #[tokio::test]
@@ -949,7 +949,7 @@ async fn test_26_send_join_req_aging()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 
 	//should still get one join req
 	let url = get_url("api/v1/group/joins/0/none".to_owned());
@@ -996,6 +996,65 @@ async fn test_26_send_join_req_aging()
 }
 
 #[tokio::test]
+async fn test_27_delete_join_req()
+{
+	//send the join req again for the next tests
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let user = &users[1];
+
+	let url = get_url("api/v1/group/joins/".to_owned() + &group.group_id);
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(&body).unwrap();
+
+	//no req on the list
+	let url = get_url("api/v1/group/joins/0/none".to_owned());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: Vec<GroupInviteReqList> = handle_server_response(&body).unwrap();
+
+	//should get the join req to this group
+	assert_eq!(out.len(), 0);
+
+	//send again for the other tests
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req");
+	let client = reqwest::Client::new();
+	let res = client
+		.patch(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
+}
+
+#[tokio::test]
 async fn test_27_reject_join_req()
 {
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -1018,7 +1077,7 @@ async fn test_27_reject_join_req()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 }
 
 #[tokio::test]
@@ -1047,7 +1106,7 @@ async fn test_28_get_not_join_req_after_reject()
 
 	let out = ServerOutput::<Vec<GroupJoinReqList>>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();
@@ -1117,7 +1176,7 @@ async fn test_29_no_join_req_when_user_is_in_parent_group()
 
 	let out = ServerOutput::<GroupAcceptJoinReqServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, false);
+	assert!(!out.status);
 }
 
 #[tokio::test]
@@ -1143,7 +1202,7 @@ async fn test_30_accept_join_req()
 	assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
 	//2. accept this join req
@@ -1236,7 +1295,7 @@ async fn test_31_start_key_rotation()
 	let body = res.text().await.unwrap();
 	let out = ServerOutput::<KeyRotationStartServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();
@@ -1285,7 +1344,7 @@ async fn test_32_done_key_rotation_for_other_user()
 
 	//still one key
 	assert_eq!(data_user.0.keys.len(), 1);
-	assert_eq!(data_user.0.key_update, true); //notify the user that there is a key update
+	assert!(data_user.0.key_update); //notify the user that there is a key update
 
 	//get the data for the rotation
 
@@ -1302,7 +1361,7 @@ async fn test_32_done_key_rotation_for_other_user()
 	let body = res.text().await.unwrap();
 	let out = ServerOutput::<Vec<sentc_crypto::sdk_common::group::KeyRotationInput>>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();
@@ -1337,7 +1396,7 @@ async fn test_32_done_key_rotation_for_other_user()
 			.unwrap();
 
 		let body = res.text().await.unwrap();
-		sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+		handle_general_server_response(body.as_str()).unwrap();
 	}
 
 	let data_user_1 = get_group(
@@ -1395,7 +1454,7 @@ async fn test_33_get_key_with_pagination()
 
 	let body = res.text().await.unwrap();
 	let out = ServerOutput::<Vec<sentc_crypto::sdk_common::group::GroupKeyServerOutput>>::from_string(body.as_str()).unwrap();
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();
@@ -1427,7 +1486,7 @@ async fn test_33_get_key_with_pagination()
 
 	let body = res.text().await.unwrap();
 	let out = ServerOutput::<Vec<sentc_crypto::sdk_common::group::GroupKeyServerOutput>>::from_string(body.as_str()).unwrap();
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();
@@ -1503,7 +1562,7 @@ async fn test_35_update_rank()
 		.unwrap();
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 
 	//get the group data with the new rank
 	let data = get_group(
@@ -1549,7 +1608,7 @@ async fn test_36_no_rank_change_without_permission()
 	let body = res.text().await.unwrap();
 	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, false);
+	assert!(!out.status);
 }
 
 #[tokio::test]
@@ -1658,7 +1717,7 @@ async fn test_38_kick_user_from_group()
 		.unwrap();
 
 	let body = res.text().await.unwrap();
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 
 	//user should not get group data
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str());
@@ -1675,7 +1734,7 @@ async fn test_38_kick_user_from_group()
 
 	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, false);
+	assert!(!out.status);
 }
 
 #[tokio::test]
@@ -1948,7 +2007,7 @@ async fn test_42_delete_group()
 
 	let body = res.text().await.unwrap();
 
-	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
 }
 
 #[tokio::test]
@@ -1997,7 +2056,7 @@ async fn test_43_get_all_groups_to_user()
 
 	let out = ServerOutput::<Vec<ListGroups>>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 
 	let out = out.result.unwrap();
 
@@ -2022,11 +2081,7 @@ async fn test_43_get_all_groups_to_user()
 
 	let body = res.text().await.unwrap();
 
-	let out = ServerOutput::<Vec<ListGroups>>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-
-	let out = out.result.unwrap();
+	let out: Vec<ListGroups> = handle_server_response(&body).unwrap();
 
 	assert_eq!(out.len(), 2);
 
