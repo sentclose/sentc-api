@@ -17,6 +17,7 @@ use crate::group::group_model;
 use crate::group::group_model::check_group_rank;
 use crate::group::group_user_service::InsertNewUserType;
 use crate::sentc_group_user_service::NewUserType;
+use crate::user::user_entities::UserExistsEntity;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 pub(super) async fn get_group_member(
@@ -493,6 +494,31 @@ WHERE
 	let invite_req: Vec<GroupInviteReq> = query_string(sql1, params).await?;
 
 	Ok(invite_req)
+}
+
+pub(super) async fn delete_sent_join_req(app_id: AppId, user_id: UserId, group_id: GroupId) -> AppRes<()>
+{
+	//check the app id extra because sqlite doesn't support multiple tables in delete from
+	//language=SQL
+	let sql = "SELECT 1 FROM sentc_group WHERE app_id = ? AND id = ?";
+
+	let check: Option<UserExistsEntity> = query_first(sql, set_params!(app_id, group_id.clone())).await?;
+
+	if check.is_none() {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::GroupAccess,
+			"Group not found".to_string(),
+			None,
+		));
+	}
+
+	//language=SQL
+	let sql = "DELETE FROM sentc_group_user_invites_and_join_req WHERE user_id = ? AND group_id = ?";
+
+	exec(sql, set_params!(user_id, group_id)).await?;
+
+	Ok(())
 }
 
 //__________________________________________________________________________________________________

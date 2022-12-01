@@ -148,6 +148,7 @@ routes:
                     - get: {p: "/invite/:last_fetched_time/:last_group_id", s: crate::group::get_invite_req}
                     # get all send join req, this is called from the user
                     - get: {p: "/joins/:last_fetched_time/:last_group_id", s: crate::group::get_sent_join_req_for_user}
+                    - delete: {p: "/joins/:join_req_id", s: crate::group::delete_sent_join_req_for_user}
                     - group:
                         p: "/:group_id"
                         gr:
@@ -176,6 +177,7 @@ routes:
                           - get: {p: "/invite/:last_fetched_time/:last_group_id", s: crate::group::get_invite_req_for_group}
                           # get sent join req for group as user
                           - get: {p: "/joins/:last_fetched_time/:last_group_id", s: crate::group::get_sent_join_req_for_group}
+                          - delete: {p: "/joins/:join_req_id", s: crate::group::delete_sent_join_req_for_group}
                           - delete: { p: "/invite/:group_id_to_reject", s: crate::group::reject_invite_group }
                           - patch: { p: "/invite/:group_id_to_join", s: crate::group::accept_invite_group }
                           # the normal invite to the actual group endpoints
