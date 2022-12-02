@@ -163,6 +163,7 @@ routes:
                           - group::group_transform
                         gr:
                           - get: { p: "", s: crate::group::get_user_group_data }
+                          - get: {p: "/light", s: crate::group::get_user_group_light_data}
                           - get: {p: "/update_check", s: crate::group::get_key_update_for_user}
                           - get: { p: "/keys/:last_fetched_time/:last_k_id", s: crate::group::get_user_group_keys }
                           - get: { p: "/key/:key_id", s: crate::group::get_user_group_key }
