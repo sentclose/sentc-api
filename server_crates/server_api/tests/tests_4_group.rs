@@ -14,6 +14,7 @@ use sentc_crypto_common::group::{
 	GroupInviteReqList,
 	GroupJoinReqList,
 	GroupKeysForNewMemberServerInput,
+	GroupLightServerData,
 	GroupServerData,
 	GroupUserListItem,
 	KeyRotationStartServerOutput,
@@ -220,6 +221,34 @@ async fn test_11_get_group_data()
 	group
 		.decrypted_group_keys
 		.insert(creator.user_id.to_string(), vec![data_key]);
+}
+
+#[tokio::test]
+async fn test_11_x_get_group_light_data()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().write().await;
+
+	let creator = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &creator[0];
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/light");
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	let out: GroupLightServerData = handle_server_response(&body).unwrap();
+
+	assert_eq!(out.rank, 0);
 }
 
 #[tokio::test]
