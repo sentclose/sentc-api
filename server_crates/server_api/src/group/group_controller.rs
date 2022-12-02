@@ -1,7 +1,7 @@
 use std::future::Future;
 
 use rustgram::Request;
-use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDataCheckUpdateServerOutput, GroupUserAccessBy};
+use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDataCheckUpdateServerOutput, GroupLightServerData};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::GroupId;
 use server_core::cache;
@@ -92,59 +92,23 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
+pub(crate) async fn get_user_group_light_data(req: Request) -> JRes<GroupLightServerData>
+{
+	check_endpoint_with_req(&req, Endpoint::GroupUserDataGet)?;
+
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	//no keys fetch here
+	echo(group_service::get_user_group_light_data(group_data))
+}
+
 pub(crate) async fn get_user_group_data(req: Request) -> JRes<GroupServerData>
 {
 	check_endpoint_with_req(&req, Endpoint::GroupUserDataGet)?;
 
 	let group_data = get_group_user_data_from_req(&req)?;
 
-	let app_id = &group_data.group_data.app_id;
-	let group_id = &group_data.group_data.id;
-	let user_id = &group_data.user_data.user_id;
-
-	let keys = group_service::get_user_group_keys(
-		app_id.to_string(),
-		group_id.to_string(),
-		user_id.to_string(),
-		0, //fetch the first page
-		"".to_string(),
-	)
-	.await?;
-
-	let key_update = group_model::check_for_key_update(app_id.to_string(), user_id.to_string(), group_id.to_string()).await?;
-
-	let parent = match &group_data.group_data.parent {
-		Some(p) => Some(p.to_string()),
-		None => None,
-	};
-
-	//tell the frontend how thi group as access
-	let access_by = match (
-		&group_data.user_data.get_values_from_group_as_member,
-		&group_data.user_data.get_values_from_parent,
-	) {
-		//the user is in a group which is member in a parent group
-		(Some(v_as_member), Some(v_as_parent)) => {
-			GroupUserAccessBy::GroupAsUserAsParent {
-				group_as_user: v_as_member.to_string(),
-				parent: v_as_parent.to_string(),
-			}
-		},
-		(Some(v_as_member), None) => GroupUserAccessBy::GroupAsUser(v_as_member.to_string()),
-		(None, Some(v_as_parent)) => GroupUserAccessBy::Parent(v_as_parent.to_string()),
-		(None, None) => GroupUserAccessBy::User,
-	};
-
-	let out = GroupServerData {
-		group_id: group_id.to_string(),
-		parent_group_id: parent,
-		keys,
-		key_update,
-		rank: group_data.user_data.rank,
-		created_time: group_data.group_data.time,
-		joined_time: group_data.user_data.joined_time,
-		access_by,
-	};
+	let out = group_service::get_user_group_data(group_data).await?;
 
 	echo(out)
 }
