@@ -840,7 +840,7 @@ impl mysql_async::prelude::FromRow for GroupChildrenList
 }
 
 #[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for GroupInvGroupChildrenListiteReq
+impl server_core::db::FromSqliteRow for GroupChildrenList
 {
 	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
