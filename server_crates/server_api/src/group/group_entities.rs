@@ -803,3 +803,55 @@ impl server_core::db::FromSqliteRow for ListGroups
 }
 
 //__________________________________________________________________________________________________
+
+#[derive(Serialize)]
+pub struct GroupChildrenList
+{
+	pub group_id: GroupId,
+	pub time: u128,
+	pub parent: Option<GroupId>,
+}
+
+impl Into<sentc_crypto_common::group::GroupChildrenList> for GroupChildrenList
+{
+	fn into(self) -> sentc_crypto_common::group::GroupChildrenList
+	{
+		sentc_crypto_common::group::GroupChildrenList {
+			group_id: self.group_id,
+			time: self.time,
+			parent: self.parent,
+		}
+	}
+}
+
+#[cfg(feature = "mysql")]
+impl mysql_async::prelude::FromRow for GroupChildrenList
+{
+	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			group_id: take_or_err!(row, 0, String),
+			time: take_or_err!(row, 1, u128),
+			parent: server_core::take_or_err_opt!(row, 2, String),
+		})
+	}
+}
+
+#[cfg(feature = "sqlite")]
+impl server_core::db::FromSqliteRow for GroupInvGroupChildrenListiteReq
+{
+	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			group_id: take_or_err!(row, 0),
+			time: server_core::take_or_err_u128!(row, 1),
+			parent: take_or_err!(row, 2),
+		})
+	}
+}
+
+//__________________________________________________________________________________________________
