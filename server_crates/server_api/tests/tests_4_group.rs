@@ -9,6 +9,7 @@ use sentc_crypto::util::public::{handle_general_server_response, handle_server_r
 use sentc_crypto::{SdkError, UserData};
 use sentc_crypto_common::group::{
 	GroupChangeRankServerInput,
+	GroupChildrenList,
 	GroupCreateOutput,
 	GroupDataCheckUpdateServerOutput,
 	GroupInviteReqList,
@@ -330,6 +331,52 @@ async fn test_12_create_child_group()
 	child_group.group_id = child_id;
 
 	//don't delete the child group to test if parent group delete deletes all. delete the child
+}
+
+#[tokio::test]
+async fn test_12_x_get_all_children_for_parent()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+	let child_group = CHILD_GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let creator = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &creator[0];
+
+	let url = get_url("api/v1/group/".to_owned() + &group.group_id + "/children/0/none");
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let list: Vec<GroupChildrenList> = handle_server_response(&body).unwrap();
+
+	assert_eq!(list.len(), 1);
+	assert_eq!(list[0].group_id, child_group.group_id);
+
+	//______________________________________________________________________________________________
+	//test page two
+	let url = get_url("api/v1/group/".to_owned() + &group.group_id + "/children/" + list[0].time.to_string().as_str() + "/" + &list[0].group_id);
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let list: Vec<GroupChildrenList> = handle_server_response(&body).unwrap();
+
+	assert_eq!(list.len(), 0);
 }
 
 //__________________________________________________________________________________________________
