@@ -12,6 +12,7 @@ use sentc_crypto_common::group::{
 	GroupInviteServerOutput,
 	GroupJoinReqList,
 	GroupServerData,
+	ListGroups,
 };
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::{GroupId, ServerOutput, UserId};
@@ -1314,7 +1315,37 @@ async fn test_25_not_leave_groups_without_rights()
 }
 
 #[tokio::test]
-async fn test_26_leave_group()
+async fn test_26_get_all_groups_to_group()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let group = &groups[2];
+
+	let group_to_invite = &groups[3];
+	let user_to_invite = &users[3];
+
+	let url = get_url("api/v1/group/".to_owned() + group_to_invite.group_id.as_str() + "/all/0/none");
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user_to_invite.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: Vec<ListGroups> = handle_server_response(&body).unwrap();
+
+	assert_eq!(out.len(), 1);
+	assert_eq!(out[0].group_id, group.group_id);
+}
+
+#[tokio::test]
+async fn test_27_leave_group()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;

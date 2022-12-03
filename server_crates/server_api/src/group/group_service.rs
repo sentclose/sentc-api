@@ -5,7 +5,7 @@ use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
 use server_core::cache;
 
 use crate::file::file_service;
-use crate::group::group_entities::{GroupServerData, GroupUserKeys, InternalGroupDataComplete};
+use crate::group::group_entities::{GroupChildrenList, GroupServerData, GroupUserKeys, InternalGroupDataComplete};
 use crate::group::group_model;
 use crate::util::api_res::AppRes;
 use crate::util::get_group_cache_key;
@@ -138,4 +138,14 @@ pub fn get_user_group_keys(
 pub fn get_user_group_key(app_id: AppId, group_id: GroupId, user_id: UserId, key_id: SymKeyId) -> impl Future<Output = AppRes<GroupUserKeys>>
 {
 	group_model::get_user_group_key(app_id, group_id, user_id, key_id)
+}
+
+pub fn get_first_level_children(
+	app_id: AppId,
+	group_id: GroupId,
+	last_fetched_time: u128,
+	last_id: GroupId,
+) -> impl Future<Output = AppRes<Vec<GroupChildrenList>>>
+{
+	group_model::get_first_level_children(app_id, group_id, last_fetched_time, last_id)
 }

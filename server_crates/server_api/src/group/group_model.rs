@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use crate::group::group_entities::{
 	GroupChildren,
+	GroupChildrenList,
 	GroupKeyUpdateReady,
 	GroupUserKeys,
 	InternalGroupData,
@@ -501,7 +502,8 @@ FROM sentc_group g, sentc_group_user gu
 WHERE 
     app_id = ? AND 
     group_id = id AND 
-    user_id = ?"
+    user_id = ? AND 
+    (gu.type = 0 OR gu.type = 2)"
 		.to_string();
 
 	let (sql, params) = if last_fetched_time > 0 {
@@ -554,4 +556,40 @@ LIMIT 1";
 			))
 		},
 	}
+}
+
+pub(super) async fn get_first_level_children(
+	app_id: AppId,
+	group_id: GroupId,
+	last_fetched_time: u128,
+	last_id: GroupId,
+) -> AppRes<Vec<GroupChildrenList>>
+{
+	//get the direct children, where parent id == group id
+	//last id is the last child id
+
+	//language=SQL
+	let sql = "SELECT id, time, parent FROM sentc_group WHERE parent = ? AND app_id = ?".to_string();
+
+	let (sql, params) = if last_fetched_time > 0 {
+		let sql = sql + " AND time >= ? AND (time > ? OR (time = ? AND id > ?)) ORDER BY time, id LIMIT 50";
+		(
+			sql,
+			set_params!(
+				group_id,
+				app_id,
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_id
+			),
+		)
+	} else {
+		let sql = sql + " ORDER BY time, id LIMIT 50";
+		(sql, set_params!(group_id, app_id))
+	};
+
+	let list: Vec<GroupChildrenList> = query_string(sql, params).await?;
+
+	Ok(list)
 }

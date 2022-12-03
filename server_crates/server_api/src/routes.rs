@@ -392,6 +392,20 @@ pub(crate) fn routes(router: &mut Router)
 			.add(app_token::app_token_transform),
 	);
 	router.get(
+		"/api/v1/group/:group_id/children/:last_fetched_time/:last_id",
+		r(crate::group::get_all_first_level_children)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/group/:group_id/all/:last_fetched_time/:last_group_id",
+		r(crate::group::get_all_groups_for_group)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
 		"/api/v1/group/:group_id/invite/:last_fetched_time/:last_group_id",
 		r(crate::group::get_invite_req_for_group)
 			.add(group::group_transform)
