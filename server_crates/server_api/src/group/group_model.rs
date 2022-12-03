@@ -502,7 +502,8 @@ FROM sentc_group g, sentc_group_user gu
 WHERE 
     app_id = ? AND 
     group_id = id AND 
-    user_id = ?"
+    user_id = ? AND 
+    (gu.type = 0 OR gu.type = 2)"
 		.to_string();
 
 	let (sql, params) = if last_fetched_time > 0 {
