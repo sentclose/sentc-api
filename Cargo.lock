@@ -2547,6 +2547,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "worker_manual"
+version = "0.1.0"
+dependencies = [
+ "server_api",
+ "tokio",
+]
+
+[[package]]
 name = "wyz"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

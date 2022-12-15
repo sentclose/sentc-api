@@ -1,0 +1,16 @@
+[package]
+name = "worker_manual"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+server_api = {version = "0.1.0", path = "../../server_api", default-features = false}
+
+tokio = { version = "1", features = ["full"] }
+
+[features]
+default = ["server_api/default"]
+mysql = ["server_api/mysql"]
+sqlite = ["server_api/sqlite"]
