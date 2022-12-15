@@ -15,9 +15,8 @@ use server_core::url_helper::{get_name_param_from_params, get_name_param_from_re
 
 use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use crate::group::group_entities::{GroupInviteReq, GroupJoinReq, GroupUserListItem};
-use crate::group::group_user_service::InsertNewUserType;
+use crate::group::group_user_service::{InsertNewUserType, NewUserType};
 use crate::group::{get_group_user_data_from_req, group_model};
-use crate::sentc_group_user_service::NewUserType;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, AppRes, HttpErr, JRes};
 use crate::util::get_group_user_cache_key;

@@ -15,8 +15,7 @@ use crate::group::group_entities::{
 };
 use crate::group::group_model;
 use crate::group::group_model::check_group_rank;
-use crate::group::group_user_service::InsertNewUserType;
-use crate::sentc_group_user_service::NewUserType;
+use crate::group::group_user_service::{InsertNewUserType, NewUserType};
 use crate::user::user_entities::UserExistsEntity;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 

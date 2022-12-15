@@ -1,8 +1,7 @@
 use std::future::Future;
 
-use sentc_crypto::sdk_common::AppId;
 use sentc_crypto_common::group::{DoneKeyRotationData, KeyRotationData, KeyRotationStartServerOutput};
-use sentc_crypto_common::{GroupId, SymKeyId, UserId};
+use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
 
 use crate::group::group_entities::GroupKeyUpdate;
 use crate::group::group_key_rotation::group_key_rotation_model;

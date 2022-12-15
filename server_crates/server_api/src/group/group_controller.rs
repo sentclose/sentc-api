@@ -10,8 +10,8 @@ use server_core::url_helper::{get_name_param_from_params, get_name_param_from_re
 
 use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use crate::group::group_entities::{GroupChildrenList, GroupServerData, GroupUserKeys, ListGroups};
+use crate::group::group_user_service::NewUserType;
 use crate::group::{get_group_user_data_from_req, group_model, group_service, GROUP_TYPE_NORMAL};
-use crate::sentc_group_user_service::NewUserType;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::user::user_entities::UserPublicKeyDataEntity;
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};

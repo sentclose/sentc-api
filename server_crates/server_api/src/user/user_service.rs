@@ -24,8 +24,8 @@ use sentc_crypto_common::user::{
 use sentc_crypto_common::{AppId, DeviceId, GroupId, SymKeyId, UserId};
 
 use crate::group::group_entities::{GroupUserKeys, InternalGroupData, InternalGroupDataComplete, InternalUserGroupData};
+use crate::group::group_user_service::NewUserType;
 use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
-use crate::sentc_group_user_service::NewUserType;
 use crate::user::jwt::create_jwt;
 use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserJwtEntity, SERVER_RANDOM_VALUE};
 use crate::user::user_model;
