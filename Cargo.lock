@@ -1915,9 +1915,18 @@ dependencies = [
  "rustgram",
  "serde",
  "serde_json",
+ "server-core-macros",
  "tokio",
  "tokio-util",
  "uuid",
+]
+
+[[package]]
+name = "server-core-macros"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]
