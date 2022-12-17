@@ -12,54 +12,6 @@ pub static SERVER_RANDOM_VALUE: (&str, &str) = ("zx4AKPCMHkeZnh21ciQ62w==", sent
 //__________________________________________________________________________________________________
 //Jwt
 
-pub struct JwtSignKey(pub String);
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for JwtSignKey
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(JwtSignKey(take_or_err!(row, 0, String)))
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for JwtSignKey
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(JwtSignKey(take_or_err!(row, 0)))
-	}
-}
-
-pub struct JwtVerifyKey(pub String);
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for JwtVerifyKey
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(JwtVerifyKey(take_or_err!(row, 0, String)))
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for JwtVerifyKey
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(JwtVerifyKey(take_or_err!(row, 0)))
-	}
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct UserJwtEntity
 {
@@ -72,133 +24,25 @@ pub struct UserJwtEntity
 //__________________________________________________________________________________________________
 //Captcha
 
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
 pub struct CaptchaEntity
 {
 	pub solution: String,
 	pub time: u128,
 }
 
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for CaptchaEntity
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			solution: take_or_err!(row, 0, String),
-			time: take_or_err!(row, 1, u128),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for CaptchaEntity
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			solution: take_or_err!(row, 0),
-			time: server_core::take_or_err_u128!(row, 1),
-		})
-	}
-}
-
-//__________________________________________________________________________________________________
-//User exists
-
-#[derive(Serialize, Deserialize)]
-pub struct UserExistsEntity(pub i64); //i64 for sqlite
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for UserExistsEntity
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(UserExistsEntity(take_or_err!(row, 0, i64)))
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for UserExistsEntity
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(UserExistsEntity(take_or_err!(row, 0)))
-	}
-}
-
-//__________________________________________________________________________________________________
-
-pub struct DeviceIdentifier(pub String);
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for DeviceIdentifier
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(DeviceIdentifier(take_or_err!(row, 0, String)))
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for DeviceIdentifier
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(DeviceIdentifier(take_or_err!(row, 0)))
-	}
-}
-
 //__________________________________________________________________________________________________
 //User login data
 
 #[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
 pub struct UserLoginDataEntity
 {
 	pub client_random_value: String,
 	pub hashed_authentication_key: String,
 	pub derived_alg: String,
-}
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for UserLoginDataEntity
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(UserLoginDataEntity {
-			client_random_value: take_or_err!(row, 0, String),
-			hashed_authentication_key: take_or_err!(row, 1, String),
-			derived_alg: take_or_err!(row, 2, String),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for UserLoginDataEntity
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(UserLoginDataEntity {
-			client_random_value: take_or_err!(row, 0),
-			hashed_authentication_key: take_or_err!(row, 1),
-			derived_alg: take_or_err!(row, 2),
-		})
-	}
 }
 
 //__________________________________________________________________________________________________
@@ -328,6 +172,8 @@ impl server_core::db::FromSqliteRow for DoneLoginServerKeysOutputEntity
 
 //__________________________________________________________________________________________________
 
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
 pub struct UserLoginLightEntity
 {
 	pub user_id: UserId,
@@ -335,64 +181,10 @@ pub struct UserLoginLightEntity
 	pub group_id: GroupId,
 }
 
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for UserLoginLightEntity
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			user_id: take_or_err!(row, 0, String),
-			device_id: take_or_err!(row, 1, String),
-			group_id: take_or_err!(row, 2, String),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for UserLoginLightEntity
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			user_id: take_or_err!(row, 0),
-			device_id: take_or_err!(row, 1),
-			group_id: take_or_err!(row, 2),
-		})
-	}
-}
-
 //__________________________________________________________________________________________________
 
-pub struct UserResetPwCheck(pub UserId);
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for UserResetPwCheck
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self(take_or_err!(row, 0, String)))
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for UserResetPwCheck
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self(take_or_err!(row, 0)))
-	}
-}
-
-//__________________________________________________________________________________________________
-
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
 pub struct UserRefreshTokenCheck
 {
 	pub user_id: DeviceId,
@@ -400,39 +192,11 @@ pub struct UserRefreshTokenCheck
 	pub group_id: GroupId,
 }
 
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for UserRefreshTokenCheck
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			user_id: take_or_err!(row, 0, String),
-			device_identifier: take_or_err!(row, 1, String),
-			group_id: take_or_err!(row, 2, String),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for UserRefreshTokenCheck
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			user_id: take_or_err!(row, 0),
-			device_identifier: take_or_err!(row, 1),
-			group_id: take_or_err!(row, 2),
-		})
-	}
-}
-
 //__________________________________________________________________________________________________
 
 #[derive(Serialize)]
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
 pub struct UserPublicKeyDataEntity
 {
 	pub public_key_id: EncryptionKeyPairId,
@@ -452,39 +216,11 @@ impl Into<UserPublicKeyDataServerOutput> for UserPublicKeyDataEntity
 	}
 }
 
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for UserPublicKeyDataEntity
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			public_key_id: take_or_err!(row, 0, String),
-			public_key: take_or_err!(row, 1, String),
-			public_key_alg: take_or_err!(row, 2, String),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for UserPublicKeyDataEntity
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			public_key_id: take_or_err!(row, 0),
-			public_key: take_or_err!(row, 1),
-			public_key_alg: take_or_err!(row, 2),
-		})
-	}
-}
-
 //__________________________________________________________________________________________________
 
 #[derive(Serialize)]
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
 pub struct UserVerifyKeyDataEntity
 {
 	pub verify_key_id: EncryptionKeyPairId,
@@ -501,36 +237,6 @@ impl Into<UserVerifyKeyDataServerOutput> for UserVerifyKeyDataEntity
 			verify_key: self.verify_key,
 			verify_key_alg: self.verify_key_alg,
 		}
-	}
-}
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for UserVerifyKeyDataEntity
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			verify_key_id: take_or_err!(row, 0, String),
-			verify_key: take_or_err!(row, 1, String),
-			verify_key_alg: take_or_err!(row, 2, String),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for UserVerifyKeyDataEntity
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			verify_key_id: take_or_err!(row, 0),
-			verify_key: take_or_err!(row, 1),
-			verify_key_alg: take_or_err!(row, 2),
-		})
 	}
 }
 
@@ -566,6 +272,8 @@ impl Into<UserInitServerOutput> for UserInitEntity
 //__________________________________________________________________________________________________
 
 #[derive(Serialize)]
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
 pub struct UserDeviceList
 {
 	pub device_id: String,
@@ -582,35 +290,5 @@ impl Into<sentc_crypto_common::user::UserDeviceList> for UserDeviceList
 			time: self.time,
 			device_identifier: self.device_identifier,
 		}
-	}
-}
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for UserDeviceList
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			device_id: take_or_err!(row, 0, String),
-			time: take_or_err!(row, 1, u128),
-			device_identifier: take_or_err!(row, 2, String),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for UserDeviceList
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			device_id: take_or_err!(row, 0),
-			time: server_core::take_or_err_u128!(row, 1),
-			device_identifier: take_or_err!(row, 2),
-		})
 	}
 }

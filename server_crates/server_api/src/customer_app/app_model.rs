@@ -1,11 +1,11 @@
 use sentc_crypto_common::{AppId, CustomerId, JwtKeyId, UserId};
 use server_api_common::app::{AppFileOptionsInput, AppJwtData, AppOptions, AppRegisterInput};
 use server_api_common::customer::CustomerAppList;
-use server_core::db::{exec, exec_transaction, query, query_first, query_string, Params, TransactionData};
+use server_core::db::{exec, exec_transaction, query, query_first, query_string, I64Entity, Params, TransactionData};
 use server_core::{get_time, set_params};
 use uuid::Uuid;
 
-use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppExistsEntity, AppJwt, AuthWithToken};
+use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppJwt, AuthWithToken};
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::AppFileOptions;
 
@@ -495,7 +495,7 @@ async fn check_app_exists(customer_id: CustomerId, app_id: AppId) -> AppRes<()>
 	//check if this app belongs to this customer
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_app WHERE id = ? AND customer_id = ?";
-	let app_exists: Option<AppExistsEntity> = query_first(sql, set_params!(app_id, customer_id)).await?;
+	let app_exists: Option<I64Entity> = query_first(sql, set_params!(app_id, customer_id)).await?;
 
 	match app_exists {
 		Some(_) => {},

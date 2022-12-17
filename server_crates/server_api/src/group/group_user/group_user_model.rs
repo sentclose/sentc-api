@@ -1,22 +1,13 @@
 use sentc_crypto_common::group::GroupKeysForNewMember;
 use sentc_crypto_common::{AppId, GroupId, UserId};
-use server_core::db::{bulk_insert, exec, exec_transaction, query_first, query_string, TransactionData};
+use server_core::db::{bulk_insert, exec, exec_transaction, query_first, query_string, I32Entity, I64Entity, StringEntity, TransactionData};
 use server_core::{get_time, set_params};
 use uuid::Uuid;
 
-use crate::group::group_entities::{
-	GroupInviteReq,
-	GroupJoinReq,
-	GroupKeySession,
-	GroupUserListItem,
-	UserInGroupCheck,
-	GROUP_INVITE_TYPE_INVITE_REQ,
-	GROUP_INVITE_TYPE_JOIN_REQ,
-};
+use crate::group::group_entities::{GroupInviteReq, GroupJoinReq, GroupUserListItem, GROUP_INVITE_TYPE_INVITE_REQ, GROUP_INVITE_TYPE_JOIN_REQ};
 use crate::group::group_model;
 use crate::group::group_model::check_group_rank;
 use crate::group::group_user_service::{InsertNewUserType, NewUserType};
-use crate::user::user_entities::UserExistsEntity;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 pub(super) async fn get_group_member(
@@ -88,7 +79,7 @@ pub(super) async fn invite_request(
 	//check if there was already an invite to this user -> don't use insert ignore here because we would insert the keys again!
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ? AND type = ?";
-	let invite_exists: Option<UserInGroupCheck> = query_first(
+	let invite_exists: Option<I32Entity> = query_first(
 		sql,
 		set_params!(
 			group_id.to_string(),
@@ -343,7 +334,7 @@ pub(super) async fn accept_join_req(
 	//check if the join req exists
 	//language=SQL
 	let sql = "SELECT user_type FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ? AND type = ?";
-	let check: Option<UserInGroupCheck> = query_first(
+	let check: Option<I32Entity> = query_first(
 		sql,
 		set_params!(group_id.to_string(), user_id.to_string(), GROUP_INVITE_TYPE_JOIN_REQ),
 	)
@@ -501,7 +492,7 @@ pub(super) async fn delete_sent_join_req(app_id: AppId, user_id: UserId, group_i
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group WHERE app_id = ? AND id = ?";
 
-	let check: Option<UserExistsEntity> = query_first(sql, set_params!(app_id, group_id.clone())).await?;
+	let check: Option<I64Entity> = query_first(sql, set_params!(app_id, group_id.clone())).await?;
 
 	if check.is_none() {
 		return Err(HttpErr::new(
@@ -556,7 +547,7 @@ pub(super) async fn kick_user_from_group(group_id: GroupId, user_id: UserId, ran
 	//language=SQL
 	let sql = "SELECT `rank` FROM sentc_group_user WHERE user_id = ? AND group_id = ?";
 
-	let check: Option<UserInGroupCheck> = query_first(sql, set_params!(user_id.to_string(), group_id.to_string())).await?;
+	let check: Option<I32Entity> = query_first(sql, set_params!(user_id.to_string(), group_id.to_string())).await?;
 
 	let check = match check {
 		Some(c) => c.0,
@@ -618,7 +609,7 @@ pub(super) async fn update_rank(group_id: GroupId, admin_rank: i32, changed_user
 	//language=SQL
 	let sql = "SELECT `rank` FROM sentc_group_user WHERE user_id = ? AND group_id = ?";
 
-	let check: Option<UserInGroupCheck> = query_first(sql, set_params!(changed_user_id.to_string(), group_id.to_string())).await?;
+	let check: Option<I32Entity> = query_first(sql, set_params!(changed_user_id.to_string(), group_id.to_string())).await?;
 
 	let check = match check {
 		Some(c) => c.0,
@@ -677,7 +668,7 @@ pub(super) async fn insert_user_keys_via_session(
 		},
 	};
 
-	let user_id: Option<GroupKeySession> = query_first(sql, set_params!(group_id.to_string(), session_id)).await?;
+	let user_id: Option<StringEntity> = query_first(sql, set_params!(group_id.to_string(), session_id)).await?;
 	let user_id = match user_id {
 		Some(id) => id.0,
 		None => {
@@ -737,7 +728,7 @@ async fn check_user_in_group(group_id: GroupId, user_id: UserId) -> AppRes<bool>
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group_user WHERE user_id = ? AND group_id = ? LIMIT 1";
 
-	let exists: Option<UserInGroupCheck> = query_first(sql, set_params!(user_id.to_string(), group_id.to_string())).await?;
+	let exists: Option<I32Entity> = query_first(sql, set_params!(user_id.to_string(), group_id.to_string())).await?;
 
 	if exists.is_some() {
 		return Ok(true);
@@ -757,7 +748,7 @@ async fn check_for_invite(user_id: UserId, group_id: GroupId) -> AppRes<i32>
 	//language=SQL
 	let sql = "SELECT user_type FROM sentc_group_user_invites_and_join_req WHERE user_id = ? AND group_id = ? AND type = ?";
 
-	let check: Option<UserInGroupCheck> = query_first(sql, set_params!(user_id, group_id, GROUP_INVITE_TYPE_INVITE_REQ)).await?;
+	let check: Option<I32Entity> = query_first(sql, set_params!(user_id, group_id, GROUP_INVITE_TYPE_INVITE_REQ)).await?;
 
 	match check {
 		Some(user_type) => Ok(user_type.0),
@@ -781,7 +772,7 @@ async fn check_for_only_one_admin(group_id: GroupId, user_id: UserId) -> AppRes<
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group_user WHERE group_id = ? AND user_id NOT LIKE ? AND `rank` <= 1 LIMIT 1";
 
-	let admin_found: Option<UserInGroupCheck> = query_first(sql, set_params!(group_id, user_id)).await?;
+	let admin_found: Option<I32Entity> = query_first(sql, set_params!(group_id, user_id)).await?;
 
 	//if there are more admins -> then the user is not the only admin
 	match admin_found {
@@ -796,7 +787,7 @@ async fn group_accept_invite(app_id: AppId, group_id: GroupId) -> AppRes<()>
 	//check if this group can be invited
 	//language=SQL
 	let sql = "SELECT invite FROM sentc_group WHERE app_id = ? AND id = ?";
-	let can_invite: Option<UserInGroupCheck> = query_first(sql, set_params!(app_id, group_id)).await?;
+	let can_invite: Option<I32Entity> = query_first(sql, set_params!(app_id, group_id)).await?;
 
 	match can_invite {
 		Some(ci) => {

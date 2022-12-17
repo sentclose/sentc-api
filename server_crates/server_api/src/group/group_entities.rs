@@ -21,47 +21,15 @@ pub static GROUP_INVITE_TYPE_JOIN_REQ: GroupNewUserType = 1;
 Internal used group data, to check if the group exists with this app id
 */
 #[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
 pub struct InternalGroupData
 {
-	pub app_id: AppId,
 	pub id: GroupId,
-	pub time: u128,
+	pub app_id: AppId,
 	pub parent: Option<GroupId>,
+	pub time: u128,
 	pub invite: i32,
-}
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for InternalGroupData
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			id: take_or_err!(row, 0, String),
-			app_id: take_or_err!(row, 1, String),
-			parent: server_core::take_or_err_opt!(row, 2, String),
-			time: take_or_err!(row, 3, u128),
-			invite: take_or_err!(row, 4, i32),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for InternalGroupData
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			id: take_or_err!(row, 0),
-			app_id: take_or_err!(row, 1),
-			parent: take_or_err!(row, 2),
-			time: server_core::take_or_err_u128!(row, 3),
-			invite: take_or_err!(row, 4),
-		})
-	}
 }
 
 //__________________________________________________________________________________________________
@@ -130,41 +98,13 @@ internally used in cache to check every user
 This is fetched when the user is not a direct member but a member from a parent.
  */
 #[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
 pub struct InternalUserGroupDataFromParent
 {
 	pub get_values_from_parent: GroupId,
 	pub joined_time: u128,
 	pub rank: i32,
-}
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for InternalUserGroupDataFromParent
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			get_values_from_parent: take_or_err!(row, 0, String),
-			joined_time: take_or_err!(row, 1, u128),
-			rank: take_or_err!(row, 2, i32),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for InternalUserGroupDataFromParent
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			get_values_from_parent: take_or_err!(row, 0),
-			joined_time: server_core::take_or_err_u128!(row, 1),
-			rank: take_or_err!(row, 2),
-		})
-	}
 }
 
 //__________________________________________________________________________________________________
@@ -176,84 +116,6 @@ pub struct InternalGroupDataComplete
 {
 	pub group_data: InternalGroupData,
 	pub user_data: InternalUserGroupData,
-}
-
-//__________________________________________________________________________________________________
-
-pub struct UserInGroupCheck(pub i32);
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for UserInGroupCheck
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self(take_or_err!(row, 0, i32)))
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for UserInGroupCheck
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self(take_or_err!(row, 0)))
-	}
-}
-
-//__________________________________________________________________________________________________
-
-pub struct GroupKeyUpdateReady(pub i32);
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for GroupKeyUpdateReady
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self(take_or_err!(row, 0, i32)))
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for GroupKeyUpdateReady
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self(take_or_err!(row, 0)))
-	}
-}
-
-//__________________________________________________________________________________________________
-
-pub struct GroupChildren(pub GroupId);
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for GroupChildren
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self(take_or_err!(row, 0, String)))
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for GroupChildren
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self(take_or_err!(row, 0)))
-	}
 }
 
 //__________________________________________________________________________________________________
@@ -401,6 +263,8 @@ impl server_core::db::FromSqliteRow for GroupUserKeys
 //__________________________________________________________________________________________________
 
 #[derive(Serialize)]
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
 pub struct GroupJoinReq
 {
 	pub user_id: UserId,
@@ -420,39 +284,11 @@ impl Into<GroupJoinReqList> for GroupJoinReq
 	}
 }
 
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for GroupJoinReq
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			user_id: take_or_err!(row, 0, String),
-			time: take_or_err!(row, 1, u128),
-			user_type: take_or_err!(row, 2, i32),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for GroupJoinReq
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			user_id: take_or_err!(row, 0),
-			time: server_core::take_or_err_u128!(row, 1),
-			user_type: take_or_err!(row, 2),
-		})
-	}
-}
-
 //__________________________________________________________________________________________________
 
 #[derive(Serialize)]
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
 pub struct GroupInviteReq
 {
 	pub group_id: GroupId,
@@ -470,46 +306,20 @@ impl Into<GroupInviteReqList> for GroupInviteReq
 	}
 }
 
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for GroupInviteReq
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			group_id: take_or_err!(row, 0, String),
-			time: take_or_err!(row, 1, u128),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for GroupInviteReq
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			group_id: take_or_err!(row, 0),
-			time: server_core::take_or_err_u128!(row, 1),
-		})
-	}
-}
-
 //__________________________________________________________________________________________________
 
 #[derive(Serialize)]
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
 pub struct GroupKeyUpdate
 {
+	pub new_group_key_id: SymKeyId,
 	pub encrypted_ephemeral_key_by_group_key_and_public_key: String,
 	pub encrypted_eph_key_key_id: String,
 	pub encrypted_group_key_by_ephemeral: EncryptionKeyPairId,
 	pub previous_group_key_id: SymKeyId,
 	pub ephemeral_alg: String,
 	pub time: u128,
-	pub new_group_key_id: SymKeyId,
 }
 
 impl Into<KeyRotationInput> for GroupKeyUpdate
@@ -528,78 +338,14 @@ impl Into<KeyRotationInput> for GroupKeyUpdate
 	}
 }
 
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for GroupKeyUpdate
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			new_group_key_id: take_or_err!(row, 0, String),
-			encrypted_ephemeral_key_by_group_key_and_public_key: take_or_err!(row, 1, String),
-			encrypted_eph_key_key_id: take_or_err!(row, 2, String),
-			encrypted_group_key_by_ephemeral: take_or_err!(row, 3, String),
-			previous_group_key_id: take_or_err!(row, 4, String),
-			ephemeral_alg: take_or_err!(row, 5, String),
-			time: take_or_err!(row, 6, u128),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for GroupKeyUpdate
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			new_group_key_id: take_or_err!(row, 0),
-			encrypted_ephemeral_key_by_group_key_and_public_key: take_or_err!(row, 1),
-			encrypted_eph_key_key_id: take_or_err!(row, 2),
-			encrypted_group_key_by_ephemeral: take_or_err!(row, 3),
-			previous_group_key_id: take_or_err!(row, 4),
-			ephemeral_alg: take_or_err!(row, 5),
-			time: server_core::take_or_err_u128!(row, 6),
-		})
-	}
-}
-
 //__________________________________________________________________________________________________
 
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
 pub struct KeyRotationWorkerKey
 {
 	pub ephemeral_alg: String,
 	pub encrypted_ephemeral_key: String,
-}
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for KeyRotationWorkerKey
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			ephemeral_alg: take_or_err!(row, 0, String),
-			encrypted_ephemeral_key: take_or_err!(row, 1, String),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for KeyRotationWorkerKey
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			ephemeral_alg: take_or_err!(row, 0),
-			encrypted_ephemeral_key: take_or_err!(row, 1),
-		})
-	}
 }
 
 //__________________________________________________________________________________________________
@@ -617,6 +363,8 @@ pub struct UserEphKeyOut
 
 //__________________________________________________________________________________________________
 
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
 pub struct UserGroupPublicKeyData
 {
 	pub user_id: UserId,
@@ -626,69 +374,11 @@ pub struct UserGroupPublicKeyData
 	pub time: u128,
 }
 
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for UserGroupPublicKeyData
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			user_id: take_or_err!(row, 0, String),
-			public_key_id: take_or_err!(row, 1, String),
-			public_key: take_or_err!(row, 2, String),
-			public_key_alg: take_or_err!(row, 3, String),
-			time: take_or_err!(row, 4, u128),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for UserGroupPublicKeyData
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			user_id: take_or_err!(row, 0),
-			public_key_id: take_or_err!(row, 1),
-			public_key: take_or_err!(row, 2),
-			public_key_alg: take_or_err!(row, 3),
-			time: server_core::take_or_err_u128!(row, 4),
-		})
-	}
-}
-
-//__________________________________________________________________________________________________
-
-pub struct GroupKeySession(pub UserId);
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for GroupKeySession
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self(take_or_err!(row, 0, String)))
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for GroupKeySession
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self(take_or_err!(row, 0)))
-	}
-}
-
 //__________________________________________________________________________________________________
 
 #[derive(Serialize)]
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
 pub struct GroupUserListItem
 {
 	pub user_id: UserId,
@@ -710,41 +400,11 @@ impl Into<sentc_crypto_common::group::GroupUserListItem> for GroupUserListItem
 	}
 }
 
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for GroupUserListItem
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			user_id: take_or_err!(row, 0, String),
-			rank: take_or_err!(row, 1, i32),
-			joined_time: take_or_err!(row, 2, u128),
-			user_type: take_or_err!(row, 3, i32),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for GroupUserListItem
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			user_id: take_or_err!(row, 0),
-			rank: take_or_err!(row, 1),
-			joined_time: server_core::take_or_err_u128!(row, 2),
-			user_type: take_or_err!(row, 3),
-		})
-	}
-}
-
 //__________________________________________________________________________________________________
 
 #[derive(Serialize)]
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
 pub struct ListGroups
 {
 	pub group_id: GroupId,
@@ -768,43 +428,11 @@ impl Into<sentc_crypto_common::group::ListGroups> for ListGroups
 	}
 }
 
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for ListGroups
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			group_id: take_or_err!(row, 0, String),
-			time: take_or_err!(row, 1, u128),
-			joined_time: take_or_err!(row, 2, u128),
-			rank: take_or_err!(row, 3, i32),
-			parent: server_core::take_or_err_opt!(row, 4, String),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for ListGroups
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			group_id: take_or_err!(row, 0),
-			time: server_core::take_or_err_u128!(row, 1),
-			joined_time: server_core::take_or_err_u128!(row, 2),
-			rank: take_or_err!(row, 3),
-			parent: take_or_err!(row, 4),
-		})
-	}
-}
-
 //__________________________________________________________________________________________________
 
 #[derive(Serialize)]
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
 pub struct GroupChildrenList
 {
 	pub group_id: GroupId,
@@ -821,36 +449,6 @@ impl Into<sentc_crypto_common::group::GroupChildrenList> for GroupChildrenList
 			time: self.time,
 			parent: self.parent,
 		}
-	}
-}
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for GroupChildrenList
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			group_id: take_or_err!(row, 0, String),
-			time: take_or_err!(row, 1, u128),
-			parent: server_core::take_or_err_opt!(row, 2, String),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for GroupChildrenList
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			group_id: take_or_err!(row, 0),
-			time: server_core::take_or_err_u128!(row, 1),
-			parent: take_or_err!(row, 2),
-		})
 	}
 }
 
