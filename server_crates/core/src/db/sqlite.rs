@@ -46,6 +46,31 @@ macro_rules! take_or_err_u128 {
 	};
 }
 
+#[macro_export]
+macro_rules! take_or_err_usize {
+	($row:expr, $index:expr) => {
+		match $row.get($index) {
+			Ok(v) => {
+				let str: String = v;
+				let str: usize = match str.parse() {
+					Ok(v) => v,
+					Err(e) => {
+						return Err(server_core::db::FormSqliteRowError {
+							msg: format!("err in db fetch: {:?}", e),
+						})
+					},
+				};
+				str
+			},
+			Err(e) => {
+				return Err(server_core::db::FormSqliteRowError {
+					msg: format!("{:?}", e),
+				})
+			},
+		}
+	};
+}
+
 #[derive(Debug)]
 pub struct FormSqliteRowError
 {

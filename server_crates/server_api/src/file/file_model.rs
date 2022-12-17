@@ -1,11 +1,10 @@
 use sentc_crypto_common::{AppId, CustomerId, FileId, GroupId, PartId, SymKeyId, UserId};
-use server_core::db::{exec, exec_string, exec_transaction, get_in, query_first, query_string, TransactionData};
+use server_core::db::{exec, exec_string, exec_transaction, get_in, query_first, query_string, StringEntity, TransactionData};
 use server_core::{get_time, set_params, set_params_vec, set_params_vec_outer};
 use uuid::Uuid;
 
 use crate::file::file_entities::{FileExternalStorageUrl, FileMetaData, FilePartListItem, FilePartListItemDelete, FileSessionCheck};
 use crate::file::file_service::FILE_BELONGS_TO_TYPE_GROUP;
-use crate::group::group_entities::GroupChildren;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 static MAX_CHUNK_SIZE: usize = 5 * 1024 * 1024;
@@ -346,13 +345,13 @@ WHERE
 
 		let mut exec_vec = Vec::with_capacity(children.len() + 4);
 
-		exec_vec.push(GroupChildren(FILE_STATUS_TO_DELETE.to_string()));
-		exec_vec.push(GroupChildren(time.to_string()));
-		exec_vec.push(GroupChildren(app_id.to_string()));
-		exec_vec.push(GroupChildren(FILE_BELONGS_TO_TYPE_GROUP.to_string()));
+		exec_vec.push(StringEntity(FILE_STATUS_TO_DELETE.to_string()));
+		exec_vec.push(StringEntity(time.to_string()));
+		exec_vec.push(StringEntity(app_id.to_string()));
+		exec_vec.push(StringEntity(FILE_BELONGS_TO_TYPE_GROUP.to_string()));
 
 		for child in children {
-			exec_vec.push(GroupChildren(child));
+			exec_vec.push(StringEntity(child));
 		}
 
 		exec_string(sql, set_params_vec!(exec_vec)).await?;

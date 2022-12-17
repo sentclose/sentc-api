@@ -21,6 +21,19 @@ macro_rules! take_or_err {
 			None => return Err(mysql_async::FromRowError($row)),
 		}
 	};
+	($row:expr, $index:expr, Option<$t:ident>) => {
+		match $row.take_opt::<Option<$t>, _>($index) {
+			Some(value) => {
+				match value {
+					Ok(ir) => ir,
+					Err(mysql_async::FromValueError(_value)) => {
+						return Err(mysql_async::FromRowError($row));
+					},
+				}
+			},
+			None => return Err(mysql_async::FromRowError($row)),
+		}
+	};
 }
 
 #[macro_export]

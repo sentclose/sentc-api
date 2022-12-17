@@ -1,13 +1,11 @@
 use sentc_crypto_common::group::CreateData;
 use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
-use server_core::db::{exec, exec_string, exec_transaction, get_in, query, query_first, query_string, TransactionData};
+use server_core::db::{exec, exec_string, exec_transaction, get_in, query, query_first, query_string, I32Entity, StringEntity, TransactionData};
 use server_core::{get_time, set_params, set_params_vec};
 use uuid::Uuid;
 
 use crate::group::group_entities::{
-	GroupChildren,
 	GroupChildrenList,
-	GroupKeyUpdateReady,
 	GroupUserKeys,
 	InternalGroupData,
 	InternalUserGroupData,
@@ -217,7 +215,7 @@ WHERE
     g.id = ?
 LIMIT 1";
 
-	let key_update: Option<GroupKeyUpdateReady> = query_first(sql, set_params!(user_id, app_id, group_id)).await?;
+	let key_update: Option<I32Entity> = query_first(sql, set_params!(user_id, app_id, group_id)).await?;
 
 	match key_update {
 		Some(_) => Ok(true),
@@ -471,7 +469,7 @@ pub(super) fn check_group_rank(user_rank: i32, req_rank: i32) -> AppRes<()>
 	Ok(())
 }
 
-pub(super) async fn get_children_to_parent(group_id: GroupId, app_id: AppId) -> AppRes<Vec<GroupChildren>>
+pub(super) async fn get_children_to_parent(group_id: GroupId, app_id: AppId) -> AppRes<Vec<StringEntity>>
 {
 	//language=SQL
 	let sql = r"
@@ -486,7 +484,7 @@ WITH RECURSIVE children (id) AS (
 SELECT * FROM children
 ";
 
-	let children: Vec<GroupChildren> = query(sql, set_params!(group_id, app_id.to_string(), app_id)).await?;
+	let children: Vec<StringEntity> = query(sql, set_params!(group_id, app_id.to_string(), app_id)).await?;
 
 	Ok(children)
 }

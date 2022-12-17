@@ -43,3 +43,11 @@ pub fn get_time_in_sec() -> Result<u64, error::CoreError>
 		},
 	}
 }
+
+#[cfg(feature = "derive_macro")]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate server_core_macros;
+
+#[cfg(feature = "derive_macro")]
+pub use server_core_macros::*;

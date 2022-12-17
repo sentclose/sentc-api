@@ -11,7 +11,7 @@ sentc-crypto-common = {version = "0.1.0", path = "../../sdk-common" }
 
 server_api_common = {version = "0.1.0", path = "../server_api_common", default-features = false, features = ["server"]}
 
-server-core = {version = "0.1.0", path = "../core", default-features = false}
+server-core = {version = "0.1.0", path = "../core", default-features = false, features = ["derive_macro"]}
 
 # server impl
 hyper = { version = "0.14", features = ["full"] }

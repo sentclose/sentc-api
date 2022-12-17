@@ -1,25 +1,19 @@
 use sentc_crypto_common::CustomerId;
 use server_api_common::customer::{CustomerData, CustomerUpdateInput};
-use server_core::db::{exec, query_first};
+use server_core::db::{exec, query_first, I32Entity};
 use server_core::{get_time, set_params};
 
 #[cfg(feature = "send_mail")]
 use crate::customer::customer_entities::RegisterEmailStatus;
-use crate::customer::customer_entities::{
-	CustomerDataByEmailEntity,
-	CustomerDataEntity,
-	CustomerEmailByToken,
-	CustomerEmailToken,
-	CustomerEmailValid,
-};
+use crate::customer::customer_entities::{CustomerDataByEmailEntity, CustomerDataEntity, CustomerEmailByToken, CustomerEmailToken};
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
-pub(super) async fn check_customer_valid(customer_id: CustomerId) -> AppRes<CustomerEmailValid>
+pub(super) async fn check_customer_valid(customer_id: CustomerId) -> AppRes<I32Entity>
 {
 	//language=SQL
 	let sql = "SELECT email_validate FROM sentc_customer WHERE id = ?";
 
-	let valid: Option<CustomerEmailValid> = query_first(sql, set_params!(customer_id)).await?;
+	let valid: Option<I32Entity> = query_first(sql, set_params!(customer_id)).await?;
 
 	let valid = match valid {
 		Some(v) => v,

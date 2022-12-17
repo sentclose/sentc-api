@@ -1,22 +1,17 @@
 use sentc_crypto_common::user::{ChangePasswordData, KeyDerivedData, MasterKey, ResetPasswordData, UserDeviceRegisterInput};
 use sentc_crypto_common::{AppId, DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, UserId};
-use server_core::db::{exec, exec_transaction, query_first, query_string, Params, TransactionData};
+use server_core::db::{exec, exec_transaction, query_first, query_string, I64Entity, Params, StringEntity, TransactionData};
 use server_core::{get_time, set_params};
 use uuid::Uuid;
 
 use crate::user::user_entities::{
 	CaptchaEntity,
-	DeviceIdentifier,
 	DoneLoginServerKeysOutputEntity,
-	JwtSignKey,
-	JwtVerifyKey,
 	UserDeviceList,
-	UserExistsEntity,
 	UserLoginDataEntity,
 	UserLoginLightEntity,
 	UserPublicKeyDataEntity,
 	UserRefreshTokenCheck,
-	UserResetPwCheck,
 	UserVerifyKeyDataEntity,
 };
 use crate::user::user_service::UserAction;
@@ -27,7 +22,7 @@ pub(super) async fn get_jwt_sign_key(kid: &str) -> AppRes<String>
 	//language=SQL
 	let sql = "SELECT sign_key FROM sentc_app_jwt_keys WHERE id = ?";
 
-	let sign_key: Option<JwtSignKey> = query_first(sql, set_params!(kid.to_string())).await?;
+	let sign_key: Option<StringEntity> = query_first(sql, set_params!(kid.to_string())).await?;
 
 	match sign_key {
 		Some(k) => Ok(k.0),
@@ -47,7 +42,7 @@ pub(super) async fn get_jwt_verify_key(kid: &str) -> AppRes<String>
 	//language=SQL
 	let sql = "SELECT verify_key FROM sentc_app_jwt_keys WHERE id = ?";
 
-	let sign_key: Option<JwtVerifyKey> = query_first(sql, set_params!(kid.to_string())).await?;
+	let sign_key: Option<StringEntity> = query_first(sql, set_params!(kid.to_string())).await?;
 
 	match sign_key {
 		Some(k) => Ok(k.0),
@@ -70,7 +65,7 @@ pub(super) async fn check_user_in_app(app_id: AppId, user_id: UserId) -> AppRes<
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_user WHERE id = ? AND app_id = ? LIMIT 1";
 
-	let exists: Option<UserExistsEntity> = query_first(sql, set_params!(user_id, app_id)).await?;
+	let exists: Option<I64Entity> = query_first(sql, set_params!(user_id, app_id)).await?;
 
 	match exists {
 		Some(_) => Ok(true),
@@ -90,7 +85,7 @@ WHERE
     app_id = ?
 LIMIT 1";
 
-	let exists: Option<UserExistsEntity> = query_first(sql, set_params!(user_identifier.to_string(), app_id.to_string())).await?;
+	let exists: Option<I64Entity> = query_first(sql, set_params!(user_identifier.to_string(), app_id.to_string())).await?;
 
 	match exists {
 		Some(_) => Ok(true),
@@ -412,7 +407,7 @@ pub(super) async fn get_done_register_device(app_id: AppId, token: String) -> Ap
 	//language=SQL
 	let sql = "SELECT id FROM sentc_user_device WHERE app_id = ? AND token = ?";
 
-	let out: Option<UserResetPwCheck> = query_first(sql, set_params!(app_id, token)).await?;
+	let out: Option<StringEntity> = query_first(sql, set_params!(app_id, token)).await?;
 
 	let device_id: DeviceId = match out {
 		Some(id) => id.0,
@@ -457,7 +452,7 @@ pub(super) async fn delete_device(user_id: UserId, app_id: AppId, device_id: Dev
 	//language=SQL
 	let sql = "SELECT COUNT(id) FROM sentc_user_device WHERE app_id = ? AND user_id = ? LIMIT 2";
 
-	let device_count: Option<UserExistsEntity> = query_first(sql, set_params!(app_id.to_string(), user_id.to_string())).await?;
+	let device_count: Option<I64Entity> = query_first(sql, set_params!(app_id.to_string(), user_id.to_string())).await?;
 
 	match device_count {
 		Some(c) => {
@@ -545,7 +540,7 @@ pub(super) async fn reset_password(user_id: UserId, device_id: DeviceId, data: R
 	//language=SQL
 	let sql = "SELECT app_id FROM sentc_user_device WHERE id = ? ORDER BY time DESC LIMIT 1";
 
-	let row: Option<UserResetPwCheck> = query_first(sql, set_params!(device_id.to_string())).await?;
+	let row: Option<StringEntity> = query_first(sql, set_params!(device_id.to_string())).await?;
 
 	let row = match row {
 		Some(r) => r,
@@ -631,22 +626,22 @@ WHERE
 	Ok(list)
 }
 
-pub(super) async fn prepare_user_key_rotation(app_id: AppId, user_id: UserId) -> AppRes<Option<UserResetPwCheck>>
+pub(super) async fn prepare_user_key_rotation(app_id: AppId, user_id: UserId) -> AppRes<Option<StringEntity>>
 {
 	//language=SQL
 	let sql = "SELECT user_group_id FROM sentc_user WHERE app_id = ? AND id = ?";
 
-	let check: Option<UserResetPwCheck> = query_first(sql, set_params!(app_id, user_id)).await?;
+	let check: Option<StringEntity> = query_first(sql, set_params!(app_id, user_id)).await?;
 
 	Ok(check)
 }
 
-pub(super) async fn get_device_identifier(app_id: AppId, user_id: UserId, device_id: DeviceId) -> AppRes<Option<DeviceIdentifier>>
+pub(super) async fn get_device_identifier(app_id: AppId, user_id: UserId, device_id: DeviceId) -> AppRes<Option<StringEntity>>
 {
 	//language=SQL
 	let sql = "SELECT device_identifier FROM sentc_user_device WHERE id = ? AND user_id = ? AND app_id = ?";
 
-	let device: Option<DeviceIdentifier> = query_first(sql, set_params!(device_id, user_id, app_id)).await?;
+	let device: Option<StringEntity> = query_first(sql, set_params!(device_id, user_id, app_id)).await?;
 
 	Ok(device)
 }
