@@ -267,6 +267,63 @@ pub(crate) fn routes(router: &mut Router)
 			.add(app_token::app_token_transform),
 	);
 	router.post(
+		"/api/v1/content",
+		r(crate::content_management::create_non_related_content)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/content/:user_id",
+		r(crate::content_management::create_user_content)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/all/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_all)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/:cat_id/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_all_from_cat)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/user/all/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_user)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/user/:cat_id/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_user_from_cat)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/content/group/:group_id",
+		r(crate::content_management::create_group_content)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/group/:group_id/all/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_group)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/group/:group_id/:cat_id/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_group_from_cat)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.post(
 		"/api/v1/group",
 		r(crate::group::create)
 			.add(jwt::jwt_transform)
