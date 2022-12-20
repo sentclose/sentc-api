@@ -59,56 +59,76 @@ pub(super) async fn get_content(
 	cat_id: Option<CategoryId>,
 ) -> AppRes<Vec<ListContentItem>>
 {
-	//TODO find a way to show for connected group to get the access group (the user id of the connected group)
-	// try to use it in the from clause and set the user id (which is the connected group id) as access_from_group
+	//can't use user_groups in the other cte. i got an mysql syntax error when using it in mysql_async.
+	//mysql explain says this are the same because the cte only helps to reduce code length.
 
 	//language=SQL
 	let mut sql = r"
-SELECT c.id, item, belongs_to_group, belongs_to_user, creator, time, access_from_group
-FROM 
-    sentc_content c,
-    (
-        -- member from parent group
-		WITH RECURSIVE children (id) AS ( 
-			SELECT g.id from sentc_group g WHERE g.parent IN (SELECT group_id FROM sentc_group_user gu1 WHERE user_id = ?) AND g.app_id = ?
-										   
-			UNION ALL 
-				
-			SELECT g1.id FROM children c
-					JOIN sentc_group g1 ON c.id = g1.parent AND g1.app_id = ?
-		)
+WITH RECURSIVE 
+children (id) AS ( 
+	-- get all children group of the groups where the user is direct member
+	SELECT g.id from sentc_group g WHERE g.parent IN (
+		SELECT group_id AS group_as_user_id 
+		FROM sentc_group_user gu1, sentc_group g 
+		WHERE g.id = group_id AND app_id = ? AND user_id = ? AND gu1.type = 0
+	) AND g.app_id = ?
+								   
+	UNION ALL 
 		
-		SELECT *, null as access_from_group FROM children
-		UNION 
-		SELECT group_id as id, null as access_from_group FROM sentc_group_user gu WHERE user_id = ? AND type = 0
-    ) all_groups
+	SELECT g1.id FROM children c
+			JOIN sentc_group g1 ON c.id = g1.parent AND g1.app_id = ?
+),
+group_as_member (group_as_member_id, access_from_group) AS ( 
+	-- get all groups, where the groups where the user got access, are in
+	SELECT gu2.group_id as group_as_member_id, gu2.user_id as access_from_group
+	FROM sentc_group_user gu2 
+	WHERE 
+		gu2.type = 2 AND 
+		user_id IN (
+			SELECT group_id AS group_as_user_id 
+			FROM sentc_group_user gu1, sentc_group g 
+			WHERE g.id = group_id AND app_id = ? AND user_id = ? AND gu1.type = 0
+			UNION 
+			SELECT * FROM children
+		)   
+),
+user_groups (user_group_id) AS ( 
+    SELECT group_id AS user_group_id 
+    FROM sentc_group_user gu1, sentc_group g 
+    WHERE g.id = group_id AND app_id = ? AND user_id = ? AND gu1.type = 0
+ )
+
+SELECT con.id, item, belongs_to_group, belongs_to_user, creator, con.time, group_as_member.access_from_group
+FROM 
+    sentc_content con 
+    	LEFT JOIN user_groups ON belongs_to_group = user_groups.user_group_id
+		LEFT JOIN children ON belongs_to_group = children.id
+		LEFT JOIN group_as_member ON belongs_to_group = group_as_member.group_as_member_id
 WHERE
     app_id = ? AND (
         belongs_to_user = ? OR 
 		creator = ? OR 
-        belongs_to_group = all_groups.id OR
-		belongs_to_group IN (
-			-- member from group as member
-			SELECT group_id 
-			FROM sentc_group_user gu2 
-			WHERE 
-			    type = 2 AND 
-			    user_id = all_groups.id
-		)
+        belongs_to_group = user_groups.user_group_id OR 
+        belongs_to_group = children.id OR 
+        belongs_to_group = group_as_member.group_as_member_id
     )"
 	.to_string();
 
 	if cat_id.is_some() {
-		sql += " AND c.id = (SELECT content_id FROM sentc_content_category_connect WHERE cat_id = ?)";
+		sql += " AND con.id = (SELECT content_id FROM sentc_content_category_connect WHERE cat_id = ?)";
 	}
 
 	let params = if last_fetched_time > 0 {
-		sql += " AND time <= ? AND (time < ? OR (time = ? AND c.id > ?)) ORDER BY time DESC, c.id LIMIT 100";
+		sql += " AND time <= ? AND (time < ? OR (time = ? AND con.id > ?)) ORDER BY time DESC, con.id LIMIT 100";
 
 		if let Some(c_id) = cat_id {
 			set_params!(
+				app_id.clone(),
 				user_id.clone(),
 				app_id.clone(),
+				app_id.clone(),
+				app_id.clone(),
+				user_id.clone(),
 				app_id.clone(),
 				user_id.clone(),
 				app_id,
@@ -123,8 +143,12 @@ WHERE
 			)
 		} else {
 			set_params!(
+				app_id.clone(),
 				user_id.clone(),
 				app_id.clone(),
+				app_id.clone(),
+				app_id.clone(),
+				user_id.clone(),
 				app_id.clone(),
 				user_id.clone(),
 				app_id,
@@ -138,12 +162,16 @@ WHERE
 			)
 		}
 	} else {
-		sql += " ORDER BY time DESC, c.id LIMIT 100";
+		sql += " ORDER BY time DESC, con.id LIMIT 100";
 
 		if let Some(c_id) = cat_id {
 			set_params!(
+				app_id.clone(),
 				user_id.clone(),
 				app_id.clone(),
+				app_id.clone(),
+				app_id.clone(),
+				user_id.clone(),
 				app_id.clone(),
 				user_id.clone(),
 				app_id,
@@ -153,8 +181,12 @@ WHERE
 			)
 		} else {
 			set_params!(
+				app_id.clone(),
 				user_id.clone(),
 				app_id.clone(),
+				app_id.clone(),
+				app_id.clone(),
+				user_id.clone(),
 				app_id.clone(),
 				user_id.clone(),
 				app_id,
