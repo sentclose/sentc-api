@@ -227,65 +227,59 @@ pub(super) async fn get_content_for_group(
 {
 	//access over the group routes
 
-	//TODO add params
-
-	//TODO check if mysql can "save" queries so the children query dont need to write again
-
 	//language=SQL
 	let mut sql = r"
-SELECT c.id, item, belongs_to_group, belongs_to_user, creator, time 
-FROM sentc_content c 
-WHERE app_id = ? AND (
-    belongs_to_group = ? OR 
-    belongs_to_group IN (
-        WITH RECURSIVE children (id) AS ( 
-			SELECT g.id from sentc_group g WHERE g.parent = ? AND g.app_id = ?
-										   
-			UNION ALL 
-				
-			SELECT g1.id FROM children c
-					JOIN sentc_group g1 ON c.id = g1.parent AND g1.app_id = ?
+WITH RECURSIVE 
+children (id) AS ( 
+	-- get all children group of the groups where the user is direct member
+	SELECT g.id from sentc_group g WHERE g.parent = ? AND g.app_id = ?
+								   
+	UNION ALL 
+		
+	SELECT g1.id FROM children c
+			JOIN sentc_group g1 ON c.id = g1.parent AND g1.app_id = ?
+),
+group_as_member (group_as_member_id, access_from_group) AS ( 
+	-- get all groups, where the groups where the user got access, are in
+	SELECT gu2.group_id as group_as_member_id, gu2.user_id as access_from_group
+	FROM sentc_group_user gu2 
+	WHERE 
+		gu2.type = 2 AND (
+		    user_id = ? OR 
+		    user_id IN (SELECT * FROM children)
 		)
-		SELECT * FROM children
-    ) OR
-    belongs_to_group IN (
-		-- member from group as member
-		SELECT group_id 
-		FROM sentc_group_user gu2 
-		WHERE 
-			type = 2 AND 
-			(
-				user_id = ? OR 
-				user_id IN (
-					WITH RECURSIVE children (id) AS ( 
-						SELECT g.id from sentc_group g WHERE g.parent = ? AND g.app_id = ?
-													   
-						UNION ALL 
-							
-						SELECT g1.id FROM children c
-								JOIN sentc_group g1 ON c.id = g1.parent AND g1.app_id = ?
-					)
-					SELECT * FROM children
-				)
-			)
-	)
-)"
+)
+
+SELECT con.id, item, belongs_to_group, belongs_to_user, creator, con.time, group_as_member.access_from_group 
+FROM sentc_content con 
+    LEFT JOIN children ON belongs_to_group = children.id 
+    LEFT JOIN group_as_member ON belongs_to_group = group_as_member.group_as_member_id
+WHERE 
+    app_id = ? AND (
+        belongs_to_group = ? OR 
+        belongs_to_group = children.id OR 
+        belongs_to_group = group_as_member.group_as_member_id
+    )"
 	.to_string();
 
 	if cat_id.is_some() {
-		sql += " AND c.id = (SELECT content_id FROM sentc_content_category_connect WHERE cat_id = ?)";
+		sql += " AND con.id = (SELECT content_id FROM sentc_content_category_connect WHERE cat_id = ?)";
 	}
 
 	let params = if last_fetched_time > 0 {
-		sql += " AND time <= ? AND (time < ? OR (time = ? AND c.id > ?)) ORDER BY time DESC, c.id LIMIT 100";
+		sql += " AND time <= ? AND (time < ? OR (time = ? AND c.id > ?)) ORDER BY time DESC, con.id LIMIT 100";
 
 		if let Some(c_id) = cat_id {
 			set_params!(
-				app_id.clone(),
+				//children params
 				group_id.clone(),
-				group_id,
 				app_id.clone(),
+				app_id.clone(),
+				//group as member params
+				group_id.clone(),
+				//query params
 				app_id,
+				group_id,
 				c_id,
 				//time params
 				last_fetched_time.to_string(),
@@ -295,11 +289,16 @@ WHERE app_id = ? AND (
 			)
 		} else {
 			set_params!(
-				app_id.clone(),
+				//children params
 				group_id.clone(),
-				group_id,
 				app_id.clone(),
+				app_id.clone(),
+				//group as member params
+				group_id.clone(),
+				//query params
 				app_id,
+				group_id,
+				//time params
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
@@ -307,19 +306,33 @@ WHERE app_id = ? AND (
 			)
 		}
 	} else {
-		sql += " ORDER BY time DESC, c.id LIMIT 100";
+		sql += " ORDER BY time DESC, con.id LIMIT 100";
 
 		if let Some(c_id) = cat_id {
 			set_params!(
-				app_id.clone(),
+				//children params
 				group_id.clone(),
-				group_id,
 				app_id.clone(),
+				app_id.clone(),
+				//group as member params
+				group_id.clone(),
+				//query params
 				app_id,
+				group_id,
 				c_id
 			)
 		} else {
-			set_params!(app_id.clone(), group_id.clone(), group_id, app_id.clone(), app_id,)
+			set_params!(
+				//children params
+				group_id.clone(),
+				app_id.clone(),
+				app_id.clone(),
+				//group as member params
+				group_id.clone(),
+				//query params
+				app_id,
+				group_id
+			)
 		}
 	};
 
