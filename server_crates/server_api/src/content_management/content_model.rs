@@ -123,14 +123,18 @@ WHERE
 
 		if let Some(c_id) = cat_id {
 			set_params!(
+				//children params
 				app_id.clone(),
 				user_id.clone(),
 				app_id.clone(),
 				app_id.clone(),
+				//group as member params
 				app_id.clone(),
 				user_id.clone(),
+				//user group params
 				app_id.clone(),
 				user_id.clone(),
+				//query params
 				app_id,
 				user_id.clone(),
 				user_id,
@@ -143,14 +147,18 @@ WHERE
 			)
 		} else {
 			set_params!(
+				//children params
 				app_id.clone(),
 				user_id.clone(),
 				app_id.clone(),
 				app_id.clone(),
+				//group as member params
 				app_id.clone(),
 				user_id.clone(),
+				//user group params
 				app_id.clone(),
 				user_id.clone(),
+				//query params
 				app_id,
 				user_id.clone(),
 				user_id,
@@ -166,14 +174,18 @@ WHERE
 
 		if let Some(c_id) = cat_id {
 			set_params!(
+				//children params
 				app_id.clone(),
 				user_id.clone(),
 				app_id.clone(),
 				app_id.clone(),
+				//group as member params
 				app_id.clone(),
 				user_id.clone(),
+				//user group params
 				app_id.clone(),
 				user_id.clone(),
+				//query params
 				app_id,
 				user_id.clone(),
 				user_id,
@@ -181,14 +193,18 @@ WHERE
 			)
 		} else {
 			set_params!(
+				//children params
 				app_id.clone(),
 				user_id.clone(),
 				app_id.clone(),
 				app_id.clone(),
+				//group as member params
 				app_id.clone(),
 				user_id.clone(),
+				//user group params
 				app_id.clone(),
 				user_id.clone(),
+				//query params
 				app_id,
 				user_id.clone(),
 				user_id,
