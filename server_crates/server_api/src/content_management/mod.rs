@@ -7,15 +7,16 @@ use std::future::Future;
 
 use rustgram::Request;
 use sentc_crypto_common::content::{ContentCreateOutput, CreateData};
+use sentc_crypto_common::server_default::ServerSuccessOutput;
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 
-use crate::content_management::content_entity::ListContentItem;
+use crate::content_management::content_entity::{ContentItemAccess, ListContentItem};
 use crate::content_management::content_service::ContentRelatedType;
 use crate::customer_app::app_util::{check_endpoint_with_app_options, get_app_data_from_req, Endpoint};
 use crate::group::get_group_user_data_from_req;
 use crate::user::jwt::get_jwt_data_from_param;
-use crate::util::api_res::{echo, ApiErrorCodes, HttpErr, JRes};
+use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 
 /**
 ## Category
@@ -90,6 +91,49 @@ async fn create_content(mut req: Request, content_related_type: ContentRelatedTy
 	let out = ContentCreateOutput {
 		content_id,
 	};
+
+	echo(out)
+}
+
+pub(crate) async fn delete_content_by_id(req: Request) -> JRes<ServerSuccessOutput>
+{
+	//again no rank checks for groups because this is sent form the own backend
+
+	let app = get_app_data_from_req(&req)?;
+
+	check_endpoint_with_app_options(app, Endpoint::ForceServer)?;
+
+	let id = get_name_param_from_req(&req, "content_id")?;
+
+	content_service::delete_content_by_id(app.app_data.app_id.clone(), id.to_string()).await?;
+
+	echo_success()
+}
+
+pub(crate) async fn delete_content_by_item(req: Request) -> JRes<ServerSuccessOutput>
+{
+	let app = get_app_data_from_req(&req)?;
+
+	check_endpoint_with_app_options(app, Endpoint::ForceServer)?;
+
+	let item = get_name_param_from_req(&req, "item")?;
+
+	content_service::delete_content_by_item(app.app_data.app_id.clone(), item.to_string()).await?;
+
+	echo_success()
+}
+
+pub(crate) async fn check_access_to_content_by_item(req: Request) -> JRes<ContentItemAccess>
+{
+	let app = get_app_data_from_req(&req)?;
+	let user = get_jwt_data_from_param(&req)?;
+
+	//TODO endpoint check not force server
+	check_endpoint_with_app_options(app, Endpoint::ForceServer)?;
+
+	let item = get_name_param_from_req(&req, "item")?;
+
+	let out = content_model::check_access_to_content_by_item(app.app_data.app_id.clone(), user.id.clone(), item.to_string()).await?;
 
 	echo(out)
 }

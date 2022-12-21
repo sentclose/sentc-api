@@ -94,8 +94,8 @@ pub enum ApiErrorCodes
 	CaptchaTooOld,
 	CaptchaWrong,
 
-	ContentCreateItemNotSet,
-	ContentCreateItemTooBig,
+	ContentItemNotSet,
+	ContentItemTooBig,
 	ContentCreateItemTooManyCat,
 }
 
@@ -217,8 +217,8 @@ impl ApiErrorCodes
 			ApiErrorCodes::CaptchaTooOld => 602,
 			ApiErrorCodes::CaptchaWrong => 603,
 
-			ApiErrorCodes::ContentCreateItemNotSet => 700,
-			ApiErrorCodes::ContentCreateItemTooBig => 701,
+			ApiErrorCodes::ContentItemNotSet => 700,
+			ApiErrorCodes::ContentItemTooBig => 701,
 			ApiErrorCodes::ContentCreateItemTooManyCat => 702,
 		}
 	}

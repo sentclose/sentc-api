@@ -32,3 +32,25 @@ impl Into<sentc_crypto_common::content::ListContentItem> for ListContentItem
 }
 
 //__________________________________________________________________________________________________
+
+#[derive(Serialize)]
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
+pub struct ContentItemAccess
+{
+	pub access: bool,
+	pub access_from_group: Option<GroupId>,
+}
+
+impl Into<sentc_crypto_common::content::ContentItemAccess> for ContentItemAccess
+{
+	fn into(self) -> sentc_crypto_common::content::ContentItemAccess
+	{
+		sentc_crypto_common::content::ContentItemAccess {
+			access: self.access,
+			access_from_group: self.access_from_group,
+		}
+	}
+}
+
+//__________________________________________________________________________________________________

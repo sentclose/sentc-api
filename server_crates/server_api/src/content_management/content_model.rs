@@ -1,8 +1,8 @@
 use sentc_crypto_common::{AppId, CategoryId, ContentId, GroupId, UserId};
-use server_core::db::query_string;
+use server_core::db::{query_first, query_string};
 use server_core::set_params;
 
-use crate::content_management::content_entity::ListContentItem;
+use crate::content_management::content_entity::{ContentItemAccess, ListContentItem};
 use crate::util::api_res::AppRes;
 
 pub(super) async fn get_content(
@@ -350,4 +350,96 @@ WHERE belongs_to_user = ? AND app_id = ?"
 	let list: Vec<ListContentItem> = query_string(sql, params).await?;
 
 	Ok(list)
+}
+
+pub(super) async fn check_access_to_content_by_item(app_id: AppId, user_id: UserId, item: String) -> AppRes<ContentItemAccess>
+{
+	/*
+	   Do not return from which group (direct or children) the user got access or from belongs to user / is creator.
+	   This is because if the content was placed in a group, the group must be loaded anyways
+	   Only access from group is set to know from which connected group the user should load the groups
+	*/
+
+	//language=SQL
+	let sql = r"
+WITH RECURSIVE 
+children (id) AS ( 
+	-- get all children group of the groups where the user is direct member
+	SELECT g.id from sentc_group g WHERE g.parent IN (
+		SELECT group_id AS group_as_user_id 
+		FROM sentc_group_user gu1, sentc_group g 
+		WHERE g.id = group_id AND app_id = ? AND user_id = ? AND gu1.type = 0
+	) AND g.app_id = ?
+								   
+	UNION ALL 
+		
+	SELECT g1.id FROM children c
+			JOIN sentc_group g1 ON c.id = g1.parent AND g1.app_id = ?
+),
+group_as_member (group_as_member_id, access_from_group) AS ( 
+	-- get all groups, where the groups where the user got access, are in
+	SELECT gu2.group_id as group_as_member_id, gu2.user_id as access_from_group
+	FROM sentc_group_user gu2 
+	WHERE 
+		gu2.type = 2 AND 
+		user_id IN (
+			SELECT group_id AS group_as_user_id 
+			FROM sentc_group_user gu1, sentc_group g 
+			WHERE g.id = group_id AND app_id = ? AND user_id = ? AND gu1.type = 0
+			UNION 
+			SELECT * FROM children
+		)   
+),
+user_groups (user_group_id) AS ( 
+    SELECT group_id AS user_group_id 
+    FROM sentc_group_user gu1, sentc_group g 
+    WHERE g.id = group_id AND app_id = ? AND user_id = ? AND gu1.type = 0
+ )
+
+SELECT true as access, group_as_member.access_from_group 
+FROM sentc_content con
+    	LEFT JOIN user_groups ON belongs_to_group = user_groups.user_group_id
+		LEFT JOIN children ON belongs_to_group = children.id
+		LEFT JOIN group_as_member ON belongs_to_group = group_as_member.group_as_member_id
+WHERE app_id = ? AND 
+      item = ? AND (
+    	belongs_to_user = ? OR 
+		creator = ? OR 
+        belongs_to_group = user_groups.user_group_id OR 
+        belongs_to_group = children.id OR 
+        belongs_to_group = group_as_member.group_as_member_id
+	)
+";
+
+	let out: Option<ContentItemAccess> = query_first(
+		sql,
+		set_params!(
+			//children params
+			app_id.clone(),
+			user_id.clone(),
+			app_id.clone(),
+			app_id.clone(),
+			//group as member params
+			app_id.clone(),
+			user_id.clone(),
+			//user group params
+			app_id.clone(),
+			user_id.clone(),
+			//query params
+			app_id,
+			item,
+			user_id.clone(),
+			user_id
+		),
+	)
+	.await?;
+
+	if let Some(o) = out {
+		Ok(o)
+	} else {
+		Ok(ContentItemAccess {
+			access: false,
+			access_from_group: None,
+		})
+	}
 }

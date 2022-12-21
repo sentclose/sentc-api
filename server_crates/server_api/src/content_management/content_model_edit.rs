@@ -49,3 +49,25 @@ pub(super) async fn create_content(
 
 	Ok(content_id)
 }
+
+pub(super) async fn delete_content_by_id(app_id: AppId, content_id: ContentId) -> AppRes<()>
+{
+	//no user access check here because this is only called from a service or backend only
+
+	//language=SQL
+	let sql = "DELETE FROM sentc_content WHERE app_id = ? AND id = ?";
+
+	exec(sql, set_params!(app_id, content_id)).await?;
+
+	Ok(())
+}
+
+pub(super) async fn delete_content_by_item(app_id: AppId, item: String) -> AppRes<()>
+{
+	//language=SQL
+	let sql = "DELETE FROM sentc_content WHERE app_id = ? AND item = ?";
+
+	exec(sql, set_params!(app_id, item)).await?;
+
+	Ok(())
+}

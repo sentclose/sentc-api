@@ -278,6 +278,18 @@ pub(crate) fn routes(router: &mut Router)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
+	router.delete(
+		"/api/v1/content/id/:content_id",
+		r(crate::content_management::delete_content_by_id)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.delete(
+		"/api/v1/content/item/:item",
+		r(crate::content_management::delete_content_by_item)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
 	router.get(
 		"/api/v1/content/all/:last_fetched_time/:last_id",
 		r(crate::content_management::get_content_all)
@@ -299,6 +311,12 @@ pub(crate) fn routes(router: &mut Router)
 	router.get(
 		"/api/v1/content/user/:cat_id/:last_fetched_time/:last_id",
 		r(crate::content_management::get_content_for_user_from_cat)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/access/item/:item",
+		r(crate::content_management::check_access_to_content_by_item)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
