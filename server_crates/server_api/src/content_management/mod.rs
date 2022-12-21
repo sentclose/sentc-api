@@ -1,5 +1,6 @@
 mod content_entity;
 mod content_model;
+mod content_model_edit;
 pub mod content_service;
 
 use std::future::Future;

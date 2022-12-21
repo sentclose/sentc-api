@@ -1,7 +1,7 @@
 use sentc_crypto_common::content::CreateData;
 use sentc_crypto_common::{AppId, ContentId, GroupId, UserId};
 
-use crate::content_management::content_model;
+use crate::content_management::content_model_edit;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 pub enum ContentRelatedType
@@ -46,5 +46,5 @@ pub async fn create_content(
 		));
 	}
 
-	content_model::create_content(app_id, creator_id, data, group_id, user_id).await
+	content_model_edit::create_content(app_id, creator_id, data, group_id, user_id).await
 }
