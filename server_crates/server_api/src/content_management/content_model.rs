@@ -19,51 +19,37 @@ pub(super) async fn get_content(
 	//language=SQL
 	let mut sql = r"
 WITH RECURSIVE 
-children AS ( 
-	-- get all children group of the groups where the user is direct member
-	SELECT g.id as children_id from sentc_group g WHERE g.parent IN (
-		SELECT group_id AS group_as_user_id_1 
-		FROM sentc_group_user gu_1, sentc_group g_1 
-		WHERE g_1.id = group_id AND app_id = ? AND user_id = ? AND gu_1.type = 0
-	) AND g.app_id = ?
-								   
-	UNION ALL 
-		
-	SELECT g1.id as children_id FROM children c
-			JOIN sentc_group g1 ON c.children_id = g1.parent AND g1.app_id = ?
+group_descendants AS (
+    SELECT id, parent FROM sentc_group 
+    WHERE id IN (
+        SELECT group_id 
+        FROM sentc_group_user 
+        WHERE user_id = ? AND type = 0
+    ) AND app_id = ?
+    
+    UNION ALL
+    
+    SELECT g.id, g.parent FROM group_descendants gd
+			JOIN sentc_group g ON gd.id = g.parent AND g.app_id = ?
 ),
 group_as_member AS ( 
-	-- get all groups, where the groups where the user got access, are in
-	SELECT gu2.group_id as group_as_member_id, gu2.user_id as access_from_group
-	FROM sentc_group_user gu2 
-	WHERE 
-		gu2.type = 2 AND 
-		user_id IN (
-			SELECT group_id AS group_as_user_id_2 
-			FROM sentc_group_user gu_2, sentc_group g_2 
-			WHERE g_2.id = group_id AND app_id = ? AND user_id = ? AND gu_2.type = 0
-			UNION 
-			SELECT children_id as children_id_1 FROM children
-		)   
-),
-user_groups AS ( 
-    SELECT group_id AS user_group_id 
-    FROM sentc_group_user gu_3, sentc_group g_3 
-    WHERE g_3.id = group_id AND app_id = ? AND user_id = ? AND gu_3.type = 0
- )
+    SELECT group_id AS group_as_member_id, user_id AS access_from_group 
+    FROM sentc_group_user 
+    WHERE user_id IN (
+        SELECT id FROM group_descendants
+    )
+)
 
 SELECT con.id, item, belongs_to_group, belongs_to_user, creator, con.time, group_as_member.access_from_group
 FROM 
     sentc_content con 
-    	LEFT JOIN user_groups ON belongs_to_group = user_groups.user_group_id
-		LEFT JOIN children ON belongs_to_group = children.children_id
-		LEFT JOIN group_as_member ON belongs_to_group = group_as_member.group_as_member_id
+        LEFT JOIN group_descendants ON belongs_to_group = group_descendants.id
+        LEFT JOIN group_as_member ON belongs_to_group = group_as_member.group_as_member_id
 WHERE
     app_id = ? AND (
         belongs_to_user = ? OR 
 		creator = ? OR 
-        belongs_to_group = user_groups.user_group_id OR 
-        belongs_to_group = children.children_id OR 
+        belongs_to_group = group_descendants.id OR 
         belongs_to_group = group_as_member.group_as_member_id
     )"
 	.to_string();
@@ -77,17 +63,10 @@ WHERE
 
 		if let Some(c_id) = cat_id {
 			set_params!(
-				//children params
-				app_id.clone(),
+				//group params
 				user_id.clone(),
 				app_id.clone(),
 				app_id.clone(),
-				//group as member params
-				app_id.clone(),
-				user_id.clone(),
-				//user group params
-				app_id.clone(),
-				user_id.clone(),
 				//query params
 				app_id,
 				user_id.clone(),
@@ -101,17 +80,10 @@ WHERE
 			)
 		} else {
 			set_params!(
-				//children params
-				app_id.clone(),
+				//group params
 				user_id.clone(),
 				app_id.clone(),
 				app_id.clone(),
-				//group as member params
-				app_id.clone(),
-				user_id.clone(),
-				//user group params
-				app_id.clone(),
-				user_id.clone(),
 				//query params
 				app_id,
 				user_id.clone(),
@@ -128,17 +100,10 @@ WHERE
 
 		if let Some(c_id) = cat_id {
 			set_params!(
-				//children params
-				app_id.clone(),
+				//group params
 				user_id.clone(),
 				app_id.clone(),
 				app_id.clone(),
-				//group as member params
-				app_id.clone(),
-				user_id.clone(),
-				//user group params
-				app_id.clone(),
-				user_id.clone(),
 				//query params
 				app_id,
 				user_id.clone(),
@@ -147,17 +112,10 @@ WHERE
 			)
 		} else {
 			set_params!(
-				//children params
-				app_id.clone(),
+				//group params
 				user_id.clone(),
 				app_id.clone(),
 				app_id.clone(),
-				//group as member params
-				app_id.clone(),
-				user_id.clone(),
-				//user group params
-				app_id.clone(),
-				user_id.clone(),
 				//query params
 				app_id,
 				user_id.clone(),
@@ -363,50 +321,36 @@ pub(super) async fn check_access_to_content_by_item(app_id: AppId, user_id: User
 	//language=SQL
 	let sql = r"
 WITH RECURSIVE 
-children AS ( 
-	-- get all children group of the groups where the user is direct member
-	SELECT g.id as children_id from sentc_group g WHERE g.parent IN (
-		SELECT group_id AS group_as_user_id_1 
-		FROM sentc_group_user gu_1, sentc_group g_1 
-		WHERE g_1.id = group_id AND app_id = ? AND user_id = ? AND gu_1.type = 0
-	) AND g.app_id = ?
-								   
-	UNION ALL 
-		
-	SELECT g1.id as children_id FROM children c
-			JOIN sentc_group g1 ON c.children_id = g1.parent AND g1.app_id = ?
+group_descendants AS (
+    SELECT id, parent FROM sentc_group 
+    WHERE id IN (
+        SELECT group_id 
+        FROM sentc_group_user 
+        WHERE user_id = ? AND type = 0
+    ) AND app_id = ?
+    
+    UNION ALL
+    
+    SELECT g.id, g.parent FROM group_descendants gd
+			JOIN sentc_group g ON gd.id = g.parent AND g.app_id = ?
 ),
 group_as_member AS ( 
-	-- get all groups, where the groups where the user got access, are in
-	SELECT gu2.group_id as group_as_member_id, gu2.user_id as access_from_group
-	FROM sentc_group_user gu2 
-	WHERE 
-		gu2.type = 2 AND 
-		user_id IN (
-			SELECT group_id AS group_as_user_id_2 
-			FROM sentc_group_user gu_2, sentc_group g_2 
-			WHERE g_2.id = group_id AND app_id = ? AND user_id = ? AND gu_2.type = 0
-			UNION 
-			SELECT children_id as children_id_1 FROM children
-		)   
-),
-user_groups AS ( 
-    SELECT group_id AS user_group_id 
-    FROM sentc_group_user gu_3, sentc_group g_3 
-    WHERE g_3.id = group_id AND app_id = ? AND user_id = ? AND gu_3.type = 0
- )
+    SELECT group_id AS group_as_member_id, user_id AS access_from_group 
+    FROM sentc_group_user 
+    WHERE user_id IN (
+        SELECT id FROM group_descendants
+    )
+)
 
 SELECT true as access, group_as_member.access_from_group 
 FROM sentc_content con
-    	LEFT JOIN user_groups ON belongs_to_group = user_groups.user_group_id
-		LEFT JOIN children ON belongs_to_group = children.children_id
-		LEFT JOIN group_as_member ON belongs_to_group = group_as_member.group_as_member_id
+    	LEFT JOIN group_descendants ON belongs_to_group = group_descendants.id
+        LEFT JOIN group_as_member ON belongs_to_group = group_as_member.group_as_member_id
 WHERE app_id = ? AND 
       item = ? AND (
     	belongs_to_user = ? OR 
 		creator = ? OR 
-        belongs_to_group = user_groups.user_group_id OR 
-        belongs_to_group = children.children_id OR 
+        belongs_to_group = group_descendants.id OR 
         belongs_to_group = group_as_member.group_as_member_id
 	)
 LIMIT 1
@@ -415,17 +359,10 @@ LIMIT 1
 	let out: Option<ContentItemAccess> = query_first(
 		sql,
 		set_params!(
-			//children params
-			app_id.clone(),
+			//group params
 			user_id.clone(),
 			app_id.clone(),
 			app_id.clone(),
-			//group as member params
-			app_id.clone(),
-			user_id.clone(),
-			//user group params
-			app_id.clone(),
-			user_id.clone(),
 			//query params
 			app_id,
 			item,
