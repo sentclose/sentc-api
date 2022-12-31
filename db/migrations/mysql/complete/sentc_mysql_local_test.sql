@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 06. Nov 2022 um 17:43
+-- Erstellungszeit: 31. Dez 2022 um 16:20
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -49,6 +49,10 @@ INSERT INTO `sentc_app` (`id`, `customer_id`, `identifier`, `hashed_secret_token
 --
 -- Trigger `sentc_app`
 --
+DELIMITER $$
+CREATE TRIGGER `delete_app_content` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_content WHERE app_id = OLD.id
+$$
+DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `delete_app_jwt` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_app_jwt_keys WHERE app_id = OLD.id
 $$
@@ -164,6 +168,46 @@ CREATE TABLE `sentc_captcha` (
   `app_id` varchar(36) NOT NULL,
   `solution` text NOT NULL,
   `time` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_content`
+--
+
+CREATE TABLE `sentc_content` (
+  `id` varchar(36) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
+  `item` varchar(50) NOT NULL,
+  `time` bigint(20) NOT NULL,
+  `belongs_to_group` varchar(36) DEFAULT NULL,
+  `belongs_to_user` varchar(36) DEFAULT NULL,
+  `creator` varchar(36) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_content_category`
+--
+
+CREATE TABLE `sentc_content_category` (
+  `id` varchar(36) NOT NULL,
+  `name` text NOT NULL COMMENT 'only listed in the admin dashboard',
+  `time` bigint(20) NOT NULL,
+  `app_id` varchar(36) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_content_category_connect`
+--
+
+CREATE TABLE `sentc_content_category_connect` (
+  `cat_id` varchar(36) NOT NULL,
+  `content_id` varchar(36) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -371,7 +415,7 @@ CREATE TABLE `sentc_group_user_invites_and_join_req` (
   `type` int(11) NOT NULL COMMENT '0 = invite (keys needed); 1 = join req (no keys needed)',
   `time` bigint(20) NOT NULL,
   `key_upload_session_id` varchar(36) DEFAULT NULL COMMENT 'if there are too many keys used in this group -> upload the keys via session. this is only used for invite req',
-  `user_type` int(11) NOT NULL COMMENT '0 = normal user, 1 = group as member'
+  `user_type` int(11) NOT NULL COMMENT '0 = normal user, 2 = group as member'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='the invite req from the group to an user';
 
 -- --------------------------------------------------------
@@ -556,6 +600,27 @@ ALTER TABLE `sentc_app_options`
 --
 ALTER TABLE `sentc_captcha`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indizes für die Tabelle `sentc_content`
+--
+ALTER TABLE `sentc_content`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `app_id` (`app_id`),
+  ADD KEY `time` (`time`),
+  ADD KEY `item` (`item`) USING BTREE;
+
+--
+-- Indizes für die Tabelle `sentc_content_category`
+--
+ALTER TABLE `sentc_content_category`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indizes für die Tabelle `sentc_content_category_connect`
+--
+ALTER TABLE `sentc_content_category_connect`
+  ADD PRIMARY KEY (`cat_id`,`content_id`);
 
 --
 -- Indizes für die Tabelle `sentc_customer`

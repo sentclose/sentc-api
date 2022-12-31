@@ -5,6 +5,7 @@ use rustgram::{r, Request, Response, Router};
 
 use crate::routes::routes;
 
+mod content_management;
 mod customer;
 mod customer_app;
 mod file;

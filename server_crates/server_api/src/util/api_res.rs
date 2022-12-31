@@ -93,6 +93,10 @@ pub enum ApiErrorCodes
 	CaptchaNotFound,
 	CaptchaTooOld,
 	CaptchaWrong,
+
+	ContentItemNotSet,
+	ContentItemTooBig,
+	ContentCreateItemTooManyCat,
 }
 
 impl From<CoreErrorCodes> for ApiErrorCodes
@@ -212,6 +216,10 @@ impl ApiErrorCodes
 			ApiErrorCodes::CaptchaNotFound => 601,
 			ApiErrorCodes::CaptchaTooOld => 602,
 			ApiErrorCodes::CaptchaWrong => 603,
+
+			ApiErrorCodes::ContentItemNotSet => 700,
+			ApiErrorCodes::ContentItemTooBig => 701,
+			ApiErrorCodes::ContentCreateItemTooManyCat => 702,
 		}
 	}
 }
