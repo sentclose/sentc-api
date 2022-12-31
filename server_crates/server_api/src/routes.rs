@@ -120,6 +120,22 @@ pub(crate) fn routes(router: &mut Router)
 		"/api/v1/customer/app/:app_id/jwt/:jwt_id",
 		r(crate::customer_app::delete_jwt_keys).add(jwt::jwt_transform),
 	);
+	router.post(
+		"/api/v1/customer/app/:app_id/content_category",
+		r(crate::content_management::create_content_category).add(jwt::jwt_transform),
+	);
+	router.get(
+		"/api/v1/customer/app/:app_id/content_category/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_category).add(jwt::jwt_transform),
+	);
+	router.delete(
+		"/api/v1/customer/app/:app_id/content_category/:cat_id",
+		r(crate::content_management::delete_content_category).add(jwt::jwt_transform),
+	);
+	router.put(
+		"/api/v1/customer/app/:app_id/content_category/:cat_id",
+		r(crate::content_management::update_content_category_name).add(jwt::jwt_transform),
+	);
 	router.get(
 		"/api/v1/user/:user_id/public_key",
 		r(crate::user::get_public_key_data).add(app_token::app_token_transform),
