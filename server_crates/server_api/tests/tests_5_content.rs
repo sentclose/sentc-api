@@ -133,7 +133,7 @@ async fn test_10_create_non_related_content()
 	let url = get_url("api/v1/content".to_owned());
 
 	let input = sentc_crypto_common::content::CreateData {
-		cat_ids: vec![],
+		cat_id: None,
 		item: "lalala".to_string(),
 	};
 
@@ -269,7 +269,7 @@ async fn test_14_create_item_for_other_user()
 	let url = get_url("api/v1/content/".to_owned() + user_1.user_id.as_str());
 
 	let input = sentc_crypto_common::content::CreateData {
-		cat_ids: vec![],
+		cat_id: None,
 		item: "lalala1".to_string(),
 	};
 
@@ -844,7 +844,7 @@ async fn test_22_create_content_for_parent_group()
 	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id);
 
 	let input = sentc_crypto_common::content::CreateData {
-		cat_ids: vec![],
+		cat_id: None,
 		item: "lalala2".to_string(),
 	};
 
@@ -980,7 +980,7 @@ async fn test_25_create_item_in_child_group()
 	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id);
 
 	let input = sentc_crypto_common::content::CreateData {
-		cat_ids: vec![],
+		cat_id: None,
 		item: "lalala3".to_string(),
 	};
 
@@ -1118,7 +1118,7 @@ async fn test_28_create_item_in_connected_group()
 	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id);
 
 	let input = sentc_crypto_common::content::CreateData {
-		cat_ids: vec![],
+		cat_id: None,
 		item: "lalala4".to_string(),
 	};
 
@@ -1212,7 +1212,7 @@ async fn test_30_create_content_in_a_connected_group_which_is_connected_to_a_chi
 	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id);
 
 	let input = sentc_crypto_common::content::CreateData {
-		cat_ids: vec![],
+		cat_id: None,
 		item: "lalala5".to_string(),
 	};
 
