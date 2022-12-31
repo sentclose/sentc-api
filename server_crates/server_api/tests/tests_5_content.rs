@@ -709,6 +709,32 @@ async fn test_21_create_groups()
 	)
 	.await;
 
+	//create a connected group for the child group
+	let group_input = sentc_crypto::group::prepare_create(&child_group_data.1[0].public_group_key).unwrap();
+	let url = get_url("api/v1/group".to_owned() + "/" + &child_group_id + "/connected");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", secret_token)
+		.body(group_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let connected_child_out: GroupCreateOutput = handle_server_response(&body).unwrap();
+	let connected_child_data = get_group_from_group_as_member(
+		secret_token,
+		jwt,
+		&connected_child_out.group_id,
+		&child_group_id,
+		&child_group_data.1[0].private_group_key,
+	)
+	.await;
+
 	//save the child group
 	let mut decrypted_group_keys = HashMap::new();
 	decrypted_group_keys.insert(users[0].user_id.to_string(), child_group_data.1);
@@ -777,14 +803,24 @@ async fn test_21_create_groups()
 	let mut decrypted_group_keys = HashMap::new();
 	decrypted_group_keys.insert(users[1].user_id.to_string(), data.1);
 
+	let mut decrypted_group_keys_child = HashMap::new();
+	decrypted_group_keys_child.insert(users[0].user_id.to_string(), connected_child_data.1);
+
 	CONNECTED_GROUP_TEST_STATE
 		.get_or_init(|| {
 			async move {
-				RwLock::new(vec![GroupState {
-					group_id: out.group_id,
-					group_member: vec![],
-					decrypted_group_keys,
-				}])
+				RwLock::new(vec![
+					GroupState {
+						group_id: out.group_id,
+						group_member: vec![],
+						decrypted_group_keys,
+					},
+					GroupState {
+						group_id: connected_child_out.group_id,
+						group_member: vec![],
+						decrypted_group_keys: decrypted_group_keys_child,
+					},
+				])
 			}
 		})
 		.await;
@@ -1155,6 +1191,101 @@ async fn test_29_access_item_from_a_connected_group()
 	let out: Vec<ListContentItem> = handle_server_response(&body).unwrap();
 
 	assert_eq!(out.len(), 1);
+	assert_eq!(out[0].id, content.id);
+	assert_eq!(out[0].belongs_to_group.as_ref().unwrap(), &group.group_id);
+	assert_eq!(out[0].access_from_group.as_ref().unwrap(), &access.group_id)
+}
+
+#[tokio::test]
+async fn test_30_create_content_in_a_connected_group_which_is_connected_to_a_child()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let mut state = CONTENT_TEST_STATE.get().unwrap().write().await;
+	let groups = CONNECTED_GROUP_TEST_STATE.get().unwrap().read().await;
+	let access_group = CHILD_GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let creator = &users[2];
+	let group = &groups[1];
+	let access = &access_group[0];
+
+	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id);
+
+	let input = sentc_crypto_common::content::CreateData {
+		cat_ids: vec![],
+		item: "lalala5".to_string(),
+	};
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", &access.group_id)
+		.body(json_to_string(&input).unwrap())
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: ContentCreateOutput = handle_server_response(&body).unwrap();
+
+	state.push(ContentState {
+		id: out.content_id,
+		content: "lalala5".to_string(),
+	});
+}
+
+#[tokio::test]
+async fn test_31_access_item_from_a_connected_group_and_parent()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let state = CONTENT_TEST_STATE.get().unwrap().read().await;
+	let groups = CONNECTED_GROUP_TEST_STATE.get().unwrap().read().await;
+	let access_group = CHILD_GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let group = &groups[1];
+	let user = &users[0];
+	let access = &access_group[0];
+
+	let content = &state[5];
+
+	let url = get_url("api/v1/content/access/item/".to_owned() + content.content.as_str());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: ContentItemAccess = handle_server_response(&body).unwrap();
+
+	assert!(out.access);
+	assert_eq!(out.access_from_group.as_ref().unwrap(), &access.group_id);
+
+	let url = get_url("api/v1/content/all/0/none".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url.clone())
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: Vec<ListContentItem> = handle_server_response(&body).unwrap();
+
+	assert_eq!(out.len(), 3);
 	assert_eq!(out[0].id, content.id);
 	assert_eq!(out[0].belongs_to_group.as_ref().unwrap(), &group.group_id);
 	assert_eq!(out[0].access_from_group.as_ref().unwrap(), &access.group_id)
