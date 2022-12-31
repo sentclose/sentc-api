@@ -609,6 +609,61 @@ pub async fn add_user_by_invite(
 	data
 }
 
+#[allow(clippy::too_many_arguments)]
+pub async fn add_user_by_invite_as_group_as_member(
+	secret_token: &str,
+	jwt: &str,
+	group_id: &str,
+	group_with_access: &str,
+	keys: &Vec<GroupKeyData>,
+	user_to_invite_id: &str,
+	user_to_invite_jwt: &str,
+	user_to_add_public_key: &sentc_crypto::sdk_common::user::UserPublicKeyData,
+	user_to_add_private_key: &PrivateKeyFormat,
+) -> (GroupOutData, Vec<GroupKeyData>)
+{
+	let mut group_keys_ref = vec![];
+
+	for decrypted_group_key in keys {
+		group_keys_ref.push(&decrypted_group_key.group_key);
+	}
+
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(user_to_add_public_key, &group_keys_ref, false).unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + group_id + "/invite_auto/" + user_to_invite_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", group_with_access)
+		.body(invite)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let join_res: GroupAcceptJoinReqServerOutput = handle_server_response(body.as_str()).unwrap();
+	assert_eq!(join_res.session_id, None);
+
+	//accept the invite, no need to accept the invite -> we using auto invite here
+
+	let data = get_group(
+		secret_token,
+		user_to_invite_jwt,
+		group_id,
+		user_to_add_private_key,
+		false,
+	)
+	.await;
+
+	assert_eq!(data.0.rank, 4);
+
+	data
+}
+
 pub async fn add_group_by_invite(
 	secret_token: &str,
 	jwt: &str,
