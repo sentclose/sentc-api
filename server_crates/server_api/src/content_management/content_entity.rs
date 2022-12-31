@@ -12,6 +12,7 @@ pub struct ListContentItem
 	pub belongs_to_user: Option<UserId>,
 	pub creator: UserId,
 	pub time: u128,
+	pub cat_id: Option<CategoryId>,
 	pub access_from_group: Option<GroupId>,
 }
 
@@ -26,6 +27,7 @@ impl Into<sentc_crypto_common::content::ListContentItem> for ListContentItem
 			belongs_to_user: self.belongs_to_user,
 			creator: self.creator,
 			time: self.time,
+			cat_id: self.cat_id,
 			access_from_group: self.access_from_group,
 		}
 	}

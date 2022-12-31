@@ -1193,7 +1193,8 @@ async fn test_29_access_item_from_a_connected_group()
 	assert_eq!(out.len(), 1);
 	assert_eq!(out[0].id, content.id);
 	assert_eq!(out[0].belongs_to_group.as_ref().unwrap(), &group.group_id);
-	assert_eq!(out[0].access_from_group.as_ref().unwrap(), &access.group_id)
+	assert_eq!(out[0].access_from_group.as_ref().unwrap(), &access.group_id);
+	assert_eq!(out[0].cat_id, None);
 }
 
 #[tokio::test]
