@@ -490,7 +490,7 @@ pub(super) async fn delete(customer_id: CustomerId, app_id: AppId) -> AppRes<()>
 
 //__________________________________________________________________________________________________
 
-async fn check_app_exists(customer_id: CustomerId, app_id: AppId) -> AppRes<()>
+pub(super) async fn check_app_exists(customer_id: CustomerId, app_id: AppId) -> AppRes<()>
 {
 	//check if this app belongs to this customer
 	//language=SQL

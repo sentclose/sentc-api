@@ -1,4 +1,6 @@
-use sentc_crypto_common::CustomerId;
+use std::future::Future;
+
+use sentc_crypto_common::{AppId, CustomerId};
 use server_api_common::app::{AppFileOptionsInput, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, FILE_STORAGE_OWN};
 
 use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
@@ -84,4 +86,9 @@ pub(super) fn check_file_options(input: &AppFileOptionsInput) -> AppRes<()>
 	}
 
 	Ok(())
+}
+
+pub(crate) fn check_app_exists(customer_id: CustomerId, app_id: AppId) -> impl Future<Output = AppRes<()>>
+{
+	app_model::check_app_exists(customer_id, app_id)
 }
