@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 5:44pm on November 6, 2022 (UTC)
+-- Exported: 4:20pm on December 31, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -208,6 +208,21 @@ CREATE TABLE sentc_user_token
 CREATE TABLE 'sentc_captcha' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'solution' TEXT, 'time' TEXT);
 
 ----
+-- Table structure for sentc_content
+----
+CREATE TABLE 'sentc_content' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'item' TEXT, 'time' TEXT, 'belongs_to_group' TEXT, 'belongs_to_user' TEXT, 'creator' TEXT);
+
+----
+-- Table structure for sentc_content_category
+----
+CREATE TABLE 'sentc_content_category' ('id' TEXT PRIMARY KEY NOT NULL, 'name' TEXT, 'time' TEXT, 'app_id' TEXT);
+
+----
+-- Table structure for sentc_content_category_connect
+----
+CREATE TABLE 'sentc_content_category_connect' ('cat_id' TEXT NOT NULL, 'content_id' TEXT NOT NULL, PRIMARY KEY ('cat_id', 'content_id'));
+
+----
 -- structure for index sqlite_autoindex_test_1 on table test
 ----
 ;
@@ -363,6 +378,31 @@ CREATE INDEX 'token' ON "sentc_user_device" ("token");
 ;
 
 ----
+-- structure for index sqlite_autoindex_sentc_content_1 on table sentc_content
+----
+;
+
+----
+-- structure for index time on table sentc_content
+----
+CREATE INDEX 'time' ON "sentc_content" ("time" DESC);
+
+----
+-- structure for index item on table sentc_content
+----
+CREATE INDEX 'item' ON "sentc_content" ("item" ASC);
+
+----
+-- structure for index sqlite_autoindex_sentc_content_category_1 on table sentc_content_category
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_content_category_connect_1 on table sentc_content_category_connect
+----
+;
+
+----
 -- structure for trigger group_delete_invites on table sentc_group
 ----
 CREATE TRIGGER 'group_delete_invites' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = OLD.id; END;
@@ -441,4 +481,9 @@ CREATE TRIGGER 'user_delete_user_device' AFTER DELETE ON "sentc_user" FOR EACH R
 -- structure for trigger user_delete_jwt_refresh on table sentc_user_device
 ----
 CREATE TRIGGER 'user_delete_jwt_refresh' AFTER DELETE ON "sentc_user_device" FOR EACH ROW BEGIN DELETE FROM sentc_user_token WHERE device_id = OLD.id; END;
+
+----
+-- structure for trigger delete_app_content on table sentc_app
+----
+CREATE TRIGGER 'delete_app_content' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_content WHERE app_id = OLD.id; END;
 COMMIT;
