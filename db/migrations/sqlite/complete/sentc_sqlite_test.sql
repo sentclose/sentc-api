@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 4:20pm on December 31, 2022 (UTC)
+-- Exported: 11:42pm on December 31, 2022 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -298,7 +298,7 @@ CREATE TABLE 'sentc_captcha' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'so
 ----
 -- Table structure for sentc_content
 ----
-CREATE TABLE 'sentc_content' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'item' TEXT, 'time' TEXT, 'belongs_to_group' TEXT, 'belongs_to_user' TEXT, 'creator' TEXT);
+CREATE TABLE 'sentc_content' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'item' TEXT, 'time' TEXT, 'belongs_to_group' TEXT, 'belongs_to_user' TEXT, 'creator' TEXT, 'cat_id' TEXT);
 
 ----
 -- Data dump for sentc_content, a total of 0 rows
@@ -311,15 +311,6 @@ CREATE TABLE 'sentc_content_category' ('id' TEXT PRIMARY KEY NOT NULL, 'name' TE
 
 ----
 -- Data dump for sentc_content_category, a total of 0 rows
-----
-
-----
--- Table structure for sentc_content_category_connect
-----
-CREATE TABLE 'sentc_content_category_connect' ('cat_id' TEXT NOT NULL, 'content_id' TEXT NOT NULL, PRIMARY KEY ('cat_id', 'content_id'));
-
-----
--- Data dump for sentc_content_category_connect, a total of 0 rows
 ----
 
 ----
@@ -418,6 +409,26 @@ CREATE TABLE 'sentc_content_category_connect' ('cat_id' TEXT NOT NULL, 'content_
 ;
 
 ----
+-- structure for index sqlite_autoindex_sentc_user_token_1 on table sentc_user_token
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_captcha_1 on table sentc_captcha
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_content_1 on table sentc_content
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_content_category_1 on table sentc_content_category
+----
+;
+
+----
 -- structure for index app_jwt_keys_app_id_index on table sentc_app_jwt_keys
 ----
 CREATE INDEX app_jwt_keys_app_id_index
@@ -463,24 +474,9 @@ CREATE INDEX 'by_user' ON "sentc_sym_key_management" ("creator_id" ASC, "app_id"
 CREATE INDEX 'app_id' ON "sentc_user" ("app_id");
 
 ----
--- structure for index sqlite_autoindex_sentc_user_token_1 on table sentc_user_token
-----
-;
-
-----
 -- structure for index token on table sentc_user_device
 ----
 CREATE INDEX 'token' ON "sentc_user_device" ("token");
-
-----
--- structure for index sqlite_autoindex_sentc_captcha_1 on table sentc_captcha
-----
-;
-
-----
--- structure for index sqlite_autoindex_sentc_content_1 on table sentc_content
-----
-;
 
 ----
 -- structure for index time on table sentc_content
@@ -493,14 +489,9 @@ CREATE INDEX 'time' ON "sentc_content" ("time" DESC);
 CREATE INDEX 'item' ON "sentc_content" ("item" ASC);
 
 ----
--- structure for index sqlite_autoindex_sentc_content_category_1 on table sentc_content_category
+-- structure for index cat_id on table sentc_content
 ----
-;
-
-----
--- structure for index sqlite_autoindex_sentc_content_category_connect_1 on table sentc_content_category_connect
-----
-;
+CREATE INDEX 'cat_id' ON "sentc_content" ("cat_id" ASC);
 
 ----
 -- structure for trigger group_delete_invites on table sentc_group
@@ -586,4 +577,9 @@ CREATE TRIGGER 'user_delete_jwt_refresh' AFTER DELETE ON "sentc_user_device" FOR
 -- structure for trigger delete_app_content on table sentc_app
 ----
 CREATE TRIGGER 'delete_app_content' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_content WHERE app_id = OLD.id; END;
+
+----
+-- structure for trigger delete_app_cat on table sentc_app
+----
+CREATE TRIGGER 'delete_app_cat' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_content_category WHERE app_id = OLD.id; END;
 COMMIT;
