@@ -1,4 +1,4 @@
-use sentc_crypto_common::{ContentId, GroupId, UserId};
+use sentc_crypto_common::{CategoryId, ContentId, GroupId, UserId};
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -49,6 +49,30 @@ impl Into<sentc_crypto_common::content::ContentItemAccess> for ContentItemAccess
 		sentc_crypto_common::content::ContentItemAccess {
 			access: self.access,
 			access_from_group: self.access_from_group,
+		}
+	}
+}
+
+//__________________________________________________________________________________________________
+
+#[derive(Serialize)]
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
+pub struct ListContentCategoryItem
+{
+	pub cat_id: CategoryId,
+	pub name: String,
+	pub time: u128,
+}
+
+impl Into<sentc_crypto_common::content::ListContentCategoryItem> for ListContentCategoryItem
+{
+	fn into(self) -> sentc_crypto_common::content::ListContentCategoryItem
+	{
+		sentc_crypto_common::content::ListContentCategoryItem {
+			cat_id: self.cat_id,
+			name: self.name,
+			time: self.time,
 		}
 	}
 }
