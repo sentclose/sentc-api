@@ -179,7 +179,7 @@ WHERE
 	}
 
 	let params = if last_fetched_time > 0 {
-		sql += " AND time <= ? AND (time < ? OR (time = ? AND c.id > ?)) ORDER BY time DESC, con.id LIMIT 100";
+		sql += " AND time <= ? AND (time < ? OR (time = ? AND con.id > ?)) ORDER BY time DESC, con.id LIMIT 100";
 
 		if let Some(c_id) = cat_id {
 			set_params!(
