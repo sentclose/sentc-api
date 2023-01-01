@@ -1,6 +1,6 @@
 use sentc_crypto_common::content::CreateData;
 use sentc_crypto_common::{AppId, ContentId, GroupId, UserId};
-use server_core::db::{bulk_insert, exec};
+use server_core::db::exec;
 use server_core::{get_time, set_params};
 use uuid::Uuid;
 
@@ -18,7 +18,7 @@ pub(super) async fn create_content(
 	let time = get_time()?;
 
 	//language=SQL
-	let sql = "INSERT INTO sentc_content (id, app_id, item, time, belongs_to_group, belongs_to_user, creator) VALUES (?,?,?,?,?,?,?)";
+	let sql = "INSERT INTO sentc_content (id, app_id, item, time, belongs_to_group, belongs_to_user, creator, category) VALUES (?,?,?,?,?,?,?,?)";
 
 	exec(
 		sql,
@@ -29,23 +29,11 @@ pub(super) async fn create_content(
 			time.to_string(),
 			group_id,
 			user_id,
-			creator_id
+			creator_id,
+			data.category
 		),
 	)
 	.await?;
-
-	if !data.cat_ids.is_empty() {
-		let coned_content_id = content_id.clone();
-
-		bulk_insert(
-			true,
-			"sentc_content_category_connect".to_string(),
-			vec!["cat_id".to_string(), "content_id".to_string()],
-			data.cat_ids,
-			move |ob| set_params!(ob.to_string(), coned_content_id.clone()),
-		)
-		.await?;
-	}
 
 	Ok(content_id)
 }

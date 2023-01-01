@@ -40,7 +40,7 @@ group_as_member AS (
     )
 )
 
-SELECT con.id, item, belongs_to_group, belongs_to_user, creator, con.time, group_as_member.access_from_group
+SELECT con.id, item, belongs_to_group, belongs_to_user, creator, con.time, con.category, group_as_member.access_from_group
 FROM 
     sentc_content con 
         LEFT JOIN group_descendants ON belongs_to_group = group_descendants.id
@@ -55,7 +55,7 @@ WHERE
 	.to_string();
 
 	if cat_id.is_some() {
-		sql += " AND con.id = (SELECT content_id FROM sentc_content_category_connect WHERE cat_id = ?)";
+		sql += " AND category = ?";
 	}
 
 	let params = if last_fetched_time > 0 {
@@ -162,7 +162,7 @@ group_as_member AS (
 		)
 )
 
-SELECT con.id, item, belongs_to_group, belongs_to_user, creator, con.time, group_as_member.access_from_group 
+SELECT con.id, item, belongs_to_group, belongs_to_user, creator, con.time, con.category, group_as_member.access_from_group 
 FROM sentc_content con 
     LEFT JOIN children ON belongs_to_group = children.children_id 
     LEFT JOIN group_as_member ON belongs_to_group = group_as_member.group_as_member_id
@@ -175,11 +175,11 @@ WHERE
 	.to_string();
 
 	if cat_id.is_some() {
-		sql += " AND con.id = (SELECT content_id FROM sentc_content_category_connect WHERE cat_id = ?)";
+		sql += " AND category = ?";
 	}
 
 	let params = if last_fetched_time > 0 {
-		sql += " AND time <= ? AND (time < ? OR (time = ? AND c.id > ?)) ORDER BY time DESC, con.id LIMIT 100";
+		sql += " AND time <= ? AND (time < ? OR (time = ? AND con.id > ?)) ORDER BY time DESC, con.id LIMIT 100";
 
 		if let Some(c_id) = cat_id {
 			set_params!(
@@ -264,13 +264,13 @@ pub(super) async fn get_content_to_user(
 	//get content which directly belongs to the actual user
 	//language=SQL
 	let mut sql = r"
-SELECT c.id, item, belongs_to_group, belongs_to_user, creator, time 
+SELECT c.id, item, belongs_to_group, belongs_to_user, creator, time, category, null AS access_from_group
 FROM sentc_content c 
 WHERE belongs_to_user = ? AND app_id = ?"
 		.to_string();
 
 	if cat_id.is_some() {
-		sql += " AND c.id = (SELECT content_id FROM sentc_content_category_connect WHERE cat_id = ?)";
+		sql += " AND category = ?";
 	}
 
 	let params = if last_fetched_time > 0 {

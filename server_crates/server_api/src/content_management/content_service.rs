@@ -39,15 +39,6 @@ pub async fn create_content(
 		));
 	}
 
-	if data.cat_ids.len() > 50 {
-		return Err(HttpErr::new(
-			400,
-			ApiErrorCodes::ContentCreateItemTooManyCat,
-			"Too many categories chose for this item. Max is 50.".to_string(),
-			None,
-		));
-	}
-
 	content_model_edit::create_content(app_id, creator_id, data, group_id, user_id).await
 }
 

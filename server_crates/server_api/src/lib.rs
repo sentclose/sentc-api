@@ -16,6 +16,8 @@ mod routes;
 mod user;
 pub mod util;
 
+#[cfg(feature = "embedded")]
+pub use content_management::content_service as sentc_content_service;
 pub use customer_app::app_entities::*;
 #[cfg(feature = "embedded")]
 pub use customer_app::app_service as sentc_customer_app_service;

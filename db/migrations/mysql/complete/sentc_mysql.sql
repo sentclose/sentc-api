@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 31. Dez 2022 um 16:20
+-- Erstellungszeit: 01. Jan 2023 um 13:13
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -159,31 +159,8 @@ CREATE TABLE `sentc_content` (
   `time` bigint(20) NOT NULL,
   `belongs_to_group` varchar(36) DEFAULT NULL,
   `belongs_to_user` varchar(36) DEFAULT NULL,
-  `creator` varchar(36) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `sentc_content_category`
---
-
-CREATE TABLE `sentc_content_category` (
-  `id` varchar(36) NOT NULL,
-  `name` text NOT NULL COMMENT 'only listed in the admin dashboard',
-  `time` bigint(20) NOT NULL,
-  `app_id` varchar(36) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `sentc_content_category_connect`
---
-
-CREATE TABLE `sentc_content_category_connect` (
-  `cat_id` varchar(36) NOT NULL,
-  `content_id` varchar(36) NOT NULL
+  `creator` varchar(36) NOT NULL,
+  `category` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -576,19 +553,8 @@ ALTER TABLE `sentc_content`
   ADD PRIMARY KEY (`id`),
   ADD KEY `app_id` (`app_id`),
   ADD KEY `time` (`time`),
-  ADD KEY `item` (`item`) USING BTREE;
-
---
--- Indizes für die Tabelle `sentc_content_category`
---
-ALTER TABLE `sentc_content_category`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indizes für die Tabelle `sentc_content_category_connect`
---
-ALTER TABLE `sentc_content_category_connect`
-  ADD PRIMARY KEY (`cat_id`,`content_id`);
+  ADD KEY `item` (`item`) USING BTREE,
+  ADD KEY `cat_id` (`category`);
 
 --
 -- Indizes für die Tabelle `sentc_customer`
