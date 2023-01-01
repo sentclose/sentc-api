@@ -88,7 +88,7 @@ pub(super) fn check_file_options(input: &AppFileOptionsInput) -> AppRes<()>
 	Ok(())
 }
 
-pub(crate) fn check_app_exists(customer_id: CustomerId, app_id: AppId) -> impl Future<Output = AppRes<()>>
+pub fn check_app_exists(customer_id: CustomerId, app_id: AppId) -> impl Future<Output = AppRes<()>>
 {
 	app_model::check_app_exists(customer_id, app_id)
 }
