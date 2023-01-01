@@ -6,12 +6,12 @@ pub mod content_service;
 use std::future::Future;
 
 use rustgram::Request;
-use sentc_crypto_common::content::{ContentCategoryCreateInput, ContentCategoryOutput, ContentCreateOutput, CreateData};
+use sentc_crypto_common::content::{ContentCreateOutput, CreateData};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 
-use crate::content_management::content_entity::{ContentItemAccess, ListContentCategoryItem, ListContentItem};
+use crate::content_management::content_entity::{ContentItemAccess, ListContentItem};
 use crate::content_management::content_service::ContentRelatedType;
 use crate::customer_app::app_util::{check_endpoint_with_app_options, get_app_data_from_req, Endpoint};
 use crate::group::get_group_user_data_from_req;
@@ -227,89 +227,6 @@ async fn get_content(req: Request, content_related_type: ContentRelatedType, cat
 			.await?
 		},
 	};
-
-	echo(list)
-}
-
-//__________________________________________________________________________________________________
-//category
-//this routes are called in the customer app scope with customer jwt
-
-pub(crate) async fn create_content_category(mut req: Request) -> JRes<ContentCategoryOutput>
-{
-	let body = get_raw_body(&mut req).await?;
-	let input: ContentCategoryCreateInput = bytes_to_json(&body)?;
-
-	let app_id = get_name_param_from_req(&req, "app_id")?;
-	let customer = get_jwt_data_from_param(&req)?;
-	let customer_id = &customer.id;
-
-	let out = content_model_edit::create_cat(customer_id.to_string(), app_id.to_string(), input.name).await?;
-
-	echo(ContentCategoryOutput {
-		cat_id: out,
-	})
-}
-
-pub(crate) async fn delete_content_category(req: Request) -> JRes<ServerSuccessOutput>
-{
-	let app_id = get_name_param_from_req(&req, "app_id")?;
-	let cat_id = get_name_param_from_req(&req, "cat_id")?;
-	let customer = get_jwt_data_from_param(&req)?;
-	let customer_id = &customer.id;
-
-	content_model_edit::delete_cat(customer_id.to_string(), app_id.to_string(), cat_id.to_string()).await?;
-
-	echo_success()
-}
-
-pub(crate) async fn update_content_category_name(mut req: Request) -> JRes<ServerSuccessOutput>
-{
-	let body = get_raw_body(&mut req).await?;
-	let input: ContentCategoryCreateInput = bytes_to_json(&body)?;
-
-	let app_id = get_name_param_from_req(&req, "app_id")?;
-	let cat_id = get_name_param_from_req(&req, "cat_id")?;
-	let customer = get_jwt_data_from_param(&req)?;
-	let customer_id = &customer.id;
-
-	content_model_edit::update_cat_name(
-		customer_id.to_string(),
-		app_id.to_string(),
-		cat_id.to_string(),
-		input.name,
-	)
-	.await?;
-
-	echo_success()
-}
-
-pub(crate) async fn get_content_category(req: Request) -> JRes<Vec<ListContentCategoryItem>>
-{
-	let customer = get_jwt_data_from_param(&req)?;
-	let customer_id = &customer.id;
-
-	let params = get_params(&req)?;
-	let last_id = get_name_param_from_params(params, "last_id")?;
-	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
-	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
-		HttpErr::new(
-			400,
-			ApiErrorCodes::UnexpectedTime,
-			"last fetched time is wrong".to_string(),
-			None,
-		)
-	})?;
-
-	let app_id = get_name_param_from_params(params, "app_id")?;
-
-	let list = content_model_edit::get_cat(
-		customer_id.to_string(),
-		app_id.to_string(),
-		last_fetched_time,
-		last_id.to_string(),
-	)
-	.await?;
 
 	echo(list)
 }

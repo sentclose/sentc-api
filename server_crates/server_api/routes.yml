@@ -59,15 +59,6 @@ routes:
                     - patch: { p: "/new_jwt_keys", s: crate::customer_app::add_jwt_keys }
                     - get: { p: "/jwt", s: crate::customer_app::get_jwt_details }
                     - delete: { p: "/jwt/:jwt_id", s: crate::customer_app::delete_jwt_keys }
-                    #___________________________________________________________________________________________________
-                    # content cat
-                    - group:
-                        p: "/content_category"
-                        gr:
-                          - post: {p: "", s: crate::content_management::create_content_category}
-                          - get: {p: "/:last_fetched_time/:last_id", s: crate::content_management::get_content_category}
-                          - delete: {p: "/:cat_id", s: crate::content_management::delete_content_category}
-                          - put: {p: "/:cat_id", s: crate::content_management::update_content_category_name}
         #_______________________________________________________________________________________________________________
         # routes don't need jwt check, but an app token
         - group:

@@ -12,7 +12,7 @@ pub struct ListContentItem
 	pub belongs_to_user: Option<UserId>,
 	pub creator: UserId,
 	pub time: u128,
-	pub cat_id: Option<CategoryId>,
+	pub category: Option<CategoryId>,
 	pub access_from_group: Option<GroupId>,
 }
 
@@ -27,7 +27,7 @@ impl Into<sentc_crypto_common::content::ListContentItem> for ListContentItem
 			belongs_to_user: self.belongs_to_user,
 			creator: self.creator,
 			time: self.time,
-			cat_id: self.cat_id,
+			category: self.category,
 			access_from_group: self.access_from_group,
 		}
 	}
@@ -51,30 +51,6 @@ impl Into<sentc_crypto_common::content::ContentItemAccess> for ContentItemAccess
 		sentc_crypto_common::content::ContentItemAccess {
 			access: self.access,
 			access_from_group: self.access_from_group,
-		}
-	}
-}
-
-//__________________________________________________________________________________________________
-
-#[derive(Serialize)]
-#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
-pub struct ListContentCategoryItem
-{
-	pub cat_id: CategoryId,
-	pub name: String,
-	pub time: u128,
-}
-
-impl Into<sentc_crypto_common::content::ListContentCategoryItem> for ListContentCategoryItem
-{
-	fn into(self) -> sentc_crypto_common::content::ListContentCategoryItem
-	{
-		sentc_crypto_common::content::ListContentCategoryItem {
-			cat_id: self.cat_id,
-			name: self.name,
-			time: self.time,
 		}
 	}
 }
