@@ -916,6 +916,23 @@ async fn test_23_access_group_content()
 	assert_eq!(out[0].id, content.id);
 	assert_eq!(out[0].belongs_to_group.as_ref().unwrap(), &group.group_id);
 
+	//fetch the 2nd page for groups
+	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id + "/all/" + out[0].time.to_string().as_str() + "/" + &out[0].id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url.clone())
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: Vec<ListContentItem> = handle_server_response(&body).unwrap();
+	assert_eq!(out.len(), 0);
+
 	let url = get_url("api/v1/content/all/0/none".to_owned());
 
 	let client = reqwest::Client::new();
