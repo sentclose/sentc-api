@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 31. Dez 2022 um 23:42
+-- Erstellungszeit: 01. Jan 2023 um 13:13
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -41,10 +41,6 @@ CREATE TABLE `sentc_app` (
 --
 -- Trigger `sentc_app`
 --
-DELIMITER $$
-CREATE TRIGGER `delete_app_cat` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_content_category WHERE app_id = OLD.id
-$$
-DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `delete_app_content` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_content WHERE app_id = OLD.id
 $$
@@ -164,20 +160,7 @@ CREATE TABLE `sentc_content` (
   `belongs_to_group` varchar(36) DEFAULT NULL,
   `belongs_to_user` varchar(36) DEFAULT NULL,
   `creator` varchar(36) NOT NULL,
-  `cat_id` varchar(36) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `sentc_content_category`
---
-
-CREATE TABLE `sentc_content_category` (
-  `id` varchar(36) NOT NULL,
-  `name` text NOT NULL COMMENT 'only listed in the admin dashboard',
-  `time` bigint(20) NOT NULL,
-  `app_id` varchar(36) NOT NULL
+  `category` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -571,13 +554,7 @@ ALTER TABLE `sentc_content`
   ADD KEY `app_id` (`app_id`),
   ADD KEY `time` (`time`),
   ADD KEY `item` (`item`) USING BTREE,
-  ADD KEY `cat_id` (`cat_id`);
-
---
--- Indizes für die Tabelle `sentc_content_category`
---
-ALTER TABLE `sentc_content_category`
-  ADD PRIMARY KEY (`id`);
+  ADD KEY `cat_id` (`category`);
 
 --
 -- Indizes für die Tabelle `sentc_customer`
