@@ -898,6 +898,24 @@ async fn test_23_access_group_content()
 
 	assert!(out.access);
 
+	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id + "/all/0/none");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url.clone())
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: Vec<ListContentItem> = handle_server_response(&body).unwrap();
+	assert_eq!(out.len(), 1);
+	assert_eq!(out[0].id, content.id);
+	assert_eq!(out[0].belongs_to_group.as_ref().unwrap(), &group.group_id);
+
 	let url = get_url("api/v1/content/all/0/none".to_owned());
 
 	let client = reqwest::Client::new();
@@ -1033,6 +1051,25 @@ async fn test_26_access_item_from_parent_group()
 	let out: ContentItemAccess = handle_server_response(&body).unwrap();
 
 	assert!(out.access);
+
+	//access only group content
+	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id + "/all/0/none");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url.clone())
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: Vec<ListContentItem> = handle_server_response(&body).unwrap();
+	assert_eq!(out.len(), 1);
+	assert_eq!(out[0].id, content.id);
+	assert_eq!(out[0].belongs_to_group.as_ref().unwrap(), &group.group_id);
 
 	let url = get_url("api/v1/content/all/0/none".to_owned());
 
@@ -1175,6 +1212,49 @@ async fn test_29_access_item_from_a_connected_group()
 	assert!(out.access);
 	assert_eq!(out.access_from_group.as_ref().unwrap(), &access.group_id);
 
+	//access only group content directly from the connected group
+	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id + "/all/0/none");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url.clone())
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", &access.group_id)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: Vec<ListContentItem> = handle_server_response(&body).unwrap();
+	assert_eq!(out.len(), 1);
+	assert_eq!(out[0].id, content.id);
+	assert_eq!(out[0].belongs_to_group.as_ref().unwrap(), &group.group_id);
+	assert_eq!(out[0].cat_id, None);
+
+	//access from a connected group
+	let url = get_url("api/v1/content/group/".to_owned() + &access.group_id + "/all/0/none");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url.clone())
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: Vec<ListContentItem> = handle_server_response(&body).unwrap();
+	assert_eq!(out.len(), 1);
+	assert_eq!(out[0].id, content.id);
+	assert_eq!(out[0].belongs_to_group.as_ref().unwrap(), &group.group_id);
+	assert_eq!(out[0].access_from_group.as_ref().unwrap(), &access.group_id);
+	assert_eq!(out[0].cat_id, None);
+
+	//access global
 	let url = get_url("api/v1/content/all/0/none".to_owned());
 
 	let client = reqwest::Client::new();
@@ -1270,6 +1350,48 @@ async fn test_31_access_item_from_a_connected_group_and_parent()
 
 	assert!(out.access);
 	assert_eq!(out.access_from_group.as_ref().unwrap(), &access.group_id);
+
+	//access only group content directly from the connected group
+	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id + "/all/0/none");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url.clone())
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", &access.group_id)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: Vec<ListContentItem> = handle_server_response(&body).unwrap();
+	assert_eq!(out.len(), 1);
+	assert_eq!(out[0].id, content.id);
+	assert_eq!(out[0].belongs_to_group.as_ref().unwrap(), &group.group_id);
+	assert_eq!(out[0].cat_id, None);
+
+	//access from a connected group
+	let url = get_url("api/v1/content/group/".to_owned() + &access.group_id + "/all/0/none");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url.clone())
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: Vec<ListContentItem> = handle_server_response(&body).unwrap();
+	assert_eq!(out.len(), 2);
+	assert_eq!(out[0].id, content.id);
+	assert_eq!(out[0].belongs_to_group.as_ref().unwrap(), &group.group_id);
+	assert_eq!(out[0].access_from_group.as_ref().unwrap(), &access.group_id);
+	assert_eq!(out[0].cat_id, None);
 
 	let url = get_url("api/v1/content/all/0/none".to_owned());
 
