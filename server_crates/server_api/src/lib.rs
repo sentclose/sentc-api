@@ -21,6 +21,8 @@ pub use content_management::content_controller as sentc_content_controller;
 #[cfg(feature = "embedded")]
 pub use content_management::content_service as sentc_content_service;
 #[cfg(feature = "embedded")]
+pub use customer::customer_controller as sentc_customer_controller;
+#[cfg(feature = "embedded")]
 pub use customer_app::app_controller as sentc_app_controller;
 pub use customer_app::app_entities::*;
 #[cfg(feature = "embedded")]
