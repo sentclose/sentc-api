@@ -17,12 +17,12 @@ use crate::user::user_entities::UserPublicKeyDataEntity;
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 use crate::util::get_group_cache_key;
 
-pub(crate) fn create(req: Request) -> impl Future<Output = JRes<GroupCreateOutput>>
+pub fn create(req: Request) -> impl Future<Output = JRes<GroupCreateOutput>>
 {
 	create_group(req, None, None, None)
 }
 
-pub(crate) async fn create_child_group(req: Request) -> JRes<GroupCreateOutput>
+pub async fn create_child_group(req: Request) -> JRes<GroupCreateOutput>
 {
 	//this is called in the group mw from the parent group id
 	let group_data = get_group_user_data_from_req(&req)?;
@@ -32,7 +32,7 @@ pub(crate) async fn create_child_group(req: Request) -> JRes<GroupCreateOutput>
 	create_group(req, parent_group_id, user_rank, None).await
 }
 
-pub(crate) async fn create_connected_group_from_group(req: Request) -> JRes<GroupCreateOutput>
+pub async fn create_connected_group_from_group(req: Request) -> JRes<GroupCreateOutput>
 {
 	//the same as parent group, but this time with the group as member, not as parent
 	let group_data = get_group_user_data_from_req(&req)?;
@@ -77,7 +77,7 @@ async fn create_group(
 	echo(out)
 }
 
-pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
+pub async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 {
 	check_endpoint_with_req(&req, Endpoint::GroupDelete)?;
 
@@ -93,7 +93,7 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
-pub(crate) async fn get_user_group_light_data(req: Request) -> JRes<GroupLightServerData>
+pub async fn get_user_group_light_data(req: Request) -> JRes<GroupLightServerData>
 {
 	check_endpoint_with_req(&req, Endpoint::GroupUserDataGet)?;
 
@@ -103,7 +103,7 @@ pub(crate) async fn get_user_group_light_data(req: Request) -> JRes<GroupLightSe
 	echo(group_service::get_user_group_light_data(group_data))
 }
 
-pub(crate) async fn get_user_group_data(req: Request) -> JRes<GroupServerData>
+pub async fn get_user_group_data(req: Request) -> JRes<GroupServerData>
 {
 	check_endpoint_with_req(&req, Endpoint::GroupUserDataGet)?;
 
@@ -123,7 +123,7 @@ Check with this fn if:
 This is used in the client, when the group data is cached in the client
 and the data gets fetched from the cache.
 */
-pub(crate) async fn get_key_update_for_user(req: Request) -> JRes<GroupDataCheckUpdateServerOutput>
+pub async fn get_key_update_for_user(req: Request) -> JRes<GroupDataCheckUpdateServerOutput>
 {
 	check_endpoint_with_req(&req, Endpoint::GroupUserUpdateCheck)?;
 
@@ -144,7 +144,7 @@ pub(crate) async fn get_key_update_for_user(req: Request) -> JRes<GroupDataCheck
 	echo(out)
 }
 
-pub(crate) async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupUserKeys>>
+pub async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupUserKeys>>
 {
 	check_endpoint_with_req(&req, Endpoint::GroupUserKeys)?;
 
@@ -175,7 +175,7 @@ pub(crate) async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupUserKeys>
 	echo(user_keys)
 }
 
-pub(crate) async fn get_user_group_key(req: Request) -> JRes<GroupUserKeys>
+pub async fn get_user_group_key(req: Request) -> JRes<GroupUserKeys>
 {
 	check_endpoint_with_req(&req, Endpoint::GroupUserKeys)?;
 
@@ -196,7 +196,7 @@ pub(crate) async fn get_user_group_key(req: Request) -> JRes<GroupUserKeys>
 
 //__________________________________________________________________________________________________
 
-pub(crate) async fn stop_invite(req: Request) -> JRes<ServerSuccessOutput>
+pub async fn stop_invite(req: Request) -> JRes<ServerSuccessOutput>
 {
 	let group_data = get_group_user_data_from_req(&req)?;
 
@@ -218,7 +218,7 @@ pub(crate) async fn stop_invite(req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
-pub(crate) async fn get_public_key_data(req: Request) -> JRes<UserPublicKeyDataEntity>
+pub async fn get_public_key_data(req: Request) -> JRes<UserPublicKeyDataEntity>
 {
 	//called from outside of the group mw
 
@@ -233,7 +233,7 @@ pub(crate) async fn get_public_key_data(req: Request) -> JRes<UserPublicKeyDataE
 	echo(data)
 }
 
-pub(crate) async fn get_all_first_level_children(req: Request) -> JRes<Vec<GroupChildrenList>>
+pub async fn get_all_first_level_children(req: Request) -> JRes<Vec<GroupChildrenList>>
 {
 	check_endpoint_with_req(&req, Endpoint::GroupList)?;
 
@@ -306,13 +306,13 @@ async fn get_all_groups_for(req: Request, user_type: NewUserType) -> JRes<Vec<Li
 	echo(list)
 }
 
-pub(crate) fn get_all_groups_for_user(req: Request) -> impl Future<Output = JRes<Vec<ListGroups>>>
+pub fn get_all_groups_for_user(req: Request) -> impl Future<Output = JRes<Vec<ListGroups>>>
 {
 	//this is called from the user without a group id
 	get_all_groups_for(req, NewUserType::Normal)
 }
 
-pub(crate) fn get_all_groups_for_group(req: Request) -> impl Future<Output = JRes<Vec<ListGroups>>>
+pub fn get_all_groups_for_group(req: Request) -> impl Future<Output = JRes<Vec<ListGroups>>>
 {
 	//get all connected groups (where the group is member)
 	get_all_groups_for(req, NewUserType::Group)

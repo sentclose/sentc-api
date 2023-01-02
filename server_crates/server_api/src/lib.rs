@@ -17,7 +17,13 @@ mod user;
 pub mod util;
 
 #[cfg(feature = "embedded")]
+pub use content_management::content_controller as sentc_content_controller;
+#[cfg(feature = "embedded")]
 pub use content_management::content_service as sentc_content_service;
+#[cfg(feature = "embedded")]
+pub use customer::customer_controller as sentc_customer_controller;
+#[cfg(feature = "embedded")]
+pub use customer_app::app_controller as sentc_app_controller;
 pub use customer_app::app_entities::*;
 #[cfg(feature = "embedded")]
 pub use customer_app::app_service as sentc_customer_app_service;
@@ -27,9 +33,17 @@ pub use file::file_controller as sentc_file_controller;
 pub use file::file_service as sentc_file_service;
 pub use file::file_worker as sentc_file_worker;
 #[cfg(feature = "embedded")]
+pub use group::group_controller as sentc_group_controller;
+#[cfg(feature = "embedded")]
+pub use group::group_key_rotation_controller as sentc_group_key_rotation_controller;
+#[cfg(feature = "embedded")]
 pub use group::group_service as sentc_group_service;
 #[cfg(feature = "embedded")]
+pub use group::group_user_controller as sentc_group_user_controller;
+#[cfg(feature = "embedded")]
 pub use group::group_user_service as sentc_group_user_service;
+#[cfg(feature = "embedded")]
+pub use key_management::key_controller as sentc_key_controller;
 #[cfg(feature = "embedded")]
 pub use middleware::app_token::app_token_transform as sentc_app_mw;
 #[cfg(feature = "embedded")]
@@ -38,6 +52,8 @@ pub use middleware::group::group_transform as sentc_group_mw;
 pub use middleware::jwt::jwt_optional_transform as sentc_jwt_optional_mw;
 #[cfg(feature = "embedded")]
 pub use middleware::jwt::jwt_transform as sentc_jwt_mw;
+#[cfg(feature = "embedded")]
+pub use user::user_controller as sentc_user_controller;
 #[cfg(feature = "embedded")]
 pub use user::user_service as sentc_user_service;
 

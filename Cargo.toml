@@ -1,16 +1,22 @@
 [workspace]
 members = [
+    # bin
+    "server_crates/bin/server_api_all",
+    "server_crates/bin/server_api_rest",
+    "server_crates/bin/server_api_file",
+    "server_crates/bin/server_dashboard",
+
+    # bin for dev
+    "server_crates/bin_dev/server_api_route_builder",
+    #"server_crates/bin_dev/server_api_init",
+    #"server_crates/bin_dev/dummy_server",
+    #"server_crates/bin_dev/server_migration",
+
+    # lib
     "sdk-common",
     "server_crates/core",
     "server_crates/core_macros",
-    "server_crates/server_all",
     "server_crates/server_api",
     "server_crates/server_api_common",
-    "server_crates/server_api_file",
-    "server_crates/helper/server_api_route_builder",
-    #"server_crates/helper/server_api_init",
-    #"server_crates/helper/dummy_server",
-    "server_crates/server_dashboard",
-    #"server_crates/helper/server_migration",
     "server_crates/worker/worker_manual"
 ]
