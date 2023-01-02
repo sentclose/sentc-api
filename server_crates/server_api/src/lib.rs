@@ -57,7 +57,7 @@ pub use user::user_controller as sentc_user_controller;
 #[cfg(feature = "embedded")]
 pub use user::user_service as sentc_user_service;
 
-async fn not_found_handler(_req: Request) -> util::api_res::JRes<String>
+pub async fn not_found_handler(_req: Request) -> util::api_res::JRes<String>
 {
 	Err(util::api_res::HttpErr::new(
 		404,
@@ -67,12 +67,12 @@ async fn not_found_handler(_req: Request) -> util::api_res::JRes<String>
 	))
 }
 
-async fn index_handler(_req: Request) -> &'static str
+pub async fn index_handler(_req: Request) -> &'static str
 {
 	"Hello there"
 }
 
-async fn cors_handler(_req: Request) -> Response
+pub async fn cors_handler(_req: Request) -> Response
 {
 	hyper::Response::builder()
 		.header("Content-Length", "0")

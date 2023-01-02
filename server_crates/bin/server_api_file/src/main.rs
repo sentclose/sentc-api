@@ -1,17 +1,7 @@
 use std::env;
 
-use rustgram::{Request, Router};
-use server_api::{start, util};
-
-async fn not_found_handler(_req: Request) -> util::api_res::JRes<String>
-{
-	Err(util::api_res::HttpErr::new(
-		404,
-		util::api_res::ApiErrorCodes::PageNotFound,
-		"Not found".into(),
-		None,
-	))
-}
+use rustgram::{r, Router};
+use server_api::{cors_handler, index_handler, not_found_handler, start};
 
 #[tokio::main]
 pub async fn main()
@@ -21,6 +11,11 @@ pub async fn main()
 	let mut router = Router::new(not_found_handler);
 
 	server_api_file::routes(&mut router);
+
+	router.get("/", r(index_handler));
+
+	//cors route
+	router.options("/*all", r(cors_handler));
 
 	let addr = format!(
 		"{}:{}",
