@@ -1,6 +1,6 @@
 use std::env;
 
-use server_api::{rest_routes, start};
+use server_api_rest::{routes, start};
 
 /**
 merge every server into one
@@ -12,7 +12,7 @@ pub async fn main()
 	server_dashboard_backend::start().await;
 
 	//routes from the rest api
-	let mut router = rest_routes();
+	let mut router = routes();
 
 	//the static files from the dash board
 	server_dashboard_backend::routes(&mut router);

@@ -1941,17 +1941,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "server_all"
-version = "0.1.0"
-dependencies = [
- "rustgram",
- "server_api",
- "server_api_file",
- "server_dashboard_backend",
- "tokio",
-]
-
-[[package]]
 name = "server_api"
 version = "0.1.0"
 dependencies = [
@@ -1979,6 +1968,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "server_api_all"
+version = "0.1.0"
+dependencies = [
+ "rustgram",
+ "server_api_file",
+ "server_api_rest",
+ "server_dashboard_backend",
+ "tokio",
+]
+
+[[package]]
 name = "server_api_common"
 version = "0.1.0"
 dependencies = [
@@ -1997,6 +1997,16 @@ dependencies = [
  "rustgram",
  "sentc-crypto-common 0.1.0",
  "server_api",
+ "tokio",
+]
+
+[[package]]
+name = "server_api_rest"
+version = "0.1.0"
+dependencies = [
+ "rustgram",
+ "server_api",
+ "tokio",
 ]
 
 [[package]]

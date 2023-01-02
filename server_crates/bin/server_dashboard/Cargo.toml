@@ -12,5 +12,5 @@ hyper = { version = "0.14", features = ["full"] }
 
 rustgram = "0.1.7"
 
-server_api = {version = "*", path = "../server_api", default-features = false}
-server-core = {version = "*", path = "../core", default-features = false}
+server_api = {version = "*", path = "../../server_api", default-features = false}
+server-core = {version = "*", path = "../../core", default-features = false}
