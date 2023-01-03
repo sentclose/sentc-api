@@ -80,6 +80,8 @@ pub enum ApiErrorCodes
 	GroupUserKick,
 	GroupUserKickRank,
 	GroupInviteStop,
+	GroupConnectedFromConnected,
+	GroupJoinAsConnectedGroup,
 
 	KeyNotFound,
 
@@ -203,6 +205,8 @@ impl ApiErrorCodes
 			ApiErrorCodes::GroupUserKick => 315,
 			ApiErrorCodes::GroupUserKickRank => 316,
 			ApiErrorCodes::GroupInviteStop => 317,
+			ApiErrorCodes::GroupConnectedFromConnected => 318,
+			ApiErrorCodes::GroupJoinAsConnectedGroup => 319,
 
 			ApiErrorCodes::KeyNotFound => 400,
 

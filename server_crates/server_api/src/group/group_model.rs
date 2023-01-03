@@ -19,7 +19,7 @@ use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 pub(crate) async fn get_internal_group_data(app_id: AppId, group_id: GroupId) -> AppRes<InternalGroupData>
 {
 	//language=SQL
-	let sql = "SELECT id as group_id, app_id, parent, time, invite FROM sentc_group WHERE app_id = ? AND id = ? AND type = ?";
+	let sql = "SELECT id as group_id, app_id, parent, time, invite, is_connected_group FROM sentc_group WHERE app_id = ? AND id = ? AND type = ?";
 	let group: Option<InternalGroupData> = query_first(sql, set_params!(app_id, group_id, GROUP_TYPE_NORMAL)).await?;
 
 	match group {
@@ -231,32 +231,34 @@ pub(super) async fn create(
 	user_rank: Option<i32>,
 	group_type: i32,
 	connected_group: Option<GroupId>,
+	is_connected_group: bool,
 ) -> AppRes<GroupId>
 {
-	let (insert_user_id, user_type) = match (&parent_group_id, user_rank, connected_group) {
+	let (insert_user_id, user_type, group_connected) = match (&parent_group_id, user_rank, connected_group) {
 		(Some(p), Some(r), None) => {
 			//test here if the user has access to create a child group in this group
 			check_group_rank(r, 1)?;
 
 			//when it is a parent group -> use this id as user id for the group user insert
-			(p.to_string(), 1)
+			//when the parent group is a connected group, so the children are too
+			(p.to_string(), 1, is_connected_group)
 		},
 		(None, Some(r), Some(c)) => {
 			check_group_rank(r, 1)?;
 
 			// user type is group as member
-			(c, 2)
+			(c, 2, true)
 		},
 		//when parent group is some then user rank must be some too,
 		// because this is set by the controller and not the user.
-		_ => (user_id, 0),
+		_ => (user_id, 0, false),
 	};
 
 	let group_id = Uuid::new_v4().to_string();
 	let time = get_time()?;
 
 	//language=SQL
-	let sql_group = "INSERT INTO sentc_group (id, app_id, parent, identifier, time, type, invite) VALUES (?,?,?,?,?,?,?)";
+	let sql_group = "INSERT INTO sentc_group (id, app_id, parent, identifier, time, type, is_connected_group, invite) VALUES (?,?,?,?,?,?,?,?)";
 	let group_params = set_params!(
 		group_id.to_string(),
 		app_id.to_string(),
@@ -264,6 +266,7 @@ pub(super) async fn create(
 		"".to_string(),
 		time.to_string(),
 		group_type,
+		group_connected,
 		1
 	);
 

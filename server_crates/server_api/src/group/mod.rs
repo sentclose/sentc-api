@@ -15,8 +15,8 @@ pub use self::group_user::{group_user_controller, group_user_service};
 use crate::group::group_entities::InternalGroupDataComplete;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
-static GROUP_TYPE_NORMAL: i32 = 0;
-pub(crate) static GROUP_TYPE_USER: i32 = 1;
+const GROUP_TYPE_NORMAL: i32 = 0;
+pub(crate) const GROUP_TYPE_USER: i32 = 1;
 
 pub(crate) fn get_group_user_data_from_req(req: &Request) -> AppRes<&InternalGroupDataComplete>
 {

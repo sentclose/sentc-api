@@ -30,6 +30,7 @@ pub struct InternalGroupData
 	pub parent: Option<GroupId>,
 	pub time: u128,
 	pub invite: i32,
+	pub is_connected_group: bool,
 }
 
 //__________________________________________________________________________________________________
@@ -134,6 +135,7 @@ pub struct GroupServerData
 	pub created_time: u128,
 	pub joined_time: u128,
 	pub access_by: GroupUserAccessBy,
+	pub is_connected_group: bool,
 }
 
 impl Into<sentc_crypto_common::group::GroupServerData> for GroupServerData
@@ -155,6 +157,7 @@ impl Into<sentc_crypto_common::group::GroupServerData> for GroupServerData
 			created_time: self.created_time,
 			joined_time: self.joined_time,
 			access_by: self.access_by,
+			is_connected_group: self.is_connected_group,
 		}
 	}
 }

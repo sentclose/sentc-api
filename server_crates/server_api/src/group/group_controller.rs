@@ -19,7 +19,7 @@ use crate::util::get_group_cache_key;
 
 pub fn create(req: Request) -> impl Future<Output = JRes<GroupCreateOutput>>
 {
-	create_group(req, None, None, None)
+	create_group(req, None, None, None, false)
 }
 
 pub async fn create_child_group(req: Request) -> JRes<GroupCreateOutput>
@@ -29,17 +29,39 @@ pub async fn create_child_group(req: Request) -> JRes<GroupCreateOutput>
 	let parent_group_id = Some(group_data.group_data.id.to_string());
 	let user_rank = Some(group_data.user_data.rank);
 
-	create_group(req, parent_group_id, user_rank, None).await
+	//a connected group can also got children but these children will be a connected group too
+	let is_connected_group = group_data.group_data.is_connected_group;
+
+	create_group(req, parent_group_id, user_rank, None, is_connected_group).await
 }
 
 pub async fn create_connected_group_from_group(req: Request) -> JRes<GroupCreateOutput>
 {
+	/*
+	- A connected group is a group where other groups can join or can get invited, not only users.
+	- A connected group can also got children (which are marked as connected group too)
+	- A connected group cannot be created from a already connected group.
+		Because the users of the one connected group cannot access the connected group.
+		So only non connected groups can create connected groups.
+
+	- Users can join both groups
+	 */
+
 	//the same as parent group, but this time with the group as member, not as parent
 	let group_data = get_group_user_data_from_req(&req)?;
 	let connected_group_id = Some(group_data.group_data.id.to_string());
 	let user_rank = Some(group_data.user_data.rank);
 
-	create_group(req, None, user_rank, connected_group_id).await
+	if group_data.group_data.is_connected_group {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::GroupConnectedFromConnected,
+			"Can't create a connected group from a connected group".to_string(),
+			None,
+		));
+	}
+
+	create_group(req, None, user_rank, connected_group_id, true).await
 }
 
 async fn create_group(
@@ -47,6 +69,7 @@ async fn create_group(
 	parent_group_id: Option<GroupId>,
 	user_rank: Option<i32>,
 	connected_group: Option<GroupId>,
+	is_connected_group: bool,
 ) -> JRes<GroupCreateOutput>
 {
 	let body = get_raw_body(&mut req).await?;
@@ -67,6 +90,7 @@ async fn create_group(
 		parent_group_id,
 		user_rank,
 		connected_group,
+		is_connected_group,
 	)
 	.await?;
 
