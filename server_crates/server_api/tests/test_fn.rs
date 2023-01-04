@@ -491,6 +491,42 @@ pub async fn create_group(secret_token: &str, creator_public_key: &PublicKeyForm
 	out.group_id
 }
 
+pub async fn create_child_group_from_group_as_member(
+	secret_token: &str,
+	creator_public_key: &PublicKeyFormat,
+	parent_group_id: &str,
+	jwt: &str,
+	group_to_access: &str,
+) -> GroupId
+{
+	let group_input = sentc_crypto::group::prepare_create(creator_public_key).unwrap();
+
+	let url = get_url("api/v1/group".to_owned() + "/" + parent_group_id + "/child");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", group_to_access)
+		.body(group_input)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+	let out = ServerOutput::<GroupCreateOutput>::from_string(body.as_str()).unwrap();
+
+	assert_eq!(out.status, true);
+	assert_eq!(out.err_code, None);
+
+	let out = out.result.unwrap();
+
+	out.group_id
+}
+
 pub async fn get_group(
 	secret_token: &str,
 	jwt: &str,
@@ -664,6 +700,7 @@ pub async fn add_user_by_invite_as_group_as_member(
 	data
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn add_group_by_invite(
 	secret_token: &str,
 	jwt: &str,
@@ -672,6 +709,7 @@ pub async fn add_group_by_invite(
 	group_to_invite_id: &str,
 	group_to_invite_member_jwt: &str,
 	group_to_invite_private_key: &PrivateKeyFormat,
+	group_as_member_id: Option<&str>,
 ) -> (GroupOutData, Vec<GroupKeyData>)
 {
 	let mut group_keys_ref = vec![];
@@ -705,10 +743,14 @@ pub async fn add_group_by_invite(
 		.put(url)
 		.header(AUTHORIZATION, auth_header(jwt))
 		.header("x-sentc-app-token", secret_token)
-		.body(invite)
-		.send()
-		.await
-		.unwrap();
+		.body(invite);
+
+	let res = match group_as_member_id {
+		Some(id) => res.header("x-sentc-group-access-id", id),
+		None => res,
+	};
+
+	let res = res.send().await.unwrap();
 
 	let body = res.text().await.unwrap();
 
@@ -733,6 +775,7 @@ pub async fn key_rotation(
 	pre_group_key: &SymKeyFormat,
 	invoker_public_key: &PublicKeyFormat,
 	invoker_private_key: &PrivateKeyFormat,
+	group_as_member_id: Option<&str>,
 ) -> (GroupOutData, Vec<DoneGettingGroupKeysOutput>)
 {
 	let input = sentc_crypto::group::key_rotation(pre_group_key, invoker_public_key, false).unwrap();
@@ -743,10 +786,14 @@ pub async fn key_rotation(
 		.post(url)
 		.header(AUTHORIZATION, auth_header(jwt))
 		.header("x-sentc-app-token", secret_token)
-		.body(input)
-		.send()
-		.await
-		.unwrap();
+		.body(input);
+
+	let res = match group_as_member_id {
+		Some(id) => res.header("x-sentc-group-access-id", id),
+		None => res,
+	};
+
+	let res = res.send().await.unwrap();
 
 	let body = res.text().await.unwrap();
 	let out = ServerOutput::<KeyRotationStartServerOutput>::from_string(body.as_str()).unwrap();

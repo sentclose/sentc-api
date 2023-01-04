@@ -1876,6 +1876,7 @@ async fn test_39_key_rotation_in_child_group_by_parent()
 		pre_group_key,
 		group_public_key,
 		group_private_key,
+		None,
 	)
 	.await;
 
@@ -1946,6 +1947,7 @@ async fn test_40_key_rotation_in_child_group_by_user()
 		pre_group_key,
 		&user_for_child_group.user_data.user_keys[0].public_key,
 		&user_for_child_group.user_data.user_keys[0].private_key,
+		Default::default(),
 	)
 	.await;
 
@@ -2018,6 +2020,7 @@ async fn test_41_key_rotation_with_multiple_user_keys()
 		pre_group_key,
 		&user.user_data.user_keys[0].public_key,
 		&user.user_data.user_keys[0].private_key,
+		None,
 	)
 	.await;
 
