@@ -806,7 +806,10 @@ pub async fn key_rotation(
 	//wait a bit to finish the key rotation in the sub thread
 	tokio::time::sleep(Duration::from_millis(50)).await;
 
-	get_group(secret_token, jwt, out.group_id.as_str(), invoker_private_key, false).await
+	match group_as_member_id {
+		Some(id) => get_group_from_group_as_member(secret_token, jwt, group_id, id, invoker_private_key).await,
+		None => get_group(secret_token, jwt, out.group_id.as_str(), invoker_private_key, false).await,
+	}
 }
 
 pub async fn done_key_rotation(
