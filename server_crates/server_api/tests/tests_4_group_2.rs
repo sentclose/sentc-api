@@ -283,6 +283,8 @@ async fn test_10_create_a_connected_group_from_a_group()
 	)
 	.await;
 
+	assert!(data.0.is_connected_group);
+
 	let mut decrypted_group_keys = HashMap::new();
 
 	decrypted_group_keys.insert(creator_group_1.user_id.to_string(), data.1);
@@ -693,6 +695,8 @@ async fn test_18_create_child_group_from_con_group()
 		private_key,
 	)
 	.await;
+
+	assert!(data.0.is_connected_group);
 
 	let mut decrypted_group_keys = HashMap::new();
 
