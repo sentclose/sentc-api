@@ -64,7 +64,27 @@ pub(super) async fn invite_request(
 	//1. check the rights of the starter
 	check_group_rank(admin_rank, 2)?;
 
-	//2. check if the user is already in the group
+	//2. get the int user type and if it is a group check if the group is a non connected group
+	// do it in the model because we don't get any infos about the group until now
+	let user_type = match user_type {
+		NewUserType::Normal => 0,
+		NewUserType::Group => {
+			let cg = check_is_connected_group(invited_user.to_string()).await?;
+
+			if cg == 1 {
+				return Err(HttpErr::new(
+					400,
+					ApiErrorCodes::GroupJoinAsConnectedGroup,
+					"Can't invite group when the group is a connected group".to_string(),
+					None,
+				));
+			}
+
+			2
+		},
+	};
+
+	//3. check if the user is already in the group
 	let check = check_user_in_group(group_id.to_string(), invited_user.to_string()).await?;
 
 	if check {
@@ -101,11 +121,6 @@ pub(super) async fn invite_request(
 	//______________________________________________________________________________________________
 
 	let time = get_time()?;
-
-	let user_type = match user_type {
-		NewUserType::Normal => 0,
-		NewUserType::Group => 2,
-	};
 
 	let (sql, params, session_id) = if key_session && keys_for_new_user.len() == 100 {
 		//if there are more keys than 100 -> use a session,
@@ -252,6 +267,25 @@ pub(super) async fn accept_invite(group_id: GroupId, user_id: UserId) -> AppRes<
 
 pub(super) async fn join_req(app_id: AppId, group_id: GroupId, user_id: UserId, user_type: NewUserType) -> AppRes<()>
 {
+	let user_type = match user_type {
+		NewUserType::Normal => 0,
+		NewUserType::Group => {
+			//when it is a group wants to join another group -> check if the group to join is a connected group
+			let cg = check_is_connected_group(group_id.to_string()).await?;
+
+			if cg != 1 {
+				return Err(HttpErr::new(
+					400,
+					ApiErrorCodes::GroupJoinAsConnectedGroup,
+					"Can't join a group when it is not a connected group".to_string(),
+					None,
+				));
+			}
+
+			2
+		},
+	};
+
 	let check = check_user_in_group(group_id.to_string(), user_id.to_string()).await?;
 
 	if check {
@@ -275,11 +309,6 @@ pub(super) async fn join_req(app_id: AppId, group_id: GroupId, user_id: UserId, 
 
 	#[cfg(feature = "sqlite")]
 	let sql = "INSERT OR IGNORE INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, user_type) VALUES (?,?,?,?,?)";
-
-	let user_type = match user_type {
-		NewUserType::Normal => 0,
-		NewUserType::Group => 2,
-	};
 
 	exec(
 		sql,
@@ -811,4 +840,22 @@ async fn group_accept_invite(app_id: AppId, group_id: GroupId) -> AppRes<()>
 	}
 
 	Ok(())
+}
+
+async fn check_is_connected_group(group_id: GroupId) -> AppRes<i32>
+{
+	//language=SQL
+	let sql = "SELECT is_connected_group FROM sentc_group WHERE id = ?";
+	let is_connected_group: Option<I32Entity> = query_first(sql, set_params!(group_id)).await?;
+
+	if let Some(cg) = is_connected_group {
+		Ok(cg.0)
+	} else {
+		Err(HttpErr::new(
+			400,
+			ApiErrorCodes::GroupAccess,
+			"Group to invite not found".to_string(),
+			None,
+		))
+	}
 }

@@ -94,6 +94,7 @@ pub async fn register(app_id: AppId, register_input: RegisterData) -> AppRes<Reg
 		None,
 		None,
 		None,
+		false,
 	)
 	.await?;
 
@@ -177,6 +178,7 @@ pub async fn done_register_device(
 				time: 0,
 				parent: None,
 				invite: 1, //must be 1 to accept the device invite
+				is_connected_group: false,
 			},
 			user_data: InternalUserGroupData {
 				user_id: "".to_string(),
@@ -468,6 +470,7 @@ pub async fn delete_device(user: &UserJwtEntity, app_id: AppId, device_id: Devic
 				time: 0,
 				parent: None,
 				invite: 0,
+				is_connected_group: false,
 			},
 			user_data: InternalUserGroupData {
 				user_id: user_id.to_string(),

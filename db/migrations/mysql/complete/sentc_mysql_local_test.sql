@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 01. Jan 2023 um 13:13
+-- Erstellungszeit: 06. Jan 2023 um 00:21
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -309,6 +309,7 @@ CREATE TABLE `sentc_group` (
   `parent` varchar(36) DEFAULT NULL,
   `identifier` text DEFAULT NULL,
   `type` int(11) NOT NULL COMMENT '0 0 normal group, 1 = user group',
+  `is_connected_group` tinyint(1) NOT NULL,
   `invite` tinyint(1) NOT NULL,
   `time` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

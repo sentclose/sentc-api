@@ -18,6 +18,7 @@ pub fn create_group(
 	parent_group_id: Option<GroupId>,
 	user_rank: Option<i32>,
 	connected_group: Option<GroupId>,
+	is_connected_group: bool,
 ) -> impl Future<Output = AppRes<GroupId>>
 {
 	group_model::create(
@@ -28,6 +29,7 @@ pub fn create_group(
 		user_rank,
 		group_type,
 		connected_group,
+		is_connected_group,
 	)
 }
 
@@ -91,6 +93,7 @@ pub async fn get_user_group_data(group_data: &InternalGroupDataComplete) -> AppR
 		created_time: group_data.group_data.time,
 		joined_time: group_data.user_data.joined_time,
 		access_by,
+		is_connected_group: group_data.group_data.is_connected_group,
 	})
 }
 

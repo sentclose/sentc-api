@@ -24,8 +24,10 @@ use tokio::sync::{OnceCell, RwLock};
 use crate::test_fn::{
 	add_group_by_invite,
 	add_user_by_invite,
+	add_user_by_invite_as_group_as_member,
 	auth_header,
 	create_app,
+	create_child_group_from_group_as_member,
 	create_group,
 	create_test_customer,
 	create_test_user,
@@ -69,7 +71,9 @@ static CUSTOMER_TEST_STATE: OnceCell<RwLock<CustomerDoneLoginOutput>> = OnceCell
 static APP_TEST_STATE: OnceCell<RwLock<AppRegisterOutput>> = OnceCell::const_new();
 static USERS_TEST_STATE: OnceCell<RwLock<Vec<UserState>>> = OnceCell::const_new();
 static GROUP_TEST_STATE: OnceCell<RwLock<Vec<GroupState>>> = OnceCell::const_new();
+static CONNECTED_GROUP_STATE: OnceCell<RwLock<Vec<GroupState>>> = OnceCell::const_new();
 static CHILD_GROUP_TEST_STATE: OnceCell<RwLock<Vec<GroupState>>> = OnceCell::const_new();
+static CONNECTED_CHILDREN_GROUP_STATE: OnceCell<RwLock<Vec<GroupState>>> = OnceCell::const_new();
 
 pub struct UserState
 {
@@ -140,10 +144,11 @@ async fn aaa_init_global_test()
 create groups:
 1. the group, to test direct access to a connected group
 2. the group, another group with direct access to a connected group
-3. the group to connect
-4. a parent group and one child group which got access to a connected group
-5. a group to connect (but from user and connect it later), with a child (connect group 1 and 2)
-6. later a group to connect but created from group 1
+3. a parent group and one child group which got access to a connected group
+
+create connected groups:
+1. the group to connect (created from group 0)
+2. a group to connect (but from user and connect it later), with a child (connect group 1 and 2)
 
 At the end connect a child from one group to a parent for another group and
 check if user from one parent got access at the other parent
@@ -154,7 +159,7 @@ async fn test_01_create_groups()
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 
-	let n = 5;
+	let n = 4;
 	let mut groups = Vec::with_capacity(n);
 
 	for i in 0..n {
@@ -179,12 +184,12 @@ async fn test_01_create_groups()
 	}
 
 	//create now the children:
-	// one for group 4 to test access from parent to connected group (group 3)
-	//one for group 5 and connect later group 1 and 2 to test access via connected parent group
+	// one for group 2 to test access from parent to connected group 1
+	//one for group 2 and connect later group 1 and 2 to test access via connected parent group
 
 	let mut children = Vec::with_capacity(2);
 
-	let groups_and_users = vec![(3, 3), (4, 4)];
+	let groups_and_users = vec![(1, 1), (2, 2)];
 
 	for (group_i, user_i) in groups_and_users {
 		let group = &groups[group_i];
@@ -231,162 +236,11 @@ async fn test_01_create_groups()
 //__________________________________________________________________________________________________
 
 #[tokio::test]
-async fn test_10_connect_group_to_other_group()
+async fn test_10_create_a_connected_group_from_a_group()
 {
-	//connect group 1 and 2 to group 3
-
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
-
-	let group_1 = &groups[0];
-	let creator_group_1 = &users[0];
-	let group_1_private_key = &group_1
-		.decrypted_group_keys
-		.get(&group_1.group_member[0])
-		.unwrap()[0]
-		.private_group_key;
-
-	let group_2 = &groups[1];
-	let creator_group_2 = &users[1];
-	let group_2_private_key = &group_2
-		.decrypted_group_keys
-		.get(&group_2.group_member[0])
-		.unwrap()[0]
-		.private_group_key;
-
-	let group_to_connect = &groups[2];
-	let creator_group_to_connect = &users[2];
-
-	let user_keys = group_to_connect
-		.decrypted_group_keys
-		.get(&group_to_connect.group_member[0])
-		.unwrap();
-
-	let data_1 = add_group_by_invite(
-		secret_token,
-		&creator_group_to_connect.user_data.jwt,
-		&group_to_connect.group_id,
-		user_keys,
-		&group_1.group_id,
-		&creator_group_1.user_data.jwt,
-		group_1_private_key,
-	)
-	.await;
-
-	assert_eq!(data_1.0.rank, 4);
-
-	let data_2 = add_group_by_invite(
-		secret_token,
-		&creator_group_to_connect.user_data.jwt,
-		&group_to_connect.group_id,
-		user_keys,
-		&group_2.group_id,
-		&creator_group_2.user_data.jwt,
-		group_2_private_key,
-	)
-	.await;
-
-	assert_eq!(data_2.0.rank, 4);
-}
-
-#[tokio::test]
-async fn test_11_connect_child_group_to_other_group()
-{
-	//connect the child group from group 4 to group 3
-
-	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
-	let users = USERS_TEST_STATE.get().unwrap().read().await;
-	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
-	let children = CHILD_GROUP_TEST_STATE.get().unwrap().read().await;
-
-	let group_1 = &children[0];
-	let creator_group_1 = &users[3];
-	let group_1_private_key = &group_1
-		.decrypted_group_keys
-		.get(&group_1.group_member[0])
-		.unwrap()[0]
-		.private_group_key;
-
-	let group_to_connect = &groups[2];
-	let creator_group_to_connect = &users[2];
-
-	let user_keys = group_to_connect
-		.decrypted_group_keys
-		.get(&group_to_connect.group_member[0])
-		.unwrap();
-
-	//user should got access by group 4
-	add_group_by_invite(
-		secret_token,
-		&creator_group_to_connect.user_data.jwt,
-		&group_to_connect.group_id,
-		user_keys,
-		&group_1.group_id,
-		&creator_group_1.user_data.jwt,
-		group_1_private_key,
-	)
-	.await;
-}
-
-#[tokio::test]
-async fn test_12_connect_group_to_other_group_with_a_child_group()
-{
-	//connect group 1 to group 5 to check the access to the child of group 5
-
-	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
-	let users = USERS_TEST_STATE.get().unwrap().read().await;
-	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
-	let children = CHILD_GROUP_TEST_STATE.get().unwrap().read().await;
-
-	let group_1 = &groups[0];
-	let creator_group_1 = &users[0];
-	let group_1_private_key = &group_1
-		.decrypted_group_keys
-		.get(&group_1.group_member[0])
-		.unwrap()[0]
-		.private_group_key;
-
-	let group_to_connect = &groups[4];
-	let creator_group_to_connect = &users[4];
-
-	let user_keys = group_to_connect
-		.decrypted_group_keys
-		.get(&group_to_connect.group_member[0])
-		.unwrap();
-
-	let data = add_group_by_invite(
-		secret_token,
-		&creator_group_to_connect.user_data.jwt,
-		&group_to_connect.group_id,
-		user_keys,
-		&group_1.group_id,
-		&creator_group_1.user_data.jwt,
-		group_1_private_key,
-	)
-	.await;
-
-	//now check the access to the child group of group 5
-	let private_key_from_parent_group = &data.1[0].private_group_key;
-
-	get_group_from_group_as_member(
-		secret_token,
-		&creator_group_1.user_data.jwt,
-		&children[1].group_id,
-		&group_1.group_id,
-		private_key_from_parent_group,
-	)
-	.await;
-}
-
-#[tokio::test]
-async fn test_13_connect_group_by_creating_from_other_group()
-{
-	//create a new connected group by another group
-
-	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
-	let users = USERS_TEST_STATE.get().unwrap().read().await;
-	let mut groups = GROUP_TEST_STATE.get().unwrap().write().await;
 
 	let group_1 = &groups[0];
 	let creator_group_1 = &users[0];
@@ -433,16 +287,432 @@ async fn test_13_connect_group_by_creating_from_other_group()
 
 	decrypted_group_keys.insert(creator_group_1.user_id.to_string(), data.1);
 
-	//index 5
-	groups.push(GroupState {
-		group_id: out.group_id.clone(),
-		group_member: vec![creator_group_1.user_id.to_string()],
-		decrypted_group_keys,
-	})
+	CONNECTED_GROUP_STATE
+		.get_or_init(|| {
+			async move {
+				RwLock::new(vec![GroupState {
+					group_id: out.group_id.clone(),
+					group_member: vec![creator_group_1.user_id.to_string()],
+					decrypted_group_keys,
+				}])
+			}
+		})
+		.await;
 }
 
 #[tokio::test]
-async fn test_13_rank_from_member_of_connected_group()
+async fn test_11_not_connect_normal_group_to_normal_group_by_invite()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	//try to connected group 1 and group 2 (which are both normal groups).
+	//should fail
+
+	let creator_group_1 = &users[0];
+	let group_1 = &groups[0];
+	let user_keys = group_1
+		.decrypted_group_keys
+		.get(&group_1.group_member[0])
+		.unwrap();
+
+	let group_2 = &groups[0];
+
+	//get the public key of the group 2
+	let url = get_url("api/v1/group/".to_owned() + &group_2.group_id + "/public_key");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(&creator_group_1.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	//prepare invite for group 2
+	let mut group_keys_ref = vec![];
+
+	for decrypted_group_key in user_keys {
+		group_keys_ref.push(&decrypted_group_key.group_key);
+	}
+
+	let group_to_invite_public_key = sentc_crypto::util::public::import_public_key_from_string_into_format(&body).unwrap();
+
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(&group_to_invite_public_key, &group_keys_ref, false).unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + &group_1.group_id + "/invite_group_auto/" + &group_2.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(&creator_group_1.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.body(invite)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	match handle_server_response::<GroupInviteServerOutput>(&body) {
+		Ok(_) => {
+			panic!("Should be an error");
+		},
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(s, _m) => {
+					assert_eq!(s, ApiErrorCodes::GroupJoinAsConnectedGroup.get_int_code());
+				},
+				_ => panic!("Should be server error"),
+			}
+		},
+	}
+}
+
+#[tokio::test]
+async fn test_12_not_connect_normal_group_to_normal_group_by_join()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	//try to connected group 1 and group 2 (which are both normal groups).
+	//should fail
+
+	let group = &groups[1];
+
+	let group_to_invite = &groups[0];
+	let user_to_invite = &users[0];
+
+	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/join_req/" + &group.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.patch(url)
+		.header(AUTHORIZATION, auth_header(&user_to_invite.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	match handle_general_server_response(&body) {
+		Ok(_) => {
+			panic!("Should be an error");
+		},
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(s, _m) => {
+					assert_eq!(s, ApiErrorCodes::GroupJoinAsConnectedGroup.get_int_code());
+				},
+				_ => panic!("Should be server error"),
+			}
+		},
+	}
+}
+
+#[tokio::test]
+async fn test_13_not_invite_connected_group_as_member()
+{
+	//try to invite con group 1 to group 2 (because group 1 is already connected and member)
+	//should fail
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
+
+	let group = &groups[1];
+	let creator = &users[1];
+	let user_keys = group
+		.decrypted_group_keys
+		.get(&group.group_member[0])
+		.unwrap();
+
+	let con_group = &con_groups[0];
+
+	//now try to invite
+	//get the public key of the con group
+	let url = get_url("api/v1/group/".to_owned() + &con_group.group_id + "/public_key");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(&creator.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let mut group_keys_ref = vec![];
+
+	for decrypted_group_key in user_keys {
+		group_keys_ref.push(&decrypted_group_key.group_key);
+	}
+
+	let group_to_invite_public_key = sentc_crypto::util::public::import_public_key_from_string_into_format(&body).unwrap();
+
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(&group_to_invite_public_key, &group_keys_ref, false).unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + &group.group_id + "/invite_group_auto/" + &con_group.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(&creator.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.body(invite)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	match handle_server_response::<GroupInviteServerOutput>(&body) {
+		Ok(_) => {
+			panic!("Should be an error");
+		},
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(s, _m) => {
+					assert_eq!(s, ApiErrorCodes::GroupJoinAsConnectedGroup.get_int_code());
+				},
+				_ => panic!("Should be server error"),
+			}
+		},
+	}
+}
+
+#[tokio::test]
+async fn test_14_not_send_join_req_as_connected_group()
+{
+	//try to join group 2 from con group 1
+	//should fail
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
+
+	let group = &groups[1];
+
+	let con_group = &con_groups[0];
+	let con_group_user = &users[0];
+	let con_group_access = &groups[0];
+
+	let url = get_url("api/v1/group/".to_owned() + &con_group.group_id + "/join_req/" + &group.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.patch(url)
+		.header(AUTHORIZATION, auth_header(&con_group_user.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", &con_group_access.group_id)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	match handle_general_server_response(&body) {
+		Ok(_) => {
+			panic!("Should be an error");
+		},
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(s, _m) => {
+					assert_eq!(s, ApiErrorCodes::GroupJoinAsConnectedGroup.get_int_code());
+				},
+				_ => panic!("Should be server error"),
+			}
+		},
+	}
+}
+
+#[tokio::test]
+async fn test_15_connected_another_group_to_connected_group_by_invite()
+{
+	//connect the 2nd group with the connected group from group 0
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
+
+	let group_from_con = &groups[0];
+	let group_to_connect = &con_groups[0];
+	let creator_group_to_connect = &users[0];
+
+	let user_keys = group_to_connect
+		.decrypted_group_keys
+		.get(&group_to_connect.group_member[0])
+		.unwrap();
+
+	let group_1 = &groups[1];
+	let creator_group_1 = &users[1];
+	let group_1_private_key = &group_1
+		.decrypted_group_keys
+		.get(&group_1.group_member[0])
+		.unwrap()[0]
+		.private_group_key;
+
+	let data_1 = add_group_by_invite(
+		secret_token,
+		&creator_group_to_connect.user_data.jwt,
+		&group_to_connect.group_id,
+		user_keys,
+		&group_1.group_id,
+		&creator_group_1.user_data.jwt,
+		group_1_private_key,
+		Some(&group_from_con.group_id),
+	)
+	.await;
+
+	assert_eq!(data_1.0.rank, 4);
+}
+
+#[tokio::test]
+async fn test_16_connected_child_group()
+{
+	//connected child group of group 3 to con group 1
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let children = CHILD_GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
+
+	let group_from_con = &groups[0];
+	let group_to_connect = &con_groups[0];
+	let creator_group_to_connect = &users[0];
+
+	let user_keys = group_to_connect
+		.decrypted_group_keys
+		.get(&group_to_connect.group_member[0])
+		.unwrap();
+
+	let child_2 = &children[1];
+	let creator_group_1 = &users[2];
+	let group_1_private_key = &child_2
+		.decrypted_group_keys
+		.get(&child_2.group_member[0])
+		.unwrap()[0]
+		.private_group_key;
+
+	let data_1 = add_group_by_invite(
+		secret_token,
+		&creator_group_to_connect.user_data.jwt,
+		&group_to_connect.group_id,
+		user_keys,
+		&child_2.group_id,
+		&creator_group_1.user_data.jwt,
+		group_1_private_key,
+		Some(&group_from_con.group_id),
+	)
+	.await;
+
+	assert_eq!(data_1.0.rank, 4);
+}
+
+#[tokio::test]
+async fn test_17_access_con_group_from_a_parent()
+{
+	//access the con group 1 from parent of child group 1
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let children = CHILD_GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
+
+	let group_to_connect = &con_groups[0];
+
+	let child_2 = &children[1];
+	let creator_group_1 = &users[2];
+	let child_2_private_key = &child_2
+		.decrypted_group_keys
+		.get(&child_2.group_member[0])
+		.unwrap()[0]
+		.private_group_key;
+
+	let data = get_group_from_group_as_member(
+		secret_token,
+		&creator_group_1.user_data.jwt,
+		&group_to_connect.group_id,
+		&child_2.group_id, //access this group from the child, but user is member of the parent -> should work
+		child_2_private_key,
+	)
+	.await;
+
+	assert_eq!(data.0.rank, 4);
+}
+
+#[tokio::test]
+async fn test_18_create_child_group_from_con_group()
+{
+	//to test access of the children from a con group
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
+
+	let group_from_con = &groups[0];
+	let group_to_connect = &con_groups[0];
+	let creator_group_to_connect = &users[0];
+
+	let con_group = &con_groups[0];
+
+	let keys = &con_group
+		.decrypted_group_keys
+		.get(&con_group.group_member[0])
+		.unwrap()[0];
+
+	let public_key = &keys.public_group_key;
+	let private_key = &keys.private_group_key;
+	let jwt = &creator_group_to_connect.user_data.jwt;
+
+	//this user should got the right rank
+	let group_id = create_child_group_from_group_as_member(
+		secret_token.as_str(),
+		public_key,
+		&group_to_connect.group_id,
+		jwt,
+		&group_from_con.group_id,
+	)
+	.await;
+
+	let data = get_group_from_group_as_member(
+		secret_token,
+		&creator_group_to_connect.user_data.jwt,
+		&group_id,
+		&group_from_con.group_id,
+		private_key,
+	)
+	.await;
+
+	let mut decrypted_group_keys = HashMap::new();
+
+	decrypted_group_keys.insert(creator_group_to_connect.user_id.to_string(), data.1);
+
+	CONNECTED_CHILDREN_GROUP_STATE
+		.get_or_init(|| {
+			async move {
+				RwLock::new(vec![GroupState {
+					group_id,
+					group_member: vec![creator_group_to_connect.user_id.to_string()],
+					decrypted_group_keys,
+				}])
+			}
+		})
+		.await;
+}
+
+#[tokio::test]
+async fn test_19_rank_from_member_of_connected_group()
 {
 	//auto invite a member to the main group and then access the connected group
 	//check the rank of this member. this should not be the creator rank but the rank of the connected group
@@ -450,10 +720,11 @@ async fn test_13_rank_from_member_of_connected_group()
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
 
 	let creator_group_1 = &users[0];
 	let group = &groups[0];
-	let group_to_connect = &groups[5];
+	let group_to_connect = &con_groups[0];
 	let user_to_invite = &users[6];
 
 	let user_keys = group
@@ -494,18 +765,25 @@ async fn test_13_rank_from_member_of_connected_group()
 	assert_eq!(data.0.rank, 4);
 }
 
+//__________________________________________________________________________________________________
+
 #[tokio::test]
-async fn test_14_key_rotation()
+async fn test_20_key_rotation()
 {
-	//do a key rotation in a connected group (group 3) and check if group 1 and 2 got new keys
+	//do a key rotation in a connected group and check if group 1 and 2 got new keys
 	//this test is about to test the key rotation of group as member
 
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let mut con_groups = CONNECTED_GROUP_STATE.get().unwrap().write().await;
 
 	let group_1 = &groups[0];
-	let creator_group_1 = &users[0];
+	let group_1_public_key = &group_1
+		.decrypted_group_keys
+		.get(&group_1.group_member[0])
+		.unwrap()[0]
+		.public_group_key;
 	let group_1_private_key = &group_1
 		.decrypted_group_keys
 		.get(&group_1.group_member[0])
@@ -520,55 +798,72 @@ async fn test_14_key_rotation()
 		.unwrap()[0]
 		.private_group_key;
 
-	let group_to_connect = &groups[2];
-	let creator_group_to_connect = &users[2];
+	let group_to_connect = &con_groups[0];
+	let creator_group_to_connect = &users[0];
 	let pre_group_key = &group_to_connect
 		.decrypted_group_keys
 		.get(&creator_group_to_connect.user_id)
 		.unwrap()[0]
 		.group_key;
 
-	//do the rotation for group 3
+	//add user 5 as member of the connected group to check key rotation as a direct member
+	let direct_user = &users[4];
+
+	let user_keys = group_to_connect
+		.decrypted_group_keys
+		.get(creator_group_to_connect.user_id.as_str())
+		.unwrap();
+
+	add_user_by_invite_as_group_as_member(
+		secret_token,
+		&creator_group_to_connect.user_data.jwt,
+		&group_to_connect.group_id,
+		&group_1.group_id,
+		user_keys,
+		&direct_user.user_id,
+		&direct_user.user_data.jwt,
+		&direct_user.user_data.user_keys[0].exported_public_key,
+		&direct_user.user_data.user_keys[0].private_key,
+	)
+	.await;
+
+	//do the rotation for the connected group
+	//the invoker is group 1
 	key_rotation(
 		secret_token,
 		&creator_group_to_connect.user_data.jwt,
 		&group_to_connect.group_id,
 		pre_group_key,
-		&creator_group_to_connect.user_data.user_keys[0].public_key,
-		&creator_group_to_connect.user_data.user_keys[0].private_key,
-	)
-	.await;
-
-	let data_1 = get_group_from_group_as_member(
-		secret_token,
-		&creator_group_1.user_data.jwt,
-		&group_to_connect.group_id,
-		&group_1.group_id,
+		group_1_public_key,
 		group_1_private_key,
-	)
-	.await;
-
-	assert!(data_1.0.key_update);
-
-	done_key_rotation(
-		secret_token,
-		&creator_group_1.user_data.jwt,
-		&group_to_connect.group_id,
-		pre_group_key,
-		&group_1
-			.decrypted_group_keys
-			.get(&creator_group_1.user_id)
-			.unwrap()[0]
-			.public_group_key,
-		&group_1
-			.decrypted_group_keys
-			.get(&creator_group_1.user_id)
-			.unwrap()[0]
-			.private_group_key,
 		Some(&group_1.group_id),
 	)
 	.await;
 
+	//key rotation as direct member
+	let mut direct_member_data = get_group(
+		secret_token,
+		&direct_user.user_data.jwt,
+		&group_to_connect.group_id,
+		&direct_user.user_data.user_keys[0].private_key,
+		true,
+	)
+	.await;
+
+	assert!(direct_member_data.0.key_update);
+
+	let mut direct_member_new_keys = done_key_rotation(
+		secret_token,
+		&direct_user.user_data.jwt,
+		&group_to_connect.group_id,
+		pre_group_key,
+		&direct_user.user_data.user_keys[0].public_key,
+		&direct_user.user_data.user_keys[0].private_key,
+		None,
+	)
+	.await;
+
+	//key rotation as a connected group
 	let data_2 = get_group_from_group_as_member(
 		secret_token,
 		&creator_group_2.user_data.jwt,
@@ -598,18 +893,29 @@ async fn test_14_key_rotation()
 		Some(&group_2.group_id),
 	)
 	.await;
+
+	//add the new keys for the new user to the con group state
+	direct_member_new_keys.append(&mut direct_member_data.1);
+
+	con_groups[0]
+		.decrypted_group_keys
+		.insert(direct_user.user_id.to_string(), direct_member_new_keys);
 }
 
 #[tokio::test]
-async fn test_15_key_rotation_with_multiple_keys()
+async fn test_21_key_rotation_with_multiple_keys()
 {
-	//do a key rotation in group 1. then do a rotation in group 3 (the connected group)
-	//later check if there is only one new key to rotate and not 2
-	// (which would be the case if not only the newest key was used but all group keys)
+	/*
+	do a key rotation in group 1. then do a rotation in connected group
+
+	later check if there is only one new key to rotate and not 2
+	(which would be the case if not only the newest key was used but all group keys)
+	 */
 
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let mut groups = GROUP_TEST_STATE.get().unwrap().write().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
 
 	let group_1 = &groups[0];
 	let creator_group_1 = &users[0];
@@ -619,11 +925,11 @@ async fn test_15_key_rotation_with_multiple_keys()
 		.unwrap()[0]
 		.group_key;
 
-	let group_to_connect = &groups[2];
-	let creator_group_to_connect = &users[2];
+	let con_group_member = &users[4];
+	let group_to_connect = &con_groups[0];
 	let pre_group_key_group_connected = &group_to_connect
 		.decrypted_group_keys
-		.get(&creator_group_to_connect.user_id)
+		.get(&con_group_member.user_id)
 		.unwrap()[0]
 		.group_key;
 
@@ -635,6 +941,7 @@ async fn test_15_key_rotation_with_multiple_keys()
 		pre_group_key_group_1,
 		&creator_group_1.user_data.user_keys[0].public_key,
 		&creator_group_1.user_data.user_keys[0].private_key,
+		None,
 	)
 	.await;
 
@@ -643,11 +950,12 @@ async fn test_15_key_rotation_with_multiple_keys()
 	//just get the key rotation data (not done it) to check how many keys are in (should be just one)
 	key_rotation(
 		secret_token,
-		&creator_group_to_connect.user_data.jwt,
+		&con_group_member.user_data.jwt,
 		&group_to_connect.group_id,
 		pre_group_key_group_connected,
-		&creator_group_to_connect.user_data.user_keys[0].public_key,
-		&creator_group_to_connect.user_data.user_keys[0].private_key,
+		&con_group_member.user_data.user_keys[0].public_key,
+		&con_group_member.user_data.user_keys[0].private_key,
+		None,
 	)
 	.await;
 
@@ -674,18 +982,21 @@ async fn test_15_key_rotation_with_multiple_keys()
 }
 
 #[tokio::test]
-async fn test_16_kick_group_as_member()
+async fn test_22_kick_group_as_member()
 {
-	//kick group 1 from group 3
+	//kick group 2 from connected group (which we connected to the con group at test 15)
+
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
 
-	let group = &groups[2];
-	let creator = &users[2];
+	let group = &con_groups[0];
+	let creator = &users[0];
+	let group_to_access = &groups[0];
 
-	let group_to_kick = &groups[0];
-	let user_to_kick = &users[0];
+	let group_to_kick = &groups[1];
+	let user_to_kick = &users[1];
 
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/kick/" + &group_to_kick.group_id);
 
@@ -694,6 +1005,7 @@ async fn test_16_kick_group_as_member()
 		.delete(url)
 		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", &group_to_access.group_id)
 		.send()
 		.await
 		.unwrap();
@@ -721,18 +1033,20 @@ async fn test_16_kick_group_as_member()
 }
 
 #[tokio::test]
-async fn test_17_invite_another_group()
+async fn test_23_invite_another_group()
 {
-	//invite send from the group to connect (group 3) to group 1
+	//invite send from the group to connect to group 2
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
 
-	let group = &groups[2];
-	let creator = &users[2];
+	let group = &con_groups[0];
+	let creator = &users[0];
+	let group_to_access = &groups[0];
 
-	let group_to_invite = &groups[0];
-	let user_to_invite = &users[0];
+	let group_to_invite = &groups[1];
+	let user_to_invite = &users[1];
 
 	let keys = group
 		.decrypted_group_keys
@@ -769,6 +1083,7 @@ async fn test_17_invite_another_group()
 		.put(url)
 		.header(AUTHORIZATION, auth_header(&creator.user_data.jwt))
 		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", &group_to_access.group_id)
 		.body(invite)
 		.send()
 		.await
@@ -803,17 +1118,18 @@ async fn test_17_invite_another_group()
 }
 
 #[tokio::test]
-async fn test_18_reject_invite()
+async fn test_24_reject_invite()
 {
 	//should be the same as normal invite
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
 
-	let group = &groups[2];
+	let group = &con_groups[0];
 
-	let group_to_invite = &groups[0];
-	let user_to_invite = &users[0];
+	let group_to_invite = &groups[1];
+	let user_to_invite = &users[1];
 
 	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/invite/" + &group.group_id);
 
@@ -850,19 +1166,21 @@ async fn test_18_reject_invite()
 }
 
 #[tokio::test]
-async fn test_19_accept_invite()
+async fn test_25_accept_invite()
 {
 	//invite the group again to accept the invite
 
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
 
-	let group = &groups[2];
-	let creator = &users[2];
+	let group = &con_groups[0];
+	let creator = &users[0];
+	let group_to_access = &groups[0];
 
-	let group_to_invite = &groups[0];
-	let user_to_invite = &users[0];
+	let group_to_invite = &groups[1];
+	let user_to_invite = &users[1];
 	let group_to_invite_private_key = &group_to_invite
 		.decrypted_group_keys
 		.get(&user_to_invite.user_id)
@@ -904,6 +1222,7 @@ async fn test_19_accept_invite()
 		.put(url)
 		.header(AUTHORIZATION, auth_header(&creator.user_data.jwt))
 		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", &group_to_access.group_id)
 		.body(invite)
 		.send()
 		.await
@@ -941,16 +1260,17 @@ async fn test_19_accept_invite()
 }
 
 #[tokio::test]
-async fn test_20_not_send_join_req_if_group_is_already_group_member()
+async fn test_26_not_send_join_req_if_group_is_already_group_member()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
 
-	let group = &groups[2];
+	let group = &con_groups[0];
 
-	let group_to_invite = &groups[0];
-	let user_to_invite = &users[0];
+	let group_to_invite = &groups[1];
+	let user_to_invite = &users[1];
 
 	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/join_req/" + &group.group_id);
 
@@ -980,15 +1300,16 @@ async fn test_20_not_send_join_req_if_group_is_already_group_member()
 }
 
 #[tokio::test]
-async fn test_21_join_req_to_join_a_group()
+async fn test_27_join_req_to_join_a_group()
 {
-	//use group 4 here to test join req, so we don't need to kick the other group again
+	//use group 3 here to test join req, so we don't need to kick the other group again
 
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
 
-	let group = &groups[2];
+	let group = &con_groups[0];
 
 	let group_to_invite = &groups[3];
 	let user_to_invite = &users[3];
@@ -1010,13 +1331,14 @@ async fn test_21_join_req_to_join_a_group()
 }
 
 #[tokio::test]
-async fn test_22_sent_join_req_for_group()
+async fn test_28_sent_join_req_for_group()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
 
-	let group = &groups[2];
+	let group = &con_groups[0];
 
 	let group_to_invite = &groups[3];
 	let user_to_invite = &users[3];
@@ -1041,13 +1363,14 @@ async fn test_22_sent_join_req_for_group()
 }
 
 #[tokio::test]
-async fn test_23_delete_sent_join_req()
+async fn test_29_delete_sent_join_req()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
 
-	let group = &groups[2];
+	let group = &con_groups[0];
 
 	let group_to_invite = &groups[3];
 	let user_to_invite = &users[3];
@@ -1085,10 +1408,6 @@ async fn test_23_delete_sent_join_req()
 	assert_eq!(out.len(), 0);
 
 	//send the req again for the other tests
-	let group = &groups[2];
-
-	let group_to_invite = &groups[3];
-	let user_to_invite = &users[3];
 
 	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/join_req/" + &group.group_id);
 
@@ -1107,16 +1426,18 @@ async fn test_23_delete_sent_join_req()
 }
 
 #[tokio::test]
-async fn test_23_reject_join_req_from_group()
+async fn test_30_reject_join_req_from_group()
 {
-	//reject the join req from group 4
+	//reject the join req from group 3
 
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
 
-	let group = &groups[2];
-	let creator = &users[2];
+	let group = &con_groups[0];
+	let creator = &users[0];
+	let group_to_access = &groups[0];
 
 	let group_to_invite = &groups[3];
 
@@ -1129,6 +1450,7 @@ async fn test_23_reject_join_req_from_group()
 		.get(url)
 		.header(AUTHORIZATION, auth_header(&creator.user_data.jwt))
 		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", &group_to_access.group_id)
 		.send()
 		.await
 		.unwrap();
@@ -1151,6 +1473,7 @@ async fn test_23_reject_join_req_from_group()
 		.delete(url)
 		.header(AUTHORIZATION, auth_header(&creator.user_data.jwt))
 		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", &group_to_access.group_id)
 		.send()
 		.await
 		.unwrap();
@@ -1160,15 +1483,17 @@ async fn test_23_reject_join_req_from_group()
 }
 
 #[tokio::test]
-async fn test_24_accept_join_req_from_group()
+async fn test_31_accept_join_req_from_group()
 {
 	//send the join req again
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
 
-	let group = &groups[2];
-	let creator = &users[2];
+	let group = &con_groups[0];
+	let creator = &users[0];
+	let group_to_access = &groups[0];
 
 	let group_to_invite = &groups[3];
 	let user_to_invite = &users[3];
@@ -1229,6 +1554,7 @@ async fn test_24_accept_join_req_from_group()
 		.put(url)
 		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
 		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", &group_to_access.group_id)
 		.body(join)
 		.send()
 		.await
@@ -1253,19 +1579,20 @@ async fn test_24_accept_join_req_from_group()
 }
 
 #[tokio::test]
-async fn test_25_not_leave_groups_without_rights()
+async fn test_32_not_leave_groups_without_rights()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let public_token_str = &APP_TEST_STATE.get().unwrap().read().await.public_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
 
 	//create a new user and set it as a member in the group to live
 	let (user_id, key_data) = create_test_user(secret_token, public_token_str, "hi_123", "123").await;
 
 	let group = &groups[3];
 	let creator = &users[3];
-	let group_to_leave = &groups[2];
+	let group_to_leave = &con_groups[0];
 
 	let user_keys = group
 		.decrypted_group_keys
@@ -1315,13 +1642,14 @@ async fn test_25_not_leave_groups_without_rights()
 }
 
 #[tokio::test]
-async fn test_26_get_all_groups_to_group()
+async fn test_33_get_all_groups_to_group()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
 
-	let group = &groups[2];
+	let group = &con_groups[0];
 
 	let group_to_invite = &groups[3];
 	let user_to_invite = &users[3];
@@ -1345,15 +1673,16 @@ async fn test_26_get_all_groups_to_group()
 }
 
 #[tokio::test]
-async fn test_27_leave_group()
+async fn test_34_leave_group()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
 
 	let group = &groups[3];
 	let creator = &users[3];
-	let group_to_leave = &groups[2];
+	let group_to_leave = &con_groups[0];
 
 	let url = get_url("api/v1/group/".to_owned() + group_to_leave.group_id.as_str() + "/leave");
 	let client = reqwest::Client::new();

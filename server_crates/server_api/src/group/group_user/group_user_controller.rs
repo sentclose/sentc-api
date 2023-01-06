@@ -283,6 +283,18 @@ async fn join_req_pri(req: Request, user_type: NewUserType) -> JRes<ServerSucces
 			//only high member can send join req
 			group_model::check_group_rank(group_data.user_data.rank, 1)?;
 
+			//check here if this group ia a connected group
+			//only normal groups can be a member in connected groups but not connected groups in another group
+			//check in the model if the group to join is a connected group
+			if group_data.group_data.is_connected_group {
+				return Err(HttpErr::new(
+					400,
+					ApiErrorCodes::GroupJoinAsConnectedGroup,
+					"Can't join another group when this group is a connected group".to_string(),
+					None,
+				));
+			}
+
 			("group_id_to_join", &group_data.group_data.id)
 		},
 		NewUserType::Normal => {
