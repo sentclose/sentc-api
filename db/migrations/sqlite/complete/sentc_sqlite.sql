@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 1:12pm on January 1, 2023 (UTC)
+-- Exported: 12:26am on January 6, 2023 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -59,7 +59,7 @@ CREATE TABLE sentc_group
 	parent     text,
 	identifier text,
 	time       text
-, 'type' INTEGER, 'invite' INTEGER);
+, 'type' INTEGER, 'invite' INTEGER, 'is_connected_group' INTEGER);
 
 ----
 -- Table structure for sentc_group_keys
