@@ -159,7 +159,7 @@ async fn test_01_create_groups()
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 
-	let n = 3;
+	let n = 4;
 	let mut groups = Vec::with_capacity(n);
 
 	for i in 0..n {
@@ -1311,8 +1311,8 @@ async fn test_27_join_req_to_join_a_group()
 
 	let group = &con_groups[0];
 
-	let group_to_invite = &groups[2];
-	let user_to_invite = &users[2];
+	let group_to_invite = &groups[3];
+	let user_to_invite = &users[3];
 
 	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/join_req/" + &group.group_id);
 
@@ -1340,8 +1340,8 @@ async fn test_28_sent_join_req_for_group()
 
 	let group = &con_groups[0];
 
-	let group_to_invite = &groups[2];
-	let user_to_invite = &users[2];
+	let group_to_invite = &groups[3];
+	let user_to_invite = &users[3];
 
 	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/joins/0/none");
 
@@ -1372,8 +1372,8 @@ async fn test_29_delete_sent_join_req()
 
 	let group = &con_groups[0];
 
-	let group_to_invite = &groups[2];
-	let user_to_invite = &users[2];
+	let group_to_invite = &groups[3];
+	let user_to_invite = &users[3];
 
 	//delete the req
 	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/joins/" + &group.group_id);
@@ -1439,7 +1439,7 @@ async fn test_30_reject_join_req_from_group()
 	let creator = &users[0];
 	let group_to_access = &groups[0];
 
-	let group_to_invite = &groups[2];
+	let group_to_invite = &groups[3];
 
 	//first get the join reqs
 
@@ -1495,8 +1495,8 @@ async fn test_31_accept_join_req_from_group()
 	let creator = &users[0];
 	let group_to_access = &groups[0];
 
-	let group_to_invite = &groups[2];
-	let user_to_invite = &users[2];
+	let group_to_invite = &groups[3];
+	let user_to_invite = &users[3];
 	let group_to_invite_private_key = &group_to_invite
 		.decrypted_group_keys
 		.get(&user_to_invite.user_id)
@@ -1590,8 +1590,8 @@ async fn test_32_not_leave_groups_without_rights()
 	//create a new user and set it as a member in the group to live
 	let (user_id, key_data) = create_test_user(secret_token, public_token_str, "hi_123", "123").await;
 
-	let group = &groups[2];
-	let creator = &users[2];
+	let group = &groups[3];
+	let creator = &users[3];
 	let group_to_leave = &con_groups[0];
 
 	let user_keys = group
@@ -1651,8 +1651,8 @@ async fn test_33_get_all_groups_to_group()
 
 	let group = &con_groups[0];
 
-	let group_to_invite = &groups[2];
-	let user_to_invite = &users[2];
+	let group_to_invite = &groups[3];
+	let user_to_invite = &users[3];
 
 	let url = get_url("api/v1/group/".to_owned() + group_to_invite.group_id.as_str() + "/all/0/none");
 	let client = reqwest::Client::new();
@@ -1680,8 +1680,8 @@ async fn test_34_leave_group()
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
 	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
 
-	let group = &groups[2];
-	let creator = &users[2];
+	let group = &groups[3];
+	let creator = &users[3];
 	let group_to_leave = &con_groups[0];
 
 	let url = get_url("api/v1/group/".to_owned() + group_to_leave.group_id.as_str() + "/leave");
