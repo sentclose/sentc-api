@@ -467,9 +467,9 @@ impl server_core::db::FromSqliteRow for AppJwtData
 
 //__________________________________________________________________________________________________
 
-pub static FILE_STORAGE_NONE: i32 = -1;
-pub static FILE_STORAGE_SENTC: i32 = 0;
-pub static FILE_STORAGE_OWN: i32 = 1;
+pub const FILE_STORAGE_NONE: i32 = -1;
+pub const FILE_STORAGE_SENTC: i32 = 0;
+pub const FILE_STORAGE_OWN: i32 = 1;
 
 #[derive(Serialize, Deserialize)]
 pub struct AppFileOptionsInput

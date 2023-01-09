@@ -5,7 +5,7 @@ use crate::customer_app::app_entities::AppData;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 use crate::AuthWithToken;
 
-pub static HASH_ALG: &str = "SHA256";
+pub const HASH_ALG: &str = "SHA256";
 
 pub enum Endpoint
 {

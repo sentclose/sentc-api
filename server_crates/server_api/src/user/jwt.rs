@@ -14,7 +14,7 @@ use crate::user::user_entities::UserJwtEntity;
 use crate::user::user_model;
 use crate::util::api_res::{ApiErrorCodes, HttpErr};
 
-pub static JWT_ALG: &str = "ES384";
+pub const JWT_ALG: &str = "ES384";
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Claims

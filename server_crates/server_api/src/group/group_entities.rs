@@ -8,12 +8,12 @@ pub type GroupNewUserType = u16;
 /**
 invite (keys needed)
 */
-pub static GROUP_INVITE_TYPE_INVITE_REQ: GroupNewUserType = 0;
+pub const GROUP_INVITE_TYPE_INVITE_REQ: GroupNewUserType = 0;
 
 /**
 join req (no keys needed)
 */
-pub static GROUP_INVITE_TYPE_JOIN_REQ: GroupNewUserType = 1;
+pub const GROUP_INVITE_TYPE_JOIN_REQ: GroupNewUserType = 1;
 
 //__________________________________________________________________________________________________
 

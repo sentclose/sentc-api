@@ -55,6 +55,6 @@ pub enum CacheVariant<T>
 	None,
 }
 
-pub static DEFAULT_TTL: usize = 60 * 60; //1h (60 sec * 60 min)
-pub static LONG_TTL: usize = 60 * 60 * 24; //24 h
-pub static SHORT_TTL: usize = 60 * 5; //5 min
+pub const DEFAULT_TTL: usize = 60 * 60; //1h (60 sec * 60 min)
+pub const LONG_TTL: usize = 60 * 60 * 24; //24 h
+pub const SHORT_TTL: usize = 60 * 5; //5 min
