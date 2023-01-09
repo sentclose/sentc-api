@@ -206,21 +206,22 @@ macro_rules! set_params_vec_outer {
 //__________________________________________________________________________________________________
 
 //impl for one tuple structs
-pub struct I32Entity(pub i32);
+
+pub struct TupleEntity<T>(pub T);
 
 #[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for I32Entity
+impl<T: mysql_async::prelude::FromValue> mysql_async::prelude::FromRow for TupleEntity<T>
 {
 	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
 	where
 		Self: Sized,
 	{
-		Ok(Self(crate::take_or_err!(row, 0, i32)))
+		Ok(Self(crate::take_or_err!(row, 0, T)))
 	}
 }
 
 #[cfg(feature = "sqlite")]
-impl crate::db::FromSqliteRow for I32Entity
+impl<T: rusqlite::types::FromSql> crate::db::FromSqliteRow for TupleEntity<T>
 {
 	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::db::FormSqliteRowError>
 	where
@@ -237,64 +238,8 @@ impl crate::db::FromSqliteRow for I32Entity
 	}
 }
 
-pub struct StringEntity(pub String);
+pub type StringEntity = TupleEntity<String>;
 
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for StringEntity
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self(crate::take_or_err!(row, 0, String)))
-	}
-}
+pub type I32Entity = TupleEntity<i32>;
 
-#[cfg(feature = "sqlite")]
-impl crate::db::FromSqliteRow for StringEntity
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self(match row.get(0) {
-			Ok(v) => v,
-			Err(e) => {
-				return Err(crate::db::FormSqliteRowError {
-					msg: format!("{:?}", e),
-				})
-			},
-		}))
-	}
-}
-
-pub struct I64Entity(pub i64);
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for I64Entity
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self(crate::take_or_err!(row, 0, i64)))
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl crate::db::FromSqliteRow for I64Entity
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, crate::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self(match row.get(0) {
-			Ok(v) => v,
-			Err(e) => {
-				return Err(crate::db::FormSqliteRowError {
-					msg: format!("{:?}", e),
-				})
-			},
-		}))
-	}
-}
+pub type I64Entity = TupleEntity<i64>;
