@@ -7,11 +7,11 @@ use crate::file::file_entities::{FileExternalStorageUrl, FileMetaData, FilePartL
 use crate::file::file_service::FILE_BELONGS_TO_TYPE_GROUP;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
-static MAX_CHUNK_SIZE: usize = 5 * 1024 * 1024;
-static MAX_SESSION_ALIVE_TIME: u128 = 24 * 60 * 60 * 1000;
-static FILE_STATUS_AVAILABLE: i32 = 1;
-static FILE_STATUS_TO_DELETE: i32 = 0;
-//static FILE_STATUS_DISABLED: i32 = 1;
+const MAX_CHUNK_SIZE: usize = 5 * 1024 * 1024;
+const MAX_SESSION_ALIVE_TIME: u128 = 24 * 60 * 60 * 1000;
+const FILE_STATUS_AVAILABLE: i32 = 1;
+const FILE_STATUS_TO_DELETE: i32 = 0;
+//const FILE_STATUS_DISABLED: i32 = 1;
 
 pub(super) async fn register_file(
 	key_id: SymKeyId,

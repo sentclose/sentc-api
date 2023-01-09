@@ -10,9 +10,9 @@ use crate::user::user_service;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 //same values as in file entity
-pub(super) static FILE_BELONGS_TO_TYPE_NONE: i32 = 0;
-pub(super) static FILE_BELONGS_TO_TYPE_GROUP: i32 = 1;
-pub(super) static FILE_BELONGS_TO_TYPE_USER: i32 = 2;
+pub(super) const FILE_BELONGS_TO_TYPE_NONE: i32 = 0;
+pub(super) const FILE_BELONGS_TO_TYPE_GROUP: i32 = 1;
+pub(super) const FILE_BELONGS_TO_TYPE_USER: i32 = 2;
 
 pub async fn register_file(input: FileRegisterInput, app_id: AppId, user_id: UserId, group_id: Option<GroupId>) -> AppRes<FileRegisterOutput>
 {

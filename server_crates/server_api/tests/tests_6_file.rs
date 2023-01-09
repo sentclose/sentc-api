@@ -64,9 +64,9 @@ pub struct TestData
 	pub test_file_small: Vec<u8>,
 }
 
-static TEST_SMALL_FILE_SIZE: usize = 1024 * 1024; //1mb (to test files without chunking)
-static TEST_MID_FILE_SIZE: usize = 1024 * 1024 * 5; //5 mb exact chunking
-static TEST_BIG_FILE_SIZE: usize = 1024 * 1024 * 14; //14 mb
+const TEST_SMALL_FILE_SIZE: usize = 1024 * 1024; //1mb (to test files without chunking)
+const TEST_MID_FILE_SIZE: usize = 1024 * 1024 * 5; //5 mb exact chunking
+const TEST_BIG_FILE_SIZE: usize = 1024 * 1024 * 14; //14 mb
 
 static TEST_STATE: OnceCell<RwLock<TestData>> = OnceCell::const_new();
 
