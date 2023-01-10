@@ -74,3 +74,11 @@ When creating a new return entity which should returned to the client via json, 
 After this, create a data struct in the common data mod. Make sure both are sync. 
 
 A Tip: use into trait for the entity but don't use the actual into. When the data struct or the entity struct changed, rust compiler will err.
+
+## Dev
+
+For dev, it is recommended to compile sqlite into a new target dir.
+
+````shell
+cargo run --features=sqlite --no-default-features --target-dir=target_sqlite
+````
