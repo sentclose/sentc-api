@@ -231,10 +231,10 @@ impl ApiErrorCodes
 #[derive(Debug)]
 pub struct HttpErr
 {
-	http_status_code: u16,
+	pub http_status_code: u16,
 	pub api_error_code: ApiErrorCodes,
 	pub msg: String,
-	debug_msg: Option<String>,
+	pub debug_msg: Option<String>,
 }
 
 impl From<CoreError> for HttpErr
