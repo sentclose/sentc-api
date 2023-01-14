@@ -1,8 +1,6 @@
 use sentc_crypto_common::user::{CaptchaInput, DoneLoginLightOutput, ResetPasswordData, UserDeviceRegisterInput};
 use sentc_crypto_common::{AppId, CustomerId};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "server")]
-use server_core::take_or_err;
 
 #[derive(Serialize, Deserialize)]
 pub struct CustomerData
@@ -92,9 +90,9 @@ impl mysql_async::prelude::FromRow for CustomerAppList
 		Self: Sized,
 	{
 		Ok(Self {
-			id: take_or_err!(row, 0, String),
-			identifier: take_or_err!(row, 1, String),
-			time: take_or_err!(row, 2, u128),
+			id: server_core::take_or_err!(row, 0, String),
+			identifier: server_core::take_or_err!(row, 1, String),
+			time: server_core::take_or_err!(row, 2, u128),
 		})
 	}
 }
@@ -107,7 +105,7 @@ impl server_core::db::FromSqliteRow for CustomerAppList
 	where
 		Self: Sized,
 	{
-		let time: String = take_or_err!(row, 2);
+		let time: String = server_core::take_or_err!(row, 2);
 		let time: u128 = time.parse().map_err(|e| {
 			server_core::db::FormSqliteRowError {
 				msg: format!("err in db fetch: {:?}", e),
@@ -115,8 +113,8 @@ impl server_core::db::FromSqliteRow for CustomerAppList
 		})?;
 
 		Ok(Self {
-			id: take_or_err!(row, 0),
-			identifier: take_or_err!(row, 1),
+			id: server_core::take_or_err!(row, 0),
+			identifier: server_core::take_or_err!(row, 1),
 			time,
 		})
 	}
