@@ -75,7 +75,5 @@ default = ["mysql"]
 mysql = ["server-core/mysql","server_api_common/mysql","mysql_async","mysql_common"]
 sqlite = ["server-core/sqlite","server_api_common/sqlite","rusqlite"]
 
-embedded = []
-
 # When enabled send the custumor resgistration mail
 send_mail = ["server-core/send_mail"]
