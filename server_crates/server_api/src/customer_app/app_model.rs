@@ -6,8 +6,8 @@ use server_core::{get_time, set_params};
 use uuid::Uuid;
 
 use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppJwt, AuthWithToken};
+use crate::sentc_app_entities::AppFileOptions;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
-use crate::AppFileOptions;
 
 pub(super) async fn get_app_options(app_id: AppId) -> AppRes<AppOptions>
 {
