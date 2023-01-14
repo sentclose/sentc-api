@@ -2,8 +2,8 @@ use ring::digest::{Context, SHA256};
 use rustgram::Request;
 
 use crate::customer_app::app_entities::AppData;
+use crate::sentc_app_entities::AuthWithToken;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
-use crate::AuthWithToken;
 
 pub const HASH_ALG: &str = "SHA256";
 

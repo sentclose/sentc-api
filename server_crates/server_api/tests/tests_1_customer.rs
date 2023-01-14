@@ -13,6 +13,7 @@ use sentc_crypto_common::user::{
 use sentc_crypto_common::ServerOutput;
 use server_api::util::api_res::ApiErrorCodes;
 use server_api_common::customer::{CustomerData, CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput, CustomerUpdateInput};
+use server_core::db::StringEntity;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{auth_header, get_captcha, get_url, login_customer};
@@ -770,10 +771,10 @@ async fn test_16_reset_customer_password()
 	//language=SQL
 	let sql = "SELECT email_token FROM sentc_customer WHERE id = ?";
 
-	let token: Option<CustomerEmailToken> = server_core::db::query_first(sql, server_core::set_params!(id))
+	let token: Option<StringEntity> = server_core::db::query_first(sql, server_core::set_params!(id))
 		.await
 		.unwrap();
-	let token = token.unwrap().email_token;
+	let token = token.unwrap().0;
 
 	//make a fake register and login to get fake decrypted private keys, then do the pw reset like normal user
 	//use a rand pw to generate the fake keys
@@ -858,37 +859,6 @@ async fn test_16_reset_customer_password()
 
 	customer.customer_data = Some(login_data);
 	customer.customer_pw = new_pw.to_string();
-}
-
-pub(crate) struct CustomerEmailToken
-{
-	pub email_token: String,
-}
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for CustomerEmailToken
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			email_token: server_core::take_or_err!(row, 0, String),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for CustomerEmailToken
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			email_token: server_core::take_or_err!(row, 0),
-		})
-	}
 }
 
 //__________________________________________________________________________________________________

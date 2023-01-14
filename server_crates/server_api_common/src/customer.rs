@@ -1,8 +1,6 @@
 use sentc_crypto_common::user::{CaptchaInput, DoneLoginLightOutput, ResetPasswordData, UserDeviceRegisterInput};
 use sentc_crypto_common::{AppId, CustomerId};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "server")]
-use server_core::take_or_err;
 
 #[derive(Serialize, Deserialize)]
 pub struct CustomerData
@@ -85,16 +83,16 @@ pub struct CustomerAppList
 
 #[cfg(feature = "server")]
 #[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for CustomerAppList
+impl server_core::db::mysql_async_export::prelude::FromRow for CustomerAppList
 {
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	fn from_row_opt(mut row: server_core::db::mysql_async_export::Row) -> Result<Self, server_core::db::mysql_async_export::FromRowError>
 	where
 		Self: Sized,
 	{
 		Ok(Self {
-			id: take_or_err!(row, 0, String),
-			identifier: take_or_err!(row, 1, String),
-			time: take_or_err!(row, 2, u128),
+			id: server_core::take_or_err!(row, 0, String),
+			identifier: server_core::take_or_err!(row, 1, String),
+			time: server_core::take_or_err!(row, 2, u128),
 		})
 	}
 }
@@ -103,21 +101,14 @@ impl mysql_async::prelude::FromRow for CustomerAppList
 #[cfg(feature = "sqlite")]
 impl server_core::db::FromSqliteRow for CustomerAppList
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	fn from_row_opt(row: &server_core::db::rusqlite_export::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
-		let time: String = take_or_err!(row, 2);
-		let time: u128 = time.parse().map_err(|e| {
-			server_core::db::FormSqliteRowError {
-				msg: format!("err in db fetch: {:?}", e),
-			}
-		})?;
-
 		Ok(Self {
-			id: take_or_err!(row, 0),
-			identifier: take_or_err!(row, 1),
-			time,
+			id: server_core::take_or_err!(row, 0),
+			identifier: server_core::take_or_err!(row, 1),
+			time: server_core::take_or_err_u128!(row, 2),
 		})
 	}
 }

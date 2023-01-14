@@ -52,9 +52,9 @@ pub struct InternalUserGroupData
 }
 
 #[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for InternalUserGroupData
+impl server_core::db::mysql_async_export::prelude::FromRow for InternalUserGroupData
 {
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	fn from_row_opt(mut row: server_core::db::mysql_async_export::Row) -> Result<Self, server_core::db::mysql_async_export::FromRowError>
 	where
 		Self: Sized,
 	{
@@ -74,7 +74,7 @@ impl mysql_async::prelude::FromRow for InternalUserGroupData
 #[cfg(feature = "sqlite")]
 impl server_core::db::FromSqliteRow for InternalUserGroupData
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	fn from_row_opt(row: &server_core::db::rusqlite_export::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
@@ -210,9 +210,9 @@ impl Into<GroupKeyServerOutput> for GroupUserKeys
 }
 
 #[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for GroupUserKeys
+impl server_core::db::mysql_async_export::prelude::FromRow for GroupUserKeys
 {
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	fn from_row_opt(mut row: server_core::db::mysql_async_export::Row) -> Result<Self, server_core::db::mysql_async_export::FromRowError>
 	where
 		Self: Sized,
 	{
@@ -239,7 +239,7 @@ impl mysql_async::prelude::FromRow for GroupUserKeys
 #[cfg(feature = "sqlite")]
 impl server_core::db::FromSqliteRow for GroupUserKeys
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	fn from_row_opt(row: &server_core::db::rusqlite_export::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{

@@ -26,11 +26,11 @@ use sentc_crypto_common::{AppId, DeviceId, GroupId, SymKeyId, UserId};
 use crate::group::group_entities::{GroupUserKeys, InternalGroupData, InternalGroupDataComplete, InternalUserGroupData};
 use crate::group::group_user_service::NewUserType;
 use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
+use crate::sentc_app_entities::AppData;
 use crate::user::jwt::create_jwt;
 use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserJwtEntity, SERVER_RANDOM_VALUE};
 use crate::user::user_model;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
-use crate::AppData;
 
 pub enum UserAction
 {

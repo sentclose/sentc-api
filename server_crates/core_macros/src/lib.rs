@@ -27,9 +27,9 @@ pub fn maria_db_impl(input: TokenStream) -> TokenStream
 
 	//display the properties of the loop in the Self return block
 	let expand = quote! {
-		impl mysql_async::prelude::FromRow for #struct_name
+		impl server_core::db::mysql_async_export::prelude::FromRow for #struct_name
 		{
-			fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+			fn from_row_opt(mut row: server_core::db::mysql_async_export::Row) -> Result<Self, server_core::db::mysql_async_export::FromRowError>
 			where
 				Self: Sized,
 			{
@@ -78,7 +78,7 @@ pub fn sqlite_impl(input: TokenStream) -> TokenStream
 	let expand = quote! {
 		impl server_core::db::FromSqliteRow for #struct_name
 		{
-			fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+			fn from_row_opt(row: &server_core::db::rusqlite_export::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 			where
 				Self: Sized,
 			{

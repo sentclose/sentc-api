@@ -1,8 +1,6 @@
 use sentc_crypto_common::{AppId, CustomerId, JwtKeyId, SignKeyPairId};
 use serde::{Deserialize, Serialize};
 use serde_json::to_string;
-#[cfg(feature = "server")]
-use server_core::take_or_err;
 
 use crate::customer::CustomerAppList;
 
@@ -209,62 +207,62 @@ impl AppOptions
 
 #[cfg(feature = "server")]
 #[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for AppOptions
+impl server_core::db::mysql_async_export::prelude::FromRow for AppOptions
 {
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	fn from_row_opt(mut row: server_core::db::mysql_async_export::Row) -> Result<Self, server_core::db::mysql_async_export::FromRowError>
 	where
 		Self: Sized,
 	{
 		Ok(Self {
-			group_create: take_or_err!(row, 0, i32),
-			group_get: take_or_err!(row, 1, i32),
-			group_user_keys: take_or_err!(row, 2, i32),
-			group_user_update_check: take_or_err!(row, 3, i32),
+			group_create: server_core::take_or_err!(row, 0, i32),
+			group_get: server_core::take_or_err!(row, 1, i32),
+			group_user_keys: server_core::take_or_err!(row, 2, i32),
+			group_user_update_check: server_core::take_or_err!(row, 3, i32),
 
-			group_invite: take_or_err!(row, 4, i32),
-			group_reject_invite: take_or_err!(row, 5, i32),
-			group_accept_invite: take_or_err!(row, 6, i32),
+			group_invite: server_core::take_or_err!(row, 4, i32),
+			group_reject_invite: server_core::take_or_err!(row, 5, i32),
+			group_accept_invite: server_core::take_or_err!(row, 6, i32),
 
-			group_join_req: take_or_err!(row, 7, i32),
-			group_accept_join_req: take_or_err!(row, 8, i32),
-			group_reject_join_req: take_or_err!(row, 9, i32),
+			group_join_req: server_core::take_or_err!(row, 7, i32),
+			group_accept_join_req: server_core::take_or_err!(row, 8, i32),
+			group_reject_join_req: server_core::take_or_err!(row, 9, i32),
 
-			group_key_rotation: take_or_err!(row, 10, i32),
+			group_key_rotation: server_core::take_or_err!(row, 10, i32),
 
-			group_user_delete: take_or_err!(row, 11, i32),
+			group_user_delete: server_core::take_or_err!(row, 11, i32),
 
-			group_delete: take_or_err!(row, 12, i32),
+			group_delete: server_core::take_or_err!(row, 12, i32),
 
-			group_leave: take_or_err!(row, 13, i32),
-			group_change_rank: take_or_err!(row, 14, i32),
+			group_leave: server_core::take_or_err!(row, 13, i32),
+			group_change_rank: server_core::take_or_err!(row, 14, i32),
 
-			user_exists: take_or_err!(row, 15, i32),
-			user_register: take_or_err!(row, 16, i32),
-			user_delete: take_or_err!(row, 17, i32),
-			user_update: take_or_err!(row, 18, i32),
-			user_change_password: take_or_err!(row, 19, i32),
-			user_reset_password: take_or_err!(row, 20, i32),
-			user_prepare_login: take_or_err!(row, 21, i32),
-			user_done_login: take_or_err!(row, 22, i32),
-			user_public_data: take_or_err!(row, 23, i32),
-			user_jwt_refresh: take_or_err!(row, 24, i32),
+			user_exists: server_core::take_or_err!(row, 15, i32),
+			user_register: server_core::take_or_err!(row, 16, i32),
+			user_delete: server_core::take_or_err!(row, 17, i32),
+			user_update: server_core::take_or_err!(row, 18, i32),
+			user_change_password: server_core::take_or_err!(row, 19, i32),
+			user_reset_password: server_core::take_or_err!(row, 20, i32),
+			user_prepare_login: server_core::take_or_err!(row, 21, i32),
+			user_done_login: server_core::take_or_err!(row, 22, i32),
+			user_public_data: server_core::take_or_err!(row, 23, i32),
+			user_jwt_refresh: server_core::take_or_err!(row, 24, i32),
 
-			key_register: take_or_err!(row, 25, i32),
-			key_get: take_or_err!(row, 26, i32),
+			key_register: server_core::take_or_err!(row, 25, i32),
+			key_get: server_core::take_or_err!(row, 26, i32),
 
-			group_auto_invite: take_or_err!(row, 27, i32),
-			group_list: take_or_err!(row, 28, i32),
+			group_auto_invite: server_core::take_or_err!(row, 27, i32),
+			group_list: server_core::take_or_err!(row, 28, i32),
 
-			file_register: take_or_err!(row, 29, i32),
-			file_part_upload: take_or_err!(row, 30, i32),
-			file_get: take_or_err!(row, 31, i32),
-			file_part_download: take_or_err!(row, 32, i32),
-			user_device_register: take_or_err!(row, 33, i32),
-			user_device_delete: take_or_err!(row, 34, i32),
-			user_device_list: take_or_err!(row, 35, i32),
-			group_invite_stop: take_or_err!(row, 36, i32),
+			file_register: server_core::take_or_err!(row, 29, i32),
+			file_part_upload: server_core::take_or_err!(row, 30, i32),
+			file_get: server_core::take_or_err!(row, 31, i32),
+			file_part_download: server_core::take_or_err!(row, 32, i32),
+			user_device_register: server_core::take_or_err!(row, 33, i32),
+			user_device_delete: server_core::take_or_err!(row, 34, i32),
+			user_device_list: server_core::take_or_err!(row, 35, i32),
+			group_invite_stop: server_core::take_or_err!(row, 36, i32),
 
-			user_key_update: take_or_err!(row, 37, i32),
+			user_key_update: server_core::take_or_err!(row, 37, i32),
 		})
 	}
 }
@@ -273,60 +271,60 @@ impl mysql_async::prelude::FromRow for AppOptions
 #[cfg(feature = "sqlite")]
 impl server_core::db::FromSqliteRow for AppOptions
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	fn from_row_opt(row: &server_core::db::rusqlite_export::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		Ok(Self {
-			group_create: take_or_err!(row, 0),
-			group_get: take_or_err!(row, 1),
-			group_user_keys: take_or_err!(row, 2),
-			group_user_update_check: take_or_err!(row, 3),
+			group_create: server_core::take_or_err!(row, 0),
+			group_get: server_core::take_or_err!(row, 1),
+			group_user_keys: server_core::take_or_err!(row, 2),
+			group_user_update_check: server_core::take_or_err!(row, 3),
 
-			group_invite: take_or_err!(row, 4),
-			group_reject_invite: take_or_err!(row, 5),
-			group_accept_invite: take_or_err!(row, 6),
+			group_invite: server_core::take_or_err!(row, 4),
+			group_reject_invite: server_core::take_or_err!(row, 5),
+			group_accept_invite: server_core::take_or_err!(row, 6),
 
-			group_join_req: take_or_err!(row, 7),
-			group_accept_join_req: take_or_err!(row, 8),
-			group_reject_join_req: take_or_err!(row, 9),
+			group_join_req: server_core::take_or_err!(row, 7),
+			group_accept_join_req: server_core::take_or_err!(row, 8),
+			group_reject_join_req: server_core::take_or_err!(row, 9),
 
-			group_key_rotation: take_or_err!(row, 10),
+			group_key_rotation: server_core::take_or_err!(row, 10),
 
-			group_user_delete: take_or_err!(row, 11),
+			group_user_delete: server_core::take_or_err!(row, 11),
 
-			group_delete: take_or_err!(row, 12),
+			group_delete: server_core::take_or_err!(row, 12),
 
-			group_leave: take_or_err!(row, 13),
-			group_change_rank: take_or_err!(row, 14),
+			group_leave: server_core::take_or_err!(row, 13),
+			group_change_rank: server_core::take_or_err!(row, 14),
 
-			user_exists: take_or_err!(row, 15),
-			user_register: take_or_err!(row, 16),
-			user_delete: take_or_err!(row, 17),
-			user_update: take_or_err!(row, 18),
-			user_change_password: take_or_err!(row, 19),
-			user_reset_password: take_or_err!(row, 20),
-			user_prepare_login: take_or_err!(row, 21),
-			user_done_login: take_or_err!(row, 22),
-			user_public_data: take_or_err!(row, 23),
-			user_jwt_refresh: take_or_err!(row, 24),
+			user_exists: server_core::take_or_err!(row, 15),
+			user_register: server_core::take_or_err!(row, 16),
+			user_delete: server_core::take_or_err!(row, 17),
+			user_update: server_core::take_or_err!(row, 18),
+			user_change_password: server_core::take_or_err!(row, 19),
+			user_reset_password: server_core::take_or_err!(row, 20),
+			user_prepare_login: server_core::take_or_err!(row, 21),
+			user_done_login: server_core::take_or_err!(row, 22),
+			user_public_data: server_core::take_or_err!(row, 23),
+			user_jwt_refresh: server_core::take_or_err!(row, 24),
 
-			key_register: take_or_err!(row, 25),
-			key_get: take_or_err!(row, 26),
+			key_register: server_core::take_or_err!(row, 25),
+			key_get: server_core::take_or_err!(row, 26),
 
-			group_auto_invite: take_or_err!(row, 27),
-			group_list: take_or_err!(row, 28),
+			group_auto_invite: server_core::take_or_err!(row, 27),
+			group_list: server_core::take_or_err!(row, 28),
 
-			file_register: take_or_err!(row, 29),
-			file_part_upload: take_or_err!(row, 30),
-			file_get: take_or_err!(row, 31),
-			file_part_download: take_or_err!(row, 32),
-			user_device_register: take_or_err!(row, 33),
-			user_device_delete: take_or_err!(row, 34),
-			user_device_list: take_or_err!(row, 35),
-			group_invite_stop: take_or_err!(row, 36),
+			file_register: server_core::take_or_err!(row, 29),
+			file_part_upload: server_core::take_or_err!(row, 30),
+			file_get: server_core::take_or_err!(row, 31),
+			file_part_download: server_core::take_or_err!(row, 32),
+			user_device_register: server_core::take_or_err!(row, 33),
+			user_device_delete: server_core::take_or_err!(row, 34),
+			user_device_list: server_core::take_or_err!(row, 35),
+			group_invite_stop: server_core::take_or_err!(row, 36),
 
-			user_key_update: take_or_err!(row, 37),
+			user_key_update: server_core::take_or_err!(row, 37),
 		})
 	}
 }
@@ -424,18 +422,18 @@ pub struct AppJwtData
 
 #[cfg(feature = "server")]
 #[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for AppJwtData
+impl server_core::db::mysql_async_export::prelude::FromRow for AppJwtData
 {
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	fn from_row_opt(mut row: server_core::db::mysql_async_export::Row) -> Result<Self, server_core::db::mysql_async_export::FromRowError>
 	where
 		Self: Sized,
 	{
 		Ok(Self {
-			jwt_key_id: take_or_err!(row, 0, String),
-			jwt_alg: take_or_err!(row, 1, String),
-			time: take_or_err!(row, 2, u128),
-			sign_key: take_or_err!(row, 3, String),
-			verify_key: take_or_err!(row, 4, String),
+			jwt_key_id: server_core::take_or_err!(row, 0, String),
+			jwt_alg: server_core::take_or_err!(row, 1, String),
+			time: server_core::take_or_err!(row, 2, u128),
+			sign_key: server_core::take_or_err!(row, 3, String),
+			verify_key: server_core::take_or_err!(row, 4, String),
 		})
 	}
 }
@@ -444,23 +442,16 @@ impl mysql_async::prelude::FromRow for AppJwtData
 #[cfg(feature = "sqlite")]
 impl server_core::db::FromSqliteRow for AppJwtData
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	fn from_row_opt(row: &server_core::db::rusqlite_export::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
-		let time: String = take_or_err!(row, 2);
-		let time: u128 = time.parse().map_err(|e| {
-			server_core::db::FormSqliteRowError {
-				msg: format!("err in db fetch: {:?}", e),
-			}
-		})?;
-
 		Ok(Self {
-			jwt_key_id: take_or_err!(row, 0),
-			jwt_alg: take_or_err!(row, 1),
-			time,
-			sign_key: take_or_err!(row, 3),
-			verify_key: take_or_err!(row, 4),
+			jwt_key_id: server_core::take_or_err!(row, 0),
+			jwt_alg: server_core::take_or_err!(row, 1),
+			time: server_core::take_or_err_u128!(row, 2),
+			sign_key: server_core::take_or_err!(row, 3),
+			verify_key: server_core::take_or_err!(row, 4),
 		})
 	}
 }
@@ -505,14 +496,14 @@ impl AppFileOptionsInput
 
 #[cfg(feature = "server")]
 #[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for AppFileOptionsInput
+impl server_core::db::mysql_async_export::prelude::FromRow for AppFileOptionsInput
 {
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	fn from_row_opt(mut row: server_core::db::mysql_async_export::Row) -> Result<Self, server_core::db::mysql_async_export::FromRowError>
 	where
 		Self: Sized,
 	{
 		Ok(Self {
-			file_storage: take_or_err!(row, 0, i32),
+			file_storage: server_core::take_or_err!(row, 0, i32),
 			storage_url: server_core::take_or_err_opt!(row, 1, String),
 			auth_token: server_core::take_or_err_opt!(row, 2, String),
 		})
@@ -523,14 +514,14 @@ impl mysql_async::prelude::FromRow for AppFileOptionsInput
 #[cfg(feature = "sqlite")]
 impl server_core::db::FromSqliteRow for AppFileOptionsInput
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	fn from_row_opt(row: &server_core::db::rusqlite_export::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		Ok(Self {
-			file_storage: take_or_err!(row, 0),
-			storage_url: take_or_err!(row, 1),
-			auth_token: take_or_err!(row, 2),
+			file_storage: server_core::take_or_err!(row, 0),
+			storage_url: server_core::take_or_err!(row, 1),
+			auth_token: server_core::take_or_err!(row, 2),
 		})
 	}
 }
