@@ -16,22 +16,27 @@ mod routes;
 mod user;
 pub mod util;
 
-pub use content_management::{content_controller as sentc_content_controller, content_service as sentc_content_service};
-pub use customer::customer_controller as sentc_customer_controller;
+pub use content_management::{
+	content_controller as sentc_content_controller,
+	content_entity as sentc_content_entities,
+	content_service as sentc_content_service,
+};
+pub use customer::{customer_controller as sentc_customer_controller, customer_entities as sentc_customer_entities};
 pub use customer_app::{app_controller as sentc_app_controller, app_entities as sentc_app_entities, app_service as sentc_customer_app_service};
 pub use file::{file_controller as sentc_file_controller, file_service as sentc_file_service, file_worker as sentc_file_worker};
 pub use group::{
 	group_controller as sentc_group_controller,
+	group_entities as sentc_group_entities,
 	group_key_rotation_controller as sentc_group_key_rotation_controller,
 	group_service as sentc_group_service,
 	group_user_controller as sentc_group_user_controller,
 	group_user_service as sentc_group_user_service,
 };
-pub use key_management::key_controller as sentc_key_controller;
+pub use key_management::{key_controller as sentc_key_controller, key_entity as sentc_key_entities};
 pub use middleware::app_token::app_token_transform as sentc_app_mw;
 pub use middleware::group::group_transform as sentc_group_mw;
 pub use middleware::jwt::{jwt_optional_transform as sentc_jwt_optional_mw, jwt_transform as sentc_jwt_mw};
-pub use user::{user_controller as sentc_user_controller, user_service as sentc_user_service};
+pub use user::{user_controller as sentc_user_controller, user_entities as sentc_user_entities, user_service as sentc_user_service};
 
 pub async fn not_found_handler(_req: Request) -> util::api_res::JRes<String>
 {

@@ -1,5 +1,5 @@
 pub mod group_controller;
-pub(crate) mod group_entities;
+pub mod group_entities;
 mod group_key_rotation;
 pub(crate) mod group_model;
 pub mod group_service;
