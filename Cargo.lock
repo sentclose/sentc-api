@@ -1950,12 +1950,9 @@ dependencies = [
  "dotenv",
  "hyper",
  "jsonwebtoken",
- "mysql_async",
- "mysql_common",
  "rand",
  "reqwest",
  "ring",
- "rusqlite",
  "rustgram",
  "sentc-crypto",
  "sentc-crypto-common 0.1.0",
@@ -1982,8 +1979,6 @@ dependencies = [
 name = "server_api_common"
 version = "0.1.0"
 dependencies = [
- "mysql_async",
- "rusqlite",
  "sentc-crypto-common 0.1.0",
  "serde",
  "serde_json",

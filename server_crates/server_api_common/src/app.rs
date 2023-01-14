@@ -207,9 +207,9 @@ impl AppOptions
 
 #[cfg(feature = "server")]
 #[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for AppOptions
+impl server_core::db::mysql_async_export::prelude::FromRow for AppOptions
 {
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	fn from_row_opt(mut row: server_core::db::mysql_async_export::Row) -> Result<Self, server_core::db::mysql_async_export::FromRowError>
 	where
 		Self: Sized,
 	{
@@ -271,7 +271,7 @@ impl mysql_async::prelude::FromRow for AppOptions
 #[cfg(feature = "sqlite")]
 impl server_core::db::FromSqliteRow for AppOptions
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	fn from_row_opt(row: &server_core::db::rusqlite_export::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
@@ -422,9 +422,9 @@ pub struct AppJwtData
 
 #[cfg(feature = "server")]
 #[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for AppJwtData
+impl server_core::db::mysql_async_export::prelude::FromRow for AppJwtData
 {
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	fn from_row_opt(mut row: server_core::db::mysql_async_export::Row) -> Result<Self, server_core::db::mysql_async_export::FromRowError>
 	where
 		Self: Sized,
 	{
@@ -442,21 +442,14 @@ impl mysql_async::prelude::FromRow for AppJwtData
 #[cfg(feature = "sqlite")]
 impl server_core::db::FromSqliteRow for AppJwtData
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	fn from_row_opt(row: &server_core::db::rusqlite_export::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
-		let time: String = server_core::take_or_err!(row, 2);
-		let time: u128 = time.parse().map_err(|e| {
-			server_core::db::FormSqliteRowError {
-				msg: format!("err in db fetch: {:?}", e),
-			}
-		})?;
-
 		Ok(Self {
 			jwt_key_id: server_core::take_or_err!(row, 0),
 			jwt_alg: server_core::take_or_err!(row, 1),
-			time,
+			time: server_core::take_or_err_u128!(row, 2),
 			sign_key: server_core::take_or_err!(row, 3),
 			verify_key: server_core::take_or_err!(row, 4),
 		})
@@ -503,9 +496,9 @@ impl AppFileOptionsInput
 
 #[cfg(feature = "server")]
 #[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for AppFileOptionsInput
+impl server_core::db::mysql_async_export::prelude::FromRow for AppFileOptionsInput
 {
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	fn from_row_opt(mut row: server_core::db::mysql_async_export::Row) -> Result<Self, server_core::db::mysql_async_export::FromRowError>
 	where
 		Self: Sized,
 	{
@@ -521,7 +514,7 @@ impl mysql_async::prelude::FromRow for AppFileOptionsInput
 #[cfg(feature = "sqlite")]
 impl server_core::db::FromSqliteRow for AppFileOptionsInput
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	fn from_row_opt(row: &server_core::db::rusqlite_export::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{

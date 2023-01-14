@@ -1,5 +1,3 @@
-#[cfg(feature = "mysql")]
-use mysql_async::prelude::Queryable;
 use rand::RngCore;
 use reqwest::header::AUTHORIZATION;
 use sentc_crypto::group::GroupKeyData;
@@ -11,6 +9,8 @@ use sentc_crypto_common::{GroupId, ServerOutput};
 use server_api::sentc_file_worker;
 use server_api_common::app::AppRegisterOutput;
 use server_api_common::customer::CustomerDoneLoginOutput;
+#[cfg(feature = "mysql")]
+use server_core::db::mysql_async_export::prelude::Queryable;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{
@@ -785,9 +785,9 @@ struct FileDeleteCheck
 }
 
 #[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for FileDeleteCheck
+impl server_core::db::mysql_async_export::prelude::FromRow for FileDeleteCheck
 {
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	fn from_row_opt(mut row: server_core::db::mysql_async_export::Row) -> Result<Self, server_core::db::mysql_async_export::FromRowError>
 	where
 		Self: Sized,
 	{
@@ -801,20 +801,13 @@ impl mysql_async::prelude::FromRow for FileDeleteCheck
 #[cfg(feature = "sqlite")]
 impl server_core::db::FromSqliteRow for FileDeleteCheck
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	fn from_row_opt(row: &server_core::db::rusqlite_export::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
-		let time: String = server_core::take_or_err!(row, 1);
-		let time: u128 = time.parse().map_err(|e| {
-			server_core::db::FormSqliteRowError {
-				msg: format!("err in db fetch: {:?}", e),
-			}
-		})?;
-
 		Ok(Self {
 			status: server_core::take_or_err!(row, 0),
-			deleted_at: time,
+			deleted_at: server_core::take_or_err_u128!(row, 1),
 		})
 	}
 }
@@ -893,10 +886,11 @@ async fn test_20_delete_a_file()
 		let mysql_host = std::env::var("DB_HOST").unwrap();
 		let db = std::env::var("DB_NAME").unwrap();
 
-		let mut conn =
-			mysql_async::Conn::new(mysql_async::Opts::try_from(format!("mysql://{}:{}@{}/{}", user, pw, mysql_host, db).as_str()).unwrap())
-				.await
-				.unwrap();
+		let mut conn = server_core::db::mysql_async_export::Conn::new(
+			server_core::db::mysql_async_export::Opts::try_from(format!("mysql://{}:{}@{}/{}", user, pw, mysql_host, db).as_str()).unwrap(),
+		)
+		.await
+		.unwrap();
 
 		//language=SQL
 		let sql = "SELECT status,delete_at FROM sentc_file WHERE id = ?";
@@ -1012,10 +1006,11 @@ async fn test_21_delete_file_via_group_delete()
 		let mysql_host = std::env::var("DB_HOST").unwrap();
 		let db = std::env::var("DB_NAME").unwrap();
 
-		let mut conn =
-			mysql_async::Conn::new(mysql_async::Opts::try_from(format!("mysql://{}:{}@{}/{}", user, pw, mysql_host, db).as_str()).unwrap())
-				.await
-				.unwrap();
+		let mut conn = server_core::db::mysql_async_export::Conn::new(
+			server_core::db::mysql_async_export::Opts::try_from(format!("mysql://{}:{}@{}/{}", user, pw, mysql_host, db).as_str()).unwrap(),
+		)
+		.await
+		.unwrap();
 
 		//language=SQL
 		let sql = "SELECT status,delete_at FROM sentc_file WHERE id = ?";

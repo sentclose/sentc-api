@@ -3,8 +3,6 @@
 use std::env;
 use std::time::Duration;
 
-#[cfg(feature = "mysql")]
-use mysql_async::prelude::Queryable;
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::group::{DoneGettingGroupKeysOutput, GroupKeyData, GroupOutData};
@@ -18,6 +16,9 @@ use sentc_crypto_common::user::{CaptchaCreateOutput, CaptchaInput, RegisterData,
 use sentc_crypto_common::{CustomerId, GroupId, ServerOutput, UserId};
 use server_api_common::app::{AppFileOptionsInput, AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
 use server_api_common::customer::{CustomerData, CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput};
+#[cfg(feature = "mysql")]
+use server_core::db::mysql_async_export::prelude::Queryable;
+use server_core::db::StringEntity;
 
 pub fn get_url(path: String) -> String
 {
@@ -27,37 +28,6 @@ pub fn get_url(path: String) -> String
 pub fn auth_header(jwt: &str) -> String
 {
 	format!("Bearer {}", jwt)
-}
-
-pub struct CaptchaInfoOut
-{
-	solution: String,
-}
-
-#[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for CaptchaInfoOut
-{
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			solution: server_core::take_or_err!(row, 0, String),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for CaptchaInfoOut
-{
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		Ok(Self {
-			solution: server_core::take_or_err!(row, 0),
-		})
-	}
 }
 
 pub async fn get_captcha(token: &str) -> CaptchaInput
@@ -98,12 +68,13 @@ pub async fn get_captcha(token: &str) -> CaptchaInput
 		let mysql_host = env::var("DB_HOST").unwrap();
 		let db = env::var("DB_NAME").unwrap();
 
-		let mut conn =
-			mysql_async::Conn::new(mysql_async::Opts::try_from(format!("mysql://{}:{}@{}/{}", user, pw, mysql_host, db).as_str()).unwrap())
-				.await
-				.unwrap();
+		let mut conn = server_core::db::mysql_async_export::Conn::new(
+			server_core::db::mysql_async_export::Opts::try_from(format!("mysql://{}:{}@{}/{}", user, pw, mysql_host, db).as_str()).unwrap(),
+		)
+		.await
+		.unwrap();
 
-		let solution: Option<CaptchaInfoOut> = conn
+		let solution: Option<StringEntity> = conn
 			.exec_first(sql, server_core::set_params!(out.captcha_id.clone()))
 			.await
 			.unwrap();
@@ -115,7 +86,7 @@ pub async fn get_captcha(token: &str) -> CaptchaInput
 	{
 		server_core::db::init_db().await;
 
-		let solution: Option<CaptchaInfoOut> = server_core::db::query_first(sql, server_core::set_params!(out.captcha_id.clone()))
+		let solution: Option<StringEntity> = server_core::db::query_first(sql, server_core::set_params!(out.captcha_id.clone()))
 			.await
 			.unwrap();
 
@@ -123,7 +94,7 @@ pub async fn get_captcha(token: &str) -> CaptchaInput
 	}
 
 	CaptchaInput {
-		captcha_solution: sol.solution,
+		captcha_solution: sol.0,
 		captcha_id: out.captcha_id,
 	}
 }

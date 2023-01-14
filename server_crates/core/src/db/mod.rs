@@ -123,7 +123,7 @@ transform the values like into_params_impl from mysql_common::params
 #[macro_export]
 macro_rules! set_params {
 	($( $param:expr ),+ $(,)?) => {{
-		 mysql_common::params::Params::Positional(vec![
+		 server_core::db::mysql_common_export::params::Params::Positional(vec![
 			 $($param.into(),)*
          ])
 	}};
@@ -133,13 +133,13 @@ macro_rules! set_params {
 #[macro_export]
 macro_rules! set_params_vec {
 	($vec:expr) => {{
-		let mut out: Vec<mysql_common::value::Value> = Vec::with_capacity($vec.len());
+		let mut out: Vec<server_core::db::mysql_common_export::value::Value> = Vec::with_capacity($vec.len());
 
 		for inp in $vec {
 			out.push(inp.0.into());
 		}
 
-		mysql_common::params::Params::Positional(out)
+		server_core::db::mysql_common_export::params::Params::Positional(out)
 	}};
 }
 
@@ -147,13 +147,13 @@ macro_rules! set_params_vec {
 #[macro_export]
 macro_rules! set_params_vec_outer {
 	($vec:expr) => {{
-		let mut out: Vec<mysql_common::value::Value> = Vec::with_capacity($vec.len());
+		let mut out: Vec<server_core::db::mysql_common_export::value::Value> = Vec::with_capacity($vec.len());
 
 		for inp in $vec {
 			out.push(inp.into());
 		}
 
-		mysql_common::params::Params::Positional(out)
+		server_core::db::mysql_common_export::params::Params::Positional(out)
 	}};
 }
 
@@ -168,7 +168,7 @@ macro_rules! set_params {
 		let mut tmp = Vec::new();
 
 		$(
-			tmp.push(rusqlite::types::Value::from($param));
+			tmp.push(server_core::db::rusqlite_export::types::Value::from($param));
 		)*
 
 		tmp
@@ -182,7 +182,7 @@ macro_rules! set_params_vec {
 		let mut tmp = Vec::with_capacity($vec.len());
 
 		for inp in $vec {
-			tmp.push(rusqlite::types::Value::from(inp.0))
+			tmp.push(server_core::db::rusqlite_export::types::Value::from(inp.0))
 		}
 
 		tmp
@@ -196,12 +196,19 @@ macro_rules! set_params_vec_outer {
 		let mut tmp = Vec::with_capacity($vec.len());
 
 		for inp in $vec {
-			tmp.push(rusqlite::types::Value::from(inp))
+			tmp.push(server_core::db::rusqlite_export::types::Value::from(inp))
 		}
 
 		tmp
 	}};
 }
+
+#[cfg(feature = "mysql")]
+pub use mysql_async as mysql_async_export;
+#[cfg(feature = "mysql")]
+pub use mysql_common as mysql_common_export;
+#[cfg(feature = "sqlite")]
+pub use rusqlite as rusqlite_export;
 
 //__________________________________________________________________________________________________
 
@@ -216,7 +223,15 @@ impl<T: mysql_async::prelude::FromValue> mysql_async::prelude::FromRow for Tuple
 	where
 		Self: Sized,
 	{
-		Ok(Self(crate::take_or_err!(row, 0, T)))
+		Ok(Self(match row.take_opt(0) {
+			Some(value) => {
+				match value {
+					Ok(ir) => ir,
+					Err(mysql_async::FromValueError(_value)) => return Err(mysql_async::FromRowError(row)),
+				}
+			},
+			None => return Err(mysql_async::FromRowError(row)),
+		}))
 	}
 }
 

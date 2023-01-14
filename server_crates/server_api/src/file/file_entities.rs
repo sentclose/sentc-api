@@ -52,9 +52,9 @@ impl Into<sentc_crypto_common::file::FileData> for FileMetaData
 }
 
 #[cfg(feature = "mysql")]
-impl mysql_async::prelude::FromRow for FileMetaData
+impl server_core::db::mysql_async_export::prelude::FromRow for FileMetaData
 {
-	fn from_row_opt(mut row: mysql_async::Row) -> Result<Self, mysql_async::FromRowError>
+	fn from_row_opt(mut row: server_core::db::mysql_async_export::Row) -> Result<Self, server_core::db::mysql_async_export::FromRowError>
 	where
 		Self: Sized,
 	{
@@ -83,7 +83,7 @@ impl mysql_async::prelude::FromRow for FileMetaData
 #[cfg(feature = "sqlite")]
 impl server_core::db::FromSqliteRow for FileMetaData
 {
-	fn from_row_opt(row: &rusqlite::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	fn from_row_opt(row: &server_core::db::rusqlite_export::Row) -> Result<Self, server_core::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
