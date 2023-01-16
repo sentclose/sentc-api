@@ -2,7 +2,7 @@ pub mod app_controller;
 pub mod app_entities;
 pub(crate) mod app_model;
 pub mod app_service;
-pub(crate) mod app_util;
+pub mod app_util;
 
 use rand::RngCore;
 

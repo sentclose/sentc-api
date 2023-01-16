@@ -58,7 +58,7 @@ pub enum Endpoint
 	FilePartDownload,
 }
 
-pub(crate) fn get_app_data_from_req(req: &Request) -> AppRes<&AppData>
+pub fn get_app_data_from_req(req: &Request) -> AppRes<&AppData>
 {
 	//this should always be there because it is checked in the app token mw
 	match req.extensions().get::<AppData>() {

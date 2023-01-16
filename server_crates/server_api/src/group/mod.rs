@@ -18,7 +18,7 @@ use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 pub const GROUP_TYPE_NORMAL: i32 = 0;
 pub const GROUP_TYPE_USER: i32 = 1;
 
-pub(crate) fn get_group_user_data_from_req(req: &Request) -> AppRes<&InternalGroupDataComplete>
+pub fn get_group_user_data_from_req(req: &Request) -> AppRes<&InternalGroupDataComplete>
 {
 	match req.extensions().get::<InternalGroupDataComplete>() {
 		Some(e) => Ok(e),

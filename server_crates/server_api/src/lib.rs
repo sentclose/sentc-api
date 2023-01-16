@@ -22,9 +22,15 @@ pub use content_management::{
 	content_service as sentc_content_service,
 };
 pub use customer::{customer_controller as sentc_customer_controller, customer_entities as sentc_customer_entities};
-pub use customer_app::{app_controller as sentc_app_controller, app_entities as sentc_app_entities, app_service as sentc_customer_app_service};
+pub use customer_app::{
+	app_controller as sentc_app_controller,
+	app_entities as sentc_app_entities,
+	app_service as sentc_customer_app_service,
+	app_util as sentc_app_utils,
+};
 pub use file::{file_controller as sentc_file_controller, file_service as sentc_file_service, file_worker as sentc_file_worker};
 pub use group::{
+	get_group_user_data_from_req,
 	group_controller as sentc_group_controller,
 	group_entities as sentc_group_entities,
 	group_key_rotation_controller as sentc_group_key_rotation_controller,
