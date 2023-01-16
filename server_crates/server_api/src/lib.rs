@@ -31,12 +31,19 @@ pub use group::{
 	group_service as sentc_group_service,
 	group_user_controller as sentc_group_user_controller,
 	group_user_service as sentc_group_user_service,
+	GROUP_TYPE_NORMAL,
+	GROUP_TYPE_USER,
 };
 pub use key_management::{key_controller as sentc_key_controller, key_entity as sentc_key_entities};
 pub use middleware::app_token::app_token_transform as sentc_app_mw;
 pub use middleware::group::group_transform as sentc_group_mw;
 pub use middleware::jwt::{jwt_optional_transform as sentc_jwt_optional_mw, jwt_transform as sentc_jwt_mw};
-pub use user::{user_controller as sentc_user_controller, user_entities as sentc_user_entities, user_service as sentc_user_service};
+pub use user::{
+	jwt as sentc_user_jwt_service,
+	user_controller as sentc_user_controller,
+	user_entities as sentc_user_entities,
+	user_service as sentc_user_service,
+};
 
 pub async fn not_found_handler(_req: Request) -> util::api_res::JRes<String>
 {
