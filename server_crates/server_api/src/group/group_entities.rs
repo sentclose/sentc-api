@@ -136,6 +136,9 @@ pub struct GroupServerData
 	pub joined_time: u128,
 	pub access_by: GroupUserAccessBy,
 	pub is_connected_group: bool,
+	pub encrypted_hmac_key: String,
+	pub encrypted_hmac_alg: String,
+	pub encrypted_hmac_encryption_key_id: SymKeyId, //what group key was used to encrypt this key
 }
 
 impl Into<sentc_crypto_common::group::GroupServerData> for GroupServerData
@@ -158,8 +161,22 @@ impl Into<sentc_crypto_common::group::GroupServerData> for GroupServerData
 			joined_time: self.joined_time,
 			access_by: self.access_by,
 			is_connected_group: self.is_connected_group,
+			encrypted_hmac_key: self.encrypted_hmac_key,
+			encrypted_hmac_alg: self.encrypted_hmac_alg,
+			encrypted_hmac_encryption_key_id: self.encrypted_hmac_encryption_key_id,
 		}
 	}
+}
+
+//__________________________________________________________________________________________________
+
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
+pub struct GroupHmacData
+{
+	pub encrypted_hmac_key: String,
+	pub encrypted_hmac_alg: String,
+	pub encrypted_hmac_encryption_key_id: SymKeyId,
 }
 
 //__________________________________________________________________________________________________

@@ -13,6 +13,7 @@ use crate::group::group_entities::{
 	ListGroups,
 };
 use crate::group::{GROUP_TYPE_NORMAL, GROUP_TYPE_USER};
+use crate::sentc_group_entities::GroupHmacData;
 use crate::user::user_entities::UserPublicKeyDataEntity;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
@@ -85,6 +86,29 @@ pub(crate) async fn get_internal_group_user_data(group_id: GroupId, user_id: Use
 }
 
 //__________________________________________________________________________________________________
+
+pub(super) async fn get_group_hmac(app_id: AppId, group_id: GroupId) -> AppRes<GroupHmacData>
+{
+	//language=SQL
+	let sql = r"
+SELECT encrypted_hmac_key,encrypted_hmac_alg,encrypted_hmac_encryption_key_id 
+FROM sentc_group 
+WHERE id = ? AND app_id = ?";
+
+	let data: Option<GroupHmacData> = query_first(sql, set_params!(group_id, app_id)).await?;
+
+	match data {
+		Some(d) => Ok(d),
+		None => {
+			Err(HttpErr::new(
+				400,
+				ApiErrorCodes::GroupAccess,
+				"No access to this group".to_string(),
+				None,
+			))
+		},
+	}
+}
 
 /**
 Get every other group keys with pagination.
@@ -255,10 +279,27 @@ pub(super) async fn create(
 	};
 
 	let group_id = Uuid::new_v4().to_string();
+	let group_key_id = Uuid::new_v4().to_string(); //use the first group key id for the encrypted_hmac_encryption_key_id too
+
 	let time = get_time()?;
 
 	//language=SQL
-	let sql_group = "INSERT INTO sentc_group (id, app_id, parent, identifier, time, type, is_connected_group, invite) VALUES (?,?,?,?,?,?,?,?)";
+	let sql_group = r"
+INSERT INTO sentc_group 
+    (
+     id, 
+     app_id, 
+     parent, 
+     identifier, 
+     time, 
+     type, 
+     is_connected_group, 
+     invite, 
+     encrypted_hmac_key, 
+     encrypted_hmac_alg, 
+     encrypted_hmac_encryption_key_id
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+
 	let group_params = set_params!(
 		group_id.to_string(),
 		app_id.to_string(),
@@ -267,10 +308,11 @@ pub(super) async fn create(
 		time.to_string(),
 		group_type,
 		group_connected,
-		1
+		1,
+		data.encrypted_hmac_key,
+		data.encrypted_hmac_alg,
+		group_key_id.clone()
 	);
-
-	let group_key_id = Uuid::new_v4().to_string();
 
 	//language=SQL
 	let sql_group_data = r"

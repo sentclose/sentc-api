@@ -62,6 +62,7 @@ pub fn get_user_group_light_data(group_data: &InternalGroupDataComplete) -> Grou
 		created_time: group_data.group_data.time,
 		joined_time: group_data.user_data.joined_time,
 		access_by,
+		is_connected_group: group_data.group_data.is_connected_group,
 	}
 }
 
@@ -80,6 +81,8 @@ pub async fn get_user_group_data(group_data: &InternalGroupDataComplete) -> AppR
 	)
 	.await?;
 
+	let hmac_data = group_model::get_group_hmac(app_id.clone(), group_id.clone()).await?;
+
 	let key_update = group_model::check_for_key_update(app_id.to_string(), user_id.to_string(), group_id.to_string()).await?;
 
 	let (parent, access_by) = extract_parent_and_access_by(group_data);
@@ -94,6 +97,9 @@ pub async fn get_user_group_data(group_data: &InternalGroupDataComplete) -> AppR
 		joined_time: group_data.user_data.joined_time,
 		access_by,
 		is_connected_group: group_data.group_data.is_connected_group,
+		encrypted_hmac_key: hmac_data.encrypted_hmac_key,
+		encrypted_hmac_alg: hmac_data.encrypted_hmac_alg,
+		encrypted_hmac_encryption_key_id: hmac_data.encrypted_hmac_encryption_key_id,
 	})
 }
 
