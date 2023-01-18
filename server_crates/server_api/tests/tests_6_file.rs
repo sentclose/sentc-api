@@ -610,7 +610,7 @@ async fn test_16_no_file_access_when_for_child_group_user()
 
 	let child_group = &state.child_group_data;
 
-	let (_user_group_data_2, group_keys) = add_user_by_invite(
+	let (_user_group_data_2, group_keys, _) = add_user_by_invite(
 		state.app_data.secret_token.as_str(),
 		state.user_data.jwt.as_str(),
 		child_group.id.as_str(),

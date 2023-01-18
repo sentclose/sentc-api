@@ -216,6 +216,15 @@ async fn test_11_get_group_data()
 
 	let data_key = sentc_crypto::group::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, &data.keys[0]).unwrap();
 
+	assert_eq!(data.encrypted_hmac_encryption_key_id, data_key.group_key.key_id);
+
+	let _key = sentc_crypto::group::decrypt_group_hmac_key(
+		&data_key.group_key,
+		&data.encrypted_hmac_key,
+		&data.encrypted_hmac_alg,
+	)
+	.unwrap();
+
 	//user is the creator
 	assert_eq!(data.rank, 0);
 
@@ -311,7 +320,7 @@ async fn test_12_create_child_group()
 	)
 	.await;
 
-	let (data, keys) = get_group(
+	let (data, keys, _) = get_group(
 		secret_token,
 		creator.user_data.jwt.as_str(),
 		child_id.as_str(),

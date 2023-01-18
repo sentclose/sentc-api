@@ -170,7 +170,7 @@ async fn test_01_create_groups()
 
 		let group_id = create_group(secret_token.as_str(), public_key, None, jwt).await;
 
-		let (data, group_data_for_creator) = get_group(secret_token.as_str(), jwt, group_id.as_str(), private_key, false).await;
+		let (data, group_data_for_creator, _) = get_group(secret_token.as_str(), jwt, group_id.as_str(), private_key, false).await;
 
 		assert!(!data.is_connected_group);
 
@@ -213,7 +213,7 @@ async fn test_01_create_groups()
 		)
 		.await;
 
-		let (_, child_keys) = get_group(secret_token.as_str(), jwt, group_id.as_str(), private_key, false).await;
+		let (_, child_keys, _) = get_group(secret_token.as_str(), jwt, group_id.as_str(), private_key, false).await;
 
 		let mut decrypted_group_keys = HashMap::new();
 

@@ -186,7 +186,7 @@ async fn test_12_create_second_key_for_pagination()
 
 	let out = ServerOutput::<GeneratedSymKeyHeadServerRegisterOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();
