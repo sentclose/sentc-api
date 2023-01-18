@@ -114,7 +114,7 @@ async fn test_10_user_exists()
 
 	let exists = ServerOutput::<UserIdentifierAvailableServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(exists.status, true);
+	assert!(exists.status);
 	assert_eq!(exists.err_code, None);
 
 	let exists = match exists.result {
@@ -123,7 +123,7 @@ async fn test_10_user_exists()
 	};
 
 	assert_eq!(exists.user_identifier, username.to_string());
-	assert_eq!(exists.available, true);
+	assert!(exists.available);
 }
 
 #[tokio::test]
@@ -154,7 +154,7 @@ async fn test_11_user_register()
 	//check it here (not like the client) to see if the server respond correctly
 	let register_out = ServerOutput::<RegisterServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(register_out.status, true);
+	assert!(register_out.status);
 	assert_eq!(register_out.err_code, None);
 
 	let register_out = register_out.result.unwrap();
@@ -197,13 +197,13 @@ async fn test_12_user_check_after_register()
 
 	let exists = ServerOutput::<UserIdentifierAvailableServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(exists.status, true);
+	assert!(exists.status);
 	assert_eq!(exists.err_code, None);
 
 	let exists = exists.result.unwrap();
 
 	assert_eq!(exists.user_identifier, username.to_string());
-	assert_eq!(exists.available, false);
+	assert!(!exists.available);
 }
 
 #[tokio::test]
@@ -231,8 +231,8 @@ async fn test_13_user_register_failed_username_exists()
 	let body = res.text().await.unwrap();
 	let error = ServerOutput::<RegisterServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(error.status, false);
-	assert_eq!(error.result.is_none(), true);
+	assert!(!error.status);
+	assert!(error.result.is_none());
 	assert_eq!(error.err_code.unwrap(), ApiErrorCodes::UserExists.get_int_code());
 
 	//check err in sdk
@@ -338,8 +338,8 @@ async fn test_15_login_with_wrong_password()
 	let body = res.text().await.unwrap();
 	let login_output = ServerOutput::<DoneLoginServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(login_output.status, false);
-	assert_eq!(login_output.result.is_none(), true);
+	assert!(!login_output.status);
+	assert!(login_output.result.is_none());
 	assert_eq!(login_output.err_code.unwrap(), ApiErrorCodes::Login.get_int_code());
 
 	match sentc_crypto::user::done_login(&derived_master_key, body.as_str()) {
@@ -397,7 +397,7 @@ async fn test_16_user_delete_with_wrong_jwt()
 
 	let delete_output = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(delete_output.status, false);
+	assert!(!delete_output.status);
 
 	//login new in to get the new jwt with the new keys
 	let username = &user.username;
@@ -480,7 +480,7 @@ async fn test_17_change_user_pw()
 	let body = res.text().await.unwrap();
 	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
 	//______________________________________________________________________________________________
@@ -517,8 +517,8 @@ async fn test_17_change_user_pw()
 	let body = res.text().await.unwrap();
 	let login_output = ServerOutput::<DoneLoginServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(login_output.status, false);
-	assert_eq!(login_output.result.is_none(), true);
+	assert!(!login_output.status);
+	assert!(login_output.result.is_none());
 	assert_eq!(login_output.err_code.unwrap(), ApiErrorCodes::Login.get_int_code());
 
 	//______________________________________________________________________________________________
@@ -603,8 +603,8 @@ async fn test_18_reset_password()
 	let body = res.text().await.unwrap();
 	let login_output = ServerOutput::<DoneLoginServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(login_output.status, false);
-	assert_eq!(login_output.result.is_none(), true);
+	assert!(!login_output.status);
+	assert!(login_output.result.is_none());
 	assert_eq!(login_output.err_code.unwrap(), ApiErrorCodes::Login.get_int_code());
 
 	//______________________________________________________________________________________________
@@ -707,7 +707,7 @@ async fn test_21_get_user_public_data()
 
 	let out = ServerOutput::<UserPublicKeyDataServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 
 	let out = out.result.unwrap();
 
@@ -733,7 +733,7 @@ async fn test_21_get_user_public_data()
 
 	let out = ServerOutput::<UserVerifyKeyDataServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 
 	let out = out.result.unwrap();
 
@@ -769,7 +769,7 @@ async fn test_22_refresh_jwt()
 
 	let out = ServerOutput::<DoneLoginLightServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 
 	let out = out.result.unwrap();
 
@@ -830,7 +830,7 @@ async fn test_22_refresh_jwt()
 	let body = res.text().await.unwrap();
 	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, false);
+	assert!(!out.status);
 	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::WrongJwtAction.get_int_code());
 }
 
@@ -862,7 +862,7 @@ async fn test_23_user_normal_init()
 
 	let out = ServerOutput::<UserInitServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 
 	let out = out.result.unwrap();
 
@@ -1341,8 +1341,8 @@ async fn test_31_not_register_user_with_wrong_input()
 	let body = res.text().await.unwrap();
 	let error = ServerOutput::<RegisterServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(error.status, false);
-	assert_eq!(error.result.is_none(), true);
+	assert!(!error.status);
+	assert!(error.result.is_none());
 	assert_eq!(error.err_code.unwrap(), ApiErrorCodes::JsonParse.get_int_code());
 
 	//check err in sdk
