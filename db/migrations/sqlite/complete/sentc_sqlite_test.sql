@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 12:26am on January 6, 2023 (UTC)
+-- Exported: 11:28pm on January 18, 2023 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -73,7 +73,7 @@ CREATE TABLE sentc_group
 	parent     text,
 	identifier text,
 	time       text
-, 'type' INTEGER, 'invite' INTEGER, 'is_connected_group' INTEGER);
+, 'type' INTEGER, 'invite' INTEGER, 'is_connected_group' INTEGER, 'encrypted_hmac_key' TEXT, 'encrypted_hmac_alg' TEXT, 'encrypted_hmac_encryption_key_id' TEXT);
 
 ----
 -- Data dump for sentc_group, a total of 0 rows
