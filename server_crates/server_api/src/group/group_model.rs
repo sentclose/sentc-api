@@ -232,7 +232,7 @@ pub(super) async fn create(
 	group_type: i32,
 	connected_group: Option<GroupId>,
 	is_connected_group: bool,
-) -> AppRes<GroupId>
+) -> AppRes<(GroupId, SymKeyId)>
 {
 	let (insert_user_id, user_type, group_connected) = match (&parent_group_id, user_rank, connected_group) {
 		(Some(p), Some(r), None) => {
@@ -342,7 +342,7 @@ INSERT INTO sentc_group_user_keys
 VALUES (?,?,?,?,?,?,?)";
 
 	let group_user_keys_params = set_params!(
-		group_key_id,
+		group_key_id.clone(),
 		insert_user_id,
 		group_id.to_string(),
 		data.encrypted_group_key,
@@ -371,7 +371,7 @@ VALUES (?,?,?,?,?,?,?)";
 	])
 	.await?;
 
-	Ok(group_id)
+	Ok((group_id, group_key_id))
 }
 
 pub(super) async fn delete_user_group(app_id: AppId, group_id: GroupId) -> AppRes<()>

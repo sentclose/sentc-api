@@ -96,7 +96,8 @@ pub async fn register(app_id: AppId, register_input: RegisterData) -> AppRes<Reg
 		None,
 		false,
 	)
-	.await?;
+	.await?
+	.0;
 
 	//now update the user group id
 	user_model::register_update_user_group_id(app_id, user_id.to_string(), group_id).await?;

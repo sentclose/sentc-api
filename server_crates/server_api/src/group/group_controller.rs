@@ -92,7 +92,8 @@ async fn create_group(
 		connected_group,
 		is_connected_group,
 	)
-	.await?;
+	.await?
+	.0;
 
 	let out = GroupCreateOutput {
 		group_id,

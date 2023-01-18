@@ -19,7 +19,7 @@ pub fn create_group(
 	user_rank: Option<i32>,
 	connected_group: Option<GroupId>,
 	is_connected_group: bool,
-) -> impl Future<Output = AppRes<GroupId>>
+) -> impl Future<Output = AppRes<(GroupId, SymKeyId)>>
 {
 	group_model::create(
 		app_id,
