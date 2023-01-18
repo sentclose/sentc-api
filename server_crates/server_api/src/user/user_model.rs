@@ -133,14 +133,19 @@ SELECT
     keypair_sign_alg,
     ud.id as k_id,
     user_id,
-    user_group_id
+    user_group_id,
+    encrypted_hmac_key,
+    encrypted_hmac_alg,
+    encrypted_hmac_encryption_key_id
 FROM 
     sentc_user u, 
-    sentc_user_device ud
+    sentc_user_device ud,
+    sentc_group g
 WHERE 
     user_id = u.id AND
     ud.device_identifier = ? AND 
-    u.app_id = ?";
+    u.app_id = ? AND 
+    user_group_id = g.id";
 
 	let data: Option<DoneLoginServerKeysOutputEntity> = query_first(sql, set_params!(user_identifier.to_string(), app_id.to_string())).await?;
 
