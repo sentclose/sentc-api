@@ -8,7 +8,6 @@ use sentc_crypto_common::user::{
 	DoneLoginLightOutput,
 	DoneLoginLightServerOutput,
 	DoneLoginServerInput,
-	DoneLoginServerKeysOutput,
 	JwtRefreshInput,
 	PrepareLoginSaltServerOutput,
 	PrepareLoginServerInput,
@@ -283,9 +282,9 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 	.await?;
 
 	//if correct -> fetch and return the user data
-	let device_data = user_model::get_done_login_data(&app_data.app_data.app_id, done_login.device_identifier.as_str()).await?;
+	let device_keys = user_model::get_done_login_data(&app_data.app_data.app_id, done_login.device_identifier.as_str()).await?;
 
-	let device_data = match device_data {
+	let device_keys = match device_keys {
 		Some(d) => d,
 		None => {
 			return Err(HttpErr::new(
@@ -299,9 +298,9 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 
 	// and create the jwt
 	let jwt = create_jwt(
-		device_data.user_id.to_string(),
-		device_data.user_group_id.to_string(),
-		device_data.device_id.to_string(),
+		device_keys.user_id.to_string(),
+		device_keys.user_group_id.to_string(),
+		device_keys.device_id.to_string(),
 		&app_data.jwt_data[0], //use always the latest created jwt data
 		true,
 	)
@@ -312,7 +311,7 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 	//activate refresh token
 	user_model::insert_refresh_token(
 		app_data.app_data.app_id.to_string(),
-		device_data.device_id.to_string(),
+		device_keys.device_id.to_string(),
 		refresh_token.to_string(),
 	)
 	.await?;
@@ -320,34 +319,29 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 	//fetch the first page of the group keys with the device id as user
 	let user_keys = group_service::get_user_group_keys(
 		app_data.app_data.app_id.to_string(),
-		device_data.user_group_id.to_string(),
-		device_data.device_id.to_string(),
+		device_keys.user_group_id.to_string(),
+		device_keys.device_id.to_string(),
 		0,
 		"".to_string(),
 	)
 	.await?;
 
+	let hmac_keys = group_service::get_group_hmac(
+		app_data.app_data.app_id.to_string(),
+		device_keys.user_group_id.to_string(),
+		0, //fetch the first page
+		"".to_string(),
+	)
+	.await?;
+
+	//fetch the first page of the hmac keys
+
 	let out = DoneLoginServerOutput {
-		device_keys: DoneLoginServerKeysOutput {
-			encrypted_master_key: device_data.encrypted_master_key,
-			encrypted_private_key: device_data.encrypted_private_key,
-			public_key_string: device_data.public_key_string,
-			keypair_encrypt_alg: device_data.keypair_encrypt_alg,
-			encrypted_sign_key: device_data.encrypted_sign_key,
-			verify_key_string: device_data.verify_key_string,
-			keypair_sign_alg: device_data.keypair_sign_alg,
-			keypair_encrypt_id: device_data.keypair_encrypt_id,
-			keypair_sign_id: device_data.keypair_sign_id,
-			user_id: device_data.user_id,
-			device_id: device_data.device_id,
-			user_group_id: device_data.user_group_id,
-		},
+		device_keys,
 		user_keys,
+		hmac_keys,
 		jwt,
 		refresh_token,
-		encrypted_hmac_key: device_data.encrypted_hmac_key,
-		encrypted_hmac_alg: device_data.encrypted_hmac_alg,
-		encrypted_hmac_encryption_key_id: device_data.encrypted_hmac_encryption_key_id,
 	};
 
 	Ok(out)

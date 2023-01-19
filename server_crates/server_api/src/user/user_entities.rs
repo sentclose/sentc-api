@@ -1,9 +1,10 @@
-use sentc_crypto_common::user::{DoneLoginServerKeysOutput, UserInitServerOutput, UserPublicKeyDataServerOutput, UserVerifyKeyDataServerOutput};
-use sentc_crypto_common::{DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, SymKeyId, UserId};
+use sentc_crypto_common::user::{UserInitServerOutput, UserPublicKeyDataServerOutput, UserVerifyKeyDataServerOutput};
+use sentc_crypto_common::{DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, UserId};
 use serde::{Deserialize, Serialize};
 use server_core::take_or_err;
 
 use crate::group::group_entities::{GroupInviteReq, GroupUserKeys};
+use crate::sentc_group_entities::GroupHmacData;
 
 //generated with browser console: btoa(String.fromCharCode.apply(null, window.crypto.getRandomValues(new Uint8Array(128/8))));
 //the value with the used alg
@@ -51,13 +52,11 @@ pub struct UserLoginDataEntity
 #[derive(Serialize)]
 pub struct DoneLoginServerOutput
 {
-	pub device_keys: DoneLoginServerKeysOutput,
+	pub device_keys: DoneLoginServerKeysOutputEntity,
 	pub user_keys: Vec<GroupUserKeys>,
+	pub hmac_keys: Vec<GroupHmacData>,
 	pub jwt: String,
 	pub refresh_token: String,
-	pub encrypted_hmac_key: String,
-	pub encrypted_hmac_alg: String,
-	pub encrypted_hmac_encryption_key_id: SymKeyId,
 }
 
 impl Into<sentc_crypto_common::user::DoneLoginServerOutput> for DoneLoginServerOutput
@@ -70,20 +69,22 @@ impl Into<sentc_crypto_common::user::DoneLoginServerOutput> for DoneLoginServerO
 			user_keys.push(user_key.into());
 		}
 
+		let mut hmac_keys = Vec::with_capacity(self.hmac_keys.len());
+
+		for hmac_key in self.hmac_keys {
+			hmac_keys.push(hmac_key.into());
+		}
+
 		sentc_crypto_common::user::DoneLoginServerOutput {
-			device_keys: self.device_keys,
+			device_keys: self.device_keys.into(),
 			jwt: self.jwt,
 			refresh_token: self.refresh_token,
 			user_keys,
-			encrypted_hmac_key: self.encrypted_hmac_key,
-			encrypted_hmac_alg: self.encrypted_hmac_alg,
-			encrypted_hmac_encryption_key_id: self.encrypted_hmac_encryption_key_id,
+			hmac_keys,
 		}
 	}
 }
 
-/// This is the entity of the db data
-/// This will be convert to the device keys and the user hmac key data
 #[derive(Serialize)]
 pub struct DoneLoginServerKeysOutputEntity
 {
@@ -99,11 +100,27 @@ pub struct DoneLoginServerKeysOutputEntity
 	pub user_id: UserId,
 	pub device_id: DeviceId,
 	pub user_group_id: GroupId,
+}
 
-	//not the device keys but is fetched too for the user data
-	pub encrypted_hmac_key: String,
-	pub encrypted_hmac_alg: String,
-	pub encrypted_hmac_encryption_key_id: SymKeyId,
+impl Into<sentc_crypto_common::user::DoneLoginServerKeysOutput> for DoneLoginServerKeysOutputEntity
+{
+	fn into(self) -> sentc_crypto_common::user::DoneLoginServerKeysOutput
+	{
+		sentc_crypto_common::user::DoneLoginServerKeysOutput {
+			encrypted_master_key: self.encrypted_master_key,
+			encrypted_private_key: self.encrypted_private_key,
+			public_key_string: self.public_key_string,
+			keypair_encrypt_alg: self.keypair_encrypt_alg,
+			encrypted_sign_key: self.encrypted_sign_key,
+			verify_key_string: self.verify_key_string,
+			keypair_sign_alg: self.keypair_sign_alg,
+			keypair_encrypt_id: self.keypair_encrypt_id,
+			keypair_sign_id: self.keypair_sign_id,
+			user_id: self.user_id,
+			device_id: self.device_id,
+			user_group_id: self.user_group_id,
+		}
+	}
 }
 
 #[cfg(feature = "mysql")]
@@ -130,9 +147,6 @@ impl server_core::db::mysql_async_export::prelude::FromRow for DoneLoginServerKe
 			user_id: take_or_err!(row, 8, String),
 			device_id: k_id,
 			user_group_id: take_or_err!(row, 9, String),
-			encrypted_hmac_key: take_or_err!(row, 10, String),
-			encrypted_hmac_alg: take_or_err!(row, 11, String),
-			encrypted_hmac_encryption_key_id: take_or_err!(row, 12, String),
 		})
 	}
 }
@@ -161,9 +175,6 @@ impl server_core::db::FromSqliteRow for DoneLoginServerKeysOutputEntity
 			user_id: take_or_err!(row, 8),
 			device_id: k_id,
 			user_group_id: take_or_err!(row, 9),
-			encrypted_hmac_key: take_or_err!(row, 10),
-			encrypted_hmac_alg: take_or_err!(row, 11),
-			encrypted_hmac_encryption_key_id: take_or_err!(row, 12),
 		})
 	}
 }
