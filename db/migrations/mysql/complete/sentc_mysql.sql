@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 18. Jan 2023 um 23:29
+-- Erstellungszeit: 20. Jan 2023 um 22:39
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -279,15 +279,16 @@ CREATE TABLE `sentc_group` (
   `type` int(11) NOT NULL COMMENT '0 0 normal group, 1 = user group',
   `is_connected_group` tinyint(1) NOT NULL,
   `invite` tinyint(1) NOT NULL,
-  `encrypted_hmac_key` text NOT NULL,
-  `encrypted_hmac_alg` text NOT NULL,
-  `encrypted_hmac_encryption_key_id` text NOT NULL,
   `time` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Trigger `sentc_group`
 --
+DELIMITER $$
+CREATE TRIGGER `group_delete_hmac_keys` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_hmac_keys WHERE group_id = OLD.id
+$$
+DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `group_delete_invites` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = OLD.id
 $$
@@ -300,6 +301,22 @@ DELIMITER $$
 CREATE TRIGGER `group_delete_user` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_user WHERE group_id = OLD.id
 $$
 DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_group_hmac_keys`
+--
+
+CREATE TABLE `sentc_group_hmac_keys` (
+  `id` varchar(36) NOT NULL,
+  `group_id` varchar(36) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
+  `encrypted_hmac_key` text NOT NULL,
+  `encrypted_hmac_alg` text NOT NULL,
+  `encrypted_hmac_encryption_key_id` varchar(36) NOT NULL COMMENT 'the key id which encrypted this key',
+  `time` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='the hmac keys are the keys for searchable encryption hashes.';
 
 -- --------------------------------------------------------
 
@@ -600,6 +617,13 @@ ALTER TABLE `sentc_group`
   ADD PRIMARY KEY (`id`),
   ADD KEY `app_id` (`app_id`),
   ADD KEY `parent` (`parent`);
+
+--
+-- Indizes für die Tabelle `sentc_group_hmac_keys`
+--
+ALTER TABLE `sentc_group_hmac_keys`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `app_id` (`app_id`,`group_id`);
 
 --
 -- Indizes für die Tabelle `sentc_group_keys`

@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 11:28pm on January 18, 2023 (UTC)
+-- Exported: 10:39pm on January 20, 2023 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -46,20 +46,6 @@ CREATE TABLE "sentc_app" (
 	hash_alg            text,
 	time                text
 );
-
-----
--- Table structure for sentc_group
-----
-CREATE TABLE sentc_group
-(
-	id         text
-		constraint sentc_group_pk
-			primary key,
-	app_id     text,
-	parent     text,
-	identifier text,
-	time       text
-, 'type' INTEGER, 'invite' INTEGER, 'is_connected_group' INTEGER, 'encrypted_hmac_key' TEXT, 'encrypted_hmac_alg' TEXT, 'encrypted_hmac_encryption_key_id' TEXT);
 
 ----
 -- Table structure for sentc_group_keys
@@ -213,6 +199,24 @@ CREATE TABLE 'sentc_captcha' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'so
 CREATE TABLE 'sentc_content' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'item' TEXT, 'time' TEXT, 'belongs_to_group' TEXT, 'belongs_to_user' TEXT, 'creator' TEXT,'category' TEXT);
 
 ----
+-- Table structure for sentc_group_hmac_keys
+----
+CREATE TABLE 'sentc_group_hmac_keys' ('id' TEXT PRIMARY KEY NOT NULL, 'group_id' TEXT, 'app_id' TEXT, 'encrypted_hmac_key' TEXT, 'encrypted_hmac_alg' TEXT, 'encrypted_hmac_encryption_key_id' TEXT, 'time' TEXT);
+
+----
+-- Table structure for sentc_group
+----
+CREATE TABLE 'sentc_group' (
+	id         text
+		constraint sentc_group_pk
+			primary key,
+	app_id     text,
+	parent     text,
+	identifier text,
+	time       text
+, 'type' INTEGER, 'invite' INTEGER, 'is_connected_group' INTEGER);
+
+----
 -- structure for index sqlite_autoindex_test_1 on table test
 ----
 ;
@@ -224,11 +228,6 @@ CREATE TABLE 'sentc_content' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'it
 
 ----
 -- structure for index sqlite_autoindex_sentc_app_1 on table sentc_app
-----
-;
-
-----
--- structure for index sqlite_autoindex_sentc_group_1 on table sentc_group
 ----
 ;
 
@@ -336,18 +335,6 @@ CREATE INDEX app_hashed_secret_token_index
 	on "sentc_app" (hashed_secret_token);
 
 ----
--- structure for index sentc_group_app_id_index on table sentc_group
-----
-CREATE INDEX sentc_group_app_id_index
-	on sentc_group (app_id);
-
-----
--- structure for index sentc_group_parent_index on table sentc_group
-----
-CREATE INDEX sentc_group_parent_index
-	on sentc_group (parent);
-
-----
 -- structure for index get_group on table sentc_group_keys
 ----
 CREATE INDEX 'get_group' ON "sentc_group_keys" ("group_id" ASC, "app_id" ASC);
@@ -388,19 +375,31 @@ CREATE INDEX 'item' ON "sentc_content" ("item" ASC);
 CREATE INDEX 'cat_id' ON "sentc_content" ("category" ASC);
 
 ----
--- structure for trigger group_delete_invites on table sentc_group
+-- structure for index sqlite_autoindex_sentc_group_hmac_keys_1 on table sentc_group_hmac_keys
 ----
-CREATE TRIGGER 'group_delete_invites' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = OLD.id; END;
+;
 
 ----
--- structure for trigger group_delete_keys on table sentc_group
+-- structure for index group_id_belongs_to on table sentc_group_hmac_keys
 ----
-CREATE TRIGGER 'group_delete_keys' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_keys WHERE group_id = OLD.id; END;
+CREATE INDEX 'group_id_belongs_to' ON "sentc_group_hmac_keys" ("group_id" ASC, "app_id" ASC);
 
 ----
--- structure for trigger group_delete_user on table sentc_group
+-- structure for index sqlite_autoindex_sentc_group_1 on table sentc_group
 ----
-CREATE TRIGGER 'group_delete_user' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_user WHERE group_id = OLD.id; END;
+;
+
+----
+-- structure for index sentc_group_app_id_index on table sentc_group
+----
+CREATE INDEX sentc_group_app_id_index
+	on sentc_group (app_id);
+
+----
+-- structure for index sentc_group_parent_index on table sentc_group
+----
+CREATE INDEX sentc_group_parent_index
+	on sentc_group (parent);
 
 ----
 -- structure for trigger delete_app on table sentc_customer
@@ -471,4 +470,24 @@ CREATE TRIGGER 'user_delete_jwt_refresh' AFTER DELETE ON "sentc_user_device" FOR
 -- structure for trigger delete_app_content on table sentc_app
 ----
 CREATE TRIGGER 'delete_app_content' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_content WHERE app_id = OLD.id; END;
+
+----
+-- structure for trigger group_delete_invites on table sentc_group
+----
+CREATE TRIGGER 'group_delete_invites' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = OLD.id; END;
+
+----
+-- structure for trigger group_delete_keys on table sentc_group
+----
+CREATE TRIGGER 'group_delete_keys' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_keys WHERE group_id = OLD.id; END;
+
+----
+-- structure for trigger group_delete_user on table sentc_group
+----
+CREATE TRIGGER 'group_delete_user' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_user WHERE group_id = OLD.id; END;
+
+----
+-- structure for trigger group_delete_hmac_keys on table sentc_group
+----
+CREATE TRIGGER 'group_delete_hmac_keys' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_hmac_keys WHERE group_id = OLD.id; END;
 COMMIT;
