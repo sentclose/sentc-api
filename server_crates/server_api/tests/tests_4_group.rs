@@ -36,6 +36,7 @@ use crate::test_fn::{
 	create_test_customer,
 	create_test_user,
 	customer_delete,
+	decrypt_group_hmac_keys,
 	delete_app,
 	delete_user,
 	done_key_rotation,
@@ -216,14 +217,9 @@ async fn test_11_get_group_data()
 
 	let data_key = sentc_crypto::group::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, &data.keys[0]).unwrap();
 
-	assert_eq!(data.encrypted_hmac_encryption_key_id, data_key.group_key.key_id);
+	let hmac_keys = decrypt_group_hmac_keys(&data_key.group_key, &data.hmac_keys);
 
-	let _key = sentc_crypto::group::decrypt_group_hmac_key(
-		&data_key.group_key,
-		&data.encrypted_hmac_key,
-		&data.encrypted_hmac_alg,
-	)
-	.unwrap();
+	assert_eq!(hmac_keys.len(), 1);
 
 	//user is the creator
 	assert_eq!(data.rank, 0);
@@ -320,7 +316,7 @@ async fn test_12_create_child_group()
 	)
 	.await;
 
-	let (data, keys, _) = get_group(
+	let (data, keys) = get_group(
 		secret_token,
 		creator.user_data.jwt.as_str(),
 		child_id.as_str(),

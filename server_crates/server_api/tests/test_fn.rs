@@ -7,10 +7,9 @@ use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::group::{DoneGettingGroupKeysOutput, GroupKeyData, GroupOutData};
 use sentc_crypto::sdk_common::file::FileData;
-use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupInviteServerOutput};
-use sentc_crypto::sdk_core::HmacKey;
+use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupHmacData, GroupInviteServerOutput};
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::util::UserKeyDataInt;
+use sentc_crypto::util::{HmacKeyFormat, UserKeyDataInt};
 use sentc_crypto::{PrivateKeyFormat, PublicKeyFormat, SymKeyFormat, UserData};
 use sentc_crypto_common::group::{GroupCreateOutput, GroupKeyServerOutput, KeyRotationStartServerOutput};
 use sentc_crypto_common::user::{CaptchaCreateOutput, CaptchaInput, RegisterData, UserInitServerOutput};
@@ -499,13 +498,26 @@ pub async fn create_child_group_from_group_as_member(
 	out.group_id
 }
 
+pub fn decrypt_group_hmac_keys(first_group_key: &SymKeyFormat, hmac_keys: &Vec<GroupHmacData>) -> Vec<HmacKeyFormat>
+{
+	//its important to use the sdk common version here and not from the api
+
+	let mut decrypted_hmac_keys = Vec::with_capacity(hmac_keys.len());
+
+	for hmac_key in hmac_keys {
+		decrypted_hmac_keys.push(sentc_crypto::group::decrypt_group_hmac_key(first_group_key, hmac_key).unwrap());
+	}
+
+	decrypted_hmac_keys
+}
+
 pub async fn get_group(
 	secret_token: &str,
 	jwt: &str,
 	group_id: &str,
 	private_key: &PrivateKeyFormat,
 	key_update: bool,
-) -> (GroupOutData, Vec<GroupKeyData>, HmacKey)
+) -> (GroupOutData, Vec<GroupKeyData>)
 {
 	let url = get_url("api/v1/group/".to_owned() + group_id);
 	let client = reqwest::Client::new();
@@ -522,27 +534,14 @@ pub async fn get_group(
 	let data = sentc_crypto::group::get_group_data(body.as_str()).unwrap();
 
 	let mut data_keys = Vec::with_capacity(data.keys.len());
-	let mut decrypted_hmac_key = HmacKey::HmacSha256([0u8; 32]);
 
 	for key in &data.keys {
-		let decrypted_key = sentc_crypto::group::decrypt_group_keys(private_key, key).unwrap();
-
-		if key.group_key_id == data.encrypted_hmac_encryption_key_id {
-			//get the decrypted hmac key, which is encrypted by the first group key
-			decrypted_hmac_key = sentc_crypto::group::decrypt_group_hmac_key(
-				&decrypted_key.group_key,
-				&data.encrypted_hmac_key,
-				&data.encrypted_hmac_alg,
-			)
-			.unwrap();
-		}
-
-		data_keys.push(decrypted_key);
+		data_keys.push(sentc_crypto::group::decrypt_group_keys(private_key, key).unwrap());
 	}
 
 	assert_eq!(data.key_update, key_update);
 
-	(data, data_keys, decrypted_hmac_key)
+	(data, data_keys)
 }
 
 pub async fn get_group_from_group_as_member(
@@ -587,7 +586,7 @@ pub async fn add_user_by_invite(
 	user_to_invite_jwt: &str,
 	user_to_add_public_key: &sentc_crypto::sdk_common::user::UserPublicKeyData,
 	user_to_add_private_key: &PrivateKeyFormat,
-) -> (GroupOutData, Vec<GroupKeyData>, HmacKey)
+) -> (GroupOutData, Vec<GroupKeyData>)
 {
 	let mut group_keys_ref = vec![];
 
@@ -641,7 +640,7 @@ pub async fn add_user_by_invite_as_group_as_member(
 	user_to_invite_jwt: &str,
 	user_to_add_public_key: &sentc_crypto::sdk_common::user::UserPublicKeyData,
 	user_to_add_private_key: &PrivateKeyFormat,
-) -> (GroupOutData, Vec<GroupKeyData>, HmacKey)
+) -> (GroupOutData, Vec<GroupKeyData>)
 {
 	let mut group_keys_ref = vec![];
 
@@ -794,7 +793,7 @@ pub async fn key_rotation(
 	match group_as_member_id {
 		Some(id) => get_group_from_group_as_member(secret_token, jwt, group_id, id, invoker_private_key).await,
 		None => {
-			let (one, two, _) = get_group(secret_token, jwt, out.group_id.as_str(), invoker_private_key, false).await;
+			let (one, two) = get_group(secret_token, jwt, out.group_id.as_str(), invoker_private_key, false).await;
 			(one, two)
 		},
 	}
