@@ -99,6 +99,11 @@ pub enum ApiErrorCodes
 	ContentItemNotSet,
 	ContentItemTooBig,
 	ContentCreateItemTooManyCat,
+
+	ContentSearchableItemRefNotSet,
+	ContentSearchableItemRefTooBig,
+	ContentSearchableNoHashes,
+	ContentSearchableTooManyHashes,
 }
 
 impl From<CoreErrorCodes> for ApiErrorCodes
@@ -224,6 +229,11 @@ impl ApiErrorCodes
 			ApiErrorCodes::ContentItemNotSet => 700,
 			ApiErrorCodes::ContentItemTooBig => 701,
 			ApiErrorCodes::ContentCreateItemTooManyCat => 702,
+
+			ApiErrorCodes::ContentSearchableItemRefNotSet => 800,
+			ApiErrorCodes::ContentSearchableItemRefTooBig => 801,
+			ApiErrorCodes::ContentSearchableNoHashes => 802,
+			ApiErrorCodes::ContentSearchableTooManyHashes => 803,
 		}
 	}
 }

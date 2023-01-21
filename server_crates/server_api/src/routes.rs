@@ -342,6 +342,34 @@ pub(crate) fn routes(router: &mut Router)
 			.add(app_token::app_token_transform),
 	);
 	router.post(
+		"/api/v1/search/group/:group_id",
+		r(crate::content_searchable::create)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.delete(
+		"/api/v1/search/group/:group_id",
+		r(crate::content_searchable::delete)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/search/group/:group_id/all/:search/:last_fetched_time/:last_id",
+		r(crate::content_searchable::search_all)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/search/group/:group_id/:cat_id/:search/:last_fetched_time/:last_id",
+		r(crate::content_searchable::search_cat)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.post(
 		"/api/v1/group",
 		r(crate::group::create)
 			.add(jwt::jwt_transform)
