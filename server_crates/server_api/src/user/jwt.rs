@@ -234,6 +234,6 @@ mod test
 
 		assert_eq!(decoded.claims.aud, claims.aud);
 		assert_eq!(key_id, key_id_str);
-		assert_eq!(decoded.claims.fresh);
+		assert!(decoded.claims.fresh);
 	}
 }
