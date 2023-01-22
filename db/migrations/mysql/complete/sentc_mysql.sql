@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 20. Jan 2023 um 22:39
+-- Erstellungszeit: 22. Jan 2023 um 21:59
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -47,6 +47,10 @@ $$
 DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `delete_app_jwt` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_app_jwt_keys WHERE app_id = OLD.id
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `delete_app_search` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_content_searchable_item WHERE app_id = OLD.id
 $$
 DELIMITER ;
 DELIMITER $$
@@ -161,6 +165,43 @@ CREATE TABLE `sentc_content` (
   `belongs_to_user` varchar(36) DEFAULT NULL,
   `creator` varchar(36) NOT NULL,
   `category` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_content_searchable_item`
+--
+
+CREATE TABLE `sentc_content_searchable_item` (
+  `id` varchar(36) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
+  `belongs_to_group` varchar(36) DEFAULT NULL,
+  `belongs_to_user` varchar(36) DEFAULT NULL,
+  `category` varchar(50) DEFAULT NULL,
+  `item_ref` varchar(50) NOT NULL COMMENT 'a ref to the backend of the customer where the item is stored',
+  `alg` text NOT NULL COMMENT 'the hash alg',
+  `key_id` varchar(36) NOT NULL COMMENT 'the key which was used to hash the hashes',
+  `time` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Trigger `sentc_content_searchable_item`
+--
+DELIMITER $$
+CREATE TRIGGER `content_searchable_delete_hash` AFTER DELETE ON `sentc_content_searchable_item` FOR EACH ROW DELETE FROM sentc_content_searchable_item_parts WHERE item_id = OLD.id
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_content_searchable_item_parts`
+--
+
+CREATE TABLE `sentc_content_searchable_item_parts` (
+  `item_id` varchar(36) NOT NULL,
+  `hash` varchar(44) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -576,6 +617,21 @@ ALTER TABLE `sentc_content`
   ADD KEY `time` (`time`),
   ADD KEY `item` (`item`) USING BTREE,
   ADD KEY `cat_id` (`category`);
+
+--
+-- Indizes für die Tabelle `sentc_content_searchable_item`
+--
+ALTER TABLE `sentc_content_searchable_item`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `app_id` (`app_id`),
+  ADD KEY `category` (`category`),
+  ADD KEY `time` (`time`);
+
+--
+-- Indizes für die Tabelle `sentc_content_searchable_item_parts`
+--
+ALTER TABLE `sentc_content_searchable_item_parts`
+  ADD PRIMARY KEY (`item_id`,`hash`);
 
 --
 -- Indizes für die Tabelle `sentc_customer`

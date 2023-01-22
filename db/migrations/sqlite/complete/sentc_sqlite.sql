@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 10:39pm on January 20, 2023 (UTC)
+-- Exported: 9:59pm on January 22, 2023 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -217,6 +217,16 @@ CREATE TABLE 'sentc_group' (
 , 'type' INTEGER, 'invite' INTEGER, 'is_connected_group' INTEGER);
 
 ----
+-- Table structure for sentc_content_searchable_item
+----
+CREATE TABLE 'sentc_content_searchable_item' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'belongs_to_group' TEXT, 'belongs_to_user' TEXT, 'category' TEXT, 'item_ref' TEXT, 'alg' TEXT, 'key_id' TEXT, 'time' TEXT);
+
+----
+-- Table structure for sentc_content_searchable_item_parts
+----
+CREATE TABLE 'sentc_content_searchable_item_parts' ('item_id' TEXT NOT NULL, 'hash' TEXT NOT NULL, PRIMARY KEY ('item_id', 'hash'));
+
+----
 -- structure for index sqlite_autoindex_test_1 on table test
 ----
 ;
@@ -402,6 +412,31 @@ CREATE INDEX sentc_group_parent_index
 	on sentc_group (parent);
 
 ----
+-- structure for index sqlite_autoindex_sentc_content_searchable_item_1 on table sentc_content_searchable_item
+----
+;
+
+----
+-- structure for index app_id_index on table sentc_content_searchable_item
+----
+CREATE INDEX 'app_id_index' ON "sentc_content_searchable_item" ("app_id");
+
+----
+-- structure for index category_index on table sentc_content_searchable_item
+----
+CREATE INDEX 'category_index' ON "sentc_content_searchable_item" ("category");
+
+----
+-- structure for index time_index on table sentc_content_searchable_item
+----
+CREATE INDEX 'time_index' ON "sentc_content_searchable_item" ("time");
+
+----
+-- structure for index sqlite_autoindex_sentc_content_searchable_item_parts_1 on table sentc_content_searchable_item_parts
+----
+;
+
+----
 -- structure for trigger delete_app on table sentc_customer
 ----
 CREATE TRIGGER 'delete_app' AFTER DELETE ON "sentc_customer" FOR EACH ROW BEGIN DELETE FROM "sentc_app" WHERE customer_id = OLD.id; END;
@@ -490,4 +525,14 @@ CREATE TRIGGER 'group_delete_user' AFTER DELETE ON "sentc_group" FOR EACH ROW BE
 -- structure for trigger group_delete_hmac_keys on table sentc_group
 ----
 CREATE TRIGGER 'group_delete_hmac_keys' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_hmac_keys WHERE group_id = OLD.id; END;
+
+----
+-- structure for trigger  content_searchable_delete_hash on table sentc_content_searchable_item
+----
+CREATE TRIGGER ' content_searchable_delete_hash' AFTER DELETE ON "sentc_content_searchable_item" FOR EACH ROW BEGIN DELETE FROM sentc_content_searchable_item_parts WHERE item_id = OLD.id; END;
+
+----
+-- structure for trigger delete_app_search on table sentc_app
+----
+CREATE TRIGGER 'delete_app_search' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_content_searchable_item WHERE app_id = OLD.id; END;
 COMMIT;
