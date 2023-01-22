@@ -5,9 +5,10 @@ use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::util::HmacKeyFormat;
 use sentc_crypto::UserData;
-use sentc_crypto_common::content_searchable::ListSearchItem;
+use sentc_crypto_common::content_searchable::{ListSearchItem, SearchCreateData};
 use sentc_crypto_common::group::GroupCreateOutput;
 use sentc_crypto_common::{GroupId, UserId};
+use server_api::util::api_res::ApiErrorCodes;
 use server_api_common::app::AppRegisterOutput;
 use server_api_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
@@ -26,6 +27,7 @@ use crate::test_fn::{
 	delete_user,
 	get_group,
 	get_group_from_group_as_member,
+	get_server_error_from_normal_res,
 	get_url,
 };
 
@@ -506,6 +508,335 @@ async fn test_14_search_hash_pagination()
 
 	assert_eq!(list.len(), 1);
 	assert_eq!(list[0].item_ref, "ref".to_string());
+}
+
+#[tokio::test]
+async fn test_15_create_hash_in_child_group_and_search_from_parent()
+{
+	//use here the hmac key of the child
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let creator = &users[2];
+	let group = &groups[1];
+
+	let data = "123*+^êéèüöß@€&$ 👍 🚀 😎";
+
+	let input = sentc_crypto::crypto_searchable::create_searchable(&group.hmac_keys[0], "ref2", None, data, false, None).unwrap();
+
+	let url = get_url("api/v1/search/group/".to_owned() + &group.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(&body).unwrap();
+
+	//now access it from the parent group
+	let creator = &users[1]; //direct member of the parent group (not the creator)
+
+	let search_str = sentc_crypto::crypto_searchable::search(&group.hmac_keys[0], "123").unwrap();
+
+	let url = get_url("api/v1/search/group/".to_owned() + &group.group_id + "/all/0/none?search=" + &search_str);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let list: Vec<ListSearchItem> = handle_server_response(&body).unwrap();
+
+	//should not find the other hashes because these are for the parent group
+	assert_eq!(list.len(), 1);
+	assert_eq!(list[0].item_ref, "ref2".to_string());
+}
+
+#[tokio::test]
+async fn test_16_create_hash_in_connected_group_and_search()
+{
+	//use here the hmac key of the child
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let creator = &users[3];
+	let group = &groups[2];
+
+	let data = "123*+^êéèüöß@€&$ 👍 🚀 😎";
+
+	let input = sentc_crypto::crypto_searchable::create_searchable(&group.hmac_keys[0], "ref3", None, data, false, None).unwrap();
+
+	let url = get_url("api/v1/search/group/".to_owned() + &group.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(&body).unwrap();
+
+	//now access it from the connected group group
+
+	let creator = &users[1]; //direct member of the connected group (not the creator)
+
+	let search_str = sentc_crypto::crypto_searchable::search(&group.hmac_keys[0], "123").unwrap();
+
+	let url = get_url("api/v1/search/group/".to_owned() + &group.group_id + "/all/0/none?search=" + &search_str);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", &groups[0].group_id)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let list: Vec<ListSearchItem> = handle_server_response(&body).unwrap();
+
+	//should not find the other hashes because these are for the parent group
+	assert_eq!(list.len(), 1);
+	assert_eq!(list[0].item_ref, "ref3".to_string());
+}
+
+#[tokio::test]
+async fn test_17_not_create_without_ref()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let creator = &users[0];
+	let group = &groups[0];
+
+	let data = "123*+^êéèüöß@€&$ 👍 🚀 😎";
+
+	let input = sentc_crypto::crypto_searchable::create_searchable(&group.hmac_keys[0], "", None, data, false, None).unwrap();
+
+	let url = get_url("api/v1/search/group/".to_owned() + &group.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let server_err = get_server_error_from_normal_res(&body);
+
+	assert_eq!(
+		server_err,
+		ApiErrorCodes::ContentSearchableItemRefNotSet.get_int_code()
+	);
+}
+
+#[tokio::test]
+async fn test_18_not_create_with_too_long_ref()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let creator = &users[0];
+	let group = &groups[0];
+
+	let data = "123*+^êéèüöß@€&$ 👍 🚀 😎";
+
+	let mut item_ref = "".to_string();
+
+	for i in 0..51 {
+		item_ref += i.to_string().as_str();
+	}
+
+	let input = sentc_crypto::crypto_searchable::create_searchable(&group.hmac_keys[0], &item_ref, None, data, false, None).unwrap();
+
+	let url = get_url("api/v1/search/group/".to_owned() + &group.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let server_err = get_server_error_from_normal_res(&body);
+
+	assert_eq!(
+		server_err,
+		ApiErrorCodes::ContentSearchableItemRefTooBig.get_int_code()
+	);
+}
+
+#[tokio::test]
+async fn test_19_not_create_with_empty_hashes()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let creator = &users[0];
+	let group = &groups[0];
+
+	let url = get_url("api/v1/search/group/".to_owned() + &group.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(
+			serde_json::to_string(&SearchCreateData {
+				category: None,
+				item_ref: "hello".to_string(),
+				hashes: vec![],
+				alg: "".to_string(),
+				key_id: "".to_string(),
+			})
+			.unwrap(),
+		)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let server_err = get_server_error_from_normal_res(&body);
+
+	assert_eq!(server_err, ApiErrorCodes::ContentSearchableNoHashes.get_int_code());
+}
+
+#[tokio::test]
+async fn test_20_not_create_with_too_many_hashes()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let creator = &users[0];
+	let group = &groups[0];
+
+	let url = get_url("api/v1/search/group/".to_owned() + &group.group_id);
+
+	let mut hashes = Vec::with_capacity(201);
+
+	for i in 0..201 {
+		hashes.push(i.to_string());
+	}
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(
+			serde_json::to_string(&SearchCreateData {
+				category: None,
+				item_ref: "hello".to_string(),
+				hashes,
+				alg: "".to_string(),
+				key_id: "".to_string(),
+			})
+			.unwrap(),
+		)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let server_err = get_server_error_from_normal_res(&body);
+
+	assert_eq!(
+		server_err,
+		ApiErrorCodes::ContentSearchableTooManyHashes.get_int_code()
+	);
+}
+
+#[tokio::test]
+async fn test_21_delete_hash()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let creator = &users[0];
+	let group = &groups[0];
+
+	let url = get_url("api/v1/search/group/".to_owned() + &group.group_id + "/ref");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(&body).unwrap();
+
+	//should not get the deleted item
+	let data = "123*+^êéèüöß@€&$ 👍 🚀 😎";
+
+	let search_str = sentc_crypto::crypto_searchable::search(&group.hmac_keys[0], data).unwrap();
+
+	let url = get_url("api/v1/search/group/".to_owned() + &group.group_id + "/all/0/none?search=" + &search_str);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let list: Vec<ListSearchItem> = handle_server_response(&body).unwrap();
+
+	//only one item left
+	assert_eq!(list.len(), 1);
+	assert_eq!(list[0].item_ref, "ref1");
 }
 
 //__________________________________________________________________________________________________
