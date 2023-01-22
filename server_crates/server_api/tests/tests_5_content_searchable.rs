@@ -399,6 +399,7 @@ async fn test_12_create_hash()
 async fn test_13_search_hash_with_parts()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let public_token = &APP_TEST_STATE.get().unwrap().read().await.public_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
 
@@ -438,7 +439,7 @@ async fn test_13_search_hash_with_parts()
 	let res = client
 		.get(url)
 		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
-		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-app-token", public_token)
 		.send()
 		.await
 		.unwrap();
@@ -456,7 +457,7 @@ async fn test_13_search_hash_with_parts()
 #[tokio::test]
 async fn test_14_search_hash_pagination()
 {
-	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let public_token = &APP_TEST_STATE.get().unwrap().read().await.public_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
 
@@ -473,7 +474,7 @@ async fn test_14_search_hash_pagination()
 	let res = client
 		.get(url)
 		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
-		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-app-token", public_token)
 		.send()
 		.await
 		.unwrap();
@@ -497,7 +498,7 @@ async fn test_14_search_hash_pagination()
 	let res = client
 		.get(url)
 		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
-		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-app-token", public_token)
 		.send()
 		.await
 		.unwrap();
@@ -516,6 +517,7 @@ async fn test_15_create_hash_in_child_group_and_search_from_parent()
 	//use here the hmac key of the child
 
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let public_token = &APP_TEST_STATE.get().unwrap().read().await.public_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
 
@@ -553,7 +555,7 @@ async fn test_15_create_hash_in_child_group_and_search_from_parent()
 	let res = client
 		.get(url)
 		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
-		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-app-token", public_token)
 		.send()
 		.await
 		.unwrap();
