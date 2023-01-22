@@ -36,6 +36,7 @@ use crate::test_fn::{
 	delete_app,
 	delete_app_jwt_key,
 	delete_user,
+	get_server_error_from_normal_res,
 	get_url,
 	login_user,
 	register_user,
@@ -675,17 +676,9 @@ async fn test_20_user_not_update_when_identifier_exists()
 
 	let body = res.text().await.unwrap();
 
-	match handle_general_server_response(body.as_str()) {
-		Ok(_) => panic!("Must be an error"),
-		Err(e) => {
-			match e {
-				SdkError::ServerErr(s, _) => {
-					assert_eq!(s, 101)
-				},
-				_ => panic!("Must be server error"),
-			}
-		},
-	}
+	let server_err = get_server_error_from_normal_res(&body);
+
+	assert_eq!(server_err, 101);
 }
 
 #[tokio::test]
@@ -801,17 +794,9 @@ async fn test_22_refresh_jwt()
 
 	let body = res.text().await.unwrap();
 
-	match handle_general_server_response(body.as_str()) {
-		Ok(_) => panic!("Must be an error"),
-		Err(e) => {
-			match e {
-				SdkError::ServerErr(s, _) => {
-					assert_eq!(s, 101)
-				},
-				_ => panic!("Must be server error"),
-			}
-		},
-	}
+	let server_err = get_server_error_from_normal_res(&body);
+
+	assert_eq!(server_err, 101);
 
 	//______________________________________________________________________________________________
 	//it should not delete the user because a fresh jwt is needed here.
@@ -1251,19 +1236,9 @@ async fn test_29_not_delete_the_last_device()
 
 	let body = res.text().await.unwrap();
 
-	match handle_general_server_response(body.as_str()) {
-		Ok(_) => {
-			panic!("Should be an error");
-		},
-		Err(e) => {
-			match e {
-				SdkError::ServerErr(s, _) => {
-					assert_eq!(s, 115)
-				},
-				_ => panic!("Should be server error"),
-			}
-		},
-	}
+	let server_err = get_server_error_from_normal_res(&body);
+
+	assert_eq!(server_err, 115);
 }
 
 //do user tests before this one!

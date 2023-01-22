@@ -41,6 +41,7 @@ use crate::test_fn::{
 	delete_user,
 	done_key_rotation,
 	get_group,
+	get_server_error_from_normal_res,
 	get_url,
 	init_user,
 	key_rotation,
@@ -434,17 +435,9 @@ async fn test_14_not_send_invite_or_join_when_invite_is_disabled()
 
 	let body = res.text().await.unwrap();
 
-	match handle_general_server_response(body.as_str()) {
-		Ok(_) => panic!("Should be an error"),
-		Err(e) => {
-			match e {
-				SdkError::ServerErr(s, _) => {
-					assert_eq!(s, 317);
-				},
-				_ => panic!("should be server error"),
-			}
-		},
-	}
+	let server_err = get_server_error_from_normal_res(&body);
+
+	assert_eq!(server_err, 317);
 
 	//no invite req
 	let creator = &users[0];

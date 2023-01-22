@@ -10,7 +10,7 @@ use sentc_crypto::sdk_common::file::FileData;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupHmacData, GroupInviteServerOutput};
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::util::{HmacKeyFormat, UserKeyDataInt};
-use sentc_crypto::{PrivateKeyFormat, PublicKeyFormat, SymKeyFormat, UserData};
+use sentc_crypto::{PrivateKeyFormat, PublicKeyFormat, SdkError, SymKeyFormat, UserData};
 use sentc_crypto_common::group::{GroupCreateOutput, GroupKeyServerOutput, KeyRotationStartServerOutput};
 use sentc_crypto_common::user::{CaptchaCreateOutput, CaptchaInput, RegisterData, UserInitServerOutput};
 use sentc_crypto_common::{CustomerId, GroupId, ServerOutput, UserId};
@@ -23,6 +23,19 @@ use server_core::db::StringEntity;
 pub fn get_url(path: String) -> String
 {
 	format!("http://127.0.0.1:{}/{}", 3002, path)
+}
+
+pub fn get_server_error_from_normal_res(body: &str) -> u32
+{
+	match handle_general_server_response(body) {
+		Ok(_) => panic!("should be an error"),
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(c, _) => c,
+				_ => panic!("should be server error"),
+			}
+		},
+	}
 }
 
 pub fn auth_header(jwt: &str) -> String
