@@ -170,7 +170,7 @@ routes:
                           - group::group_transform
                         gr:
                           - post: {p: "", s: crate::content_searchable::create}
-                          - delete: {p: "", s: crate::content_searchable::delete}
+                          - delete: {p: "/:item_ref", s: crate::content_searchable::delete}
                           - get: {p: "/all/:last_fetched_time/:last_id", s: crate::content_searchable::search_all}
                           - get: {p: "/:cat_id/:last_fetched_time/:last_id", s: crate::content_searchable::search_cat}
               #_________________________________________________________________________________________________________

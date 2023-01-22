@@ -349,7 +349,7 @@ pub(crate) fn routes(router: &mut Router)
 			.add(app_token::app_token_transform),
 	);
 	router.delete(
-		"/api/v1/search/group/:group_id",
+		"/api/v1/search/group/:group_id/:item_ref",
 		r(crate::content_searchable::delete)
 			.add(group::group_transform)
 			.add(jwt::jwt_transform)
