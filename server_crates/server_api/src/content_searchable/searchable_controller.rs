@@ -59,8 +59,7 @@ async fn search(req: Request, cat: bool) -> JRes<Vec<ListSearchItem>>
 {
 	let app = get_app_data_from_req(&req)?;
 
-	//TODO endpoint check not force server
-	check_endpoint_with_app_options(app, Endpoint::ForceServer)?;
+	check_endpoint_with_app_options(app, Endpoint::ContentSearch)?;
 
 	let params = get_params(&req)?;
 	let last_id = get_name_param_from_params(params, "last_id")?;
