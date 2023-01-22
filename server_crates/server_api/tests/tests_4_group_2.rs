@@ -37,6 +37,7 @@ use crate::test_fn::{
 	done_key_rotation,
 	get_group,
 	get_group_from_group_as_member,
+	get_server_error_from_normal_res,
 	get_url,
 	key_rotation,
 };
@@ -405,19 +406,9 @@ async fn test_12_not_connect_normal_group_to_normal_group_by_join()
 
 	let body = res.text().await.unwrap();
 
-	match handle_general_server_response(&body) {
-		Ok(_) => {
-			panic!("Should be an error");
-		},
-		Err(e) => {
-			match e {
-				SdkError::ServerErr(s, _m) => {
-					assert_eq!(s, ApiErrorCodes::GroupJoinAsConnectedGroup.get_int_code());
-				},
-				_ => panic!("Should be server error"),
-			}
-		},
-	}
+	let server_err = get_server_error_from_normal_res(&body);
+
+	assert_eq!(server_err, ApiErrorCodes::GroupJoinAsConnectedGroup.get_int_code());
 }
 
 #[tokio::test]
@@ -525,19 +516,9 @@ async fn test_14_not_send_join_req_as_connected_group()
 
 	let body = res.text().await.unwrap();
 
-	match handle_general_server_response(&body) {
-		Ok(_) => {
-			panic!("Should be an error");
-		},
-		Err(e) => {
-			match e {
-				SdkError::ServerErr(s, _m) => {
-					assert_eq!(s, ApiErrorCodes::GroupJoinAsConnectedGroup.get_int_code());
-				},
-				_ => panic!("Should be server error"),
-			}
-		},
-	}
+	let server_err = get_server_error_from_normal_res(&body);
+
+	assert_eq!(server_err, ApiErrorCodes::GroupJoinAsConnectedGroup.get_int_code());
 }
 
 #[tokio::test]
@@ -1291,18 +1272,9 @@ async fn test_26_not_send_join_req_if_group_is_already_group_member()
 
 	let body = res.text().await.unwrap();
 
-	match handle_general_server_response(&body) {
-		Ok(_) => panic!("Should be error"),
-		Err(e) => {
-			//
-			match e {
-				SdkError::ServerErr(c, _m) => {
-					assert_eq!(c, ApiErrorCodes::GroupUserExists.get_int_code());
-				},
-				_ => panic!("Should be server error"),
-			}
-		},
-	}
+	let server_err = get_server_error_from_normal_res(&body);
+
+	assert_eq!(server_err, ApiErrorCodes::GroupUserExists.get_int_code());
 }
 
 #[tokio::test]
@@ -1634,17 +1606,9 @@ async fn test_32_not_leave_groups_without_rights()
 	//delete the test user before checking because after the user wont get deleted when there are still errors
 	delete_user(secret_token, key_data.jwt.as_str()).await;
 
-	match handle_general_server_response(&body) {
-		Ok(_) => panic!("should be an error"),
-		Err(e) => {
-			match e {
-				SdkError::ServerErr(c, _) => {
-					assert_eq!(c, ApiErrorCodes::GroupUserRank.get_int_code())
-				},
-				_ => panic!("Should be server error"),
-			}
-		},
-	}
+	let server_err = get_server_error_from_normal_res(&body);
+
+	assert_eq!(server_err, ApiErrorCodes::GroupUserRank.get_int_code());
 }
 
 #[tokio::test]

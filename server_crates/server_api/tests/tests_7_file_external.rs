@@ -1,7 +1,7 @@
 use reqwest::header::AUTHORIZATION;
 use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::{SdkError, UserData};
+use sentc_crypto::UserData;
 use sentc_crypto_common::file::FilePartRegisterOutput;
 use sentc_crypto_common::{FileId, PartId};
 use server_api::sentc_file_worker;
@@ -9,7 +9,16 @@ use server_api_common::app::{AppFileOptionsInput, AppOptions, AppRegisterInput, 
 use server_api_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
 
-use crate::test_fn::{auth_header, create_group, create_test_customer, create_test_user, customer_delete, get_group, get_url};
+use crate::test_fn::{
+	auth_header,
+	create_group,
+	create_test_customer,
+	create_test_user,
+	customer_delete,
+	get_group,
+	get_server_error_from_normal_res,
+	get_url,
+};
 
 mod test_fn;
 
@@ -152,21 +161,9 @@ async fn create_file()
 
 	let body = res.text().await.unwrap();
 
-	match handle_general_server_response(body.as_str()) {
-		Ok(_) => {
-			panic!("Should be an error");
-		},
-		Err(e) => {
-			match e {
-				SdkError::ServerErr(s, _msg) => {
-					assert_eq!(s, 520);
-				},
-				_ => {
-					panic!("Should be server error")
-				},
-			}
-		},
-	}
+	let server_err = get_server_error_from_normal_res(&body);
+
+	assert_eq!(server_err, 520);
 
 	//register 502 parts for pagination
 	for i in 0..502 {

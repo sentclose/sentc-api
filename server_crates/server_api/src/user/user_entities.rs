@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use server_core::take_or_err;
 
 use crate::group::group_entities::{GroupInviteReq, GroupUserKeys};
+use crate::sentc_group_entities::GroupHmacData;
 
 //generated with browser console: btoa(String.fromCharCode.apply(null, window.crypto.getRandomValues(new Uint8Array(128/8))));
 //the value with the used alg
@@ -53,6 +54,7 @@ pub struct DoneLoginServerOutput
 {
 	pub device_keys: DoneLoginServerKeysOutputEntity,
 	pub user_keys: Vec<GroupUserKeys>,
+	pub hmac_keys: Vec<GroupHmacData>,
 	pub jwt: String,
 	pub refresh_token: String,
 }
@@ -67,11 +69,18 @@ impl Into<sentc_crypto_common::user::DoneLoginServerOutput> for DoneLoginServerO
 			user_keys.push(user_key.into());
 		}
 
+		let mut hmac_keys = Vec::with_capacity(self.hmac_keys.len());
+
+		for hmac_key in self.hmac_keys {
+			hmac_keys.push(hmac_key.into());
+		}
+
 		sentc_crypto_common::user::DoneLoginServerOutput {
 			device_keys: self.device_keys.into(),
 			jwt: self.jwt,
 			refresh_token: self.refresh_token,
 			user_keys,
+			hmac_keys,
 		}
 	}
 }

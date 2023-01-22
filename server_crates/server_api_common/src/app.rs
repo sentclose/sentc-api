@@ -65,6 +65,8 @@ pub struct AppOptions
 	pub group_invite_stop: i32,
 
 	pub user_key_update: i32,
+
+	pub content_search: i32,
 }
 
 impl Default for AppOptions
@@ -110,6 +112,7 @@ impl Default for AppOptions
 			user_device_list: 1,
 			group_invite_stop: 1,
 			user_key_update: 1,
+			content_search: 1,
 		}
 	}
 }
@@ -157,6 +160,7 @@ impl AppOptions
 			user_device_list: 0,
 			group_invite_stop: 0,
 			user_key_update: 0,
+			content_search: 0,
 		}
 	}
 
@@ -201,6 +205,7 @@ impl AppOptions
 			user_device_list: 1,
 			group_invite_stop: 1,
 			user_key_update: 1,
+			content_search: 1,
 		}
 	}
 }
@@ -263,6 +268,8 @@ impl server_core::db::mysql_async_export::prelude::FromRow for AppOptions
 			group_invite_stop: server_core::take_or_err!(row, 36, i32),
 
 			user_key_update: server_core::take_or_err!(row, 37, i32),
+
+			content_search: server_core::take_or_err!(row, 38, i32),
 		})
 	}
 }
@@ -325,6 +332,8 @@ impl server_core::db::FromSqliteRow for AppOptions
 			group_invite_stop: server_core::take_or_err!(row, 36),
 
 			user_key_update: server_core::take_or_err!(row, 37),
+
+			content_search: server_core::take_or_err!(row, 38),
 		})
 	}
 }

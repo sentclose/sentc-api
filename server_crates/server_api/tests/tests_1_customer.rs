@@ -680,6 +680,7 @@ fn get_fake_login_data(old_pw: &str) -> (String, String)
 		jwt: "abc".to_string(),
 		refresh_token: "abc".to_string(),
 		user_keys: vec![],
+		hmac_keys: vec![],
 	};
 
 	let prepare_login_user_data = ServerOutput {

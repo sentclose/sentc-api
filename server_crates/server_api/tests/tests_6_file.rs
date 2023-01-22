@@ -24,6 +24,7 @@ use crate::test_fn::{
 	get_and_decrypt_file_part,
 	get_file,
 	get_group,
+	get_server_error_from_normal_res,
 	get_url,
 };
 
@@ -239,21 +240,9 @@ async fn test_10_upload_small_file_for_non_target()
 		Ok(res) => {
 			let body = res.text().await.unwrap();
 
-			match handle_general_server_response(body.as_str()) {
-				Ok(_) => {
-					panic!("Should be an error");
-				},
-				Err(e) => {
-					match e {
-						SdkError::ServerErr(s, _msg) => {
-							assert_eq!(s, 510); //session not found error for the
-						},
-						_ => {
-							panic!("Should be server error")
-						},
-					}
-				},
-			}
+			let server_err = get_server_error_from_normal_res(&body);
+
+			assert_eq!(server_err, 510);
 		},
 		Err(_e) => {
 			//err here is ok because the server can just close the connection for wrong parts
@@ -296,21 +285,9 @@ async fn test_10_upload_small_file_for_non_target()
 
 	let body = res.text().await.unwrap();
 
-	match handle_general_server_response(body.as_str()) {
-		Ok(_) => {
-			panic!("Should be an error");
-		},
-		Err(e) => {
-			match e {
-				SdkError::ServerErr(s, _msg) => {
-					assert_eq!(s, 510); //session not found error
-				},
-				_ => {
-					panic!("Should be server error")
-				},
-			}
-		},
-	}
+	let server_err = get_server_error_from_normal_res(&body);
+
+	assert_eq!(server_err, 510);
 
 	//save the data
 	state.file_ids = vec![file_id];
@@ -832,21 +809,9 @@ async fn test_19_not_delete_file_without_access()
 
 	let body = res.text().await.unwrap();
 
-	match handle_general_server_response(body.as_str()) {
-		Ok(_) => {
-			panic!("should be error");
-		},
-		Err(e) => {
-			match e {
-				SdkError::ServerErr(c, _) => {
-					assert_eq!(c, 521);
-				},
-				_ => {
-					panic!("should be server error");
-				},
-			}
-		},
-	}
+	let server_err = get_server_error_from_normal_res(&body);
+
+	assert_eq!(server_err, 521);
 }
 
 #[tokio::test]
@@ -1146,19 +1111,9 @@ async fn test_30_chunked_filed()
 		Ok(res) => {
 			let body = res.text().await.unwrap();
 
-			match handle_general_server_response(body.as_str()) {
-				Ok(_) => {
-					panic!("Should be an error")
-				},
-				Err(e) => {
-					match e {
-						SdkError::ServerErr(s, _) => {
-							assert_eq!(s, 502);
-						},
-						_ => panic!("must be server error"),
-					}
-				},
-			}
+			let server_err = get_server_error_from_normal_res(&body);
+
+			assert_eq!(server_err, 502);
 		},
 		Err(_e) => {
 			//err here is ok because the server can just close the connection for wrong parts

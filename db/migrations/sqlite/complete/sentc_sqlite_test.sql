@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 12:26am on January 6, 2023 (UTC)
+-- Exported: 10:14pm on January 22, 2023 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -60,24 +60,6 @@ CREATE TABLE "sentc_app" (
 -- Data dump for sentc_app, a total of 1 rows
 ----
 INSERT INTO "sentc_app" ("id","customer_id","identifier","hashed_secret_token","hashed_public_token","hash_alg","time") VALUES ('1665eb92-4513-469f-81d8-b72a62e0134c','sentc_int',NULL,'cmzOt+BnyErJKsF2qNaiJ/YqsXJymnGQSdvJi5FpeOo=','b/t88y7h0zwqOXAtR/UqE4qsPL11PLFvo1e+8PNP8LU=','SHA256','1659606752935');
-
-----
--- Table structure for sentc_group
-----
-CREATE TABLE sentc_group
-(
-	id         text
-		constraint sentc_group_pk
-			primary key,
-	app_id     text,
-	parent     text,
-	identifier text,
-	time       text
-, 'type' INTEGER, 'invite' INTEGER, 'is_connected_group' INTEGER);
-
-----
--- Data dump for sentc_group, a total of 0 rows
-----
 
 ----
 -- Table structure for sentc_group_keys
@@ -166,12 +148,12 @@ CREATE TABLE 'sentc_customer' ('id' TEXT PRIMARY KEY NOT NULL, 'email' TEXT, 'em
 ----
 -- Table structure for sentc_app_options
 ----
-CREATE TABLE "sentc_app_options" ('app_id' TEXT PRIMARY KEY NOT NULL, 'group_create' INTEGER, 'group_get' INTEGER, 'group_invite' INTEGER, 'group_reject_invite' INTEGER, 'group_accept_invite' INTEGER, 'group_join_req' INTEGER, 'group_accept_join_req' INTEGER, 'group_reject_join_req' INTEGER, 'group_key_rotation' INTEGER, 'group_user_delete' INTEGER, 'group_change_rank' INTEGER, 'group_delete' INTEGER, 'group_leave' INTEGER, 'user_exists' INTEGER, 'user_register' INTEGER, 'user_delete' INTEGER, 'user_update' INTEGER, 'user_change_password' INTEGER, 'user_reset_password' INTEGER, 'user_prepare_login' INTEGER, 'user_done_login' INTEGER, 'user_public_data' INTEGER, 'user_refresh' INTEGER, 'key_register' INTEGER, 'key_get' INTEGER, 'group_user_keys' INTEGER, 'group_user_update_check' INTEGER, 'group_auto_invite' INTEGER, 'group_list' INTEGER, 'file_register' INTEGER, 'file_part_upload' INTEGER, 'file_get' INTEGER, 'file_part_download' INTEGER, 'user_device_register' INTEGER, 'user_device_delete' INTEGER, 'user_device_list' INTEGER, 'group_invite_stop' INTEGER, 'user_key_update' INTEGER);
+CREATE TABLE "sentc_app_options" ('app_id' TEXT PRIMARY KEY NOT NULL, 'group_create' INTEGER, 'group_get' INTEGER, 'group_invite' INTEGER, 'group_reject_invite' INTEGER, 'group_accept_invite' INTEGER, 'group_join_req' INTEGER, 'group_accept_join_req' INTEGER, 'group_reject_join_req' INTEGER, 'group_key_rotation' INTEGER, 'group_user_delete' INTEGER, 'group_change_rank' INTEGER, 'group_delete' INTEGER, 'group_leave' INTEGER, 'user_exists' INTEGER, 'user_register' INTEGER, 'user_delete' INTEGER, 'user_update' INTEGER, 'user_change_password' INTEGER, 'user_reset_password' INTEGER, 'user_prepare_login' INTEGER, 'user_done_login' INTEGER, 'user_public_data' INTEGER, 'user_refresh' INTEGER, 'key_register' INTEGER, 'key_get' INTEGER, 'group_user_keys' INTEGER, 'group_user_update_check' INTEGER, 'group_auto_invite' INTEGER, 'group_list' INTEGER, 'file_register' INTEGER, 'file_part_upload' INTEGER, 'file_get' INTEGER, 'file_part_download' INTEGER, 'user_device_register' INTEGER, 'user_device_delete' INTEGER, 'user_device_list' INTEGER, 'group_invite_stop' INTEGER, 'user_key_update' INTEGER, 'content_search' INTEGER);
 
 ----
 -- Data dump for sentc_app_options, a total of 1 rows
 ----
-INSERT INTO "sentc_app_options" ("app_id","group_create","group_get","group_invite","group_reject_invite","group_accept_invite","group_join_req","group_accept_join_req","group_reject_join_req","group_key_rotation","group_user_delete","group_change_rank","group_delete","group_leave","user_exists","user_register","user_delete","user_update","user_change_password","user_reset_password","user_prepare_login","user_done_login","user_public_data","user_refresh","key_register","key_get","group_user_keys","group_user_update_check","group_auto_invite","group_list","file_register","file_part_upload","file_get","file_part_download","user_device_register","user_device_delete","user_device_list","group_invite_stop","user_key_update") VALUES ('1665eb92-4513-469f-81d8-b72a62e0134c','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0');
+INSERT INTO "sentc_app_options" ("app_id","group_create","group_get","group_invite","group_reject_invite","group_accept_invite","group_join_req","group_accept_join_req","group_reject_join_req","group_key_rotation","group_user_delete","group_change_rank","group_delete","group_leave","user_exists","user_register","user_delete","user_update","user_change_password","user_reset_password","user_prepare_login","user_done_login","user_public_data","user_refresh","key_register","key_get","group_user_keys","group_user_update_check","group_auto_invite","group_list","file_register","file_part_upload","file_get","file_part_download","user_device_register","user_device_delete","user_device_list","group_invite_stop","user_key_update","content_search") VALUES ('1665eb92-4513-469f-81d8-b72a62e0134c','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0');
 
 ----
 -- Table structure for sentc_sym_key_management
@@ -305,6 +287,50 @@ CREATE TABLE 'sentc_content' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'it
 ----
 
 ----
+-- Table structure for sentc_group_hmac_keys
+----
+CREATE TABLE 'sentc_group_hmac_keys' ('id' TEXT PRIMARY KEY NOT NULL, 'group_id' TEXT, 'app_id' TEXT, 'encrypted_hmac_key' TEXT, 'encrypted_hmac_alg' TEXT, 'encrypted_hmac_encryption_key_id' TEXT, 'time' TEXT);
+
+----
+-- Data dump for sentc_group_hmac_keys, a total of 0 rows
+----
+
+----
+-- Table structure for sentc_group
+----
+CREATE TABLE 'sentc_group' (
+	id         text
+		constraint sentc_group_pk
+			primary key,
+	app_id     text,
+	parent     text,
+	identifier text,
+	time       text
+, 'type' INTEGER, 'invite' INTEGER, 'is_connected_group' INTEGER);
+
+----
+-- Data dump for sentc_group, a total of 0 rows
+----
+
+----
+-- Table structure for sentc_content_searchable_item
+----
+CREATE TABLE 'sentc_content_searchable_item' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'belongs_to_group' TEXT, 'belongs_to_user' TEXT, 'category' TEXT, 'item_ref' TEXT, 'alg' TEXT, 'key_id' TEXT, 'time' TEXT);
+
+----
+-- Data dump for sentc_content_searchable_item, a total of 0 rows
+----
+
+----
+-- Table structure for sentc_content_searchable_item_parts
+----
+CREATE TABLE 'sentc_content_searchable_item_parts' ('item_id' TEXT NOT NULL, 'hash' TEXT NOT NULL, PRIMARY KEY ('item_id', 'hash'));
+
+----
+-- Data dump for sentc_content_searchable_item_parts, a total of 0 rows
+----
+
+----
 -- structure for index sqlite_autoindex_test_1 on table test
 ----
 ;
@@ -316,11 +342,6 @@ CREATE TABLE 'sentc_content' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'it
 
 ----
 -- structure for index sqlite_autoindex_sentc_app_1 on table sentc_app
-----
-;
-
-----
--- structure for index sqlite_autoindex_sentc_group_1 on table sentc_group
 ----
 ;
 
@@ -428,18 +449,6 @@ CREATE INDEX app_hashed_secret_token_index
 	on "sentc_app" (hashed_secret_token);
 
 ----
--- structure for index sentc_group_app_id_index on table sentc_group
-----
-CREATE INDEX sentc_group_app_id_index
-	on sentc_group (app_id);
-
-----
--- structure for index sentc_group_parent_index on table sentc_group
-----
-CREATE INDEX sentc_group_parent_index
-	on sentc_group (parent);
-
-----
 -- structure for index get_group on table sentc_group_keys
 ----
 CREATE INDEX 'get_group' ON "sentc_group_keys" ("group_id" ASC, "app_id" ASC);
@@ -480,19 +489,56 @@ CREATE INDEX 'item' ON "sentc_content" ("item" ASC);
 CREATE INDEX 'cat_id' ON "sentc_content" ("category" ASC);
 
 ----
--- structure for trigger group_delete_invites on table sentc_group
+-- structure for index sqlite_autoindex_sentc_group_hmac_keys_1 on table sentc_group_hmac_keys
 ----
-CREATE TRIGGER 'group_delete_invites' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = OLD.id; END;
+;
 
 ----
--- structure for trigger group_delete_keys on table sentc_group
+-- structure for index group_id_belongs_to on table sentc_group_hmac_keys
 ----
-CREATE TRIGGER 'group_delete_keys' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_keys WHERE group_id = OLD.id; END;
+CREATE INDEX 'group_id_belongs_to' ON "sentc_group_hmac_keys" ("group_id" ASC, "app_id" ASC);
 
 ----
--- structure for trigger group_delete_user on table sentc_group
+-- structure for index sqlite_autoindex_sentc_group_1 on table sentc_group
 ----
-CREATE TRIGGER 'group_delete_user' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_user WHERE group_id = OLD.id; END;
+;
+
+----
+-- structure for index sentc_group_app_id_index on table sentc_group
+----
+CREATE INDEX sentc_group_app_id_index
+	on sentc_group (app_id);
+
+----
+-- structure for index sentc_group_parent_index on table sentc_group
+----
+CREATE INDEX sentc_group_parent_index
+	on sentc_group (parent);
+
+----
+-- structure for index sqlite_autoindex_sentc_content_searchable_item_1 on table sentc_content_searchable_item
+----
+;
+
+----
+-- structure for index app_id_index on table sentc_content_searchable_item
+----
+CREATE INDEX 'app_id_index' ON "sentc_content_searchable_item" ("app_id");
+
+----
+-- structure for index category_index on table sentc_content_searchable_item
+----
+CREATE INDEX 'category_index' ON "sentc_content_searchable_item" ("category");
+
+----
+-- structure for index time_index on table sentc_content_searchable_item
+----
+CREATE INDEX 'time_index' ON "sentc_content_searchable_item" ("time");
+
+----
+-- structure for index sqlite_autoindex_sentc_content_searchable_item_parts_1 on table sentc_content_searchable_item_parts
+----
+;
 
 ----
 -- structure for trigger delete_app on table sentc_customer
@@ -563,4 +609,34 @@ CREATE TRIGGER 'user_delete_jwt_refresh' AFTER DELETE ON "sentc_user_device" FOR
 -- structure for trigger delete_app_content on table sentc_app
 ----
 CREATE TRIGGER 'delete_app_content' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_content WHERE app_id = OLD.id; END;
+
+----
+-- structure for trigger group_delete_invites on table sentc_group
+----
+CREATE TRIGGER 'group_delete_invites' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = OLD.id; END;
+
+----
+-- structure for trigger group_delete_keys on table sentc_group
+----
+CREATE TRIGGER 'group_delete_keys' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_keys WHERE group_id = OLD.id; END;
+
+----
+-- structure for trigger group_delete_user on table sentc_group
+----
+CREATE TRIGGER 'group_delete_user' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_user WHERE group_id = OLD.id; END;
+
+----
+-- structure for trigger group_delete_hmac_keys on table sentc_group
+----
+CREATE TRIGGER 'group_delete_hmac_keys' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_hmac_keys WHERE group_id = OLD.id; END;
+
+----
+-- structure for trigger  content_searchable_delete_hash on table sentc_content_searchable_item
+----
+CREATE TRIGGER ' content_searchable_delete_hash' AFTER DELETE ON "sentc_content_searchable_item" FOR EACH ROW BEGIN DELETE FROM sentc_content_searchable_item_parts WHERE item_id = OLD.id; END;
+
+----
+-- structure for trigger delete_app_search on table sentc_app
+----
+CREATE TRIGGER 'delete_app_search' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_content_searchable_item WHERE app_id = OLD.id; END;
 COMMIT;

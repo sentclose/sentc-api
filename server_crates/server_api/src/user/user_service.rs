@@ -326,9 +326,20 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 	)
 	.await?;
 
+	let hmac_keys = group_service::get_group_hmac(
+		app_data.app_data.app_id.to_string(),
+		device_keys.user_group_id.to_string(),
+		0, //fetch the first page
+		"".to_string(),
+	)
+	.await?;
+
+	//fetch the first page of the hmac keys
+
 	let out = DoneLoginServerOutput {
 		device_keys,
 		user_keys,
+		hmac_keys,
 		jwt,
 		refresh_token,
 	};

@@ -130,6 +130,7 @@ pub struct GroupServerData
 	pub group_id: GroupId,
 	pub parent_group_id: Option<GroupId>,
 	pub keys: Vec<GroupUserKeys>,
+	pub hmac_keys: Vec<GroupHmacData>,
 	pub key_update: bool,
 	pub rank: i32,
 	pub created_time: u128,
@@ -148,16 +149,51 @@ impl Into<sentc_crypto_common::group::GroupServerData> for GroupServerData
 			keys.push(key.into());
 		}
 
+		let mut hmac_keys = Vec::with_capacity(self.hmac_keys.len());
+
+		for hmac_key in self.hmac_keys {
+			hmac_keys.push(hmac_key.into());
+		}
+
 		sentc_crypto_common::group::GroupServerData {
 			group_id: self.group_id,
 			parent_group_id: self.parent_group_id,
 			keys,
+			hmac_keys,
 			key_update: self.key_update,
 			rank: self.rank,
 			created_time: self.created_time,
 			joined_time: self.joined_time,
 			access_by: self.access_by,
 			is_connected_group: self.is_connected_group,
+		}
+	}
+}
+
+//__________________________________________________________________________________________________
+
+#[derive(Serialize)]
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
+pub struct GroupHmacData
+{
+	pub id: SymKeyId,
+	pub encrypted_hmac_key: String,
+	pub encrypted_hmac_alg: String,
+	pub encrypted_hmac_encryption_key_id: SymKeyId,
+	pub time: u128,
+}
+
+impl Into<sentc_crypto_common::group::GroupHmacData> for GroupHmacData
+{
+	fn into(self) -> sentc_crypto_common::group::GroupHmacData
+	{
+		sentc_crypto_common::group::GroupHmacData {
+			id: self.id,
+			encrypted_hmac_key: self.encrypted_hmac_key,
+			encrypted_hmac_alg: self.encrypted_hmac_alg,
+			encrypted_hmac_encryption_key_id: self.encrypted_hmac_encryption_key_id,
+			time: self.time,
 		}
 	}
 }

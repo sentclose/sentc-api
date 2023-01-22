@@ -56,6 +56,8 @@ pub enum Endpoint
 	FilePartUpload,
 	FileGet,
 	FilePartDownload,
+
+	ContentSearch,
 }
 
 pub fn get_app_data_from_req(req: &Request) -> AppRes<&AppData>
@@ -165,6 +167,8 @@ pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endp
 		Endpoint::FilePartUpload => options.file_part_upload,
 		Endpoint::FileGet => options.file_get,
 		Endpoint::FilePartDownload => options.file_part_download,
+
+		Endpoint::ContentSearch => options.content_search,
 
 		Endpoint::ForceServer => 2,
 	};

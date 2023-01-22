@@ -13,6 +13,7 @@ use crate::group::group_entities::{
 	ListGroups,
 };
 use crate::group::{GROUP_TYPE_NORMAL, GROUP_TYPE_USER};
+use crate::sentc_group_entities::GroupHmacData;
 use crate::user::user_entities::UserPublicKeyDataEntity;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
@@ -85,6 +86,39 @@ pub(crate) async fn get_internal_group_user_data(group_id: GroupId, user_id: Use
 }
 
 //__________________________________________________________________________________________________
+
+pub(super) async fn get_group_hmac(app_id: AppId, group_id: GroupId, last_fetched_time: u128, last_k_id: SymKeyId) -> AppRes<Vec<GroupHmacData>>
+{
+	//language=SQL
+	let sql = r"
+SELECT id,encrypted_hmac_key,encrypted_hmac_alg,encrypted_hmac_encryption_key_id, time 
+FROM sentc_group_hmac_keys 
+WHERE group_id = ? AND app_id = ?"
+		.to_string();
+
+	let (sql1, params) = if last_fetched_time > 0 {
+		let sql = sql + " AND time <= ? AND (time < ? OR (time = ? AND id > ?)) ORDER BY time DESC, id LIMIT 50";
+
+		(
+			sql,
+			set_params!(
+				group_id,
+				app_id,
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_k_id
+			),
+		)
+	} else {
+		let sql = sql + " ORDER BY time DESC, id LIMIT 50";
+		(sql, set_params!(group_id, app_id))
+	};
+
+	let data: Vec<GroupHmacData> = query_string(sql1, params).await?;
+
+	Ok(data)
+}
 
 /**
 Get every other group keys with pagination.
@@ -255,10 +289,23 @@ pub(super) async fn create(
 	};
 
 	let group_id = Uuid::new_v4().to_string();
+
 	let time = get_time()?;
 
 	//language=SQL
-	let sql_group = "INSERT INTO sentc_group (id, app_id, parent, identifier, time, type, is_connected_group, invite) VALUES (?,?,?,?,?,?,?,?)";
+	let sql_group = r"
+INSERT INTO sentc_group 
+    (
+     id, 
+     app_id, 
+     parent, 
+     identifier, 
+     time, 
+     type, 
+     is_connected_group, 
+     invite
+     ) VALUES (?,?,?,?,?,?,?,?)";
+
 	let group_params = set_params!(
 		group_id.to_string(),
 		app_id.to_string(),
@@ -269,8 +316,6 @@ pub(super) async fn create(
 		group_connected,
 		1
 	);
-
-	let group_key_id = Uuid::new_v4().to_string();
 
 	//language=SQL
 	let sql_group_data = r"
@@ -293,6 +338,8 @@ INSERT INTO sentc_group_keys
      ) 
 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
+	let group_key_id = Uuid::new_v4().to_string(); //use the first group key id for the encrypted_hmac_encryption_key_id too
+
 	let encrypted_ephemeral_key: Option<String> = None;
 	let encrypted_group_key_by_eph_key: Option<String> = None;
 	let previous_group_key_id: Option<String> = None;
@@ -312,6 +359,32 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 		data.encrypted_sign_key,
 		data.verify_key,
 		data.keypair_sign_alg
+	);
+
+	//language=SQL
+	let sql_group_hmac = r"
+INSERT INTO sentc_group_hmac_keys 
+    (
+     id, 
+     group_id, 
+     app_id, 
+     encrypted_hmac_key, 
+     encrypted_hmac_alg, 
+     encrypted_hmac_encryption_key_id, 
+     time
+     ) 
+VALUES (?,?,?,?,?,?,?)";
+
+	let group_hmac_key_id = Uuid::new_v4().to_string();
+
+	let group_hmac_params = set_params!(
+		group_hmac_key_id,
+		group_id.to_string(),
+		app_id.to_string(),
+		data.encrypted_hmac_key,
+		data.encrypted_hmac_alg,
+		group_key_id.clone(),
+		time.to_string(),
 	);
 
 	//insert he creator => rank = 0
@@ -359,6 +432,10 @@ VALUES (?,?,?,?,?,?,?)";
 		TransactionData {
 			sql: sql_group_data,
 			params: group_data_params,
+		},
+		TransactionData {
+			sql: sql_group_hmac,
+			params: group_hmac_params,
 		},
 		TransactionData {
 			sql: sql_group_user,

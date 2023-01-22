@@ -36,10 +36,12 @@ use crate::test_fn::{
 	create_test_customer,
 	create_test_user,
 	customer_delete,
+	decrypt_group_hmac_keys,
 	delete_app,
 	delete_user,
 	done_key_rotation,
 	get_group,
+	get_server_error_from_normal_res,
 	get_url,
 	init_user,
 	key_rotation,
@@ -215,6 +217,10 @@ async fn test_11_get_group_data()
 	let data = sentc_crypto::group::get_group_data(body.as_str()).unwrap();
 
 	let data_key = sentc_crypto::group::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, &data.keys[0]).unwrap();
+
+	let hmac_keys = decrypt_group_hmac_keys(&data_key.group_key, &data.hmac_keys);
+
+	assert_eq!(hmac_keys.len(), 1);
 
 	//user is the creator
 	assert_eq!(data.rank, 0);
@@ -429,17 +435,9 @@ async fn test_14_not_send_invite_or_join_when_invite_is_disabled()
 
 	let body = res.text().await.unwrap();
 
-	match handle_general_server_response(body.as_str()) {
-		Ok(_) => panic!("Should be an error"),
-		Err(e) => {
-			match e {
-				SdkError::ServerErr(s, _) => {
-					assert_eq!(s, 317);
-				},
-				_ => panic!("should be server error"),
-			}
-		},
-	}
+	let server_err = get_server_error_from_normal_res(&body);
+
+	assert_eq!(server_err, 317);
 
 	//no invite req
 	let creator = &users[0];

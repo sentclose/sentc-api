@@ -136,7 +136,7 @@ routes:
                           - get: {p: "/keys/:last_fetched_time/:last_k_id", s: crate::user::get_user_keys}
                           - put: {p: "/session/:key_session_id", s: crate::user::device_key_upload}
               #_________________________________________________________________________________________________________
-              # non group content routes
+              # content routes
               - group:
                   p: "/content"
                   gr:
@@ -160,6 +160,19 @@ routes:
                           - post: { p: "", s: crate::content_management::create_group_content }
                           - get: { p: "/all/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_group }
                           - get: { p: "/:cat_id/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_group_from_cat }
+              # encrypted search
+              - group:
+                  p: "/search"
+                  gr:
+                    - group:
+                        p: "/group/:group_id"
+                        mw:
+                          - group::group_transform
+                        gr:
+                          - post: {p: "", s: crate::content_searchable::create}
+                          - delete: {p: "/:item_ref", s: crate::content_searchable::delete}
+                          - get: {p: "/all/:last_fetched_time/:last_id", s: crate::content_searchable::search_all}
+                          - get: {p: "/:cat_id/:last_fetched_time/:last_id", s: crate::content_searchable::search_cat}
               #_________________________________________________________________________________________________________
               # group routes in the group mod, check always the app token for this actions
               - group:

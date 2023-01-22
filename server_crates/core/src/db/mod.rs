@@ -164,15 +164,11 @@ macro_rules! set_params_vec_outer {
 #[cfg(feature = "sqlite")]
 #[macro_export]
 macro_rules! set_params {
-	($( $param:expr ),+ $(,)?) => {{
-		let mut tmp = Vec::new();
-
-		$(
-			tmp.push(server_core::db::rusqlite_export::types::Value::from($param));
-		)*
-
-		tmp
-	}};
+	($( $param:expr ),+ $(,)?) => {
+		vec![
+			$(server_core::db::rusqlite_export::types::Value::from($param),)*
+		]
+	};
 }
 
 #[cfg(feature = "sqlite")]

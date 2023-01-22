@@ -7,10 +7,10 @@ use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::group::{DoneGettingGroupKeysOutput, GroupKeyData, GroupOutData};
 use sentc_crypto::sdk_common::file::FileData;
-use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupInviteServerOutput};
+use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupHmacData, GroupInviteServerOutput};
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::util::UserKeyDataInt;
-use sentc_crypto::{PrivateKeyFormat, PublicKeyFormat, SymKeyFormat, UserData};
+use sentc_crypto::util::{HmacKeyFormat, UserKeyDataInt};
+use sentc_crypto::{PrivateKeyFormat, PublicKeyFormat, SdkError, SymKeyFormat, UserData};
 use sentc_crypto_common::group::{GroupCreateOutput, GroupKeyServerOutput, KeyRotationStartServerOutput};
 use sentc_crypto_common::user::{CaptchaCreateOutput, CaptchaInput, RegisterData, UserInitServerOutput};
 use sentc_crypto_common::{CustomerId, GroupId, ServerOutput, UserId};
@@ -23,6 +23,19 @@ use server_core::db::StringEntity;
 pub fn get_url(path: String) -> String
 {
 	format!("http://127.0.0.1:{}/{}", 3002, path)
+}
+
+pub fn get_server_error_from_normal_res(body: &str) -> u32
+{
+	match handle_general_server_response(body) {
+		Ok(_) => panic!("should be an error"),
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(c, _) => c,
+				_ => panic!("should be server error"),
+			}
+		},
+	}
 }
 
 pub fn auth_header(jwt: &str) -> String
@@ -498,6 +511,19 @@ pub async fn create_child_group_from_group_as_member(
 	out.group_id
 }
 
+pub fn decrypt_group_hmac_keys(first_group_key: &SymKeyFormat, hmac_keys: &Vec<GroupHmacData>) -> Vec<HmacKeyFormat>
+{
+	//its important to use the sdk common version here and not from the api
+
+	let mut decrypted_hmac_keys = Vec::with_capacity(hmac_keys.len());
+
+	for hmac_key in hmac_keys {
+		decrypted_hmac_keys.push(sentc_crypto::group::decrypt_group_hmac_key(first_group_key, hmac_key).unwrap());
+	}
+
+	decrypted_hmac_keys
+}
+
 pub async fn get_group(
 	secret_token: &str,
 	jwt: &str,
@@ -779,7 +805,10 @@ pub async fn key_rotation(
 
 	match group_as_member_id {
 		Some(id) => get_group_from_group_as_member(secret_token, jwt, group_id, id, invoker_private_key).await,
-		None => get_group(secret_token, jwt, out.group_id.as_str(), invoker_private_key, false).await,
+		None => {
+			let (one, two) = get_group(secret_token, jwt, out.group_id.as_str(), invoker_private_key, false).await;
+			(one, two)
+		},
 	}
 }
 
