@@ -104,6 +104,7 @@ pub enum ApiErrorCodes
 	ContentSearchableItemRefTooBig,
 	ContentSearchableNoHashes,
 	ContentSearchableTooManyHashes,
+	ContentSearchableQueryMissing,
 }
 
 impl From<CoreErrorCodes> for ApiErrorCodes
@@ -133,6 +134,7 @@ impl ApiErrorCodes
 					CoreErrorCodes::DbTx => 24,
 
 					CoreErrorCodes::NoParameter => 40,
+					CoreErrorCodes::NoUrlQuery => 41,
 
 					CoreErrorCodes::EmailSend => 50,
 					CoreErrorCodes::EmailMessage => 51,
@@ -234,6 +236,7 @@ impl ApiErrorCodes
 			ApiErrorCodes::ContentSearchableItemRefTooBig => 801,
 			ApiErrorCodes::ContentSearchableNoHashes => 802,
 			ApiErrorCodes::ContentSearchableTooManyHashes => 803,
+			ApiErrorCodes::ContentSearchableQueryMissing => 810,
 		}
 	}
 }
