@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use rustgram::{Request, RouteParams};
 
 use crate::error::{CoreError, CoreErrorCodes};
@@ -48,4 +50,28 @@ pub fn get_name_param_from_params<'a>(params: &'a RouteParams, name: &str) -> Re
 		},
 		Some(n) => Ok(n),
 	}
+}
+
+pub fn get_query_params(req: &Request) -> Result<HashMap<String, String>, CoreError>
+{
+	let query = match req.uri().query() {
+		Some(q) => q,
+		None => {
+			return Err(CoreError::new(
+				400,
+				CoreErrorCodes::NoUrlQuery,
+				"Url query not found".to_string(),
+				None,
+			));
+		},
+	};
+
+	let params: HashMap<String, String> = query
+		.split('&')
+		.map(|p| p.split('=').map(|s| s.to_string()).collect::<Vec<String>>())
+		.filter(|p| p.len() == 2)
+		.map(|p| (p[0].clone(), p[1].clone()))
+		.collect();
+
+	Ok(params)
 }

@@ -18,6 +18,7 @@ pub enum CoreErrorCodes
 	EmailSend,
 
 	NoParameter,
+	NoUrlQuery,
 
 	FileLocalOpen,
 	FileRemove,
