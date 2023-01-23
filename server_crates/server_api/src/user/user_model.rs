@@ -151,7 +151,7 @@ pub(super) async fn get_done_login_light_data(app_id: &str, user_identifier: &st
 {
 	//language=SQL
 	let sql = r"
-SELECT user_id, ud.id as device_id, user_group_id
+SELECT user_id, ud.id as device_id
 FROM 
     sentc_user_device ud, 
     sentc_user u 
@@ -181,20 +181,38 @@ pub(super) async fn check_refresh_token(app_id: AppId, device_id: DeviceId, refr
 {
 	//language=SQL
 	let sql = r"
-SELECT user_id, device_identifier, user_group_id 
+SELECT user_id, device_identifier 
 FROM 
     sentc_user_token ut,
-    sentc_user_device ud,
-    sentc_user u
+    sentc_user_device ud
 WHERE ut.app_id = ? AND 
       ut.device_id = ? AND 
       ut.token = ? AND 
-      ud.id = ut.device_id AND 
-      u.id = user_id";
+      ud.id = ut.device_id";
 
 	let exists: Option<UserRefreshTokenCheck> = query_first(sql, set_params!(app_id, device_id, refresh_token)).await?;
 
 	Ok(exists)
+}
+
+pub(super) async fn get_user_group_id(app_id: AppId, user_id: UserId) -> AppRes<GroupId>
+{
+	//language=SQL
+	let sql = "SELECT user_group_id FROM sentc_user WHERE app_id = ? AND id = ?";
+
+	let id: Option<StringEntity> = query_first(sql, set_params!(app_id, user_id)).await?;
+
+	match id {
+		Some(id) => Ok(id.0),
+		None => {
+			Err(HttpErr::new(
+				400,
+				ApiErrorCodes::UserNotFound,
+				"User not found".to_string(),
+				None,
+			))
+		},
+	}
 }
 
 //__________________________________________________________________________________________________
@@ -624,16 +642,6 @@ WHERE
 	let list: Vec<UserDeviceList> = query_string(sql, params).await?;
 
 	Ok(list)
-}
-
-pub(super) async fn prepare_user_key_rotation(app_id: AppId, user_id: UserId) -> AppRes<Option<StringEntity>>
-{
-	//language=SQL
-	let sql = "SELECT user_group_id FROM sentc_user WHERE app_id = ? AND id = ?";
-
-	let check: Option<StringEntity> = query_first(sql, set_params!(app_id, user_id)).await?;
-
-	Ok(check)
 }
 
 pub(super) async fn get_device_identifier(app_id: AppId, user_id: UserId, device_id: DeviceId) -> AppRes<Option<StringEntity>>

@@ -440,23 +440,9 @@ pub(crate) async fn user_group_key_rotation(mut req: Request) -> JRes<KeyRotatio
 
 	let input: KeyRotationData = bytes_to_json(&body)?;
 
-	let group_id = user_model::prepare_user_key_rotation(app_data.app_data.app_id.clone(), user.id.clone()).await?;
-
-	let group_id = match group_id {
-		Some(id) => id.0,
-		None => {
-			return Err(HttpErr::new(
-				400,
-				ApiErrorCodes::UserNotFound,
-				"User not found".to_string(),
-				None,
-			))
-		},
-	};
-
 	let out = group_key_rotation_service::start_key_rotation(
 		app_data.app_data.app_id.clone(),
-		group_id,
+		user.group_id.clone(),
 		user.device_id.clone(),
 		input,
 		Some(user.id.clone()),
