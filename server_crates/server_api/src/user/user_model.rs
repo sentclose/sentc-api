@@ -351,7 +351,7 @@ pub(super) async fn register(app_id: AppId, register_data: UserDeviceRegisterInp
 	let user_params = set_params!(
 		user_id.to_string(),
 		app_id.to_string(),
-		"".to_string(),
+		"none".to_string(),
 		time.to_string()
 	);
 

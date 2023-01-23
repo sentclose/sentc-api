@@ -5,7 +5,7 @@ use jsonwebtoken::{decode, decode_header, encode, Algorithm, DecodingKey, Encodi
 use ring::rand;
 use ring::signature::{self, KeyPair};
 use rustgram::Request;
-use sentc_crypto_common::{DeviceId, UserId};
+use sentc_crypto_common::{AppId, DeviceId, UserId};
 use serde::{Deserialize, Serialize};
 use server_core::get_time_in_sec;
 
@@ -87,7 +87,7 @@ pub(crate) async fn create_jwt(internal_user_id: UserId, device_id: DeviceId, cu
 	})
 }
 
-pub async fn auth(app_id: &str, jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), HttpErr>
+pub async fn auth(app_id: AppId, jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), HttpErr>
 {
 	let header = decode_header(jwt).map_err(|_e| {
 		HttpErr::new(
@@ -128,7 +128,7 @@ pub async fn auth(app_id: &str, jwt: &str, check_exp: bool) -> Result<(UserJwtEn
 	//now check if the user is in the app
 	//this is necessary because now we check if the values inside the jwt are correct.
 	//fetch the device group id too, this id can not be faked and is safe to use internally
-	let group_id = user_service::get_user_group_id(app_id.to_string(), decoded.claims.aud.clone()).await?;
+	let group_id = user_service::get_user_group_id(app_id, decoded.claims.aud.clone()).await?;
 
 	Ok((
 		UserJwtEntity {
