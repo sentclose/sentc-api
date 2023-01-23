@@ -78,47 +78,47 @@ pub(crate) fn routes(router: &mut Router)
 	);
 	router.get(
 		"/api/v1/customer/apps/:last_fetched_time/:last_app_id",
-		r(crate::customer_app::get_all_apps).add(jwt::jwt_transform),
+		r(crate::customer_app::get_all_apps).add(jwt::jwt_customer_app_transform),
 	);
 	router.post(
 		"/api/v1/customer/app",
-		r(crate::customer_app::create_app).add(jwt::jwt_transform),
+		r(crate::customer_app::create_app).add(jwt::jwt_customer_app_transform),
 	);
 	router.get(
 		"/api/v1/customer/app/:app_id",
-		r(crate::customer_app::get_app_details).add(jwt::jwt_transform),
+		r(crate::customer_app::get_app_details).add(jwt::jwt_customer_app_transform),
 	);
 	router.put(
 		"/api/v1/customer/app/:app_id",
-		r(crate::customer_app::update).add(jwt::jwt_transform),
+		r(crate::customer_app::update).add(jwt::jwt_customer_app_transform),
 	);
 	router.put(
 		"/api/v1/customer/app/:app_id/options",
-		r(crate::customer_app::update_options).add(jwt::jwt_transform),
+		r(crate::customer_app::update_options).add(jwt::jwt_customer_app_transform),
 	);
 	router.put(
 		"/api/v1/customer/app/:app_id/file_options",
-		r(crate::customer_app::update_file_options).add(jwt::jwt_transform),
+		r(crate::customer_app::update_file_options).add(jwt::jwt_customer_app_transform),
 	);
 	router.delete(
 		"/api/v1/customer/app/:app_id",
-		r(crate::customer_app::delete).add(jwt::jwt_transform),
+		r(crate::customer_app::delete).add(jwt::jwt_customer_app_transform),
 	);
 	router.patch(
 		"/api/v1/customer/app/:app_id/token_renew",
-		r(crate::customer_app::renew_tokens).add(jwt::jwt_transform),
+		r(crate::customer_app::renew_tokens).add(jwt::jwt_customer_app_transform),
 	);
 	router.patch(
 		"/api/v1/customer/app/:app_id/new_jwt_keys",
-		r(crate::customer_app::add_jwt_keys).add(jwt::jwt_transform),
+		r(crate::customer_app::add_jwt_keys).add(jwt::jwt_customer_app_transform),
 	);
 	router.get(
 		"/api/v1/customer/app/:app_id/jwt",
-		r(crate::customer_app::get_jwt_details).add(jwt::jwt_transform),
+		r(crate::customer_app::get_jwt_details).add(jwt::jwt_customer_app_transform),
 	);
 	router.delete(
 		"/api/v1/customer/app/:app_id/jwt/:jwt_id",
-		r(crate::customer_app::delete_jwt_keys).add(jwt::jwt_transform),
+		r(crate::customer_app::delete_jwt_keys).add(jwt::jwt_customer_app_transform),
 	);
 	router.get(
 		"/api/v1/user/:user_id/public_key",

@@ -42,7 +42,7 @@ routes:
         - group:
             p: "/customer"
             mw:
-              - jwt::jwt_transform
+              - jwt::jwt_customer_app_transform
             gr:
               - get: { p: "/apps/:last_fetched_time/:last_app_id", s: crate::customer_app::get_all_apps }
               - post: { p: "/app", s: crate::customer_app::create_app }

@@ -1,4 +1,5 @@
 use std::collections::hash_map::DefaultHasher;
+use std::env;
 use std::future::Future;
 use std::hash::{Hash, Hasher};
 use std::pin::Pin;
@@ -7,6 +8,7 @@ use std::sync::Arc;
 use hyper::header::AUTHORIZATION;
 use rustgram::service::{IntoResponse, Service};
 use rustgram::{Request, Response};
+use sentc_crypto_common::AppId;
 use server_core::cache;
 use server_core::cache::{CacheVariant, DEFAULT_TTL};
 use server_core::input_helper::{bytes_to_json, json_to_string};
@@ -40,7 +42,13 @@ where
 		let next = self.inner.clone();
 
 		Box::pin(async move {
-			match jwt_check(&mut req, opt, check_exp).await {
+			//get the app id. the app mw should run first everytime when using the jwt mw
+			let app = match get_app_data_from_req(&req) {
+				Ok(app) => app.app_data.app_id.clone(),
+				Err(e) => return e.into_response(),
+			};
+
+			match jwt_check(&mut req, opt, check_exp, app).await {
 				Ok(_) => {},
 				Err(e) => return e.into_response(),
 			}
@@ -78,8 +86,49 @@ pub fn jwt_optional_transform<S>(inner: S) -> JwtMiddleware<S>
 }
 
 //__________________________________________________________________________________________________
+//mw that uses the sentc internal app id for customer
+pub struct JwtMiddlewareApp<S>
+{
+	inner: Arc<S>,
+	sentc_app_id: AppId,
+}
 
-async fn jwt_check(req: &mut Request, optional: bool, check_exp: bool) -> Result<(), HttpErr>
+impl<S> Service<Request> for JwtMiddlewareApp<S>
+where
+	S: Service<Request, Output = Response>,
+{
+	type Output = S::Output;
+	type Future = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
+
+	fn call(&self, mut req: Request) -> Self::Future
+	{
+		let app_id = self.sentc_app_id.to_string();
+		let next = self.inner.clone();
+
+		Box::pin(async move {
+			match jwt_check(&mut req, false, true, app_id).await {
+				Ok(_) => {},
+				Err(e) => return e.into_response(),
+			}
+
+			next.call(req).await
+		})
+	}
+}
+
+pub fn jwt_customer_app_transform<S>(inner: S) -> JwtMiddlewareApp<S>
+{
+	let sentc_app_id = env::var("SENTC_APP_ID").unwrap();
+
+	JwtMiddlewareApp {
+		inner: Arc::new(inner),
+		sentc_app_id,
+	}
+}
+
+//__________________________________________________________________________________________________
+
+async fn jwt_check(req: &mut Request, optional: bool, check_exp: bool, app_id: AppId) -> Result<(), HttpErr>
 {
 	//get and validate the jwt. then save it in the req param.
 	//cache the jwt under with the jwt hash as key to save the validation process everytime. save false jwt too
@@ -92,8 +141,7 @@ async fn jwt_check(req: &mut Request, optional: bool, check_exp: bool) -> Result
 			None
 		},
 		Ok(jwt) => {
-			let app = get_app_data_from_req(req)?;
-			match validate(&app.app_data.app_id, jwt.as_str(), check_exp).await {
+			match validate(app_id, jwt.as_str(), check_exp).await {
 				Err(e) => {
 					if !optional {
 						return Err(e);
@@ -141,7 +189,7 @@ fn get_jwt_from_req(req: &Request) -> Result<String, HttpErr>
 	Ok(auth_header.trim_start_matches(BEARER).to_string())
 }
 
-async fn validate(app_id: &str, jwt: &str, check_exp: bool) -> Result<UserJwtEntity, HttpErr>
+async fn validate(app_id: AppId, jwt: &str, check_exp: bool) -> Result<UserJwtEntity, HttpErr>
 {
 	//hash the jwt and check if it is in the cache
 
@@ -150,7 +198,7 @@ async fn validate(app_id: &str, jwt: &str, check_exp: bool) -> Result<UserJwtEnt
 	jwt.hash(&mut s);
 	let cache_key = s.finish();
 	let cache_key = cache_key.to_string();
-	let cache_key = get_user_jwt_key(app_id, &cache_key);
+	let cache_key = get_user_jwt_key(&app_id, &cache_key);
 
 	let entity = match cache::get(cache_key.as_str()).await {
 		Some(j) => bytes_to_json(j.as_bytes())?,
