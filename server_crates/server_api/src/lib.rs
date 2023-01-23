@@ -22,6 +22,11 @@ pub use content_management::{
 	content_entity as sentc_content_entities,
 	content_service as sentc_content_service,
 };
+pub use content_searchable::{
+	searchable_controller as sentc_searchable_controller,
+	searchable_entities as sentc_searchable_entities,
+	searchable_service as sentc_searchable_service,
+};
 pub use customer::{customer_controller as sentc_customer_controller, customer_entities as sentc_customer_entities};
 pub use customer_app::{
 	app_controller as sentc_app_controller,
