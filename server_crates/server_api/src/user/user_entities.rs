@@ -187,7 +187,6 @@ pub struct UserLoginLightEntity
 {
 	pub user_id: UserId,
 	pub device_id: DeviceId,
-	pub group_id: GroupId,
 }
 
 //__________________________________________________________________________________________________
@@ -198,7 +197,6 @@ pub struct UserRefreshTokenCheck
 {
 	pub user_id: DeviceId,
 	pub device_identifier: String,
-	pub group_id: GroupId,
 }
 
 //__________________________________________________________________________________________________

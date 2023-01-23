@@ -20,3 +20,8 @@ pub(crate) fn get_group_user_parent_ref_key(group_id: &str, user_id: &str) -> St
 {
 	INTERNAL_GROUP_USER_PARENT_REF_CACHE.to_string() + group_id + "_" + user_id
 }
+
+pub(crate) fn get_user_jwt_key(app_id: &str, jwt_key: &str) -> String
+{
+	JWT_CACHE.to_string() + app_id + "_" + jwt_key
+}

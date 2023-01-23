@@ -53,6 +53,11 @@ pub fn check_user_in_app_by_user_id(app_id: AppId, user_id: UserId) -> impl Futu
 	user_model::check_user_in_app(app_id, user_id)
 }
 
+pub fn get_user_group_id(app_id: AppId, user_id: UserId) -> impl Future<Output = AppRes<GroupId>>
+{
+	user_model::get_user_group_id(app_id, user_id)
+}
+
 pub async fn exists(app_data: &AppData, data: UserIdentifierAvailableServerInput) -> AppRes<UserIdentifierAvailableServerOutput>
 {
 	let exists = user_model::check_user_exists(&app_data.app_data.app_id, data.user_identifier.as_str()).await?;
@@ -242,7 +247,6 @@ pub async fn done_login_light(app_data: &AppData, done_login: DoneLoginServerInp
 
 	let jwt = create_jwt(
 		id.user_id.to_string(),
-		id.group_id,
 		id.device_id.to_string(),
 		&app_data.jwt_data[0], //use always the latest created jwt data
 		true,
@@ -299,7 +303,6 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 	// and create the jwt
 	let jwt = create_jwt(
 		device_keys.user_id.to_string(),
-		device_keys.user_group_id.to_string(),
 		device_keys.device_id.to_string(),
 		&app_data.jwt_data[0], //use always the latest created jwt data
 		true,
@@ -420,7 +423,6 @@ pub async fn refresh_jwt(app_data: &AppData, device_id: DeviceId, input: JwtRefr
 
 	let jwt = create_jwt(
 		device_identifier.user_id.to_string(),
-		device_identifier.group_id,
 		device_id.to_string(),
 		&app_data.jwt_data[0], //use always the latest created jwt data
 		false,

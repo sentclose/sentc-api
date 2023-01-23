@@ -5,13 +5,13 @@ use jsonwebtoken::{decode, decode_header, encode, Algorithm, DecodingKey, Encodi
 use ring::rand;
 use ring::signature::{self, KeyPair};
 use rustgram::Request;
-use sentc_crypto_common::{DeviceId, GroupId, UserId};
+use sentc_crypto_common::{AppId, DeviceId, UserId};
 use serde::{Deserialize, Serialize};
 use server_core::get_time_in_sec;
 
 use crate::customer_app::app_entities::AppJwt;
 use crate::user::user_entities::UserJwtEntity;
-use crate::user::user_model;
+use crate::user::{user_model, user_service};
 use crate::util::api_res::{ApiErrorCodes, HttpErr};
 
 pub const JWT_ALG: &str = "ES384";
@@ -24,7 +24,6 @@ struct Claims
 	sub: DeviceId, //the device id
 	exp: usize,
 	iat: usize,
-	group_id: GroupId,
 	fresh: bool, //was this token from refresh jwt or from login
 }
 
@@ -57,13 +56,7 @@ pub fn get_jwt_data_from_param(req: &Request) -> Result<&UserJwtEntity, HttpErr>
 	}
 }
 
-pub(crate) async fn create_jwt(
-	internal_user_id: UserId,
-	group_id: GroupId,
-	device_id: DeviceId,
-	customer_jwt_data: &AppJwt,
-	fresh: bool,
-) -> Result<String, HttpErr>
+pub(crate) async fn create_jwt(internal_user_id: UserId, device_id: DeviceId, customer_jwt_data: &AppJwt, fresh: bool) -> Result<String, HttpErr>
 {
 	let iat = get_time_in_sec()?;
 	let expiration = iat + 60 * 5; //exp in 5 min
@@ -73,7 +66,6 @@ pub(crate) async fn create_jwt(
 		aud: internal_user_id,
 		sub: device_id,
 		exp: expiration as usize,
-		group_id,
 		fresh,
 	};
 
@@ -95,7 +87,7 @@ pub(crate) async fn create_jwt(
 	})
 }
 
-pub async fn auth(jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), HttpErr>
+pub async fn auth(app_id: AppId, jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), HttpErr>
 {
 	let header = decode_header(jwt).map_err(|_e| {
 		HttpErr::new(
@@ -133,11 +125,16 @@ pub async fn auth(jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), 
 	let decoded = decode::<Claims>(jwt, &DecodingKey::from_ec_der(&verify_key), &validation)
 		.map_err(|_e| HttpErr::new(401, ApiErrorCodes::JwtValidation, "Wrong jwt".to_owned(), None))?;
 
+	//now check if the user is in the app
+	//this is necessary because now we check if the values inside the jwt are correct.
+	//fetch the device group id too, this id can not be faked and is safe to use internally
+	let group_id = user_service::get_user_group_id(app_id, decoded.claims.aud.clone()).await?;
+
 	Ok((
 		UserJwtEntity {
 			id: decoded.claims.aud,
 			device_id: decoded.claims.sub,
-			group_id: decoded.claims.group_id,
+			group_id,
 			fresh: decoded.claims.fresh,
 		},
 		decoded.claims.exp,
@@ -200,7 +197,6 @@ mod test
 			aud: "jo".to_string(),
 			sub: "12345".to_string(),
 			exp: expiration as usize,
-			group_id: "12345".to_string(),
 			fresh: false,
 		};
 
