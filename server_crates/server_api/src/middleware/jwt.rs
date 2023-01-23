@@ -11,10 +11,11 @@ use server_core::cache;
 use server_core::cache::{CacheVariant, DEFAULT_TTL};
 use server_core::input_helper::{bytes_to_json, json_to_string};
 
+use crate::sentc_app_utils::get_app_data_from_req;
 use crate::user::jwt::auth;
 use crate::user::user_entities::UserJwtEntity;
 use crate::util::api_res::{ApiErrorCodes, HttpErr};
-use crate::util::JWT_CACHE;
+use crate::util::get_user_jwt_key;
 
 const BEARER: &str = "Bearer ";
 
@@ -91,7 +92,8 @@ async fn jwt_check(req: &mut Request, optional: bool, check_exp: bool) -> Result
 			None
 		},
 		Ok(jwt) => {
-			match validate(jwt.as_str(), check_exp).await {
+			let app = get_app_data_from_req(req)?;
+			match validate(&app.app_data.app_id, jwt.as_str(), check_exp).await {
 				Err(e) => {
 					if !optional {
 						return Err(e);
@@ -139,7 +141,7 @@ fn get_jwt_from_req(req: &Request) -> Result<String, HttpErr>
 	Ok(auth_header.trim_start_matches(BEARER).to_string())
 }
 
-async fn validate(jwt: &str, check_exp: bool) -> Result<UserJwtEntity, HttpErr>
+async fn validate(app_id: &str, jwt: &str, check_exp: bool) -> Result<UserJwtEntity, HttpErr>
 {
 	//hash the jwt and check if it is in the cache
 
@@ -148,13 +150,13 @@ async fn validate(jwt: &str, check_exp: bool) -> Result<UserJwtEntity, HttpErr>
 	jwt.hash(&mut s);
 	let cache_key = s.finish();
 	let cache_key = cache_key.to_string();
-	let cache_key = JWT_CACHE.to_string() + cache_key.as_str();
+	let cache_key = get_user_jwt_key(app_id, &cache_key);
 
 	let entity = match cache::get(cache_key.as_str()).await {
 		Some(j) => bytes_to_json(j.as_bytes())?,
 		None => {
 			//if not in the cache valid the jwt and cache it
-			let (entity, exp) = match auth(jwt, check_exp).await {
+			let (entity, exp) = match auth(app_id, jwt, check_exp).await {
 				Ok(v) => v,
 				Err(e) => {
 					//save the wrong jwt in cache
