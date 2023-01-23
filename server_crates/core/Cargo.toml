@@ -8,17 +8,17 @@ edition = "2021"
 [dependencies]
 server-core-macros = {version = "0.1.0", path = "../core_macros", optional = true}
 
-rustgram = "0.1.5"
+rustgram = {workspace = true}
 
-hyper = { version = "0.14", features = ["full"] }
-tokio = { version = "1", features = ["full"] }
-tokio-util = "0.7.2"
+hyper = {workspace = true}
+tokio = {workspace = true}
+tokio-util = {workspace = true}
 
 # dotenv vars
-dotenv = "0.15.0"
+dotenv = {workspace = true}
 
 # for caching trait
-async-trait = "0.1.56"
+async-trait = {workspace = true}
 
 #_______________________________________________________________________________________________________________________
 # to stream the input body
@@ -27,8 +27,8 @@ futures = { version = "0.3.6", default-features = false, features = ["async-awai
 
 #_______________________________________________________________________________________________________________________
 # json handling
-serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}
-serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
+serde_json = {workspace = true}
+serde = {workspace = true}
 
 #_______________________________________________________________________________________________________________________
 # mysql db

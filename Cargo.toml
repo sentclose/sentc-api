@@ -20,3 +20,22 @@ members = [
     "server_crates/server_api_common",
     "server_crates/worker/worker_manual"
 ]
+
+[workspace.dependencies]
+# server impl
+hyper = { version = "0.14", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
+tokio-util = "0.7.2"
+
+rustgram = "0.1.7"
+
+# dotenv vars
+dotenv = "0.15.0"
+
+# for caching trait
+async-trait = "0.1.56"
+
+#_______________________________________________________________________________________________________________________
+# json handling
+serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }

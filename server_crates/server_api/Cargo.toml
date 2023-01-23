@@ -14,21 +14,21 @@ server_api_common = {version = "0.1.0", path = "../server_api_common", default-f
 server-core = {version = "0.1.0", path = "../core", default-features = false, features = ["derive_macro"]}
 
 # server impl
-hyper = { version = "0.14", features = ["full"] }
-tokio = { version = "1", features = ["full"] }
+hyper = {workspace = true}
+tokio = {workspace = true}
 
-rustgram = "0.1.7"
+rustgram = {workspace = true}
 
 # dotenv vars
-dotenv = "0.15.0"
+dotenv = {workspace = true}
 
 # for caching trait
-async-trait = "0.1.56"
+async-trait = {workspace = true}
 
 #_______________________________________________________________________________________________________________________
 # json handling
-serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}
-serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
+serde_json = {workspace = true}
+serde = {workspace = true}
 
 # id
 uuid = {version="1.1.2", features= ["v4", "fast-rng"]}

@@ -6,11 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1", features = ["full"] }
-tokio-util = "0.7.2"
-hyper = { version = "0.14", features = ["full"] }
+tokio = {workspace = true}
+tokio-util = {workspace = true}
+hyper = {workspace = true}
 
-rustgram = "0.1.7"
+rustgram = {workspace = true}
 
 server_api = {version = "*", path = "../../server_api", default-features = false}
 server-core = {version = "*", path = "../../core", default-features = false}

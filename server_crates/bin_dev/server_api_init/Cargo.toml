@@ -10,11 +10,11 @@ server_api_common = {version = "0.1.0", path = "../../server_api_common", defaul
 
 server_api = {version = "0.1.0", path = "../../server_api", default-features = false, features = ["embedded"]}
 
-tokio = { version = "1", features = ["full"] }
+tokio = {workspace = true}
 
 # json handling
-serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}
-serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
+serde_json = {workspace = true}
+serde = {workspace = true}
 
 [features]
 default = ["mysql"]

@@ -7,8 +7,8 @@ default-run = "server_api_all"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rustgram = "0.1.7"
-tokio = { version = "1", features = ["full"] }
+rustgram = {workspace = true}
+tokio = {workspace = true}
 
 server_api_rest = {version = "0.1.0", path = "../server_api_rest", default-features = false}
 server_api_file = {version = "0.1.0", path = "../server_api_file", default-features = false}

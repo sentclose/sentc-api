@@ -9,7 +9,7 @@ edition = "2021"
 server-core = {version = "0.1.0", path = "../../core", default-features = false}
 
 # server impl
-hyper = { version = "0.14", features = ["full"] }
-tokio = { version = "1", features = ["full"] }
+hyper = {workspace = true}
+tokio = {workspace = true}
 
-rustgram = "0.1.7"
+rustgram = {workspace = true}

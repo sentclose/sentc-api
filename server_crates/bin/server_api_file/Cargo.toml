@@ -8,8 +8,8 @@ edition = "2021"
 [dependencies]
 server_api = {version = "0.1.0", path = "../../server_api", default-features = false}
 
-tokio = { version = "1", features = ["full"] }
-rustgram = "0.1.7"
+tokio = {workspace = true}
+rustgram = {workspace = true}
 
 [dev-dependencies]
 sentc-crypto-common = {version = "0.1.0", path = "../../../sdk-common" }
