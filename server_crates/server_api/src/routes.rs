@@ -355,6 +355,13 @@ pub(crate) fn routes(router: &mut Router)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
+	router.delete(
+		"/api/v1/search/group/:group_id/:item_ref/:cat_id",
+		r(crate::content_searchable::delete_by_cat)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
 	router.get(
 		"/api/v1/search/group/:group_id/all/:last_fetched_time/:last_id",
 		r(crate::content_searchable::search_all)
