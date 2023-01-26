@@ -69,6 +69,16 @@ pub(super) async fn delete(app_id: AppId, item_ref: String) -> AppRes<()>
 	Ok(())
 }
 
+pub(super) async fn delete_by_cat(app_id: AppId, item_ref: String, cat_id: CategoryId) -> AppRes<()>
+{
+	//language=SQL
+	let sql = "DELETE FROM sentc_content_searchable_item WHERE app_id = ? AND item_ref = ? AND category = ?";
+
+	exec(sql, set_params!(app_id, item_ref, cat_id)).await?;
+
+	Ok(())
+}
+
 pub(super) async fn search_item_for_group(
 	app_id: AppId,
 	group_id: GroupId,

@@ -69,6 +69,29 @@ pub async fn delete_item(app_id: AppId, item_ref: String) -> AppRes<()>
 	searchable_model::delete(app_id, item_ref).await
 }
 
+pub async fn delete_item_by_cat(app_id: AppId, item_ref: String, cat: String) -> AppRes<()>
+{
+	if item_ref.is_empty() {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::ContentSearchableItemRefNotSet,
+			"Item is not set".to_string(),
+			None,
+		));
+	}
+
+	if item_ref.len() > 50 {
+		return Err(HttpErr::new(
+			400,
+			ApiErrorCodes::ContentSearchableItemRefTooBig,
+			"Item ref is too big. Only 50 characters are allowed".to_string(),
+			None,
+		));
+	}
+
+	searchable_model::delete_by_cat(app_id, item_ref, cat).await
+}
+
 pub async fn search_item_for_group(
 	app_id: AppId,
 	group_id: GroupId,

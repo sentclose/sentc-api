@@ -45,6 +45,20 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
+pub(crate) async fn delete_by_cat(req: Request) -> JRes<ServerSuccessOutput>
+{
+	let app = get_app_data_from_req(&req)?;
+
+	check_endpoint_with_app_options(app, Endpoint::ForceServer)?;
+
+	let item = get_name_param_from_req(&req, "item_ref")?;
+	let cat_id = get_name_param_from_req(&req, "cat_id")?;
+
+	searchable_service::delete_item_by_cat(app.app_data.app_id.clone(), item.to_string(), cat_id.to_string()).await?;
+
+	echo_success()
+}
+
 pub(crate) fn search_all(req: Request) -> impl Future<Output = JRes<Vec<ListSearchItem>>>
 {
 	search(req, false)
