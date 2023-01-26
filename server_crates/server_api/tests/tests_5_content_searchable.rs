@@ -841,6 +841,152 @@ async fn test_21_delete_hash()
 	assert_eq!(list[0].item_ref, "ref1");
 }
 
+#[tokio::test]
+async fn test_22_create_hash_with_cat()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let creator = &users[0];
+	let group = &groups[0];
+
+	let data = "123*+^êéèüöß@€&$ 👍 🚀 😎";
+
+	let input = sentc_crypto::crypto_searchable::create_searchable(&group.hmac_keys[0], "ref2", Some("cat"), data, false, None).unwrap();
+
+	let url = get_url("api/v1/search/group/".to_owned() + &group.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(&body).unwrap();
+
+	//create a 2nd but without cat but with the same ref
+
+	let input = sentc_crypto::crypto_searchable::create_searchable(&group.hmac_keys[0], "ref2", None, data, false, None).unwrap();
+
+	let url = get_url("api/v1/search/group/".to_owned() + &group.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(&body).unwrap();
+
+	//test searching with cat
+	let search_str = sentc_crypto::crypto_searchable::search(&group.hmac_keys[0], "123").unwrap();
+
+	let url = get_url("api/v1/search/group/".to_owned() + &group.group_id + "/cat/0/none?search=" + &search_str);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let list: Vec<ListSearchItem> = handle_server_response(&body).unwrap();
+
+	assert_eq!(list.len(), 1);
+	assert_eq!(list[0].item_ref, "ref2".to_string());
+
+	//test searching all
+	let search_str = sentc_crypto::crypto_searchable::search(&group.hmac_keys[0], "123").unwrap();
+
+	let url = get_url("api/v1/search/group/".to_owned() + &group.group_id + "/all/0/none?search=" + &search_str);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let list: Vec<ListSearchItem> = handle_server_response(&body).unwrap();
+
+	//ref2 two times (in cat and no cat, ref1
+	assert_eq!(list.len(), 3);
+	assert_eq!(list[0].item_ref, "ref2".to_string());
+	assert_eq!(list[1].item_ref, "ref2".to_string());
+	assert_eq!(list[2].item_ref, "ref1".to_string());
+}
+
+#[tokio::test]
+async fn test_23_delete_hash_with_cat()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let creator = &users[0];
+	let group = &groups[0];
+
+	let url = get_url("api/v1/search/group/".to_owned() + &group.group_id + "/ref2/cat");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(&body).unwrap();
+
+	let data = "123*+^êéèüöß@€&$ 👍 🚀 😎";
+
+	let search_str = sentc_crypto::crypto_searchable::search(&group.hmac_keys[0], data).unwrap();
+
+	let url = get_url("api/v1/search/group/".to_owned() + &group.group_id + "/all/0/none?search=" + &search_str);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let list: Vec<ListSearchItem> = handle_server_response(&body).unwrap();
+
+	//only two items left, the one from the cat is deleted
+	assert_eq!(list.len(), 2);
+	assert_eq!(list[0].item_ref, "ref2");
+	assert_eq!(list[1].item_ref, "ref1");
+}
+
 //__________________________________________________________________________________________________
 //clean up
 
