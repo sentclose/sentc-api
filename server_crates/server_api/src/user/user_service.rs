@@ -22,6 +22,8 @@ use sentc_crypto_common::user::{
 	UserUpdateServerInput,
 };
 use sentc_crypto_common::{AppId, DeviceId, GroupId, SymKeyId, UserId};
+use server_core::cache;
+use server_core::db::StringEntity;
 
 use crate::group::group_entities::{GroupUserKeys, InternalGroupData, InternalGroupDataComplete, InternalUserGroupData};
 use crate::group::group_user_service::NewUserType;
@@ -31,6 +33,7 @@ use crate::user::jwt::create_jwt;
 use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserJwtEntity, SERVER_RANDOM_VALUE};
 use crate::user::user_model;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::util::get_user_in_app_key;
 
 pub enum UserAction
 {
@@ -53,7 +56,7 @@ pub fn check_user_in_app_by_user_id(app_id: AppId, user_id: UserId) -> impl Futu
 	user_model::check_user_in_app(app_id, user_id)
 }
 
-pub fn get_user_group_id(app_id: AppId, user_id: UserId) -> impl Future<Output = AppRes<GroupId>>
+pub fn get_user_group_id(app_id: AppId, user_id: UserId) -> impl Future<Output = AppRes<Option<StringEntity>>>
 {
 	user_model::get_user_group_id(app_id, user_id)
 }
@@ -73,6 +76,11 @@ pub async fn exists(app_data: &AppData, data: UserIdentifierAvailableServerInput
 pub async fn register_light(app_id: AppId, input: UserDeviceRegisterInput) -> AppRes<(String, String)>
 {
 	let (user_id, device_id) = user_model::register(app_id.to_string(), input).await?;
+
+	//delete the user in app check cache from the jwt mw
+	//it can happened that a user id was used before which doesn't exists yet
+	let cache_key = get_user_in_app_key(&app_id, &user_id);
+	cache::delete(&cache_key).await;
 
 	Ok((user_id, device_id))
 }
@@ -103,6 +111,11 @@ pub async fn register(app_id: AppId, register_input: RegisterData) -> AppRes<Reg
 	)
 	.await?
 	.0;
+
+	//delete the user in app check cache from the jwt mw
+	//it can happened that a user id was used before which doesn't exists yet
+	let cache_key = get_user_in_app_key(&app_id, &user_id);
+	cache::delete(&cache_key).await;
 
 	//now update the user group id
 	user_model::register_update_user_group_id(app_id, user_id.to_string(), group_id).await?;
@@ -455,6 +468,11 @@ pub async fn delete(user: &UserJwtEntity, app_id: AppId) -> AppRes<()>
 
 	user_model::delete(user_id.to_string(), app_id.to_string()).await?;
 
+	//delete the user in app check cache from the jwt mw
+	let cache_key = get_user_in_app_key(&app_id, user_id);
+	cache::delete(&cache_key).await;
+
+	//delete the user group
 	group_service::delete_user_group(app_id, group_id.to_string()).await?;
 
 	Ok(())
