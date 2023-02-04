@@ -23,7 +23,7 @@ use crate::customer_app::{app_model, app_service, generate_tokens};
 use crate::file::file_service;
 use crate::user::jwt::{create_jwt_keys, get_jwt_data_from_param};
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
-use crate::util::APP_TOKEN_CACHE;
+use crate::util::{get_app_jwt_sign_key, get_app_jwt_verify_key, APP_TOKEN_CACHE};
 
 pub(crate) async fn get_all_apps(req: Request) -> JRes<Vec<CustomerAppList>>
 {
@@ -153,6 +153,12 @@ pub(crate) async fn add_jwt_keys(req: Request) -> JRes<AppJwtRegisterOutput>
 	)
 	.await?;
 
+	//delete the cache of the app because it can happened that this id was used before
+	let verify_key_cache_key = get_app_jwt_verify_key(&jwt_id);
+	let sign_key_cache_key = get_app_jwt_sign_key(&jwt_id);
+	cache::delete(&verify_key_cache_key).await;
+	cache::delete(&sign_key_cache_key).await;
+
 	let out = AppJwtRegisterOutput {
 		customer_id: customer_id.to_string(),
 		app_id: app_id.to_string(),
@@ -193,6 +199,11 @@ pub(crate) async fn delete_jwt_keys(req: Request) -> JRes<ServerSuccessOutput>
 
 	cache::delete(old_hashed_secret.as_str()).await;
 	cache::delete(old_hashed_public_token.as_str()).await;
+
+	let verify_key_cache_key = get_app_jwt_verify_key(jwt_id);
+	let sign_key_cache_key = get_app_jwt_sign_key(jwt_id);
+	cache::delete(&verify_key_cache_key).await;
+	cache::delete(&sign_key_cache_key).await;
 
 	echo_success()
 }

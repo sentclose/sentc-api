@@ -17,44 +17,24 @@ use crate::user::user_entities::{
 use crate::user::user_service::UserAction;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
-pub(super) async fn get_jwt_sign_key(kid: &str) -> AppRes<String>
+pub(super) async fn get_jwt_sign_key(kid: &str) -> AppRes<Option<StringEntity>>
 {
 	//language=SQL
 	let sql = "SELECT sign_key FROM sentc_app_jwt_keys WHERE id = ?";
 
 	let sign_key: Option<StringEntity> = query_first(sql, set_params!(kid.to_string())).await?;
 
-	match sign_key {
-		Some(k) => Ok(k.0),
-		None => {
-			Err(HttpErr::new(
-				200,
-				ApiErrorCodes::JwtKeyNotFound,
-				"No matched key to this key id".to_string(),
-				None,
-			))
-		},
-	}
+	Ok(sign_key)
 }
 
-pub(super) async fn get_jwt_verify_key(kid: &str) -> AppRes<String>
+pub(super) async fn get_jwt_verify_key(kid: &str) -> AppRes<Option<StringEntity>>
 {
 	//language=SQL
 	let sql = "SELECT verify_key FROM sentc_app_jwt_keys WHERE id = ?";
 
 	let sign_key: Option<StringEntity> = query_first(sql, set_params!(kid.to_string())).await?;
 
-	match sign_key {
-		Some(k) => Ok(k.0),
-		None => {
-			Err(HttpErr::new(
-				200,
-				ApiErrorCodes::JwtKeyNotFound,
-				"No matched key to this key id".to_string(),
-				None,
-			))
-		},
-	}
+	Ok(sign_key)
 }
 
 //__________________________________________________________________________________________________
@@ -195,24 +175,14 @@ WHERE ut.app_id = ? AND
 	Ok(exists)
 }
 
-pub(super) async fn get_user_group_id(app_id: AppId, user_id: UserId) -> AppRes<GroupId>
+pub(super) async fn get_user_group_id(app_id: AppId, user_id: UserId) -> AppRes<Option<StringEntity>>
 {
 	//language=SQL
 	let sql = "SELECT user_group_id FROM sentc_user WHERE app_id = ? AND id = ?";
 
 	let id: Option<StringEntity> = query_first(sql, set_params!(app_id, user_id)).await?;
 
-	match id {
-		Some(id) => Ok(id.0),
-		None => {
-			Err(HttpErr::new(
-				400,
-				ApiErrorCodes::UserNotFound,
-				"User not found".to_string(),
-				None,
-			))
-		},
-	}
+	Ok(id)
 }
 
 //__________________________________________________________________________________________________
