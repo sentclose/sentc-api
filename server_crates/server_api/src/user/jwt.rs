@@ -5,14 +5,17 @@ use jsonwebtoken::{decode, decode_header, encode, Algorithm, DecodingKey, Encodi
 use ring::rand;
 use ring::signature::{self, KeyPair};
 use rustgram::Request;
-use sentc_crypto_common::{AppId, DeviceId, UserId};
+use sentc_crypto_common::{AppId, DeviceId, GroupId, UserId};
 use serde::{Deserialize, Serialize};
-use server_core::get_time_in_sec;
+use server_core::cache::{CacheVariant, LONG_TTL};
+use server_core::input_helper::{bytes_to_json, json_to_string};
+use server_core::{cache, get_time_in_sec};
 
 use crate::customer_app::app_entities::AppJwt;
 use crate::user::user_entities::UserJwtEntity;
 use crate::user::{user_model, user_service};
-use crate::util::api_res::{ApiErrorCodes, HttpErr};
+use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::util::{get_app_jwt_sign_key, get_app_jwt_verify_key, get_user_in_app_key};
 
 pub const JWT_ALG: &str = "ES384";
 
@@ -73,7 +76,7 @@ pub(crate) async fn create_jwt(internal_user_id: UserId, device_id: DeviceId, cu
 	header.kid = Some(customer_jwt_data.jwt_key_id.to_string());
 
 	//get it from the db (no cache for the sign key)
-	let sign_key = user_model::get_jwt_sign_key(customer_jwt_data.jwt_key_id.as_str()).await?;
+	let sign_key = get_sign_key(&customer_jwt_data.jwt_key_id).await?;
 	//decode sign key
 	let sign_key = decode_jwt_key(sign_key)?;
 
@@ -114,8 +117,9 @@ pub async fn auth(app_id: AppId, jwt: &str, check_exp: bool) -> Result<(UserJwtE
 	//it is secure when using only the key id without app ref. Only the backend with the right sign key can create a jwt which can be verified by the verify key.
 	//so faking the key id but using another sign key for the sign would be an error.
 
-	//get the verify key from the db (no cache here because we would got extreme big cache for each app, and we may get the jwt from cache too)
-	let verify_key = user_model::get_jwt_verify_key(key_id.as_str()).await?;
+	//use a separate cache for the keys because the validation is done only when the jwt was never cached before (see jwt middleware)
+	let verify_key = get_verify_key(&key_id).await?;
+
 	//decode the key
 	let verify_key = decode_jwt_key(verify_key)?;
 
@@ -128,7 +132,7 @@ pub async fn auth(app_id: AppId, jwt: &str, check_exp: bool) -> Result<(UserJwtE
 	//now check if the user is in the app
 	//this is necessary because now we check if the values inside the jwt are correct.
 	//fetch the device group id too, this id can not be faked and is safe to use internally
-	let group_id = user_service::get_user_group_id(app_id, decoded.claims.aud.clone()).await?;
+	let group_id = get_user_in_app(app_id, decoded.claims.aud.clone()).await?;
 
 	Ok((
 		UserJwtEntity {
@@ -176,6 +180,153 @@ fn map_create_key_err<E: Error>(e: E) -> HttpErr
 		"Can't create keys".to_owned(),
 		Some(format!("Err in Jwt key creation: {}", e)),
 	)
+}
+
+async fn get_sign_key(key_id: &str) -> AppRes<String>
+{
+	//use a separate cache for the keys because the validation is done only when the jwt was never cached before (see jwt middleware)
+	let sign_key_cache_key = get_app_jwt_sign_key(key_id);
+
+	match cache::get(&sign_key_cache_key).await {
+		Some(c) => {
+			match bytes_to_json::<CacheVariant<String>>(c.as_bytes())? {
+				CacheVariant::Some(k) => Ok(k),
+				CacheVariant::None => {
+					Err(HttpErr::new(
+						200,
+						ApiErrorCodes::JwtKeyNotFound,
+						"No matched key to this key id".to_string(),
+						None,
+					))
+				},
+			}
+		},
+		None => {
+			//key was not in the cache -> search with the model
+			match user_model::get_jwt_sign_key(key_id).await? {
+				Some(key) => {
+					cache::add(
+						sign_key_cache_key,
+						json_to_string(&CacheVariant::Some(&key.0))?,
+						LONG_TTL,
+					)
+					.await;
+
+					Ok(key.0)
+				},
+				None => {
+					//cache wrong keys too
+					cache::add(
+						sign_key_cache_key,
+						json_to_string(&CacheVariant::<String>::None)?,
+						LONG_TTL,
+					)
+					.await;
+
+					Err(HttpErr::new(
+						200,
+						ApiErrorCodes::JwtKeyNotFound,
+						"No matched key to this key id".to_string(),
+						None,
+					))
+				},
+			}
+		},
+	}
+}
+
+async fn get_verify_key(key_id: &str) -> AppRes<String>
+{
+	//use a separate cache for the keys because the validation is done only when the jwt was never cached before (see jwt middleware)
+	let verify_key_cache_key = get_app_jwt_verify_key(key_id);
+
+	match cache::get(&verify_key_cache_key).await {
+		Some(c) => {
+			match bytes_to_json::<CacheVariant<String>>(c.as_bytes())? {
+				CacheVariant::Some(k) => Ok(k),
+				CacheVariant::None => {
+					Err(HttpErr::new(
+						200,
+						ApiErrorCodes::JwtKeyNotFound,
+						"No matched key to this key id".to_string(),
+						None,
+					))
+				},
+			}
+		},
+		None => {
+			//key was not in the cache -> search with the model
+			match user_model::get_jwt_verify_key(key_id).await? {
+				Some(key) => {
+					cache::add(
+						verify_key_cache_key,
+						json_to_string(&CacheVariant::Some(&key.0))?,
+						LONG_TTL,
+					)
+					.await;
+
+					Ok(key.0)
+				},
+				None => {
+					//cache wrong keys too
+					cache::add(
+						verify_key_cache_key,
+						json_to_string(&CacheVariant::<String>::None)?,
+						LONG_TTL,
+					)
+					.await;
+
+					Err(HttpErr::new(
+						200,
+						ApiErrorCodes::JwtKeyNotFound,
+						"No matched key to this key id".to_string(),
+						None,
+					))
+				},
+			}
+		},
+	}
+}
+
+async fn get_user_in_app(app_id: AppId, user_id: UserId) -> AppRes<GroupId>
+{
+	let cache_key = get_user_in_app_key(&app_id, &user_id);
+
+	match cache::get(&cache_key).await {
+		Some(c) => {
+			match bytes_to_json::<CacheVariant<GroupId>>(c.as_bytes())? {
+				CacheVariant::Some(k) => Ok(k),
+				CacheVariant::None => {
+					Err(HttpErr::new(
+						400,
+						ApiErrorCodes::UserNotFound,
+						"User not found".to_string(),
+						None,
+					))
+				},
+			}
+		},
+		None => {
+			match user_service::get_user_group_id(app_id, user_id).await? {
+				Some(u) => {
+					cache::add(cache_key, json_to_string(&CacheVariant::Some(&u.0))?, LONG_TTL).await;
+
+					Ok(u.0)
+				},
+				None => {
+					//cache wrong user in app too
+					cache::add(cache_key, json_to_string(&CacheVariant::<String>::None)?, LONG_TTL).await;
+
+					Err(HttpErr::new(
+						400,
+						ApiErrorCodes::UserNotFound,
+						"User not found".to_string(),
+						None,
+					))
+				},
+			}
+		},
+	}
 }
 
 #[cfg(test)]
