@@ -1,7 +1,7 @@
 use std::future::Future;
 
 use sentc_crypto_common::file::{BelongsToType, FileRegisterInput, FileRegisterOutput};
-use sentc_crypto_common::{AppId, FileId, GroupId, UserId};
+use server_core::str_t;
 
 use crate::file::file_entities::FileMetaData;
 use crate::file::file_model;
@@ -14,7 +14,7 @@ pub(super) const FILE_BELONGS_TO_TYPE_NONE: i32 = 0;
 pub(super) const FILE_BELONGS_TO_TYPE_GROUP: i32 = 1;
 pub(super) const FILE_BELONGS_TO_TYPE_USER: i32 = 2;
 
-pub async fn register_file(input: FileRegisterInput, app_id: AppId, user_id: UserId, group_id: Option<GroupId>) -> AppRes<FileRegisterOutput>
+pub async fn register_file(input: FileRegisterInput, app_id: &str, user_id: &str, group_id: Option<&str>) -> AppRes<FileRegisterOutput>
 {
 	//check first if belongs to is set
 
@@ -32,7 +32,7 @@ pub async fn register_file(input: FileRegisterInput, app_id: AppId, user_id: Use
 			match &input.belongs_to_id {
 				None => (FILE_BELONGS_TO_TYPE_NONE, None),
 				Some(id) => {
-					let check = user_service::check_user_in_app_by_user_id(app_id.to_string(), id.to_string()).await?;
+					let check = user_service::check_user_in_app_by_user_id(app_id, id).await?;
 
 					if !check {
 						return Err(HttpErr::new(
@@ -43,7 +43,7 @@ pub async fn register_file(input: FileRegisterInput, app_id: AppId, user_id: Use
 						));
 					}
 
-					(FILE_BELONGS_TO_TYPE_USER, Some(id.to_string()))
+					(FILE_BELONGS_TO_TYPE_USER, Some(id.as_str()))
 				},
 			}
 		},
@@ -66,9 +66,9 @@ pub async fn register_file(input: FileRegisterInput, app_id: AppId, user_id: Use
 	})
 }
 
-pub async fn get_file(app_id: AppId, user_id: Option<UserId>, file_id: FileId, group_id: Option<GroupId>) -> AppRes<FileMetaData>
+pub async fn get_file(app_id: &str, user_id: Option<&str>, file_id: &str, group_id: Option<&str>) -> AppRes<FileMetaData>
 {
-	let mut file = file_model::get_file(app_id.to_string(), file_id.to_string()).await?;
+	let mut file = file_model::get_file(app_id, file_id).await?;
 
 	match &file.belongs_to_type {
 		BelongsToType::None => {},
@@ -91,7 +91,7 @@ pub async fn get_file(app_id: AppId, user_id: Option<UserId>, file_id: FileId, g
 						},
 						Some(g_id) => {
 							//user tires to access the file from another group (where he got access in this group)
-							if g_id.as_str() != id {
+							if g_id != id {
 								return Err(HttpErr::new(
 									400,
 									ApiErrorCodes::FileAccess,
@@ -122,7 +122,7 @@ pub async fn get_file(app_id: AppId, user_id: Option<UserId>, file_id: FileId, g
 						},
 						Some(user_id) => {
 							//valid jwt but user got no access
-							if user_id != *id && user_id != file.owner {
+							if *user_id != *id && user_id != file.owner {
 								return Err(HttpErr::new(
 									400,
 									ApiErrorCodes::FileAccess,
@@ -145,9 +145,9 @@ pub async fn get_file(app_id: AppId, user_id: Option<UserId>, file_id: FileId, g
 	Ok(file)
 }
 
-pub async fn update_file_name(app_id: AppId, user_id: UserId, file_id: FileId, file_name: Option<String>) -> AppRes<()>
+pub async fn update_file_name(app_id: &str, user_id: &str, file_id: &str, file_name: Option<String>) -> AppRes<()>
 {
-	let file = file_model::get_file(app_id.to_string(), file_id.to_string()).await?;
+	let file = file_model::get_file(app_id, file_id).await?;
 
 	//just check for write access, if owner == user id
 
@@ -167,11 +167,11 @@ pub async fn update_file_name(app_id: AppId, user_id: UserId, file_id: FileId, f
 
 //__________________________________________________________________________________________________
 
-pub async fn delete_file(file_id: &str, app_id: &str, user_id: UserId, group: Option<&InternalGroupDataComplete>) -> AppRes<()>
+pub async fn delete_file(file_id: &str, app_id: &str, user_id: &str, group: Option<&InternalGroupDataComplete>) -> AppRes<()>
 {
-	let file = file_model::get_file(app_id.to_string(), file_id.to_string()).await?;
+	let file = file_model::get_file(app_id, file_id).await?;
 
-	if file.owner != user_id {
+	if file.owner != *user_id {
 		match file.belongs_to_type {
 			//just check if the user the file owner
 			BelongsToType::None => {
@@ -217,22 +217,24 @@ pub async fn delete_file(file_id: &str, app_id: &str, user_id: UserId, group: Op
 		}
 	}
 
-	file_model::delete_file(app_id.to_string(), file_id.to_string()).await?;
+	file_model::delete_file(app_id, file_id).await?;
 
 	Ok(())
 }
 
-pub fn delete_file_for_customer(customer_id: &str) -> impl Future<Output = AppRes<()>>
+#[allow(clippy::needless_lifetimes)]
+pub fn delete_file_for_customer<'a>(customer_id: str_t!('a)) -> impl Future<Output = AppRes<()>> + 'a
 {
-	file_model::delete_files_for_customer(customer_id.to_string())
+	file_model::delete_files_for_customer(customer_id)
 }
 
-pub fn delete_file_for_app(app_id: &str) -> impl Future<Output = AppRes<()>>
+#[allow(clippy::needless_lifetimes)]
+pub fn delete_file_for_app<'a>(app_id: str_t!('a)) -> impl Future<Output = AppRes<()>> + 'a
 {
-	file_model::delete_files_for_app(app_id.to_string())
+	file_model::delete_files_for_app(app_id)
 }
 
-pub fn delete_file_for_group(app_id: &str, group_id: &str, children: Vec<String>) -> impl Future<Output = AppRes<()>>
+pub fn delete_file_for_group<'a>(app_id: str_t!('a), group_id: str_t!('a), children: Vec<String>) -> impl Future<Output = AppRes<()>> + 'a
 {
-	file_model::delete_files_for_group(app_id.to_string(), group_id.to_string(), children)
+	file_model::delete_files_for_group(app_id, group_id, children)
 }
