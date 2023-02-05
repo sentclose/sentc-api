@@ -254,3 +254,60 @@ pub type StringEntity = TupleEntity<String>;
 pub type I32Entity = TupleEntity<i32>;
 
 pub type I64Entity = TupleEntity<i64>;
+
+//__________________________________________________________________________________________________
+//str handling. sqlite needs static ref or owned values because of the tokio spawn block
+
+#[cfg(feature = "mysql")]
+#[macro_export]
+macro_rules! str_t {
+	() => {
+		&str
+	};
+	($lt: lifetime) => {
+		&$lt str
+	}
+}
+
+#[cfg(feature = "sqlite")]
+#[macro_export]
+macro_rules! str_t {
+	() => {
+		impl Into<String>
+	};
+	($lt: lifetime) => {
+		impl Into<String> + $lt
+	}
+}
+
+#[cfg(feature = "mysql")]
+#[macro_export]
+macro_rules! str_get {
+	($var:expr) => {
+		$var
+	};
+}
+
+#[cfg(feature = "sqlite")]
+#[macro_export]
+macro_rules! str_get {
+	($var:expr) => {
+		$var.into()
+	};
+}
+
+#[cfg(feature = "mysql")]
+#[macro_export]
+macro_rules! str_clone {
+	($var:expr) => {
+		$var
+	};
+}
+
+#[cfg(feature = "sqlite")]
+#[macro_export]
+macro_rules! str_clone {
+	($var:expr) => {
+		$var.clone()
+	};
+}
