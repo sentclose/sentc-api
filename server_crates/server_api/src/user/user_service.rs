@@ -21,7 +21,7 @@ use sentc_crypto_common::user::{
 	UserIdentifierAvailableServerOutput,
 	UserUpdateServerInput,
 };
-use sentc_crypto_common::{AppId, DeviceId, GroupId, SymKeyId, UserId};
+use sentc_crypto_common::{AppId, DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, SymKeyId, UserId};
 use server_core::cache;
 use server_core::db::StringEntity;
 
@@ -29,6 +29,7 @@ use crate::group::group_entities::{GroupUserKeys, InternalGroupData, InternalGro
 use crate::group::group_user_service::NewUserType;
 use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
 use crate::sentc_app_entities::AppData;
+use crate::sentc_user_entities::{UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
 use crate::user::jwt::create_jwt;
 use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserJwtEntity, SERVER_RANDOM_VALUE};
 use crate::user::user_model;
@@ -387,6 +388,28 @@ pub fn get_user_key(user: &UserJwtEntity, app_id: AppId, key_id: SymKeyId) -> im
 		user.device_id.to_string(), //call it with the device id to decrypt the keys
 		key_id,
 	)
+}
+
+//__________________________________________________________________________________________________
+//public user fn
+
+pub fn get_public_key_by_id(
+	app_id: AppId,
+	user_id: UserId,
+	public_key_id: EncryptionKeyPairId,
+) -> impl Future<Output = AppRes<UserPublicKeyDataEntity>>
+{
+	user_model::get_public_key_by_id(app_id, user_id, public_key_id)
+}
+
+pub fn get_public_key_data(app_id: AppId, user_id: UserId) -> impl Future<Output = AppRes<UserPublicKeyDataEntity>>
+{
+	user_model::get_public_key_data(app_id, user_id)
+}
+
+pub fn get_verify_key_by_id(app_id: AppId, user_id: UserId, verify_key_id: SignKeyPairId) -> impl Future<Output = AppRes<UserVerifyKeyDataEntity>>
+{
+	user_model::get_verify_key_by_id(app_id, user_id, verify_key_id)
 }
 
 //__________________________________________________________________________________________________

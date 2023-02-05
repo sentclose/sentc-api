@@ -205,7 +205,7 @@ pub(crate) async fn get_user_key(req: Request) -> JRes<GroupUserKeys>
 
 //__________________________________________________________________________________________________
 
-pub(crate) async fn get_public_key_by_id(req: Request) -> JRes<UserPublicKeyDataEntity>
+pub async fn get_public_key_by_id(req: Request) -> JRes<UserPublicKeyDataEntity>
 {
 	let app_data = get_app_data_from_req(&req)?;
 
@@ -214,7 +214,7 @@ pub(crate) async fn get_public_key_by_id(req: Request) -> JRes<UserPublicKeyData
 	let user_id = get_name_param_from_req(&req, "user_id")?;
 	let public_key_id = get_name_param_from_req(&req, "key_id")?;
 
-	let out = user_model::get_public_key_by_id(
+	let out = user_service::get_public_key_by_id(
 		app_data.app_data.app_id.clone(),
 		user_id.to_string(),
 		public_key_id.to_string(),
@@ -224,7 +224,7 @@ pub(crate) async fn get_public_key_by_id(req: Request) -> JRes<UserPublicKeyData
 	echo(out)
 }
 
-pub(crate) async fn get_public_key_data(req: Request) -> JRes<UserPublicKeyDataEntity>
+pub async fn get_public_key_data(req: Request) -> JRes<UserPublicKeyDataEntity>
 {
 	let app_data = get_app_data_from_req(&req)?;
 
@@ -232,12 +232,12 @@ pub(crate) async fn get_public_key_data(req: Request) -> JRes<UserPublicKeyDataE
 
 	let user_id = get_name_param_from_req(&req, "user_id")?;
 
-	let data = user_model::get_public_key_data(app_data.app_data.app_id.clone(), user_id.to_string()).await?;
+	let data = user_service::get_public_key_data(app_data.app_data.app_id.clone(), user_id.to_string()).await?;
 
 	echo(data)
 }
 
-pub(crate) async fn get_verify_key_by_id(req: Request) -> JRes<UserVerifyKeyDataEntity>
+pub async fn get_verify_key_by_id(req: Request) -> JRes<UserVerifyKeyDataEntity>
 {
 	let app_data = get_app_data_from_req(&req)?;
 
@@ -246,7 +246,7 @@ pub(crate) async fn get_verify_key_by_id(req: Request) -> JRes<UserVerifyKeyData
 	let user_id = get_name_param_from_req(&req, "user_id")?;
 	let verify_key_id = get_name_param_from_req(&req, "key_id")?;
 
-	let out = user_model::get_verify_key_by_id(
+	let out = user_service::get_verify_key_by_id(
 		app_data.app_data.app_id.clone(),
 		user_id.to_string(),
 		verify_key_id.to_string(),
