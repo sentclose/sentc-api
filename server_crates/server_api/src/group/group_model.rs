@@ -1,7 +1,7 @@
 use sentc_crypto_common::group::CreateData;
 use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
 use server_core::db::{exec, exec_string, exec_transaction, get_in, query, query_first, query_string, I32Entity, StringEntity, TransactionData};
-use server_core::{get_time, set_params, set_params_vec};
+use server_core::{get_time, set_params, set_params_vec, str_get, str_t};
 use uuid::Uuid;
 
 use crate::group::group_entities::{
@@ -451,7 +451,7 @@ VALUES (?,?,?,?,?,?,?)";
 	Ok((group_id, group_key_id))
 }
 
-pub(super) async fn delete_user_group(app_id: AppId, group_id: GroupId) -> AppRes<()>
+pub(super) async fn delete_user_group(app_id: str_t!(), group_id: str_t!()) -> AppRes<()>
 {
 	//don't delete children because user group won't have children
 
@@ -464,7 +464,11 @@ WHERE
     type = ? AND 
     id = ?";
 
-	exec(sql, set_params!(app_id, GROUP_TYPE_USER, group_id)).await?;
+	exec(
+		sql,
+		set_params!(str_get!(app_id), GROUP_TYPE_USER, str_get!(group_id)),
+	)
+	.await?;
 
 	Ok(())
 }

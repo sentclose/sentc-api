@@ -2,7 +2,7 @@ use std::future::Future;
 
 use sentc_crypto_common::group::{CreateData, GroupLightServerData, GroupUserAccessBy};
 use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
-use server_core::cache;
+use server_core::{cache, str_t};
 
 use crate::file::file_service;
 use crate::group::group_entities::{GroupChildrenList, GroupServerData, GroupUserKeys, InternalGroupDataComplete};
@@ -48,7 +48,7 @@ pub async fn delete_group(app_id: AppId, group_id: GroupId, user_rank: i32) -> A
 	Ok(())
 }
 
-pub fn delete_user_group(app_id: AppId, group_id: GroupId) -> impl Future<Output = AppRes<()>>
+pub fn delete_user_group<'a>(app_id: str_t!('a), group_id: str_t!('a)) -> impl Future<Output = AppRes<()>> + 'a
 {
 	group_model::delete_user_group(app_id, group_id)
 }
