@@ -8,6 +8,7 @@ use crate::file::file_service;
 use crate::group::group_entities::{GroupChildrenList, GroupServerData, GroupUserKeys, InternalGroupDataComplete};
 use crate::group::group_model;
 use crate::sentc_group_entities::GroupHmacData;
+use crate::sentc_user_entities::UserPublicKeyDataEntity;
 use crate::util::api_res::AppRes;
 use crate::util::get_group_cache_key;
 
@@ -154,6 +155,11 @@ pub fn get_user_group_keys(
 ) -> impl Future<Output = AppRes<Vec<GroupUserKeys>>>
 {
 	group_model::get_user_group_keys(app_id, group_id, user_id, last_fetched_time, last_k_id)
+}
+
+pub fn get_public_key_data(app_id: AppId, group_id: GroupId) -> impl Future<Output = AppRes<UserPublicKeyDataEntity>>
+{
+	group_model::get_public_key_data(app_id, group_id)
 }
 
 /**

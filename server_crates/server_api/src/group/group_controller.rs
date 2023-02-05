@@ -253,7 +253,7 @@ pub async fn get_public_key_data(req: Request) -> JRes<UserPublicKeyDataEntity>
 
 	let group_id = get_name_param_from_req(&req, "group_id")?;
 
-	let data = group_model::get_public_key_data(app_data.app_data.app_id.clone(), group_id.to_string()).await?;
+	let data = group_service::get_public_key_data(app_data.app_data.app_id.clone(), group_id.to_string()).await?;
 
 	echo(data)
 }
