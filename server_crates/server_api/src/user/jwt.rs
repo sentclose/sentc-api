@@ -5,7 +5,8 @@ use jsonwebtoken::{decode, decode_header, encode, Algorithm, DecodingKey, Encodi
 use ring::rand;
 use ring::signature::{self, KeyPair};
 use rustgram::Request;
-use sentc_crypto_common::{AppId, DeviceId, GroupId, UserId};
+use sentc_crypto::sdk_common::AppId;
+use sentc_crypto_common::{DeviceId, GroupId, UserId};
 use serde::{Deserialize, Serialize};
 use server_core::cache::{CacheVariant, LONG_TTL};
 use server_core::input_helper::{bytes_to_json, json_to_string};
@@ -132,7 +133,7 @@ pub async fn auth(app_id: AppId, jwt: &str, check_exp: bool) -> Result<(UserJwtE
 	//now check if the user is in the app
 	//this is necessary because now we check if the values inside the jwt are correct.
 	//fetch the device group id too, this id can not be faked and is safe to use internally
-	let group_id = get_user_in_app(app_id, decoded.claims.aud.clone()).await?;
+	let group_id = get_user_in_app(app_id, &decoded.claims.aud).await?;
 
 	Ok((
 		UserJwtEntity {
@@ -288,9 +289,9 @@ async fn get_verify_key(key_id: &str) -> AppRes<String>
 	}
 }
 
-async fn get_user_in_app(app_id: AppId, user_id: UserId) -> AppRes<GroupId>
+async fn get_user_in_app(app_id: AppId, user_id: &str) -> AppRes<GroupId>
 {
-	let cache_key = get_user_in_app_key(&app_id, &user_id);
+	let cache_key = get_user_in_app_key(&app_id, user_id);
 
 	match cache::get(&cache_key).await {
 		Some(c) => {

@@ -58,7 +58,7 @@ pub(crate) async fn register(mut req: Request) -> JRes<RegisterServerOutput>
 
 	check_endpoint_with_app_options(app_data, Endpoint::UserRegister)?;
 
-	let out = user_service::register(app_data.app_data.app_id.clone(), register_input).await?;
+	let out = user_service::register(&app_data.app_data.app_id, register_input).await?;
 
 	echo(out)
 }
@@ -71,7 +71,7 @@ pub(crate) async fn prepare_register_device(mut req: Request) -> JRes<UserDevice
 
 	check_endpoint_with_app_options(app_data, Endpoint::UserDeviceRegister)?;
 
-	let out = user_service::prepare_register_device(app_data.app_data.app_id.clone(), input).await?;
+	let out = user_service::prepare_register_device(&app_data.app_data.app_id, input).await?;
 
 	echo(out)
 }
@@ -85,13 +85,7 @@ pub(crate) async fn done_register_device(mut req: Request) -> JRes<GroupAcceptJo
 
 	check_endpoint_with_app_options(app, Endpoint::UserDeviceRegister)?;
 
-	let session_id = user_service::done_register_device(
-		app.app_data.app_id.clone(),
-		user.id.clone(),
-		user.group_id.clone(),
-		input,
-	)
-	.await?;
+	let session_id = user_service::done_register_device(&app.app_data.app_id, &user.id, user.group_id.clone(), input).await?;
 
 	let out = GroupAcceptJoinReqServerOutput {
 		session_id,
@@ -150,8 +144,8 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerOutput>
 
 	//save the action, only in controller not service because this just not belongs to other controller
 	user_model::save_user_action(
-		app_data.app_data.app_id.clone(),
-		out.device_keys.user_id.clone(),
+		&app_data.app_data.app_id,
+		&out.device_keys.user_id,
 		UserAction::Login,
 		1,
 	)
@@ -214,12 +208,7 @@ pub async fn get_public_key_by_id(req: Request) -> JRes<UserPublicKeyDataEntity>
 	let user_id = get_name_param_from_req(&req, "user_id")?;
 	let public_key_id = get_name_param_from_req(&req, "key_id")?;
 
-	let out = user_service::get_public_key_by_id(
-		app_data.app_data.app_id.clone(),
-		user_id.to_string(),
-		public_key_id.to_string(),
-	)
-	.await?;
+	let out = user_service::get_public_key_by_id(&app_data.app_data.app_id, user_id, public_key_id).await?;
 
 	echo(out)
 }
@@ -232,7 +221,7 @@ pub async fn get_public_key_data(req: Request) -> JRes<UserPublicKeyDataEntity>
 
 	let user_id = get_name_param_from_req(&req, "user_id")?;
 
-	let data = user_service::get_public_key_data(app_data.app_data.app_id.clone(), user_id.to_string()).await?;
+	let data = user_service::get_public_key_data(&app_data.app_data.app_id, user_id).await?;
 
 	echo(data)
 }
@@ -246,12 +235,7 @@ pub async fn get_verify_key_by_id(req: Request) -> JRes<UserVerifyKeyDataEntity>
 	let user_id = get_name_param_from_req(&req, "user_id")?;
 	let verify_key_id = get_name_param_from_req(&req, "key_id")?;
 
-	let out = user_service::get_verify_key_by_id(
-		app_data.app_data.app_id.clone(),
-		user_id.to_string(),
-		verify_key_id.to_string(),
-	)
-	.await?;
+	let out = user_service::get_verify_key_by_id(&app_data.app_data.app_id, user_id, verify_key_id).await?;
 
 	echo(out)
 }
@@ -273,7 +257,7 @@ pub(crate) async fn init_user(mut req: Request) -> JRes<UserInitEntity>
 
 	let out = user_service::init_user(app_data, user.device_id.clone(), input).await?;
 
-	user_model::save_user_action(app_data.app_data.app_id.clone(), user.id.clone(), UserAction::Init, 1).await?;
+	user_model::save_user_action(&app_data.app_data.app_id, &user.id, UserAction::Init, 1).await?;
 
 	echo(out)
 }
@@ -293,13 +277,7 @@ pub(crate) async fn refresh_jwt(mut req: Request) -> JRes<DoneLoginLightServerOu
 
 	let out = user_service::refresh_jwt(app_data, user.device_id.clone(), input).await?;
 
-	user_model::save_user_action(
-		app_data.app_data.app_id.clone(),
-		out.user_id.clone(),
-		UserAction::Refresh,
-		1,
-	)
-	.await?;
+	user_model::save_user_action(&app_data.app_data.app_id, &out.user_id, UserAction::Refresh, 1).await?;
 
 	echo(out)
 }
@@ -311,15 +289,9 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 
 	let user = get_jwt_data_from_param(&req)?;
 
-	user_service::delete(user, app.app_data.app_id.clone()).await?;
+	user_service::delete(user, &app.app_data.app_id).await?;
 
-	user_model::save_user_action(
-		app.app_data.app_id.to_string(),
-		user.id.clone(),
-		UserAction::Delete,
-		1,
-	)
-	.await?;
+	user_model::save_user_action(&app.app_data.app_id, &user.id, UserAction::Delete, 1).await?;
 
 	echo_success()
 }
@@ -332,7 +304,7 @@ pub(crate) async fn delete_device(req: Request) -> JRes<ServerSuccessOutput>
 	let user = get_jwt_data_from_param(&req)?;
 	let device_id = get_name_param_from_req(&req, "device_id")?;
 
-	user_service::delete_device(user, app.app_data.app_id.clone(), device_id.to_string()).await?;
+	user_service::delete_device(user, &app.app_data.app_id, device_id).await?;
 
 	echo_success()
 }
@@ -357,13 +329,7 @@ pub(crate) async fn get_devices(req: Request) -> JRes<Vec<UserDeviceList>>
 		)
 	})?;
 
-	let out = user_service::get_devices(
-		app.app_data.app_id.clone(),
-		user.id.clone(),
-		last_fetched_time,
-		last_id.to_string(),
-	)
-	.await?;
+	let out = user_service::get_devices(&app.app_data.app_id, &user.id, last_fetched_time, last_id).await?;
 
 	echo(out)
 }
@@ -378,7 +344,7 @@ pub(crate) async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 
 	check_endpoint_with_app_options(app, Endpoint::UserUpdate)?;
 
-	user_service::update(user, app.app_data.app_id.clone(), update_input).await?;
+	user_service::update(user, &app.app_data.app_id, update_input).await?;
 
 	echo_success()
 }
@@ -393,15 +359,9 @@ pub(crate) async fn change_password(mut req: Request) -> JRes<ServerSuccessOutpu
 
 	check_endpoint_with_app_options(app_data, Endpoint::UserChangePassword)?;
 
-	user_service::change_password(user, app_data.app_data.app_id.to_string(), input).await?;
+	user_service::change_password(user, &app_data.app_data.app_id, input).await?;
 
-	user_model::save_user_action(
-		app_data.app_data.app_id.clone(),
-		user.id.clone(),
-		UserAction::ChangePassword,
-		1,
-	)
-	.await?;
+	user_model::save_user_action(&app_data.app_data.app_id, &user.id, UserAction::ChangePassword, 1).await?;
 
 	echo_success()
 }
@@ -415,15 +375,9 @@ pub(crate) async fn reset_password(mut req: Request) -> JRes<ServerSuccessOutput
 
 	check_endpoint_with_app_options(app_data, Endpoint::UserResetPassword)?;
 
-	user_service::reset_password(user.id.clone(), user.device_id.clone(), input).await?;
+	user_service::reset_password(&user.id, &user.device_id, input).await?;
 
-	user_model::save_user_action(
-		app_data.app_data.app_id.clone(),
-		user.id.clone(),
-		UserAction::ResetPassword,
-		1,
-	)
-	.await?;
+	user_model::save_user_action(&app_data.app_data.app_id, &user.id, UserAction::ResetPassword, 1).await?;
 
 	echo_success()
 }

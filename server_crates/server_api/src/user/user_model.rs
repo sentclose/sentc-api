@@ -1,7 +1,8 @@
+use sentc_crypto::sdk_common::GroupId;
 use sentc_crypto_common::user::{ChangePasswordData, KeyDerivedData, MasterKey, ResetPasswordData, UserDeviceRegisterInput};
-use sentc_crypto_common::{AppId, DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, UserId};
+use sentc_crypto_common::{AppId, DeviceId, UserId};
 use server_core::db::{exec, exec_transaction, query_first, query_string, I64Entity, Params, StringEntity, TransactionData};
-use server_core::{get_time, set_params};
+use server_core::{get_time, set_params, str_clone, str_get, str_t};
 use uuid::Uuid;
 
 use crate::user::user_entities::{
@@ -17,22 +18,22 @@ use crate::user::user_entities::{
 use crate::user::user_service::UserAction;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
-pub(super) async fn get_jwt_sign_key(kid: &str) -> AppRes<Option<StringEntity>>
+pub(super) async fn get_jwt_sign_key(kid: str_t!()) -> AppRes<Option<StringEntity>>
 {
 	//language=SQL
 	let sql = "SELECT sign_key FROM sentc_app_jwt_keys WHERE id = ?";
 
-	let sign_key: Option<StringEntity> = query_first(sql, set_params!(kid.to_string())).await?;
+	let sign_key: Option<StringEntity> = query_first(sql, set_params!(str_get!(kid))).await?;
 
 	Ok(sign_key)
 }
 
-pub(super) async fn get_jwt_verify_key(kid: &str) -> AppRes<Option<StringEntity>>
+pub(super) async fn get_jwt_verify_key(kid: str_t!()) -> AppRes<Option<StringEntity>>
 {
 	//language=SQL
 	let sql = "SELECT verify_key FROM sentc_app_jwt_keys WHERE id = ?";
 
-	let sign_key: Option<StringEntity> = query_first(sql, set_params!(kid.to_string())).await?;
+	let sign_key: Option<StringEntity> = query_first(sql, set_params!(str_get!(kid))).await?;
 
 	Ok(sign_key)
 }
@@ -40,12 +41,12 @@ pub(super) async fn get_jwt_verify_key(kid: &str) -> AppRes<Option<StringEntity>
 //__________________________________________________________________________________________________
 //user
 
-pub(super) async fn check_user_in_app(app_id: AppId, user_id: UserId) -> AppRes<bool>
+pub(super) async fn check_user_in_app(app_id: str_t!(), user_id: str_t!()) -> AppRes<bool>
 {
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_user WHERE id = ? AND app_id = ? LIMIT 1";
 
-	let exists: Option<I64Entity> = query_first(sql, set_params!(user_id, app_id)).await?;
+	let exists: Option<I64Entity> = query_first(sql, set_params!(str_get!(user_id), str_get!(app_id))).await?;
 
 	match exists {
 		Some(_) => Ok(true),
@@ -53,7 +54,7 @@ pub(super) async fn check_user_in_app(app_id: AppId, user_id: UserId) -> AppRes<
 	}
 }
 
-pub(super) async fn check_user_exists(app_id: &str, user_identifier: &str) -> AppRes<bool>
+pub(super) async fn check_user_exists(app_id: str_t!(), user_identifier: str_t!()) -> AppRes<bool>
 {
 	//language=SQL
 	let sql = r"
@@ -65,7 +66,7 @@ WHERE
     app_id = ?
 LIMIT 1";
 
-	let exists: Option<I64Entity> = query_first(sql, set_params!(user_identifier.to_string(), app_id.to_string())).await?;
+	let exists: Option<I64Entity> = query_first(sql, set_params!(str_get!(user_identifier), str_get!(app_id))).await?;
 
 	match exists {
 		Some(_) => Ok(true),
@@ -80,7 +81,7 @@ used for salt creation and auth user.
 
 Get it for a device
 */
-pub(super) async fn get_user_login_data(app_id: AppId, user_identifier: &str) -> AppRes<Option<UserLoginDataEntity>>
+pub(super) async fn get_user_login_data(app_id: str_t!(), user_identifier: str_t!()) -> AppRes<Option<UserLoginDataEntity>>
 {
 	//language=SQL
 	let sql = r"
@@ -91,7 +92,7 @@ WHERE
     device_identifier = ? AND 
     app_id = ?";
 
-	let login_data: Option<UserLoginDataEntity> = query_first(sql, set_params!(user_identifier.to_string(), app_id)).await?;
+	let login_data: Option<UserLoginDataEntity> = query_first(sql, set_params!(str_get!(user_identifier), str_get!(app_id))).await?;
 
 	Ok(login_data)
 }
@@ -99,7 +100,7 @@ WHERE
 /**
 The user data which are needed to get the user keys
 */
-pub(super) async fn get_done_login_data(app_id: &str, user_identifier: &str) -> AppRes<Option<DoneLoginServerKeysOutputEntity>>
+pub(super) async fn get_done_login_data(app_id: str_t!(), user_identifier: str_t!()) -> AppRes<Option<DoneLoginServerKeysOutputEntity>>
 {
 	//language=SQL
 	let sql = r"
@@ -122,12 +123,12 @@ WHERE
     ud.device_identifier = ? AND 
     u.app_id = ?";
 
-	let data: Option<DoneLoginServerKeysOutputEntity> = query_first(sql, set_params!(user_identifier.to_string(), app_id.to_string())).await?;
+	let data: Option<DoneLoginServerKeysOutputEntity> = query_first(sql, set_params!(str_get!(user_identifier), str_get!(app_id))).await?;
 
 	Ok(data)
 }
 
-pub(super) async fn get_done_login_light_data(app_id: &str, user_identifier: &str) -> AppRes<Option<UserLoginLightEntity>>
+pub(super) async fn get_done_login_light_data(app_id: str_t!(), user_identifier: str_t!()) -> AppRes<Option<UserLoginLightEntity>>
 {
 	//language=SQL
 	let sql = r"
@@ -140,24 +141,33 @@ WHERE
     user_id = u.id AND 
     u.app_id = ?";
 
-	let data: Option<UserLoginLightEntity> = query_first(sql, set_params!(user_identifier.to_string(), app_id.to_string())).await?;
+	let data: Option<UserLoginLightEntity> = query_first(sql, set_params!(str_get!(user_identifier), str_get!(app_id))).await?;
 
 	Ok(data)
 }
 
-pub(super) async fn insert_refresh_token(app_id: AppId, device_id: DeviceId, refresh_token: String) -> AppRes<()>
+pub(super) async fn insert_refresh_token(app_id: str_t!(), device_id: str_t!(), refresh_token: str_t!()) -> AppRes<()>
 {
 	let time = get_time()?;
 
 	//language=SQL
 	let sql = "INSERT INTO sentc_user_token (device_id, token, app_id, time) VALUES (?,?,?,?)";
 
-	exec(sql, set_params!(device_id, refresh_token, app_id, time.to_string())).await?;
+	exec(
+		sql,
+		set_params!(
+			str_get!(device_id),
+			str_get!(refresh_token),
+			str_get!(app_id),
+			time.to_string()
+		),
+	)
+	.await?;
 
 	Ok(())
 }
 
-pub(super) async fn check_refresh_token(app_id: AppId, device_id: DeviceId, refresh_token: String) -> AppRes<Option<UserRefreshTokenCheck>>
+pub(super) async fn check_refresh_token(app_id: str_t!(), device_id: str_t!(), refresh_token: String) -> AppRes<Option<UserRefreshTokenCheck>>
 {
 	//language=SQL
 	let sql = r"
@@ -170,24 +180,26 @@ WHERE ut.app_id = ? AND
       ut.token = ? AND 
       ud.id = ut.device_id";
 
-	let exists: Option<UserRefreshTokenCheck> = query_first(sql, set_params!(app_id, device_id, refresh_token)).await?;
+	let exists: Option<UserRefreshTokenCheck> = query_first(sql, set_params!(str_get!(app_id), str_get!(device_id), refresh_token)).await?;
 
 	Ok(exists)
 }
 
-pub(super) async fn get_user_group_id(app_id: AppId, user_id: UserId) -> AppRes<Option<StringEntity>>
+pub(super) async fn get_user_group_id(app_id: AppId, user_id: str_t!()) -> AppRes<Option<StringEntity>>
 {
+	//owned app_id because it must be owned in the jwt middleware anyway
+
 	//language=SQL
 	let sql = "SELECT user_group_id FROM sentc_user WHERE app_id = ? AND id = ?";
 
-	let id: Option<StringEntity> = query_first(sql, set_params!(app_id, user_id)).await?;
+	let id: Option<StringEntity> = query_first(sql, set_params!(app_id, str_get!(user_id))).await?;
 
 	Ok(id)
 }
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn get_public_key_by_id(app_id: AppId, user_id: UserId, public_key_id: EncryptionKeyPairId) -> AppRes<UserPublicKeyDataEntity>
+pub(super) async fn get_public_key_by_id(app_id: str_t!(), user_id: str_t!(), public_key_id: str_t!()) -> AppRes<UserPublicKeyDataEntity>
 {
 	//language=SQL
 	let sql = r"
@@ -201,7 +213,11 @@ WHERE
     u.id = ? AND 
     gk.id = ?";
 
-	let data: Option<UserPublicKeyDataEntity> = query_first(sql, set_params!(app_id, user_id, public_key_id)).await?;
+	let data: Option<UserPublicKeyDataEntity> = query_first(
+		sql,
+		set_params!(str_get!(app_id), str_get!(user_id), str_get!(public_key_id)),
+	)
+	.await?;
 
 	match data {
 		Some(d) => Ok(d),
@@ -219,7 +235,7 @@ WHERE
 /**
 Get just the public key data for this user
 */
-pub(super) async fn get_public_key_data(app_id: AppId, user_id: UserId) -> AppRes<UserPublicKeyDataEntity>
+pub(super) async fn get_public_key_data(app_id: str_t!(), user_id: str_t!()) -> AppRes<UserPublicKeyDataEntity>
 {
 	//language=SQL
 	let sql = r"
@@ -234,7 +250,7 @@ WHERE
 ORDER BY gk.time DESC 
 LIMIT 1";
 
-	let data: Option<UserPublicKeyDataEntity> = query_first(sql, set_params!(app_id, user_id)).await?;
+	let data: Option<UserPublicKeyDataEntity> = query_first(sql, set_params!(str_get!(app_id), str_get!(user_id))).await?;
 
 	match data {
 		Some(d) => Ok(d),
@@ -249,7 +265,7 @@ LIMIT 1";
 	}
 }
 
-pub(super) async fn get_verify_key_by_id(app_id: AppId, user_id: UserId, verify_key_id: SignKeyPairId) -> AppRes<UserVerifyKeyDataEntity>
+pub(super) async fn get_verify_key_by_id(app_id: str_t!(), user_id: str_t!(), verify_key_id: str_t!()) -> AppRes<UserVerifyKeyDataEntity>
 {
 	//language=SQL
 	let sql = r"
@@ -263,7 +279,11 @@ WHERE
     u.id = ? AND 
     gk.id = ?";
 
-	let data: Option<UserVerifyKeyDataEntity> = query_first(sql, set_params!(app_id, user_id, verify_key_id)).await?;
+	let data: Option<UserVerifyKeyDataEntity> = query_first(
+		sql,
+		set_params!(str_get!(app_id), str_get!(user_id), str_get!(verify_key_id)),
+	)
+	.await?;
 
 	match data {
 		Some(d) => Ok(d),
@@ -286,20 +306,22 @@ WHERE
 For register we don't know the group id of the user group.
 The service must create a group first and then we can update the group id
 */
-pub(super) async fn register_update_user_group_id(app_id: AppId, user_id: UserId, group_id: GroupId) -> AppRes<()>
+pub(super) async fn register_update_user_group_id(app_id: str_t!(), user_id: str_t!(), group_id: GroupId) -> AppRes<()>
 {
 	//language=SQL
 	let sql = "UPDATE sentc_user SET user_group_id = ? WHERE id = ? AND app_id = ?";
 
-	exec(sql, set_params!(group_id, user_id, app_id)).await?;
+	exec(sql, set_params!(group_id, str_get!(user_id), str_get!(app_id))).await?;
 
 	Ok(())
 }
 
-pub(super) async fn register(app_id: AppId, register_data: UserDeviceRegisterInput) -> AppRes<(UserId, DeviceId)>
+pub(super) async fn register(app_id: str_t!(), register_data: UserDeviceRegisterInput) -> AppRes<(UserId, DeviceId)>
 {
+	let app_id = str_get!(app_id);
+
 	//check first if the user identifier is available
-	let check = check_user_exists(app_id.as_str(), register_data.device_identifier.as_str()).await?;
+	let check = check_user_exists(str_clone!(app_id), &register_data.device_identifier).await?;
 
 	if check {
 		//check true == user exists
@@ -319,8 +341,8 @@ pub(super) async fn register(app_id: AppId, register_data: UserDeviceRegisterInp
 
 	//insert a fake group id for now, and update the user group id when user group was created
 	let user_params = set_params!(
-		user_id.to_string(),
-		app_id.to_string(),
+		str_clone!(&user_id),
+		str_clone!(app_id),
 		"none".to_string(),
 		time.to_string()
 	);
@@ -332,14 +354,14 @@ pub(super) async fn register(app_id: AppId, register_data: UserDeviceRegisterInp
 
 	//data for the user key table
 	let (sql_keys, key_params) = prepare_register_device(
-		device_id.to_string(),
-		user_id.to_string(),
+		&device_id,
+		&user_id,
 		app_id,
 		time,
 		register_data.device_identifier,
 		master_key_info,
 		derived_data,
-		None,
+		None::<&str>,
 	);
 
 	exec_transaction(vec![
@@ -357,7 +379,7 @@ pub(super) async fn register(app_id: AppId, register_data: UserDeviceRegisterInp
 	Ok((user_id, device_id))
 }
 
-pub(super) async fn register_device(app_id: AppId, input: UserDeviceRegisterInput, token: String) -> AppRes<DeviceId>
+pub(super) async fn register_device(app_id: str_t!(), input: UserDeviceRegisterInput, token: str_t!()) -> AppRes<DeviceId>
 {
 	let master_key_info = input.master_key;
 	let derived_data = input.derived;
@@ -366,8 +388,8 @@ pub(super) async fn register_device(app_id: AppId, input: UserDeviceRegisterInpu
 	let time = get_time()?;
 
 	let (sql_keys, key_params) = prepare_register_device(
-		device_id.to_string(),
-		"not_registered".to_string(),
+		&device_id,
+		"not_registered",
 		app_id,
 		time,
 		input.device_identifier,
@@ -381,7 +403,7 @@ pub(super) async fn register_device(app_id: AppId, input: UserDeviceRegisterInpu
 	Ok(device_id)
 }
 
-pub(super) async fn get_done_register_device(app_id: AppId, token: String) -> AppRes<DeviceId>
+pub(super) async fn get_done_register_device(app_id: str_t!(), token: String) -> AppRes<DeviceId>
 {
 	if token.as_str() == "NULL" || token.as_str() == "null" {
 		return Err(HttpErr::new(
@@ -395,7 +417,7 @@ pub(super) async fn get_done_register_device(app_id: AppId, token: String) -> Ap
 	//language=SQL
 	let sql = "SELECT id FROM sentc_user_device WHERE app_id = ? AND token = ?";
 
-	let out: Option<StringEntity> = query_first(sql, set_params!(app_id, token)).await?;
+	let out: Option<StringEntity> = query_first(sql, set_params!(str_get!(app_id), token)).await?;
 
 	let device_id: DeviceId = match out {
 		Some(id) => id.0,
@@ -412,35 +434,38 @@ pub(super) async fn get_done_register_device(app_id: AppId, token: String) -> Ap
 	Ok(device_id)
 }
 
-pub(super) async fn done_register_device(app_id: AppId, user_id: UserId, device_id: DeviceId) -> AppRes<()>
+pub(super) async fn done_register_device(app_id: str_t!(), user_id: str_t!(), device_id: DeviceId) -> AppRes<()>
 {
 	//update the user id, in two fn because there can be an err for inserting user keys in user group
 	//language=SQL
 	let sql = "UPDATE sentc_user_device SET user_id = ?, token = NULL WHERE id = ? AND app_id = ?";
-	exec(sql, set_params!(user_id, device_id, app_id)).await?;
+	exec(sql, set_params!(str_get!(user_id), device_id, str_get!(app_id))).await?;
 
 	Ok(())
 }
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn delete(user_id: String, app_id: AppId) -> AppRes<()>
+pub(super) async fn delete(user_id: str_t!(), app_id: str_t!()) -> AppRes<()>
 {
 	//language=SQL
 	let sql = "DELETE FROM sentc_user WHERE id = ? AND app_id = ?";
 
-	exec(sql, set_params!(user_id, app_id)).await?;
+	exec(sql, set_params!(str_get!(user_id), str_get!(app_id))).await?;
 
 	Ok(())
 }
 
-pub(super) async fn delete_device(user_id: UserId, app_id: AppId, device_id: DeviceId) -> AppRes<()>
+pub(super) async fn delete_device(user_id: str_t!(), app_id: str_t!(), device_id: str_t!()) -> AppRes<()>
 {
+	let app_id = str_get!(app_id);
+	let user_id = str_get!(user_id);
+
 	//first check if it is the only device
 	//language=SQL
 	let sql = "SELECT COUNT(id) FROM sentc_user_device WHERE app_id = ? AND user_id = ? LIMIT 2";
 
-	let device_count: Option<I64Entity> = query_first(sql, set_params!(app_id.to_string(), user_id.to_string())).await?;
+	let device_count: Option<I64Entity> = query_first(sql, set_params!(str_clone!(app_id), str_clone!(user_id))).await?;
 
 	match device_count {
 		Some(c) => {
@@ -466,22 +491,31 @@ pub(super) async fn delete_device(user_id: UserId, app_id: AppId, device_id: Dev
 	//language=SQL
 	let sql = "DELETE FROM sentc_user_device WHERE user_id = ? AND id = ? AND app_id = ?";
 
-	exec(sql, set_params!(user_id, device_id, app_id)).await?;
+	exec(sql, set_params!(user_id, str_get!(device_id), app_id)).await?;
 
 	Ok(())
 }
 
-pub(super) async fn update(user_id: UserId, device_id: DeviceId, app_id: AppId, user_identifier: String) -> AppRes<()>
+pub(super) async fn update(user_id: str_t!(), device_id: str_t!(), app_id: str_t!(), user_identifier: String) -> AppRes<()>
 {
 	//language=SQL
 	let sql = "UPDATE sentc_user_device SET device_identifier = ? WHERE id = ? AND user_id = ? AND app_id = ?";
 
-	exec(sql, set_params!(user_identifier, device_id, user_id, app_id)).await?;
+	exec(
+		sql,
+		set_params!(
+			user_identifier,
+			str_get!(device_id),
+			str_get!(user_id),
+			str_get!(app_id)
+		),
+	)
+	.await?;
 
 	Ok(())
 }
 
-pub(super) async fn change_password(user_id: UserId, device_id: DeviceId, data: ChangePasswordData, old_hashed_auth_key: String) -> AppRes<()>
+pub(super) async fn change_password(user_id: str_t!(), device_id: str_t!(), data: ChangePasswordData, old_hashed_auth_key: String) -> AppRes<()>
 {
 	//update pw for a device
 	//the master key is still the same, only new encrypt by the new password
@@ -508,8 +542,8 @@ WHERE
 			data.new_encrypted_master_key,
 			data.new_encrypted_master_key_alg,
 			data.new_derived_alg,
-			user_id,
-			device_id,
+			str_get!(user_id),
+			str_get!(device_id),
 			old_hashed_auth_key
 		),
 	)
@@ -518,8 +552,10 @@ WHERE
 	Ok(())
 }
 
-pub(super) async fn reset_password(user_id: UserId, device_id: DeviceId, data: ResetPasswordData) -> AppRes<()>
+pub(super) async fn reset_password(user_id: str_t!(), device_id: str_t!(), data: ResetPasswordData) -> AppRes<()>
 {
+	let device_id = str_get!(device_id);
+
 	//reset only the actual device
 	//create a new master key from the new password. the key pairs are still the same
 
@@ -528,7 +564,7 @@ pub(super) async fn reset_password(user_id: UserId, device_id: DeviceId, data: R
 	//language=SQL
 	let sql = "SELECT app_id FROM sentc_user_device WHERE id = ? ORDER BY time DESC LIMIT 1";
 
-	let row: Option<StringEntity> = query_first(sql, set_params!(device_id.to_string())).await?;
+	let row: Option<StringEntity> = query_first(sql, set_params!(str_clone!(device_id))).await?;
 
 	let row = match row {
 		Some(r) => r,
@@ -570,7 +606,7 @@ WHERE
 			data.encrypted_private_key,
 			data.encrypted_sign_key,
 			device_id,
-			user_id.to_string(),
+			str_get!(user_id),
 			row.0
 		),
 	)
@@ -579,7 +615,12 @@ WHERE
 	Ok(())
 }
 
-pub(super) async fn get_devices(app_id: AppId, user_id: UserId, last_fetched_time: u128, last_fetched_id: DeviceId) -> AppRes<Vec<UserDeviceList>>
+pub(super) async fn get_devices(
+	app_id: str_t!(),
+	user_id: str_t!(),
+	last_fetched_time: u128,
+	last_fetched_id: str_t!(),
+) -> AppRes<Vec<UserDeviceList>>
 {
 	//language=SQL
 	let sql = r"
@@ -595,18 +636,18 @@ WHERE
 		(
 			sql,
 			set_params!(
-				app_id,
-				user_id,
+				str_get!(app_id),
+				str_get!(user_id),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
-				last_fetched_id
+				str_get!(last_fetched_id)
 			),
 		)
 	} else {
 		let sql = sql + " ORDER BY time, id LIMIT 50";
 
-		(sql, set_params!(app_id, user_id))
+		(sql, set_params!(str_get!(app_id), str_get!(user_id)))
 	};
 
 	let list: Vec<UserDeviceList> = query_string(sql, params).await?;
@@ -614,19 +655,23 @@ WHERE
 	Ok(list)
 }
 
-pub(super) async fn get_device_identifier(app_id: AppId, user_id: UserId, device_id: DeviceId) -> AppRes<Option<StringEntity>>
+pub(super) async fn get_device_identifier(app_id: str_t!(), user_id: str_t!(), device_id: str_t!()) -> AppRes<Option<StringEntity>>
 {
 	//language=SQL
 	let sql = "SELECT device_identifier FROM sentc_user_device WHERE id = ? AND user_id = ? AND app_id = ?";
 
-	let device: Option<StringEntity> = query_first(sql, set_params!(device_id, user_id, app_id)).await?;
+	let device: Option<StringEntity> = query_first(
+		sql,
+		set_params!(str_get!(device_id), str_get!(user_id), str_get!(app_id)),
+	)
+	.await?;
 
 	Ok(device)
 }
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn save_user_action(app_id: AppId, user_id: UserId, action: UserAction, amount: i64) -> AppRes<()>
+pub(super) async fn save_user_action(app_id: str_t!(), user_id: str_t!(), action: UserAction, amount: i64) -> AppRes<()>
 {
 	let time = get_time()?;
 
@@ -643,14 +688,18 @@ pub(super) async fn save_user_action(app_id: AppId, user_id: UserId, action: Use
 		UserAction::KeyRotation => 6,
 	};
 
-	exec(sql, set_params!(user_id, time.to_string(), action, app_id, amount)).await?;
+	exec(
+		sql,
+		set_params!(str_get!(user_id), time.to_string(), action, str_get!(app_id), amount),
+	)
+	.await?;
 
 	Ok(())
 }
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn save_captcha_solution(app_id: AppId, solution: String) -> AppRes<String>
+pub(super) async fn save_captcha_solution(app_id: str_t!(), solution: String) -> AppRes<String>
 {
 	let time = get_time()?;
 	let captcha_id = Uuid::new_v4().to_string();
@@ -660,29 +709,31 @@ pub(super) async fn save_captcha_solution(app_id: AppId, solution: String) -> Ap
 
 	exec(
 		sql,
-		set_params!(captcha_id.to_string(), app_id, solution, time.to_string()),
+		set_params!(str_clone!(&captcha_id), str_get!(app_id), solution, time.to_string()),
 	)
 	.await?;
 
 	Ok(captcha_id)
 }
 
-pub(super) async fn get_captcha_solution(id: String, app_id: AppId) -> AppRes<Option<CaptchaEntity>>
+pub(super) async fn get_captcha_solution(id: str_t!(), app_id: str_t!()) -> AppRes<Option<CaptchaEntity>>
 {
 	//language=SQL
 	let sql = "SELECT solution, time FROM sentc_captcha WHERE id = ? AND app_id = ?";
 
-	let out: Option<CaptchaEntity> = query_first(sql, set_params!(id, app_id)).await?;
+	let out: Option<CaptchaEntity> = query_first(sql, set_params!(str_get!(id), str_get!(app_id))).await?;
 
 	Ok(out)
 }
 
-pub(super) async fn delete_captcha(app_id: AppId, id: String) -> AppRes<()>
+pub(super) async fn delete_captcha(app_id: str_t!(), id: String) -> AppRes<()>
 {
+	//owned id because we got the id from the input
+
 	//language=SQL
 	let sql = "DELETE FROM sentc_captcha WHERE id = ? AND app_id = ?";
 
-	exec(sql, set_params!(id, app_id)).await?;
+	exec(sql, set_params!(id, str_get!(app_id))).await?;
 
 	Ok(())
 }
@@ -690,14 +741,14 @@ pub(super) async fn delete_captcha(app_id: AppId, id: String) -> AppRes<()>
 //__________________________________________________________________________________________________
 
 fn prepare_register_device(
-	device_id: DeviceId,
-	user_id: UserId,
-	app_id: AppId,
+	device_id: str_t!(),
+	user_id: str_t!(),
+	app_id: str_t!(),
 	time: u128,
 	device_identifier: String,
 	master_key_info: MasterKey,
 	derived_data: KeyDerivedData,
-	token: Option<String>,
+	token: Option<str_t!()>,
 ) -> (&'static str, Params)
 {
 	//language=SQL
@@ -724,10 +775,17 @@ INSERT INTO sentc_user_device
      ) 
 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
+	//own the token in sqlite
+	#[cfg(feature = "sqlite")]
+	let token = match token {
+		Some(t) => Some(str_get!(t)),
+		None => None,
+	};
+
 	let key_params = set_params!(
-		device_id,
-		user_id,
-		app_id,
+		str_get!(device_id),
+		str_get!(user_id),
+		str_get!(app_id),
 		device_identifier,
 		derived_data.client_random_value,
 		derived_data.public_key,
