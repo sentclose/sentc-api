@@ -1,6 +1,6 @@
 use sentc_crypto_common::group::GroupKeysForNewMember;
 use server_core::db::{bulk_insert, exec, exec_transaction, query_first, query_string, I32Entity, I64Entity, StringEntity, TransactionData};
-use server_core::{get_time, set_params, str_clone, str_get, str_owned, str_t};
+use server_core::{get_time, set_params, str_clone, str_get, str_owned, str_t, u128_get};
 use uuid::Uuid;
 
 use crate::group::group_entities::{GroupInviteReq, GroupJoinReq, GroupUserListItem, GROUP_INVITE_TYPE_INVITE_REQ, GROUP_INVITE_TYPE_JOIN_REQ};
@@ -33,9 +33,9 @@ WHERE
 			set_params!(
 				str_get!(user_id),
 				str_get!(group_id),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_fetched_id)
 			),
 		)
@@ -135,7 +135,7 @@ pub(super) async fn invite_request(
 			str_clone!(invited_user),
 			str_clone!(group_id),
 			GROUP_INVITE_TYPE_INVITE_REQ,
-			time.to_string(),
+			u128_get!(time),
 			str_clone!(&session_id),
 			user_type
 		);
@@ -148,7 +148,7 @@ pub(super) async fn invite_request(
 			str_clone!(invited_user),
 			str_clone!(group_id),
 			GROUP_INVITE_TYPE_INVITE_REQ,
-			time.to_string(),
+			u128_get!(time),
 			user_type
 		);
 
@@ -192,9 +192,9 @@ WHERE
 				str_get!(user_id),
 				GROUP_INVITE_TYPE_INVITE_REQ,
 				str_get!(app_id),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_id)
 			),
 		)
@@ -262,7 +262,7 @@ pub(super) async fn accept_invite(group_id: str_t!(), user_id: str_t!()) -> AppR
 
 	//language=SQL
 	let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
-	let params_in = set_params!(user_id, group_id, time.to_string(), 4, user_type);
+	let params_in = set_params!(user_id, group_id, u128_get!(time), 4, user_type);
 
 	exec_transaction(vec![
 		TransactionData {
@@ -335,7 +335,7 @@ pub(super) async fn join_req(app_id: str_t!(), group_id: str_t!(), user_id: str_
 			user_id,
 			group_id,
 			GROUP_INVITE_TYPE_JOIN_REQ,
-			time.to_string(),
+			u128_get!(time),
 			user_type
 		),
 	)
@@ -421,7 +421,7 @@ pub(super) async fn accept_join_req(
 		let params_in = set_params!(
 			str_clone!(user_id),
 			str_clone!(group_id),
-			time.to_string(),
+			u128_get!(time),
 			4,
 			str_clone!(&session_id),
 			user_type
@@ -434,7 +434,7 @@ pub(super) async fn accept_join_req(
 		let params_in = set_params!(
 			str_clone!(user_id),
 			str_clone!(group_id),
-			time.to_string(),
+			u128_get!(time),
 			4,
 			user_type
 		);
@@ -477,9 +477,9 @@ WHERE group_id = ? AND type = ?"
 			set_params!(
 				str_get!(group_id),
 				GROUP_INVITE_TYPE_JOIN_REQ,
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_id)
 			),
 		)
@@ -522,9 +522,9 @@ WHERE
 				str_get!(user_id),
 				GROUP_INVITE_TYPE_JOIN_REQ,
 				str_get!(app_id),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_id)
 			),
 		)
@@ -785,7 +785,7 @@ async fn insert_user_keys(group_id: str_t!(), new_user_id: str_t!(), time: u128,
 				str_clone!(&ob.encrypted_group_key),
 				str_clone!(&ob.user_public_key_id),
 				str_clone!(&ob.encrypted_alg),
-				time.to_string()
+				u128_get!(time)
 			)
 		},
 	)

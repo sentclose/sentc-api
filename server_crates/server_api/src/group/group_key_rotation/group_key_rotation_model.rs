@@ -1,7 +1,7 @@
 use sentc_crypto_common::group::{DoneKeyRotationData, KeyRotationData};
 use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
 use server_core::db::{bulk_insert, exec, exec_transaction, query, query_first, query_string, TransactionData};
-use server_core::{get_time, set_params, str_clone, str_get, str_t};
+use server_core::{get_time, set_params, str_clone, str_get, str_t, u128_get};
 use uuid::Uuid;
 
 use crate::group::group_entities::{GroupKeyUpdate, KeyRotationWorkerKey, UserEphKeyOut, UserGroupPublicKeyData};
@@ -47,7 +47,7 @@ INSERT INTO sentc_group_keys
 		input.encrypted_group_key_by_ephemeral,
 		input.previous_group_key_id,
 		input.ephemeral_alg,
-		time.to_string(),
+		u128_get!(time),
 		input.encrypted_sign_key,
 		input.verify_key,
 		input.keypair_sign_alg
@@ -75,7 +75,7 @@ INSERT INTO sentc_group_user_keys
 		input.encrypted_group_key_by_user,
 		input.encrypted_group_key_alg,
 		input.invoker_public_key_id,
-		time.to_string()
+		u128_get!(time)
 	);
 
 	exec_transaction(vec![
@@ -148,7 +148,7 @@ INSERT INTO sentc_group_user_keys
 			input.encrypted_new_group_key,
 			input.encrypted_alg,
 			input.public_key_id,
-			time.to_string()
+			u128_get!(time)
 		),
 	)
 	.await?;
@@ -188,7 +188,7 @@ pub(super) async fn get_new_key(group_id: str_t!(), key_id: str_t!()) -> AppRes<
 pub(super) async fn get_user_and_public_key(
 	group_id: str_t!(),
 	key_id: str_t!(),
-	last_fetched: u128,
+	last_fetched_time: u128,
 	last_id: str_t!(),
 ) -> AppRes<Vec<UserGroupPublicKeyData>>
 {
@@ -234,7 +234,7 @@ WHERE
     )"
 	.to_string();
 
-	let (sql1, params) = if last_fetched > 0 {
+	let (sql1, params) = if last_fetched_time > 0 {
 		//there is a last fetched time time
 		let sql = sql + " AND gu.time <= ? AND (gu.time < ? OR (gu.time = ? AND gu.user_id > ?)) ORDER BY gu.time DESC, gu.user_id LIMIT 100";
 		(
@@ -243,9 +243,9 @@ WHERE
 				str_get!(group_id),
 				str_clone!(key_id),
 				key_id,
-				last_fetched.to_string(),
-				last_fetched.to_string(),
-				last_fetched.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_id)
 			),
 		)
@@ -262,7 +262,7 @@ WHERE
 pub(super) async fn get_group_as_member_public_key(
 	group_id: str_t!(),
 	key_id: str_t!(),
-	last_fetched: u128,
+	last_fetched_time: u128,
 	last_id: str_t!(),
 ) -> AppRes<Vec<UserGroupPublicKeyData>>
 {
@@ -302,7 +302,7 @@ WHERE
     )"
 	.to_string();
 
-	let (sql1, params) = if last_fetched > 0 {
+	let (sql1, params) = if last_fetched_time > 0 {
 		//there is a last fetched time time
 		let sql = sql + " AND gu.time <= ? AND (gu.time < ? OR (gu.time = ? AND gu.user_id > ?)) ORDER BY gu.time DESC, gu.user_id LIMIT 100";
 		(
@@ -311,9 +311,9 @@ WHERE
 				str_get!(group_id),
 				str_clone!(key_id),
 				key_id,
-				last_fetched.to_string(),
-				last_fetched.to_string(),
-				last_fetched.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_id)
 			),
 		)
@@ -364,8 +364,12 @@ LIMIT 1
 	Ok(keys)
 }
 
-pub(super) async fn get_device_keys(user_id: str_t!(), key_id: str_t!(), last_fetched: u128, last_id: str_t!())
-	-> AppRes<Vec<UserGroupPublicKeyData>>
+pub(super) async fn get_device_keys(
+	user_id: str_t!(),
+	key_id: str_t!(),
+	last_fetched_time: u128,
+	last_id: str_t!(),
+) -> AppRes<Vec<UserGroupPublicKeyData>>
 {
 	let key_id = str_get!(key_id);
 
@@ -396,7 +400,7 @@ WHERE
     )"
 	.to_string();
 
-	let (sql, params) = if last_fetched > 0 {
+	let (sql, params) = if last_fetched_time > 0 {
 		let sql = sql + " AND ud.time <= ? AND (ud.time < ? OR (ud.time = ? AND ud.id > ?)) ORDER BY ud.time DESC, ud.id LIMIT 100";
 		(
 			sql,
@@ -404,9 +408,9 @@ WHERE
 				str_get!(user_id),
 				str_clone!(key_id),
 				key_id,
-				last_fetched.to_string(),
-				last_fetched.to_string(),
-				last_fetched.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_id)
 			),
 		)

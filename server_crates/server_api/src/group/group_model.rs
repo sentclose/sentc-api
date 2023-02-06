@@ -1,7 +1,7 @@
 use sentc_crypto_common::group::CreateData;
 use sentc_crypto_common::{GroupId, SymKeyId};
 use server_core::db::{exec, exec_string, exec_transaction, get_in, query, query_first, query_string, I32Entity, StringEntity, TransactionData};
-use server_core::{get_time, set_params, set_params_vec, str_clone, str_get, str_t};
+use server_core::{get_time, set_params, set_params_vec, str_clone, str_get, str_t, u128_get};
 use uuid::Uuid;
 
 use crate::group::group_entities::{
@@ -108,9 +108,9 @@ WHERE group_id = ? AND app_id = ?"
 			set_params!(
 				str_get!(group_id),
 				str_get!(app_id),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_k_id)
 			),
 		)
@@ -175,9 +175,9 @@ WHERE
 				str_get!(user_id),
 				str_get!(group_id),
 				str_get!(app_id),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_k_id)
 			),
 		)
@@ -337,7 +337,7 @@ INSERT INTO sentc_group
 		str_clone!(app_id),
 		parent_group_id,
 		"".to_string(),
-		time.to_string(),
+		u128_get!(time),
 		group_type,
 		group_connected,
 		1
@@ -381,7 +381,7 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 		encrypted_ephemeral_key,
 		encrypted_group_key_by_eph_key,
 		previous_group_key_id,
-		time.to_string(),
+		u128_get!(time),
 		data.encrypted_sign_key,
 		data.verify_key,
 		data.keypair_sign_alg
@@ -410,7 +410,7 @@ VALUES (?,?,?,?,?,?,?)";
 		data.encrypted_hmac_key,
 		data.encrypted_hmac_alg,
 		str_clone!(&group_key_id),
-		time.to_string(),
+		u128_get!(time),
 	);
 
 	//insert he creator => rank = 0
@@ -421,7 +421,7 @@ VALUES (?,?,?,?,?,?,?)";
 	let group_user_params = set_params!(
 		str_clone!(insert_user_id),
 		str_clone!(&group_id),
-		time.to_string(),
+		u128_get!(time),
 		0,
 		user_type
 	);
@@ -447,7 +447,7 @@ VALUES (?,?,?,?,?,?,?)";
 		data.encrypted_group_key,
 		data.encrypted_group_key_alg,
 		data.creator_public_key_id,
-		time.to_string()
+		u128_get!(time)
 	);
 
 	exec_transaction(vec![
@@ -627,9 +627,9 @@ WHERE
 			set_params!(
 				str_get!(app_id),
 				str_get!(user_id),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_id)
 			),
 		)
@@ -692,9 +692,9 @@ pub(super) async fn get_first_level_children(
 			set_params!(
 				str_get!(group_id),
 				str_get!(app_id),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_id)
 			),
 		)
