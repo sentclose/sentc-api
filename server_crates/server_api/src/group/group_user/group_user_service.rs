@@ -1,8 +1,7 @@
 use std::future::Future;
 
 use sentc_crypto_common::group::{GroupKeysForNewMember, GroupKeysForNewMemberServerInput};
-use sentc_crypto_common::{AppId, GroupId, UserId};
-use server_core::cache;
+use server_core::{cache, str_t};
 
 use crate::group::group_entities::{GroupInviteReq, InternalGroupDataComplete};
 use crate::group::group_model;
@@ -22,8 +21,12 @@ pub enum NewUserType
 	Group,
 }
 
-pub fn get_invite_req(app_id: AppId, user_id: UserId, last_fetched_time: u128, last_id: GroupId)
-	-> impl Future<Output = AppRes<Vec<GroupInviteReq>>>
+pub fn get_invite_req<'a>(
+	app_id: str_t!('a),
+	user_id: str_t!('a),
+	last_fetched_time: u128,
+	last_id: str_t!('a),
+) -> impl Future<Output = AppRes<Vec<GroupInviteReq>>> + 'a
 {
 	group_user_model::get_invite_req_to_user(app_id, user_id, last_fetched_time, last_id)
 }
@@ -36,7 +39,7 @@ The invited user must accept the invite to join the group
 pub async fn invite_request(
 	group_data: &InternalGroupDataComplete,
 	input: GroupKeysForNewMemberServerInput,
-	invited_user: UserId,
+	invited_user: &str,
 	user_type: NewUserType,
 ) -> AppRes<Option<String>>
 {
@@ -81,8 +84,8 @@ pub async fn invite_request(
 	}
 
 	let session_id = group_user_model::invite_request(
-		group_data.group_data.id.to_string(),
-		invited_user.to_string(),
+		&group_data.group_data.id,
+		invited_user,
 		input.keys,
 		input.key_session,
 		group_data.user_data.rank,
@@ -101,20 +104,20 @@ The first half is the same as invite_request but after accept the invite request
 pub async fn invite_auto(
 	group_data: &InternalGroupDataComplete,
 	input: GroupKeysForNewMemberServerInput,
-	invited_user: UserId,
+	invited_user: &str,
 	user_type: NewUserType,
 ) -> AppRes<Option<String>>
 {
-	let session_id = invite_request(group_data, input, invited_user.to_string(), user_type).await?;
+	let session_id = invite_request(group_data, input, invited_user, user_type).await?;
 
-	group_user_model::accept_invite(group_data.group_data.id.to_string(), invited_user).await?;
+	group_user_model::accept_invite(&group_data.group_data.id, invited_user).await?;
 
 	Ok(session_id)
 }
 
 pub async fn insert_user_keys_via_session(
-	group_id: GroupId,
-	key_session_id: String,
+	group_id: &str,
+	key_session_id: &str,
 	insert_type: InsertNewUserType,
 	input: Vec<GroupKeysForNewMember>,
 ) -> AppRes<()>
@@ -142,7 +145,7 @@ pub async fn insert_user_keys_via_session(
 	Ok(())
 }
 
-pub async fn leave_group(group_data: &InternalGroupDataComplete, real_user_id: Option<UserId>) -> AppRes<()>
+pub async fn leave_group(group_data: &InternalGroupDataComplete, real_user_id: Option<&str>) -> AppRes<()>
 {
 	if let (Some(g_a_m), Some(id)) = (&group_data.user_data.get_values_from_group_as_member, real_user_id) {
 		//if user got access by group as member -> check the rank of the user in the real group.
@@ -150,7 +153,7 @@ pub async fn leave_group(group_data: &InternalGroupDataComplete, real_user_id: O
 
 		//do this check everytime with db look up
 		// because the rank in the group data only shows the relative rank in the connected group, not the real rank in the group.
-		let group_as_member_user_data = group_model::get_internal_group_user_data(g_a_m.clone(), id.clone()).await?;
+		let group_as_member_user_data = group_model::get_internal_group_user_data(g_a_m, id).await?;
 
 		match group_as_member_user_data {
 			Some(data) => {
@@ -168,8 +171,8 @@ pub async fn leave_group(group_data: &InternalGroupDataComplete, real_user_id: O
 	}
 
 	group_user_model::user_leave_group(
-		group_data.group_data.id.to_string(),
-		group_data.user_data.user_id.to_string(),
+		&group_data.group_data.id,
+		&group_data.user_data.user_id,
 		group_data.user_data.rank,
 	)
 	.await?;
