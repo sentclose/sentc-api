@@ -1,5 +1,5 @@
 use sentc_crypto_common::group::CreateData;
-use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
+use sentc_crypto_common::{GroupId, SymKeyId};
 use server_core::db::{exec, exec_string, exec_transaction, get_in, query, query_first, query_string, I32Entity, StringEntity, TransactionData};
 use server_core::{get_time, set_params, set_params_vec, str_clone, str_get, str_t};
 use uuid::Uuid;
@@ -17,11 +17,15 @@ use crate::sentc_group_entities::GroupHmacData;
 use crate::user::user_entities::UserPublicKeyDataEntity;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
-pub(crate) async fn get_internal_group_data(app_id: AppId, group_id: GroupId) -> AppRes<InternalGroupData>
+pub(crate) async fn get_internal_group_data(app_id: str_t!(), group_id: str_t!()) -> AppRes<InternalGroupData>
 {
 	//language=SQL
 	let sql = "SELECT id as group_id, app_id, parent, time, invite, is_connected_group FROM sentc_group WHERE app_id = ? AND id = ? AND type = ?";
-	let group: Option<InternalGroupData> = query_first(sql, set_params!(app_id, group_id, GROUP_TYPE_NORMAL)).await?;
+	let group: Option<InternalGroupData> = query_first(
+		sql,
+		set_params!(str_get!(app_id), str_get!(group_id), GROUP_TYPE_NORMAL),
+	)
+	.await?;
 
 	match group {
 		Some(d) => Ok(d),
@@ -36,7 +40,7 @@ pub(crate) async fn get_internal_group_data(app_id: AppId, group_id: GroupId) ->
 	}
 }
 
-pub(crate) async fn get_user_from_parent_groups(group_id: GroupId, user_id: UserId) -> AppRes<Option<InternalUserGroupDataFromParent>>
+pub(crate) async fn get_user_from_parent_groups(group_id: str_t!(), user_id: str_t!()) -> AppRes<Option<InternalUserGroupDataFromParent>>
 {
 	//search via recursion all parent ids for this group.
 	//https://www.mysqltutorial.org/mysql-adjacency-list-tree/
@@ -71,23 +75,23 @@ SELECT group_id, time, `rank` FROM sentc_group_user WHERE user_id = ? AND group_
 ) LIMIT 1
 ";
 
-	let group_data: Option<InternalUserGroupDataFromParent> = query_first(sql, set_params!(user_id, group_id)).await?;
+	let group_data: Option<InternalUserGroupDataFromParent> = query_first(sql, set_params!(str_get!(user_id), str_get!(group_id))).await?;
 
 	Ok(group_data)
 }
 
-pub(crate) async fn get_internal_group_user_data(group_id: GroupId, user_id: UserId) -> AppRes<Option<InternalUserGroupData>>
+pub(crate) async fn get_internal_group_user_data(group_id: str_t!(), user_id: str_t!()) -> AppRes<Option<InternalUserGroupData>>
 {
 	//language=SQL
 	let sql = "SELECT user_id, time, `rank` FROM sentc_group_user WHERE group_id = ? AND user_id = ?";
-	let group_data: Option<InternalUserGroupData> = query_first(sql, set_params!(group_id, user_id)).await?;
+	let group_data: Option<InternalUserGroupData> = query_first(sql, set_params!(str_get!(group_id), str_get!(user_id))).await?;
 
 	Ok(group_data)
 }
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn get_group_hmac(app_id: AppId, group_id: GroupId, last_fetched_time: u128, last_k_id: SymKeyId) -> AppRes<Vec<GroupHmacData>>
+pub(super) async fn get_group_hmac(app_id: str_t!(), group_id: str_t!(), last_fetched_time: u128, last_k_id: str_t!()) -> AppRes<Vec<GroupHmacData>>
 {
 	//language=SQL
 	let sql = r"
@@ -102,17 +106,17 @@ WHERE group_id = ? AND app_id = ?"
 		(
 			sql,
 			set_params!(
-				group_id,
-				app_id,
+				str_get!(group_id),
+				str_get!(app_id),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
-				last_k_id
+				str_get!(last_k_id)
 			),
 		)
 	} else {
 		let sql = sql + " ORDER BY time DESC, id LIMIT 50";
-		(sql, set_params!(group_id, app_id))
+		(sql, set_params!(str_get!(group_id), str_get!(app_id)))
 	};
 
 	let data: Vec<GroupHmacData> = query_string(sql1, params).await?;
@@ -130,11 +134,11 @@ New keys from key update are fetched by the key update fn
 For child group: use the parent group id as user id.
 */
 pub(super) async fn get_user_group_keys(
-	app_id: AppId,
-	group_id: GroupId,
-	user_id: UserId,
+	app_id: str_t!(),
+	group_id: str_t!(),
+	user_id: str_t!(),
 	last_fetched_time: u128,
-	last_k_id: SymKeyId,
+	last_k_id: str_t!(),
 ) -> AppRes<Vec<GroupUserKeys>>
 {
 	//language=SQL
@@ -168,18 +172,21 @@ WHERE
 		(
 			sql,
 			set_params!(
-				user_id,
-				group_id,
-				app_id,
+				str_get!(user_id),
+				str_get!(group_id),
+				str_get!(app_id),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
-				last_k_id
+				str_get!(last_k_id)
 			),
 		)
 	} else {
 		let sql = sql + " ORDER BY uk.time DESC, k_id LIMIT 50";
-		(sql, set_params!(user_id, group_id, app_id))
+		(
+			sql,
+			set_params!(str_get!(user_id), str_get!(group_id), str_get!(app_id)),
+		)
 	};
 
 	let user_keys: Vec<GroupUserKeys> = query_string(sql1, params).await?;
@@ -187,7 +194,7 @@ WHERE
 	Ok(user_keys)
 }
 
-pub(super) async fn get_user_group_key(app_id: AppId, group_id: GroupId, user_id: UserId, key_id: SymKeyId) -> AppRes<GroupUserKeys>
+pub(super) async fn get_user_group_key(app_id: str_t!(), group_id: str_t!(), user_id: str_t!(), key_id: str_t!()) -> AppRes<GroupUserKeys>
 {
 	//language=SQL
 	let sql = r"
@@ -213,7 +220,16 @@ WHERE
     k.id = k_id AND 
     app_id = ?";
 
-	let key: Option<GroupUserKeys> = query_first(sql, set_params!(user_id, group_id, key_id, app_id)).await?;
+	let key: Option<GroupUserKeys> = query_first(
+		sql,
+		set_params!(
+			str_get!(user_id),
+			str_get!(group_id),
+			str_get!(key_id),
+			str_get!(app_id)
+		),
+	)
+	.await?;
 
 	match key {
 		Some(k) => Ok(k),
@@ -233,7 +249,7 @@ Get the info if there was a key update in the mean time
 
 For child group: use the parent group id as user id.
 */
-pub(super) async fn check_for_key_update(app_id: AppId, user_id: UserId, group_id: GroupId) -> AppRes<bool>
+pub(super) async fn check_for_key_update(app_id: str_t!(), user_id: str_t!(), group_id: str_t!()) -> AppRes<bool>
 {
 	//check for key update
 	//language=SQL
@@ -249,7 +265,11 @@ WHERE
     g.id = ?
 LIMIT 1";
 
-	let key_update: Option<I32Entity> = query_first(sql, set_params!(user_id, app_id, group_id)).await?;
+	let key_update: Option<I32Entity> = query_first(
+		sql,
+		set_params!(str_get!(user_id), str_get!(app_id), str_get!(group_id)),
+	)
+	.await?;
 
 	match key_update {
 		Some(_) => Ok(true),
@@ -479,8 +499,11 @@ WHERE
 	Ok(())
 }
 
-pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_rank: i32) -> AppRes<Vec<String>>
+pub(super) async fn delete(app_id: str_t!(), group_id: str_t!(), user_rank: i32) -> AppRes<Vec<String>>
 {
+	let group_id = str_get!(group_id);
+	let app_id = str_get!(app_id);
+
 	//check with app id to make sure the user is in the right group
 	check_group_rank(user_rank, 1)?;
 
@@ -488,14 +511,14 @@ pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_rank: i32) -> 
 	let sql = "DELETE FROM sentc_group WHERE id = ? AND app_id = ? AND type = ?";
 	exec(
 		sql,
-		set_params!(group_id.to_string(), app_id.to_string(), GROUP_TYPE_NORMAL),
+		set_params!(str_clone!(group_id), str_clone!(app_id), GROUP_TYPE_NORMAL),
 	)
 	.await?;
 
 	//delete the children via recursion, can't delete them directly because sqlite don't support delete from multiple tables
 	//can't delete it via trigger because it is the same table
 	//can't delete it via on delete cascade because the trigger for the children won't run, so we are left with garbage data.
-	let children = get_children_to_parent(group_id.to_string(), app_id.to_string()).await?;
+	let children = get_children_to_parent(str_clone!(group_id), app_id).await?;
 
 	let mut children_out = Vec::with_capacity(children.len());
 
@@ -524,7 +547,7 @@ pub(super) async fn delete(app_id: AppId, group_id: GroupId, user_rank: i32) -> 
 	Ok(children_out)
 }
 
-pub(super) async fn stop_invite(app_id: AppId, group_id: GroupId, user_rank: i32) -> AppRes<()>
+pub(super) async fn stop_invite(app_id: str_t!(), group_id: str_t!(), user_rank: i32) -> AppRes<()>
 {
 	check_group_rank(user_rank, 1)?;
 
@@ -535,7 +558,7 @@ pub(super) async fn stop_invite(app_id: AppId, group_id: GroupId, user_rank: i32
 	#[cfg(feature = "sqlite")]
 	let sql = "UPDATE sentc_group SET invite = IIF(invite LIKE 0, 1,0) WHERE app_id = ? AND id = ?";
 
-	exec(sql, set_params!(app_id, group_id)).await?;
+	exec(sql, set_params!(str_get!(app_id), str_get!(group_id))).await?;
 
 	Ok(())
 }
@@ -559,8 +582,10 @@ pub(super) fn check_group_rank(user_rank: i32, req_rank: i32) -> AppRes<()>
 	Ok(())
 }
 
-pub(super) async fn get_children_to_parent(group_id: GroupId, app_id: AppId) -> AppRes<Vec<StringEntity>>
+pub(super) async fn get_children_to_parent(group_id: str_t!(), app_id: str_t!()) -> AppRes<Vec<StringEntity>>
 {
+	let app_id = str_get!(app_id);
+
 	//language=SQL
 	let sql = r"
 WITH RECURSIVE children (id) AS ( 
@@ -574,14 +599,15 @@ WITH RECURSIVE children (id) AS (
 SELECT * FROM children
 ";
 
-	let children: Vec<StringEntity> = query(sql, set_params!(group_id, app_id.to_string(), app_id)).await?;
+	let children: Vec<StringEntity> = query(sql, set_params!(str_get!(group_id), str_clone!(app_id), app_id)).await?;
 
 	Ok(children)
 }
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn get_all_groups_to_user(app_id: AppId, user_id: UserId, last_fetched_time: u128, last_id: GroupId) -> AppRes<Vec<ListGroups>>
+pub(super) async fn get_all_groups_to_user(app_id: str_t!(), user_id: str_t!(), last_fetched_time: u128, last_id: str_t!())
+	-> AppRes<Vec<ListGroups>>
 {
 	//language=SQL
 	let sql = r"
@@ -599,18 +625,18 @@ WHERE
 		(
 			sql,
 			set_params!(
-				app_id,
-				user_id,
+				str_get!(app_id),
+				str_get!(user_id),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
-				last_id
+				str_get!(last_id)
 			),
 		)
 	} else {
 		let sql = sql + " ORDER BY time, group_id LIMIT 50";
 
-		(sql, set_params!(app_id, user_id))
+		(sql, set_params!(str_get!(app_id), str_get!(user_id)))
 	};
 
 	let list: Vec<ListGroups> = query_string(sql, params).await?;
@@ -618,7 +644,7 @@ WHERE
 	Ok(list)
 }
 
-pub(super) async fn get_public_key_data(app_id: AppId, group_id: GroupId) -> AppRes<UserPublicKeyDataEntity>
+pub(super) async fn get_public_key_data(app_id: str_t!(), group_id: str_t!()) -> AppRes<UserPublicKeyDataEntity>
 {
 	//language=SQL
 	let sql = r"
@@ -631,7 +657,7 @@ ORDER BY time DESC
 LIMIT 1";
 
 	//the same as user keys, because in this case the group is like a user
-	let data: Option<UserPublicKeyDataEntity> = query_first(sql, set_params!(app_id, group_id)).await?;
+	let data: Option<UserPublicKeyDataEntity> = query_first(sql, set_params!(str_get!(app_id), str_get!(group_id))).await?;
 
 	match data {
 		Some(d) => Ok(d),
@@ -647,10 +673,10 @@ LIMIT 1";
 }
 
 pub(super) async fn get_first_level_children(
-	app_id: AppId,
-	group_id: GroupId,
+	app_id: str_t!(),
+	group_id: str_t!(),
 	last_fetched_time: u128,
-	last_id: GroupId,
+	last_id: str_t!(),
 ) -> AppRes<Vec<GroupChildrenList>>
 {
 	//get the direct children, where parent id == group id
@@ -664,17 +690,17 @@ pub(super) async fn get_first_level_children(
 		(
 			sql,
 			set_params!(
-				group_id,
-				app_id,
+				str_get!(group_id),
+				str_get!(app_id),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
-				last_id
+				str_get!(last_id)
 			),
 		)
 	} else {
 		let sql = sql + " ORDER BY time, id LIMIT 50";
-		(sql, set_params!(group_id, app_id))
+		(sql, set_params!(str_get!(group_id), str_get!(app_id)))
 	};
 
 	let list: Vec<GroupChildrenList> = query_string(sql, params).await?;

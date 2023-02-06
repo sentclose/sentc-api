@@ -3,7 +3,6 @@ use std::future::Future;
 use rustgram::Request;
 use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDataCheckUpdateServerOutput, GroupLightServerData};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
-use server_core::cache;
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 
@@ -14,7 +13,6 @@ use crate::group::{get_group_user_data_from_req, group_model, group_service, GRO
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::user::user_entities::UserPublicKeyDataEntity;
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
-use crate::util::get_group_cache_key;
 
 pub enum GroupCreateType
 {
@@ -119,8 +117,8 @@ pub async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 	let group_data = get_group_user_data_from_req(&req)?;
 
 	group_service::delete_group(
-		group_data.group_data.app_id.to_string(),
-		group_data.group_data.id.to_string(),
+		&group_data.group_data.app_id,
+		&group_data.group_data.id,
 		group_data.user_data.rank,
 	)
 	.await?;
@@ -165,9 +163,9 @@ pub async fn get_key_update_for_user(req: Request) -> JRes<GroupDataCheckUpdateS
 	let group_data = get_group_user_data_from_req(&req)?;
 
 	let key_update = group_model::check_for_key_update(
-		group_data.group_data.app_id.to_string(),
-		group_data.user_data.user_id.to_string(),
-		group_data.group_data.id.to_string(),
+		&group_data.group_data.app_id,
+		&group_data.user_data.user_id,
+		&group_data.group_data.id,
 	)
 	.await?;
 
@@ -199,11 +197,11 @@ pub async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupUserKeys>>
 	})?;
 
 	let user_keys = group_service::get_user_group_keys(
-		group_data.group_data.app_id.to_string(),
-		group_data.group_data.id.to_string(),
-		group_data.user_data.user_id.to_string(),
+		&group_data.group_data.app_id,
+		&group_data.group_data.id,
+		&group_data.user_data.user_id,
 		last_fetched_time,
-		last_k_id.to_string(),
+		last_k_id,
 	)
 	.await?;
 
@@ -219,10 +217,10 @@ pub async fn get_user_group_key(req: Request) -> JRes<GroupUserKeys>
 	let key_id = get_name_param_from_req(&req, "key_id")?;
 
 	let key = group_service::get_user_group_key(
-		group_data.group_data.app_id.to_string(),
-		group_data.group_data.id.to_string(),
-		group_data.user_data.user_id.to_string(),
-		key_id.to_string(),
+		&group_data.group_data.app_id,
+		&group_data.group_data.id,
+		&group_data.user_data.user_id,
+		key_id,
 	)
 	.await?;
 
@@ -237,18 +235,12 @@ pub async fn stop_invite(req: Request) -> JRes<ServerSuccessOutput>
 
 	check_endpoint_with_req(&req, Endpoint::GroupInviteStop)?;
 
-	group_model::stop_invite(
-		group_data.group_data.app_id.to_string(),
-		group_data.group_data.id.to_string(),
+	group_service::stop_invite(
+		&group_data.group_data.app_id,
+		&group_data.group_data.id,
 		group_data.user_data.rank,
 	)
 	.await?;
-
-	let key_group = get_group_cache_key(
-		group_data.group_data.app_id.as_str(),
-		group_data.group_data.id.as_str(),
-	);
-	cache::delete(key_group.as_str()).await;
 
 	echo_success()
 }
@@ -263,7 +255,7 @@ pub async fn get_public_key_data(req: Request) -> JRes<UserPublicKeyDataEntity>
 
 	let group_id = get_name_param_from_req(&req, "group_id")?;
 
-	let data = group_service::get_public_key_data(app_data.app_data.app_id.clone(), group_id.to_string()).await?;
+	let data = group_service::get_public_key_data(&app_data.app_data.app_id, group_id).await?;
 
 	echo(data)
 }
@@ -287,10 +279,10 @@ pub async fn get_all_first_level_children(req: Request) -> JRes<Vec<GroupChildre
 	})?;
 
 	let list = group_service::get_first_level_children(
-		group_data.group_data.app_id.clone(),
-		group_data.group_data.id.clone(),
+		&group_data.group_data.app_id,
+		&group_data.group_data.id,
 		last_fetched_time,
-		last_id.to_string(),
+		last_id,
 	)
 	.await?;
 
@@ -321,22 +313,16 @@ async fn get_all_groups_for(req: Request, user_type: NewUserType) -> JRes<Vec<Li
 	let user_id = match user_type {
 		NewUserType::Normal => {
 			let user = get_jwt_data_from_param(&req)?;
-			user.id.clone()
+			&user.id
 		},
 		NewUserType::Group => {
 			let group_data = get_group_user_data_from_req(&req)?;
 
-			group_data.group_data.id.clone()
+			&group_data.group_data.id
 		},
 	};
 
-	let list = group_model::get_all_groups_to_user(
-		app.app_data.app_id.to_string(),
-		user_id,
-		last_fetched_time,
-		last_group_id.to_string(),
-	)
-	.await?;
+	let list = group_model::get_all_groups_to_user(&app.app_data.app_id, user_id, last_fetched_time, last_group_id).await?;
 
 	echo(list)
 }
