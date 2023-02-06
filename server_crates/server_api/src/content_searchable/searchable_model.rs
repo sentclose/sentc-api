@@ -1,6 +1,6 @@
 use sentc_crypto_common::content_searchable::SearchCreateData;
 use server_core::db::{bulk_insert, exec, query_string};
-use server_core::{get_time, set_params, str_clone, str_get, str_t};
+use server_core::{get_time, set_params, str_clone, str_get, str_t, u128_get};
 use uuid::Uuid;
 
 use crate::content_searchable::searchable_entities::ListSearchItem;
@@ -51,7 +51,7 @@ VALUES (?,?,?,?,?,?,?,?,?)";
 			data.item_ref,
 			data.alg,
 			data.key_id,
-			time.to_string()
+			u128_get!(time)
 		),
 	)
 	.await?;
@@ -140,9 +140,9 @@ WHERE
 				str_get!(app_id),
 				c_id,
 				//time params
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_id),
 				limit
 			)
@@ -152,9 +152,9 @@ WHERE
 				str_get!(group_id),
 				str_get!(app_id),
 				//time params
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_id),
 				limit
 			)
