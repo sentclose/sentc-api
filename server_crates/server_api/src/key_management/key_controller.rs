@@ -19,7 +19,7 @@ pub(crate) async fn register_sym_key(mut req: Request) -> JRes<GeneratedSymKeyHe
 	check_endpoint_with_app_options(app, Endpoint::KeyRegister)?;
 	let user = get_jwt_data_from_param(&req)?;
 
-	let key_id = key_model::register_sym_key(app.app_data.app_id.to_string(), user.id.to_string(), input).await?;
+	let key_id = key_model::register_sym_key(&app.app_data.app_id, &user.id, input).await?;
 
 	let out = GeneratedSymKeyHeadServerRegisterOutput {
 		key_id,
@@ -37,12 +37,7 @@ pub(crate) async fn delete_sym_key(req: Request) -> JRes<ServerSuccessOutput>
 
 	let key_id = get_name_param_from_req(&req, "key_id")?;
 
-	key_model::delete_sym_key(
-		app.app_data.app_id.to_string(),
-		user.id.to_string(),
-		key_id.to_string(),
-	)
-	.await?;
+	key_model::delete_sym_key(&app.app_data.app_id, &user.id, key_id).await?;
 
 	echo_success()
 }
@@ -54,7 +49,7 @@ pub(crate) async fn get_sym_key_by_id(req: Request) -> JRes<SymKeyEntity>
 
 	let key_id = get_name_param_from_req(&req, "key_id")?;
 
-	let key = key_model::get_sym_key_by_id(app_data.app_data.app_id.to_string(), key_id.to_string()).await?;
+	let key = key_model::get_sym_key_by_id(&app_data.app_data.app_id, key_id).await?;
 
 	echo(key)
 }
@@ -79,10 +74,10 @@ pub(crate) async fn get_all_sym_keys_to_master_key(req: Request) -> JRes<Vec<Sym
 	})?;
 
 	let keys = key_model::get_all_sym_keys_to_master_key(
-		app_data.app_data.app_id.to_string(),
-		master_key_id.to_string(),
+		&app_data.app_data.app_id,
+		master_key_id,
 		last_fetched_time,
-		last_key_id.to_string(),
+		last_key_id,
 	)
 	.await?;
 
