@@ -1,6 +1,5 @@
 use std::future::Future;
 
-use sentc_crypto_common::CustomerId;
 use server_api_common::app::{AppFileOptionsInput, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, FILE_STORAGE_OWN};
 use server_core::str_t;
 
@@ -9,7 +8,7 @@ use crate::customer_app::{app_model, generate_tokens};
 use crate::user::jwt::create_jwt_keys;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
-pub async fn create_app(input: AppRegisterInput, customer_id: CustomerId) -> AppRes<AppRegisterOutput>
+pub async fn create_app(input: AppRegisterInput, customer_id: &str) -> AppRes<AppRegisterOutput>
 {
 	//1. create and hash tokens
 	let (secret_token, public_token) = generate_tokens()?;
@@ -25,7 +24,7 @@ pub async fn create_app(input: AppRegisterInput, customer_id: CustomerId) -> App
 	//3. create an new app (with new secret_token and public_token)
 	//	the str values are used because the real values are exported to the user
 	let (app_id, jwt_id) = app_model::create_app(
-		&customer_id,
+		customer_id,
 		input,
 		hashed_secret_token,
 		hashed_public_token,
@@ -37,12 +36,12 @@ pub async fn create_app(input: AppRegisterInput, customer_id: CustomerId) -> App
 	.await?;
 
 	let customer_app_data = AppRegisterOutput {
-		customer_id: customer_id.clone(),
+		customer_id: customer_id.to_string(),
 		app_id: app_id.to_string(),
 		secret_token: base64::encode(secret_token),
 		public_token: base64::encode(public_token),
 		jwt_data: AppJwtRegisterOutput {
-			customer_id,
+			customer_id: customer_id.to_string(),
 			app_id,
 			jwt_id,
 			jwt_verify_key,

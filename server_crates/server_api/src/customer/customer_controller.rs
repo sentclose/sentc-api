@@ -81,10 +81,10 @@ pub async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 	let validate_token = generate_email_validate_token()?;
 
 	customer_model::register_customer(
-		register_data.email.to_string(),
+		&register_data.email,
 		register_data.customer_data,
-		customer_id.to_string(),
-		validate_token.to_string(),
+		&customer_id,
+		&validate_token,
 	)
 	.await?;
 
@@ -110,7 +110,7 @@ pub async fn done_register(mut req: Request) -> JRes<ServerSuccessOutput>
 	let customer = get_jwt_data_from_param(&req)?;
 	let customer_id = &customer.id;
 
-	let db_token = customer_model::get_email_token(customer_id.to_string()).await?;
+	let db_token = customer_model::get_email_token(customer_id).await?;
 
 	if input.token != db_token.email_token {
 		return Err(HttpErr::new(
@@ -121,7 +121,7 @@ pub async fn done_register(mut req: Request) -> JRes<ServerSuccessOutput>
 		));
 	}
 
-	customer_model::done_register(customer_id.to_string()).await?;
+	customer_model::done_register(customer_id).await?;
 
 	echo_success()
 }
@@ -131,7 +131,7 @@ pub async fn resend_email(req: Request) -> JRes<ServerSuccessOutput>
 	let customer = get_jwt_data_from_param(&req)?;
 	let customer_id = &customer.id;
 
-	let _token = customer_model::get_email_token(customer_id.to_string()).await?;
+	let _token = customer_model::get_email_token(customer_id).await?;
 
 	#[cfg(feature = "send_mail")]
 	send_mail::send_mail(
@@ -167,7 +167,7 @@ pub async fn done_login(mut req: Request) -> JRes<CustomerDoneLoginOutput>
 
 	let user_keys = user::user_service::done_login_light(app_data, done_login).await?;
 
-	let customer_data = customer_model::get_customer_data(user_keys.user_id.to_string()).await?;
+	let customer_data = customer_model::get_customer_data(&user_keys.user_id).await?;
 
 	let out = CustomerDoneLoginOutput {
 		user_keys,
@@ -202,7 +202,7 @@ pub async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 	//files must be deleted before customer delete. we need the apps for the customer
 	file_service::delete_file_for_customer(user.id.as_str()).await?;
 
-	customer_model::delete(user.id.to_string()).await?;
+	customer_model::delete(&user.id).await?;
 
 	echo_success()
 }
@@ -244,7 +244,7 @@ pub async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 
 	let validate_token = generate_email_validate_token()?;
 
-	customer_model::update(update_data, user.id.to_string(), validate_token.to_string()).await?;
+	customer_model::update(update_data, &user.id, validate_token.to_string()).await?;
 
 	#[cfg(feature = "send_mail")]
 	send_mail::send_mail(
@@ -320,7 +320,7 @@ pub async fn prepare_reset_password(mut req: Request) -> JRes<ServerSuccessOutpu
 
 	let validate_token = generate_email_validate_token()?;
 
-	customer_model::reset_password_token_save(email_data.id.to_string(), validate_token.to_string()).await?;
+	customer_model::reset_password_token_save(&email_data.id, &validate_token).await?;
 
 	#[cfg(feature = "send_mail")]
 	send_mail::send_mail(email.as_str(), validate_token, email_data.id, EmailTopic::PwReset).await;
@@ -350,7 +350,7 @@ pub async fn update_data(mut req: Request) -> JRes<ServerSuccessOutput>
 
 	let user = get_jwt_data_from_param(&req)?;
 
-	customer_model::update_data(user.id.clone(), input).await?;
+	customer_model::update_data(&user.id, input).await?;
 
 	echo_success()
 }

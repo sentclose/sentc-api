@@ -87,9 +87,9 @@ pub(crate) async fn create_app(mut req: Request) -> JRes<AppRegisterOutput>
 	let customer_id = &customer.id;
 
 	//only create apps when validate the e-mail
-	customer_util::check_customer_valid(customer_id.to_string()).await?;
+	customer_util::check_customer_valid(customer_id).await?;
 
-	let customer_app_data = app_service::create_app(input, customer_id.to_string()).await?;
+	let customer_app_data = app_service::create_app(input, customer_id).await?;
 
 	echo(customer_app_data)
 }
