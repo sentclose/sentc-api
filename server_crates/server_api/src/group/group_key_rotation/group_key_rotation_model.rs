@@ -440,9 +440,9 @@ pub(super) async fn save_user_eph_keys(group_id: str_t!(), key_id: str_t!(), key
 			set_params!(
 				str_clone!(key_id),
 				str_clone!(group_id),
-				ob.user_id.to_string(),
-				ob.encrypted_ephemeral_key.to_string(),
-				ob.encrypted_eph_key_key_id.to_string()
+				str_clone!(&ob.user_id),
+				str_clone!(&ob.encrypted_ephemeral_key),
+				str_clone!(&ob.encrypted_eph_key_key_id)
 			)
 		},
 	)

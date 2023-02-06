@@ -21,7 +21,7 @@ use sentc_crypto_common::user::{
 	UserIdentifierAvailableServerOutput,
 	UserUpdateServerInput,
 };
-use sentc_crypto_common::{AppId, GroupId, SymKeyId};
+use sentc_crypto_common::AppId;
 use server_core::db::StringEntity;
 use server_core::{cache, str_t};
 
@@ -181,7 +181,7 @@ In the client:
 1. auto invite the new device
 2. same as group auto invite
 */
-pub async fn done_register_device(app_id: &str, user_id: &str, user_group_id: GroupId, input: UserDeviceDoneRegisterInput) -> AppRes<Option<String>>
+pub async fn done_register_device(app_id: &str, user_id: &str, user_group_id: &str, input: UserDeviceDoneRegisterInput) -> AppRes<Option<String>>
 {
 	let device_id = user_model::get_done_register_device(app_id, input.token).await?;
 
@@ -190,7 +190,7 @@ pub async fn done_register_device(app_id: &str, user_id: &str, user_group_id: Gr
 		&InternalGroupDataComplete {
 			group_data: InternalGroupData {
 				app_id: app_id.to_string(),
-				id: user_group_id,
+				id: user_group_id.to_string(),
 				time: 0,
 				parent: None,
 				invite: 1, //must be 1 to accept the device invite
@@ -206,7 +206,7 @@ pub async fn done_register_device(app_id: &str, user_id: &str, user_group_id: Gr
 			},
 		},
 		input.user_keys,
-		device_id.to_string(), //invite the new device
+		&device_id, //invite the new device
 		NewUserType::Normal,
 	)
 	.await?;
@@ -321,19 +321,19 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 
 	//fetch the first page of the group keys with the device id as user
 	let user_keys = group_service::get_user_group_keys(
-		app_data.app_data.app_id.to_string(),
-		device_keys.user_group_id.to_string(),
-		device_keys.device_id.to_string(),
+		&app_data.app_data.app_id,
+		&device_keys.user_group_id,
+		&device_keys.device_id,
 		0,
-		"".to_string(),
+		"",
 	)
 	.await?;
 
 	let hmac_keys = group_service::get_group_hmac(
-		app_data.app_data.app_id.to_string(),
-		device_keys.user_group_id.to_string(),
+		&app_data.app_data.app_id,
+		&device_keys.user_group_id,
 		0, //fetch the first page
-		"".to_string(),
+		"",
 	)
 	.await?;
 
@@ -350,28 +350,28 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 	Ok(out)
 }
 
-pub fn get_user_keys(
-	user: &UserJwtEntity,
-	app_id: AppId,
+pub fn get_user_keys<'a>(
+	user: &'a UserJwtEntity,
+	app_id: str_t!('a),
 	last_fetched_time: u128,
-	last_k_id: SymKeyId,
-) -> impl Future<Output = AppRes<Vec<GroupUserKeys>>>
+	last_k_id: str_t!('a),
+) -> impl Future<Output = AppRes<Vec<GroupUserKeys>>> + 'a
 {
 	group_service::get_user_group_keys(
 		app_id,
-		user.group_id.to_string(),
-		user.device_id.to_string(), //call it with the device id to decrypt the keys
+		&user.group_id,
+		&user.device_id, //call it with the device id to decrypt the keys
 		last_fetched_time,
 		last_k_id,
 	)
 }
 
-pub fn get_user_key(user: &UserJwtEntity, app_id: AppId, key_id: SymKeyId) -> impl Future<Output = AppRes<GroupUserKeys>>
+pub fn get_user_key<'a>(user: &'a UserJwtEntity, app_id: str_t!('a), key_id: str_t!('a)) -> impl Future<Output = AppRes<GroupUserKeys>> + 'a
 {
 	group_service::get_user_group_key(
 		app_id,
-		user.group_id.to_string(),
-		user.device_id.to_string(), //call it with the device id to decrypt the keys
+		&user.group_id,
+		&user.device_id, //call it with the device id to decrypt the keys
 		key_id,
 	)
 }
@@ -411,13 +411,7 @@ pub async fn init_user(app_data: &AppData, device_id: &str, input: JwtRefreshInp
 	let jwt = refresh_jwt(app_data, device_id, input).await?;
 
 	//2nd get all group invites
-	let invites = group_user_service::get_invite_req(
-		app_data.app_data.app_id.to_string(),
-		jwt.user_id,
-		0,
-		"none".to_string(),
-	)
-	.await?;
+	let invites = group_user_service::get_invite_req(&app_data.app_data.app_id, &jwt.user_id, 0, "none").await?;
 
 	Ok(UserInitEntity {
 		jwt: jwt.jwt,

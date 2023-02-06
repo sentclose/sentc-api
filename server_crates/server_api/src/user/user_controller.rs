@@ -85,7 +85,7 @@ pub(crate) async fn done_register_device(mut req: Request) -> JRes<GroupAcceptJo
 
 	check_endpoint_with_app_options(app, Endpoint::UserDeviceRegister)?;
 
-	let session_id = user_service::done_register_device(&app.app_data.app_id, &user.id, user.group_id.clone(), input).await?;
+	let session_id = user_service::done_register_device(&app.app_data.app_id, &user.id, &user.group_id, input).await?;
 
 	let out = GroupAcceptJoinReqServerOutput {
 		session_id,
@@ -105,8 +105,8 @@ pub(crate) async fn device_key_upload(mut req: Request) -> JRes<ServerSuccessOut
 	let key_session_id = get_name_param_from_req(&req, "key_session_id")?;
 
 	group_user_service::insert_user_keys_via_session(
-		user.group_id.clone(),
-		key_session_id.to_string(),
+		&user.group_id,
+		key_session_id,
 		group_user_service::InsertNewUserType::Join,
 		input,
 	)
@@ -173,13 +173,7 @@ pub(crate) async fn get_user_keys(req: Request) -> JRes<Vec<GroupUserKeys>>
 		)
 	})?;
 
-	let user_keys = user_service::get_user_keys(
-		user,
-		app.app_data.app_id.clone(),
-		last_fetched_time,
-		last_k_id.to_string(),
-	)
-	.await?;
+	let user_keys = user_service::get_user_keys(user, &app.app_data.app_id, last_fetched_time, last_k_id).await?;
 
 	echo(user_keys)
 }
@@ -192,7 +186,7 @@ pub(crate) async fn get_user_key(req: Request) -> JRes<GroupUserKeys>
 	let user = get_jwt_data_from_param(&req)?;
 	let key_id = get_name_param_from_req(&req, "key_id")?;
 
-	let user_key = user_service::get_user_key(user, app.app_data.app_id.clone(), key_id.to_string()).await?;
+	let user_key = user_service::get_user_key(user, &app.app_data.app_id, key_id).await?;
 
 	echo(user_key)
 }
