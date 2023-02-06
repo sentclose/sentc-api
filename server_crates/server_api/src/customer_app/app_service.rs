@@ -1,7 +1,8 @@
 use std::future::Future;
 
-use sentc_crypto_common::{AppId, CustomerId};
+use sentc_crypto_common::CustomerId;
 use server_api_common::app::{AppFileOptionsInput, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, FILE_STORAGE_OWN};
+use server_core::str_t;
 
 use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
 use crate::customer_app::{app_model, generate_tokens};
@@ -29,14 +30,14 @@ pub async fn create_app(input: AppRegisterInput, customer_id: CustomerId) -> App
 		hashed_secret_token,
 		hashed_public_token,
 		HASH_ALG,
-		jwt_sign_key.as_str(),
-		jwt_verify_key.as_str(),
+		&jwt_sign_key,
+		&jwt_verify_key,
 		alg,
 	)
 	.await?;
 
 	let customer_app_data = AppRegisterOutput {
-		customer_id: customer_id.to_string(),
+		customer_id: customer_id.clone(),
 		app_id: app_id.to_string(),
 		secret_token: base64::encode(secret_token),
 		public_token: base64::encode(public_token),
@@ -88,7 +89,7 @@ pub(super) fn check_file_options(input: &AppFileOptionsInput) -> AppRes<()>
 	Ok(())
 }
 
-pub fn check_app_exists(customer_id: CustomerId, app_id: AppId) -> impl Future<Output = AppRes<()>>
+pub fn check_app_exists<'a>(customer_id: str_t!('a), app_id: str_t!('a)) -> impl Future<Output = AppRes<()>> + 'a
 {
 	app_model::check_app_exists(customer_id, app_id)
 }

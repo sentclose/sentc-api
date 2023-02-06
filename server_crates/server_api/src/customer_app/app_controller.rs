@@ -41,7 +41,7 @@ pub(crate) async fn get_all_apps(req: Request) -> JRes<Vec<CustomerAppList>>
 		)
 	})?;
 
-	let list = app_model::get_all_apps(user.id.to_string(), last_fetched_time, last_app_id.to_string()).await?;
+	let list = app_model::get_all_apps(&user.id, last_fetched_time, last_app_id).await?;
 
 	echo(list)
 }
@@ -53,7 +53,7 @@ pub(crate) async fn get_jwt_details(req: Request) -> JRes<Vec<AppJwtData>>
 
 	let app_id = get_name_param_from_req(&req, "app_id")?;
 
-	let jwt_data = app_model::get_jwt_data(customer_id.to_string(), app_id.to_string()).await?;
+	let jwt_data = app_model::get_jwt_data(customer_id, app_id).await?;
 
 	echo(jwt_data)
 }
@@ -65,11 +65,11 @@ pub(crate) async fn get_app_details(req: Request) -> JRes<AppDetails>
 
 	let app_id = get_name_param_from_req(&req, "app_id")?;
 
-	let details = app_model::get_app_view(customer_id.clone(), app_id.to_string()).await?;
+	let details = app_model::get_app_view(customer_id, app_id).await?;
 
-	let options = app_model::get_app_options(app_id.to_string()).await?;
+	let options = app_model::get_app_options(app_id).await?;
 
-	let file_options = app_model::get_app_file_options(app_id.to_string()).await?;
+	let file_options = app_model::get_app_file_options(app_id).await?;
 
 	echo(AppDetails {
 		options,
@@ -104,7 +104,7 @@ pub(crate) async fn renew_tokens(req: Request) -> JRes<AppTokenRenewOutput>
 
 	let app_id = get_name_param_from_req(&req, "app_id")?;
 
-	let app_general_data = app_model::get_app_general_data(customer_id.to_string(), app_id.to_string()).await?;
+	let app_general_data = app_model::get_app_general_data(customer_id, app_id).await?;
 
 	let (secret_token, public_token) = generate_tokens()?;
 
@@ -112,8 +112,8 @@ pub(crate) async fn renew_tokens(req: Request) -> JRes<AppTokenRenewOutput>
 	let hashed_public_token = hash_token_to_string(&public_token)?;
 
 	app_model::token_renew(
-		app_id.to_string(),
-		customer_id.to_string(),
+		app_id,
+		customer_id,
 		hashed_secret_token,
 		hashed_public_token,
 		HASH_ALG,
@@ -145,8 +145,8 @@ pub(crate) async fn add_jwt_keys(req: Request) -> JRes<AppJwtRegisterOutput>
 	let (jwt_sign_key, jwt_verify_key, alg) = create_jwt_keys()?;
 
 	let jwt_id = app_model::add_jwt_keys(
-		customer_id.to_string(),
-		app_id.to_string(),
+		customer_id,
+		app_id,
 		jwt_sign_key.as_str(),
 		jwt_verify_key.as_str(),
 		alg,
@@ -169,7 +169,7 @@ pub(crate) async fn add_jwt_keys(req: Request) -> JRes<AppJwtRegisterOutput>
 	};
 
 	//delete the app data cache
-	let app_general_data = app_model::get_app_general_data(customer_id.to_string(), app_id.to_string()).await?;
+	let app_general_data = app_model::get_app_general_data(customer_id, app_id).await?;
 
 	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
 	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
@@ -189,10 +189,10 @@ pub(crate) async fn delete_jwt_keys(req: Request) -> JRes<ServerSuccessOutput>
 	let app_id = get_name_param_from_params(req_params, "app_id")?;
 	let jwt_id = get_name_param_from_params(req_params, "jwt_id")?;
 
-	app_model::delete_jwt_keys(customer_id.to_string(), app_id.to_string(), jwt_id.to_string()).await?;
+	app_model::delete_jwt_keys(customer_id, app_id, jwt_id).await?;
 
 	//delete the app data cache
-	let app_general_data = app_model::get_app_general_data(customer_id.to_string(), app_id.to_string()).await?;
+	let app_general_data = app_model::get_app_general_data(customer_id, app_id).await?;
 
 	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
 	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
@@ -215,7 +215,7 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 
 	let app_id = get_name_param_from_req(&req, "app_id")?;
 
-	app_model::delete(customer_id.to_string(), app_id.to_string()).await?;
+	app_model::delete(customer_id, app_id).await?;
 
 	file_service::delete_file_for_app(app_id).await?;
 
@@ -232,7 +232,7 @@ pub(crate) async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 
 	let app_id = get_name_param_from_req(&req, "app_id")?;
 
-	app_model::update(customer_id.to_string(), app_id.to_string(), input.identifier).await?;
+	app_model::update(customer_id, app_id, input.identifier).await?;
 
 	echo_success()
 }
@@ -247,10 +247,10 @@ pub(crate) async fn update_options(mut req: Request) -> JRes<ServerSuccessOutput
 
 	let app_id = get_name_param_from_req(&req, "app_id")?;
 
-	app_model::update_options(customer_id.to_string(), app_id.to_string(), input).await?;
+	app_model::update_options(customer_id, app_id, input).await?;
 
 	//get the public and secret token and delete the app cache because in the cache there are still the old options
-	let app_general_data = app_model::get_app_general_data(customer_id.to_string(), app_id.to_string()).await?;
+	let app_general_data = app_model::get_app_general_data(customer_id, app_id).await?;
 
 	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
 	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
@@ -272,10 +272,10 @@ pub(crate) async fn update_file_options(mut req: Request) -> JRes<ServerSuccessO
 
 	check_file_options(&input)?;
 
-	app_model::update_file_options(customer_id.to_string(), app_id.to_string(), input).await?;
+	app_model::update_file_options(customer_id, app_id, input).await?;
 
 	//get the public and secret token and delete the app cache because in the cache there are still the old options
-	let app_general_data = app_model::get_app_general_data(customer_id.to_string(), app_id.to_string()).await?;
+	let app_general_data = app_model::get_app_general_data(customer_id, app_id).await?;
 
 	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
 	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
