@@ -2,7 +2,7 @@ use rustgram::service::IntoResponse;
 use rustgram::{Request, Response};
 use sentc_crypto_common::file::{FileNameUpdate, FilePartRegisterOutput, FileRegisterInput, FileRegisterOutput};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
-use sentc_crypto_common::{AppId, FileId, UserId};
+use sentc_crypto_common::FileId;
 use server_api_common::app::{FILE_STORAGE_OWN, FILE_STORAGE_SENTC};
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
@@ -26,7 +26,7 @@ pub async fn register_file(mut req: Request) -> JRes<FileRegisterOutput>
 
 	let input: FileRegisterInput = bytes_to_json(&body)?;
 
-	let out = file_service::register_file(input, app.app_data.app_id.to_string(), user.id.to_string(), None).await?;
+	let out = file_service::register_file(input, &app.app_data.app_id, &user.id, None).await?;
 
 	echo(out)
 }
@@ -44,9 +44,9 @@ pub async fn register_file_in_group(mut req: Request) -> JRes<FileRegisterOutput
 
 	let out = file_service::register_file(
 		input,
-		group_data.group_data.app_id.to_string(),
-		user.id.to_string(),
-		Some(group_data.group_data.id.to_string()),
+		&group_data.group_data.app_id,
+		&user.id,
+		Some(&group_data.group_data.id),
 	)
 	.await?;
 
@@ -73,7 +73,7 @@ pub async fn delete_registered_file_part(req: Request) -> JRes<ServerSuccessOutp
 
 	let part_id = get_name_param_from_req(&req, "part_id")?;
 
-	file_model::delete_file_part(app_id.to_string(), part_id.to_string()).await?;
+	file_model::delete_file_part(app_id, part_id).await?;
 
 	echo_success()
 }
@@ -98,11 +98,11 @@ pub async fn register_file_part(req: Request) -> JRes<FilePartRegisterOutput>
 	let user = get_jwt_data_from_param(&req)?;
 	let app_id = &app.app_data.app_id;
 
-	let (file_id, _chunk_size, sequence, end) = check_session(&req, app_id.to_string(), user.id.to_string()).await?;
+	let (file_id, _chunk_size, sequence, end) = check_session(&req, app_id, &user.id).await?;
 
 	let part_id = Uuid::new_v4().to_string();
 
-	file_model::save_part(app_id.to_string(), file_id, part_id.clone(), 0, sequence, end, true).await?;
+	file_model::save_part(app_id, file_id, part_id.clone(), 0, sequence, end, true).await?;
 
 	echo(FilePartRegisterOutput {
 		part_id,
@@ -117,7 +117,7 @@ pub async fn upload_part(req: Request) -> JRes<ServerSuccessOutput>
 	check_endpoint_with_app_options(app, Endpoint::FilePartUpload)?;
 
 	let user = get_jwt_data_from_param(&req)?;
-	let app_id = app.app_data.app_id.to_string();
+	let app_id = app.app_data.app_id.clone(); //must be owned because req is dropped before save part with app id
 
 	if file_options.file_storage != FILE_STORAGE_SENTC {
 		return Err(HttpErr::new(
@@ -128,19 +128,19 @@ pub async fn upload_part(req: Request) -> JRes<ServerSuccessOutput>
 		));
 	}
 
-	let (file_id, chunk_size, sequence, end) = check_session(&req, app_id.to_string(), user.id.to_string()).await?;
+	let (file_id, chunk_size, sequence, end) = check_session(&req, &app_id, &user.id).await?;
 
 	//create the id here to upload the right file
 	let part_id = Uuid::new_v4().to_string();
 
-	let size = server_core::file::upload_part(req, part_id.as_str(), chunk_size).await?;
+	let size = server_core::file::upload_part(req, &part_id, chunk_size).await?;
 
-	file_model::save_part(app_id, file_id, part_id, size, sequence, end, false).await?;
+	file_model::save_part(&app_id, file_id, part_id, size, sequence, end, false).await?;
 
 	echo_success()
 }
 
-async fn check_session(req: &Request, app_id: AppId, user_id: UserId) -> AppRes<(FileId, usize, i32, bool)>
+async fn check_session(req: &Request, app_id: &str, user_id: &str) -> AppRes<(FileId, usize, i32, bool)>
 {
 	let params = get_params(req)?;
 	let session_id = get_name_param_from_params(params, "session_id")?;
@@ -163,7 +163,7 @@ async fn check_session(req: &Request, app_id: AppId, user_id: UserId) -> AppRes<
 		)
 	})?;
 
-	let (file_id, chunk_size) = file_model::check_session(app_id.to_string(), session_id.to_string(), user_id).await?;
+	let (file_id, chunk_size) = file_model::check_session(app_id, session_id, user_id).await?;
 
 	Ok((file_id, chunk_size, sequence, end))
 }
@@ -182,12 +182,12 @@ pub async fn get_file(req: Request) -> JRes<FileMetaData>
 			//get app id from app data
 			None
 		},
-		Ok(jwt) => Some(jwt.id.to_string()),
+		Ok(jwt) => Some(jwt.id.as_str()),
 	};
 
 	let file_id = get_name_param_from_req(&req, "file_id")?;
 
-	let file = file_service::get_file(app.app_data.app_id.to_string(), user_id, file_id.to_string(), None).await?;
+	let file = file_service::get_file(&app.app_data.app_id, user_id, file_id, None).await?;
 
 	echo(file)
 }
@@ -203,13 +203,7 @@ pub async fn get_file_in_group(req: Request) -> JRes<FileMetaData>
 	let group_id = &group_data.group_data.id;
 	let user_id = &group_data.user_data.user_id;
 
-	let file = file_service::get_file(
-		app_id.to_string(),
-		Some(user_id.to_string()),
-		file_id.to_string(),
-		Some(group_id.to_string()),
-	)
-	.await?;
+	let file = file_service::get_file(app_id, Some(user_id), file_id, Some(group_id)).await?;
 
 	echo(file)
 }
@@ -232,12 +226,7 @@ pub async fn get_parts(req: Request) -> JRes<Vec<FilePartListItem>>
 		)
 	})?;
 
-	let parts = file_model::get_file_parts(
-		app_data.app_data.app_id.to_string(),
-		file_id.to_string(),
-		last_sequence,
-	)
-	.await?;
+	let parts = file_model::get_file_parts(&app_data.app_data.app_id, file_id, last_sequence).await?;
 
 	echo(parts)
 }
@@ -271,13 +260,7 @@ pub async fn update_file_name(mut req: Request) -> JRes<ServerSuccessOutput>
 
 	let input: FileNameUpdate = bytes_to_json(&body)?;
 
-	file_service::update_file_name(
-		app.app_data.app_id.to_string(),
-		user.id.to_string(),
-		part_id.to_string(),
-		input.encrypted_file_name,
-	)
-	.await?;
+	file_service::update_file_name(&app.app_data.app_id, &user.id, part_id, input.encrypted_file_name).await?;
 
 	echo_success()
 }
@@ -294,7 +277,7 @@ pub async fn delete_file(req: Request) -> JRes<ServerSuccessOutput>
 
 	let file_id = get_name_param_from_req(&req, "file_id")?;
 
-	file_service::delete_file(file_id, app.app_data.app_id.as_str(), user.id.to_string(), None).await?;
+	file_service::delete_file(file_id, app.app_data.app_id.as_str(), &user.id, None).await?;
 
 	echo_success()
 }
@@ -308,13 +291,7 @@ pub async fn delete_file_in_group(req: Request) -> JRes<ServerSuccessOutput>
 
 	let file_id = get_name_param_from_req(&req, "file_id")?;
 
-	file_service::delete_file(
-		file_id,
-		&group_data.group_data.app_id,
-		user.id.clone(),
-		Some(group_data),
-	)
-	.await?;
+	file_service::delete_file(file_id, &group_data.group_data.app_id, &user.id, Some(group_data)).await?;
 
 	echo_success()
 }

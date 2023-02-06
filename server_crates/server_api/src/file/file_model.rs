@@ -1,6 +1,6 @@
-use sentc_crypto_common::{AppId, CustomerId, FileId, GroupId, PartId, SymKeyId, UserId};
+use sentc_crypto_common::{AppId, FileId, SymKeyId};
 use server_core::db::{exec, exec_string, exec_transaction, get_in, query_first, query_string, TransactionData, TupleEntity};
-use server_core::{get_time, set_params, set_params_vec, set_params_vec_outer};
+use server_core::{get_time, set_params, set_params_vec, set_params_vec_outer, str_clone, str_get, str_t};
 use uuid::Uuid;
 
 use crate::file::file_entities::{FileExternalStorageUrl, FileMetaData, FilePartListItem, FilePartListItemDelete, FileSessionCheck};
@@ -17,25 +17,34 @@ pub(super) async fn register_file(
 	key_id: SymKeyId,
 	master_key_id: String,
 	file_name: Option<String>,
-	belongs_to_id: Option<String>,
+	belongs_to_id: Option<str_t!()>,
 	belongs_to_type: i32,
-	app_id: AppId,
-	user_id: UserId,
+	app_id: str_t!(),
+	user_id: str_t!(),
 ) -> AppRes<(String, String)>
 {
+	let app_id = str_get!(app_id);
+
 	let file_id = Uuid::new_v4().to_string();
 	let session_id = Uuid::new_v4().to_string();
 
 	let time = get_time()?;
 
+	//own the token in sqlite
+	#[cfg(feature = "sqlite")]
+	let belongs_to_id = match belongs_to_id {
+		Some(t) => Some(str_get!(t)),
+		None => None,
+	};
+
 	//language=SQL
 	let sql = "INSERT INTO sentc_file (id, owner, belongs_to, belongs_to_type, app_id, key_id, time, status, delete_at, encrypted_file_name, master_key_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
 	let params = set_params!(
 		file_id.to_string(),
-		user_id,
+		str_get!(user_id),
 		belongs_to_id,
 		belongs_to_type,
-		app_id.to_string(),
+		str_clone!(app_id),
 		key_id,
 		time.to_string(),
 		FILE_STATUS_AVAILABLE.to_string(),
@@ -70,8 +79,11 @@ pub(super) async fn register_file(
 	Ok((file_id, session_id))
 }
 
-pub(super) async fn check_session(app_id: AppId, session_id: String, user_id: UserId) -> AppRes<(FileId, usize)>
+pub(super) async fn check_session(app_id: str_t!(), session_id: str_t!(), user_id: str_t!()) -> AppRes<(FileId, usize)>
 {
+	let app_id = str_get!(app_id);
+	let session_id = str_get!(session_id);
+
 	//language=SQL
 	let sql = r"
 SELECT file_id, created_at, max_chunk_size 
@@ -84,7 +96,11 @@ WHERE
     owner = ? AND 
     f.app_id = ?";
 
-	let check: Option<FileSessionCheck> = query_first(sql, set_params!(session_id.to_string(), user_id, app_id.to_string())).await?;
+	let check: Option<FileSessionCheck> = query_first(
+		sql,
+		set_params!(str_clone!(session_id), str_get!(user_id), str_clone!(app_id)),
+	)
+	.await?;
 
 	let check = match check {
 		Some(o) => o,
@@ -117,7 +133,7 @@ WHERE
 }
 
 pub(super) async fn save_part(
-	app_id: AppId,
+	app_id: str_t!(),
 	file_id: FileId,
 	part_id: String,
 	size: usize,
@@ -126,6 +142,10 @@ pub(super) async fn save_part(
 	extern_storage: bool,
 ) -> AppRes<()>
 {
+	//part and file id are owned because they are fetched
+
+	let app_id = str_get!(app_id);
+
 	//language=SQL
 	let sql = "INSERT INTO sentc_file_part (id, file_id, app_id, size, sequence, extern) VALUES (?,?,?,?,?,?)";
 
@@ -133,8 +153,8 @@ pub(super) async fn save_part(
 		sql,
 		set_params!(
 			part_id,
-			file_id.to_string(),
-			app_id.to_string(),
+			file_id.clone(),
+			str_clone!(app_id),
 			size.to_string(),
 			sequence,
 			extern_storage
@@ -151,27 +171,27 @@ pub(super) async fn save_part(
 	Ok(())
 }
 
-pub(super) async fn delete_file_part(app_id: AppId, part_id: PartId) -> AppRes<()>
+pub(super) async fn delete_file_part(app_id: str_t!(), part_id: str_t!()) -> AppRes<()>
 {
 	//language=SQL
 	let sql = "DELETE FROM sentc_file_part WHERE app_id = ? AND id = ?";
 
-	exec(sql, set_params!(app_id, part_id)).await?;
+	exec(sql, set_params!(str_get!(app_id), str_get!(part_id))).await?;
 
 	Ok(())
 }
 
-pub(super) async fn delete_session(session_id: String, app_id: AppId) -> AppRes<()>
+pub(super) async fn delete_session(session_id: str_t!(), app_id: str_t!()) -> AppRes<()>
 {
 	//language=SQL
 	let sql = "DELETE FROM sentc_file_session WHERE id = ? AND app_id = ?";
 
-	exec(sql, set_params!(session_id, app_id)).await?;
+	exec(sql, set_params!(str_get!(session_id), str_get!(app_id))).await?;
 
 	Ok(())
 }
 
-pub(super) async fn get_file(app_id: AppId, file_id: FileId) -> AppRes<FileMetaData>
+pub(super) async fn get_file(app_id: str_t!(), file_id: str_t!()) -> AppRes<FileMetaData>
 {
 	//language=SQL
 	let sql = r"
@@ -190,7 +210,11 @@ WHERE
     id = ? AND 
     status = ?";
 
-	let file: Option<FileMetaData> = query_first(sql, set_params!(app_id, file_id, FILE_STATUS_AVAILABLE)).await?;
+	let file: Option<FileMetaData> = query_first(
+		sql,
+		set_params!(str_get!(app_id), str_get!(file_id), FILE_STATUS_AVAILABLE),
+	)
+	.await?;
 
 	match file {
 		Some(f) => Ok(f),
@@ -205,7 +229,7 @@ WHERE
 	}
 }
 
-pub(super) async fn get_file_parts(app_id: AppId, file_id: FileId, last_sequence: i32) -> AppRes<Vec<FilePartListItem>>
+pub(super) async fn get_file_parts(app_id: str_t!(), file_id: str_t!(), last_sequence: i32) -> AppRes<Vec<FilePartListItem>>
 {
 	//get the file parts
 	//language=SQL
@@ -220,10 +244,10 @@ WHERE
 
 	let (sql, params) = if last_sequence > 0 {
 		let sql = sql + " AND sequence > ? ORDER BY sequence LIMIT 500";
-		(sql, set_params!(app_id, file_id, last_sequence))
+		(sql, set_params!(str_get!(app_id), str_get!(file_id), last_sequence))
 	} else {
 		let sql = sql + " ORDER BY sequence LIMIT 500";
-		(sql, set_params!(app_id, file_id))
+		(sql, set_params!(str_get!(app_id), str_get!(file_id)))
 	};
 
 	let file_parts: Vec<FilePartListItem> = query_string(sql, params).await?;
@@ -240,19 +264,19 @@ WHERE
 	Ok(file_parts)
 }
 
-pub(super) async fn update_file_name(file_name: Option<String>, app_id: AppId, file_id: FileId) -> AppRes<()>
+pub(super) async fn update_file_name(file_name: Option<String>, app_id: str_t!(), file_id: str_t!()) -> AppRes<()>
 {
 	//language=SQL
 	let sql = "UPDATE sentc_file SET encrypted_file_name = ? WHERE app_id = ? AND id = ?";
 
-	exec(sql, set_params!(file_name, app_id, file_id)).await?;
+	exec(sql, set_params!(file_name, str_get!(app_id), str_get!(file_id))).await?;
 
 	Ok(())
 }
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn delete_file(app_id: AppId, file_id: FileId) -> AppRes<()>
+pub(super) async fn delete_file(app_id: str_t!(), file_id: str_t!()) -> AppRes<()>
 {
 	//mark the file as to delete
 	let time = get_time()?;
@@ -262,14 +286,19 @@ pub(super) async fn delete_file(app_id: AppId, file_id: FileId) -> AppRes<()>
 
 	exec(
 		sql,
-		set_params!(FILE_STATUS_TO_DELETE, time.to_string(), file_id, app_id),
+		set_params!(
+			FILE_STATUS_TO_DELETE,
+			time.to_string(),
+			str_get!(file_id),
+			str_get!(app_id)
+		),
 	)
 	.await?;
 
 	Ok(())
 }
 
-pub(super) async fn delete_files_for_customer(customer_id: CustomerId) -> AppRes<()>
+pub(super) async fn delete_files_for_customer(customer_id: str_t!()) -> AppRes<()>
 {
 	let time = get_time()?;
 
@@ -288,25 +317,34 @@ WHERE
     WHERE customer_id = ?
     )";
 
-	exec(sql, set_params!(FILE_STATUS_TO_DELETE, time.to_string(), customer_id)).await?;
+	exec(
+		sql,
+		set_params!(FILE_STATUS_TO_DELETE, time.to_string(), str_get!(customer_id)),
+	)
+	.await?;
 
 	Ok(())
 }
 
-pub(super) async fn delete_files_for_app(app_id: AppId) -> AppRes<()>
+pub(super) async fn delete_files_for_app(app_id: str_t!()) -> AppRes<()>
 {
 	let time = get_time()?;
 
 	//language=SQL
 	let sql = "UPDATE sentc_file SET status = ?, delete_at = ? WHERE app_id = ?";
 
-	exec(sql, set_params!(FILE_STATUS_TO_DELETE, time.to_string(), app_id)).await?;
+	exec(
+		sql,
+		set_params!(FILE_STATUS_TO_DELETE, time.to_string(), str_get!(app_id)),
+	)
+	.await?;
 
 	Ok(())
 }
 
-pub(super) async fn delete_files_for_group(app_id: AppId, group_id: GroupId, children: Vec<String>) -> AppRes<()>
+pub(super) async fn delete_files_for_group(app_id: str_t!(), group_id: str_t!(), children: Vec<String>) -> AppRes<()>
 {
+	let app_id = str_get!(app_id);
 	let time = get_time()?;
 
 	//language=SQL
@@ -326,9 +364,9 @@ WHERE
 		set_params!(
 			FILE_STATUS_TO_DELETE,
 			time.to_string(),
-			app_id.to_string(),
+			str_clone!(app_id),
 			FILE_BELONGS_TO_TYPE_GROUP,
-			group_id,
+			str_get!(group_id),
 		),
 	)
 	.await?;
@@ -379,6 +417,8 @@ pub(super) async fn get_external_app_file_delete_info(app_ids: Vec<AppId>) -> Ap
 
 pub(super) async fn get_all_files_marked_to_delete(last_part_id: Option<String>, start_time: u128) -> AppRes<Vec<FilePartListItemDelete>>
 {
+	//owned last part id because of the file worker
+
 	//language=SQL
 	let sql = r"
 SELECT fp.id as file_id_part_id, sequence, extern, fp.app_id as part_app_id 

@@ -68,12 +68,12 @@ async fn create_content(mut req: Request, content_related_type: ContentRelatedTy
 			//get the user id from the url param
 			let user_id = get_name_param_from_req(&req, "user_id")?;
 
-			(None, Some(user_id.to_string()))
+			(None, Some(user_id))
 		},
 		ContentRelatedType::Group => {
 			let group_data = get_group_user_data_from_req(&req)?;
 
-			(Some(group_data.group_data.id.clone()), None)
+			(Some(group_data.group_data.id.as_str()), None)
 		},
 	};
 
@@ -82,7 +82,7 @@ async fn create_content(mut req: Request, content_related_type: ContentRelatedTy
 	//no rank check for group because the req is made from the customer server.
 	// so this server must handle the access
 
-	let content_id = content_service::create_content(app.app_data.app_id.clone(), user.id.clone(), input, group_id, user_id).await?;
+	let content_id = content_service::create_content(&app.app_data.app_id, &user.id, input, group_id, user_id).await?;
 
 	let out = ContentCreateOutput {
 		content_id,
@@ -101,7 +101,7 @@ pub(crate) async fn delete_content_by_id(req: Request) -> JRes<ServerSuccessOutp
 
 	let id = get_name_param_from_req(&req, "content_id")?;
 
-	content_service::delete_content_by_id(app.app_data.app_id.clone(), id.to_string()).await?;
+	content_service::delete_content_by_id(&app.app_data.app_id, id).await?;
 
 	echo_success()
 }
@@ -114,7 +114,7 @@ pub(crate) async fn delete_content_by_item(req: Request) -> JRes<ServerSuccessOu
 
 	let item = get_name_param_from_req(&req, "item")?;
 
-	content_service::delete_content_by_item(app.app_data.app_id.clone(), item.to_string()).await?;
+	content_service::delete_content_by_item(&app.app_data.app_id, item).await?;
 
 	echo_success()
 }
@@ -129,7 +129,7 @@ pub(crate) async fn check_access_to_content_by_item(req: Request) -> JRes<Conten
 
 	let item = get_name_param_from_req(&req, "item")?;
 
-	let out = content_model::check_access_to_content_by_item(app.app_data.app_id.clone(), user.id.clone(), item.to_string()).await?;
+	let out = content_model::check_access_to_content_by_item(&app.app_data.app_id, &user.id, item).await?;
 
 	echo(out)
 }
@@ -186,42 +186,24 @@ async fn get_content(req: Request, content_related_type: ContentRelatedType, cat
 
 	let cat_id = match cat {
 		false => None,
-		true => Some(get_name_param_from_params(params, "cat_id")?.to_string()),
+		true => Some(get_name_param_from_params(params, "cat_id")?),
 	};
 
 	let list = match content_related_type {
-		ContentRelatedType::None => {
-			content_model::get_content(
-				app.app_data.app_id.clone(),
-				user.id.clone(),
-				last_fetched_time,
-				last_id.to_string(),
-				cat_id,
-			)
-			.await?
-		},
+		ContentRelatedType::None => content_model::get_content(&app.app_data.app_id, &user.id, last_fetched_time, last_id, cat_id).await?,
 		ContentRelatedType::Group => {
 			let group_data = get_group_user_data_from_req(&req)?;
 
 			content_model::get_content_for_group(
-				app.app_data.app_id.clone(),
-				group_data.group_data.id.clone(),
+				&app.app_data.app_id,
+				&group_data.group_data.id,
 				last_fetched_time,
-				last_id.to_string(),
+				last_id,
 				cat_id,
 			)
 			.await?
 		},
-		ContentRelatedType::User => {
-			content_model::get_content_to_user(
-				app.app_data.app_id.clone(),
-				user.id.clone(),
-				last_fetched_time,
-				last_id.to_string(),
-				cat_id,
-			)
-			.await?
-		},
+		ContentRelatedType::User => content_model::get_content_to_user(&app.app_data.app_id, &user.id, last_fetched_time, last_id, cat_id).await?,
 	};
 
 	echo(list)

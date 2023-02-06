@@ -93,7 +93,7 @@ async fn get_group(app_id: &str, group_id: &str, user_id: &str, group_as_member_
 	let entity = match cache::get(key_group.as_str()).await {
 		Some(j) => bytes_to_json(j.as_bytes())?,
 		None => {
-			let data = match group_model::get_internal_group_data(app_id.to_string(), group_id.to_string()).await {
+			let data = match group_model::get_internal_group_data(app_id, group_id).await {
 				Ok(d) => d,
 				Err(e) => {
 					cache::add(
@@ -227,7 +227,7 @@ async fn get_group_user(app_id: &str, group_id: &str, user_id: &str, group_as_me
 	let (entity, search_again) = match cache::get(key_user.as_str()).await {
 		Some(j) => (bytes_to_json(j.as_bytes())?, true),
 		None => {
-			let data = match group_model::get_internal_group_user_data(group_id.to_string(), check_user_id.to_string()).await? {
+			let data = match group_model::get_internal_group_user_data(group_id, check_user_id).await? {
 				Some(mut d) => {
 					if let Some(v) = group_as_member_id {
 						d.get_values_from_group_as_member = Some(v.to_string());
@@ -289,7 +289,7 @@ async fn get_user_from_parent(group_id: &str, user_id: &str) -> AppRes<InternalU
 		Some(v) => bytes_to_json(v.as_bytes())?,
 		None => {
 			//get the ref from the db
-			let user_from_parent = match group_model::get_user_from_parent_groups(group_id.to_string(), user_id.to_string()).await? {
+			let user_from_parent = match group_model::get_user_from_parent_groups(group_id, user_id).await? {
 				Some(u) => u,
 				None => {
 					//cache wrong input too,

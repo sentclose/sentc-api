@@ -3,8 +3,6 @@ use std::future::Future;
 use rustgram::Request;
 use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDataCheckUpdateServerOutput, GroupLightServerData};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
-use sentc_crypto_common::GroupId;
-use server_core::cache;
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 
@@ -15,64 +13,74 @@ use crate::group::{get_group_user_data_from_req, group_model, group_service, GRO
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::user::user_entities::UserPublicKeyDataEntity;
 use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
-use crate::util::get_group_cache_key;
+
+pub enum GroupCreateType
+{
+	Normal,
+	Parent,
+	Connected,
+}
 
 pub fn create(req: Request) -> impl Future<Output = JRes<GroupCreateOutput>>
 {
-	create_group(req, None, None, None, false)
+	create_group(req, GroupCreateType::Normal)
 }
 
-pub async fn create_child_group(req: Request) -> JRes<GroupCreateOutput>
+pub fn create_child_group(req: Request) -> impl Future<Output = JRes<GroupCreateOutput>>
 {
-	//this is called in the group mw from the parent group id
-	let group_data = get_group_user_data_from_req(&req)?;
-	let parent_group_id = Some(group_data.group_data.id.to_string());
-	let user_rank = Some(group_data.user_data.rank);
-
-	//a connected group can also got children but these children will be a connected group too
-	let is_connected_group = group_data.group_data.is_connected_group;
-
-	create_group(req, parent_group_id, user_rank, None, is_connected_group).await
+	create_group(req, GroupCreateType::Parent)
 }
 
-pub async fn create_connected_group_from_group(req: Request) -> JRes<GroupCreateOutput>
+pub fn create_connected_group_from_group(req: Request) -> impl Future<Output = JRes<GroupCreateOutput>>
 {
-	/*
-	- A connected group is a group where other groups can join or can get invited, not only users.
-	- A connected group can also got children (which are marked as connected group too)
-	- A connected group cannot be created from a already connected group.
-		Because the users of the one connected group cannot access the connected group.
-		So only non connected groups can create connected groups.
-
-	- Users can join both groups
-	 */
-
-	//the same as parent group, but this time with the group as member, not as parent
-	let group_data = get_group_user_data_from_req(&req)?;
-	let connected_group_id = Some(group_data.group_data.id.to_string());
-	let user_rank = Some(group_data.user_data.rank);
-
-	if group_data.group_data.is_connected_group {
-		return Err(HttpErr::new(
-			400,
-			ApiErrorCodes::GroupConnectedFromConnected,
-			"Can't create a connected group from a connected group".to_string(),
-			None,
-		));
-	}
-
-	create_group(req, None, user_rank, connected_group_id, true).await
+	create_group(req, GroupCreateType::Connected)
 }
 
-async fn create_group(
-	mut req: Request,
-	parent_group_id: Option<GroupId>,
-	user_rank: Option<i32>,
-	connected_group: Option<GroupId>,
-	is_connected_group: bool,
-) -> JRes<GroupCreateOutput>
+async fn create_group(mut req: Request, group_create_type: GroupCreateType) -> JRes<GroupCreateOutput>
 {
 	let body = get_raw_body(&mut req).await?;
+
+	let (parent_group_id, connected_group, user_rank, is_connected_group) = match group_create_type {
+		GroupCreateType::Normal => (None, None, None, false),
+		GroupCreateType::Parent => {
+			//this is called in the group mw from the parent group id
+			let group_data = get_group_user_data_from_req(&req)?;
+			let parent_group_id = Some(group_data.group_data.id.as_str());
+			let user_rank = Some(group_data.user_data.rank);
+
+			//a connected group can also got children but these children will be a connected group too
+			let is_connected_group = group_data.group_data.is_connected_group;
+
+			(parent_group_id, None, user_rank, is_connected_group)
+		},
+		GroupCreateType::Connected => {
+			/*
+			- A connected group is a group where other groups can join or can get invited, not only users.
+			- A connected group can also got children (which are marked as connected group too)
+			- A connected group cannot be created from a already connected group.
+				Because the users of the one connected group cannot access the connected group.
+				So only non connected groups can create connected groups.
+
+			- Users can join both groups
+			 */
+
+			//the same as parent group, but this time with the group as member, not as parent
+			let group_data = get_group_user_data_from_req(&req)?;
+			let connected_group_id = Some(group_data.group_data.id.as_str());
+			let user_rank = Some(group_data.user_data.rank);
+
+			if group_data.group_data.is_connected_group {
+				return Err(HttpErr::new(
+					400,
+					ApiErrorCodes::GroupConnectedFromConnected,
+					"Can't create a connected group from a connected group".to_string(),
+					None,
+				));
+			}
+
+			(None, connected_group_id, user_rank, true)
+		},
+	};
 
 	let app = get_app_data_from_req(&req)?;
 
@@ -83,8 +91,8 @@ async fn create_group(
 	let input: CreateData = bytes_to_json(&body)?;
 
 	let group_id = group_service::create_group(
-		app.app_data.app_id.to_string(),
-		user.id.to_string(),
+		&app.app_data.app_id,
+		&user.id,
 		input,
 		GROUP_TYPE_NORMAL,
 		parent_group_id,
@@ -109,8 +117,8 @@ pub async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 	let group_data = get_group_user_data_from_req(&req)?;
 
 	group_service::delete_group(
-		group_data.group_data.app_id.to_string(),
-		group_data.group_data.id.to_string(),
+		&group_data.group_data.app_id,
+		&group_data.group_data.id,
 		group_data.user_data.rank,
 	)
 	.await?;
@@ -155,9 +163,9 @@ pub async fn get_key_update_for_user(req: Request) -> JRes<GroupDataCheckUpdateS
 	let group_data = get_group_user_data_from_req(&req)?;
 
 	let key_update = group_model::check_for_key_update(
-		group_data.group_data.app_id.to_string(),
-		group_data.user_data.user_id.to_string(),
-		group_data.group_data.id.to_string(),
+		&group_data.group_data.app_id,
+		&group_data.user_data.user_id,
+		&group_data.group_data.id,
 	)
 	.await?;
 
@@ -189,11 +197,11 @@ pub async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupUserKeys>>
 	})?;
 
 	let user_keys = group_service::get_user_group_keys(
-		group_data.group_data.app_id.to_string(),
-		group_data.group_data.id.to_string(),
-		group_data.user_data.user_id.to_string(),
+		&group_data.group_data.app_id,
+		&group_data.group_data.id,
+		&group_data.user_data.user_id,
 		last_fetched_time,
-		last_k_id.to_string(),
+		last_k_id,
 	)
 	.await?;
 
@@ -209,10 +217,10 @@ pub async fn get_user_group_key(req: Request) -> JRes<GroupUserKeys>
 	let key_id = get_name_param_from_req(&req, "key_id")?;
 
 	let key = group_service::get_user_group_key(
-		group_data.group_data.app_id.to_string(),
-		group_data.group_data.id.to_string(),
-		group_data.user_data.user_id.to_string(),
-		key_id.to_string(),
+		&group_data.group_data.app_id,
+		&group_data.group_data.id,
+		&group_data.user_data.user_id,
+		key_id,
 	)
 	.await?;
 
@@ -227,18 +235,12 @@ pub async fn stop_invite(req: Request) -> JRes<ServerSuccessOutput>
 
 	check_endpoint_with_req(&req, Endpoint::GroupInviteStop)?;
 
-	group_model::stop_invite(
-		group_data.group_data.app_id.to_string(),
-		group_data.group_data.id.to_string(),
+	group_service::stop_invite(
+		&group_data.group_data.app_id,
+		&group_data.group_data.id,
 		group_data.user_data.rank,
 	)
 	.await?;
-
-	let key_group = get_group_cache_key(
-		group_data.group_data.app_id.as_str(),
-		group_data.group_data.id.as_str(),
-	);
-	cache::delete(key_group.as_str()).await;
 
 	echo_success()
 }
@@ -253,7 +255,7 @@ pub async fn get_public_key_data(req: Request) -> JRes<UserPublicKeyDataEntity>
 
 	let group_id = get_name_param_from_req(&req, "group_id")?;
 
-	let data = group_service::get_public_key_data(app_data.app_data.app_id.clone(), group_id.to_string()).await?;
+	let data = group_service::get_public_key_data(&app_data.app_data.app_id, group_id).await?;
 
 	echo(data)
 }
@@ -277,10 +279,10 @@ pub async fn get_all_first_level_children(req: Request) -> JRes<Vec<GroupChildre
 	})?;
 
 	let list = group_service::get_first_level_children(
-		group_data.group_data.app_id.clone(),
-		group_data.group_data.id.clone(),
+		&group_data.group_data.app_id,
+		&group_data.group_data.id,
 		last_fetched_time,
-		last_id.to_string(),
+		last_id,
 	)
 	.await?;
 
@@ -311,22 +313,16 @@ async fn get_all_groups_for(req: Request, user_type: NewUserType) -> JRes<Vec<Li
 	let user_id = match user_type {
 		NewUserType::Normal => {
 			let user = get_jwt_data_from_param(&req)?;
-			user.id.clone()
+			&user.id
 		},
 		NewUserType::Group => {
 			let group_data = get_group_user_data_from_req(&req)?;
 
-			group_data.group_data.id.clone()
+			&group_data.group_data.id
 		},
 	};
 
-	let list = group_model::get_all_groups_to_user(
-		app.app_data.app_id.to_string(),
-		user_id,
-		last_fetched_time,
-		last_group_id.to_string(),
-	)
-	.await?;
+	let list = group_model::get_all_groups_to_user(&app.app_data.app_id, user_id, last_fetched_time, last_group_id).await?;
 
 	echo(list)
 }

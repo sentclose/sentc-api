@@ -1,7 +1,6 @@
 use sentc_crypto_common::group::GroupKeysForNewMember;
-use sentc_crypto_common::{AppId, GroupId, UserId};
 use server_core::db::{bulk_insert, exec, exec_transaction, query_first, query_string, I32Entity, I64Entity, StringEntity, TransactionData};
-use server_core::{get_time, set_params};
+use server_core::{get_time, set_params, str_clone, str_get, str_owned, str_t};
 use uuid::Uuid;
 
 use crate::group::group_entities::{GroupInviteReq, GroupJoinReq, GroupUserListItem, GROUP_INVITE_TYPE_INVITE_REQ, GROUP_INVITE_TYPE_JOIN_REQ};
@@ -11,10 +10,10 @@ use crate::group::group_user_service::{InsertNewUserType, NewUserType};
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 pub(super) async fn get_group_member(
-	group_id: GroupId,
-	user_id: UserId,
+	group_id: str_t!(),
+	user_id: str_t!(),
 	last_fetched_time: u128,
-	last_fetched_id: UserId,
+	last_fetched_id: str_t!(),
 ) -> AppRes<Vec<GroupUserListItem>>
 {
 	//language=SQL
@@ -32,17 +31,17 @@ WHERE
 		(
 			sql,
 			set_params!(
-				user_id,
-				group_id,
+				str_get!(user_id),
+				str_get!(group_id),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
-				last_fetched_id
+				str_get!(last_fetched_id)
 			),
 		)
 	} else {
 		let sql = sql + " ORDER BY time, user_id LIMIT 50";
-		(sql, set_params!(user_id, group_id,))
+		(sql, set_params!(str_get!(user_id), str_get!(group_id)))
 	};
 
 	let list: Vec<GroupUserListItem> = query_string(sql, params).await?;
@@ -53,14 +52,17 @@ WHERE
 //__________________________________________________________________________________________________
 
 pub(super) async fn invite_request(
-	group_id: GroupId,
-	invited_user: UserId,
+	group_id: str_t!(),
+	invited_user: str_t!(),
 	keys_for_new_user: Vec<GroupKeysForNewMember>,
 	key_session: bool,
 	admin_rank: i32,
 	user_type: NewUserType,
 ) -> AppRes<Option<String>>
 {
+	let group_id = str_get!(group_id);
+	let invited_user = str_get!(invited_user);
+
 	//1. check the rights of the starter
 	check_group_rank(admin_rank, 2)?;
 
@@ -69,7 +71,7 @@ pub(super) async fn invite_request(
 	let user_type = match user_type {
 		NewUserType::Normal => 0,
 		NewUserType::Group => {
-			let cg = check_is_connected_group(invited_user.to_string()).await?;
+			let cg = check_is_connected_group(str_clone!(invited_user)).await?;
 
 			if cg == 1 {
 				return Err(HttpErr::new(
@@ -85,7 +87,7 @@ pub(super) async fn invite_request(
 	};
 
 	//3. check if the user is already in the group
-	let check = check_user_in_group(group_id.to_string(), invited_user.to_string()).await?;
+	let check = check_user_in_group(str_clone!(group_id), str_clone!(invited_user)).await?;
 
 	if check {
 		return Err(HttpErr::new(
@@ -102,8 +104,8 @@ pub(super) async fn invite_request(
 	let invite_exists: Option<I32Entity> = query_first(
 		sql,
 		set_params!(
-			group_id.to_string(),
-			invited_user.to_string(),
+			str_clone!(group_id),
+			str_clone!(invited_user),
 			GROUP_INVITE_TYPE_INVITE_REQ
 		),
 	)
@@ -130,11 +132,11 @@ pub(super) async fn invite_request(
 		//language=SQL
 		let sql_in = "INSERT INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, key_upload_session_id, user_type) VALUES (?,?,?,?,?,?)";
 		let params_in = set_params!(
-			invited_user.to_string(),
-			group_id.to_string(),
+			str_clone!(invited_user),
+			str_clone!(group_id),
 			GROUP_INVITE_TYPE_INVITE_REQ,
 			time.to_string(),
-			session_id.to_string(),
+			str_clone!(&session_id),
 			user_type
 		);
 
@@ -143,8 +145,8 @@ pub(super) async fn invite_request(
 		//language=SQL
 		let sql_in = "INSERT INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, user_type) VALUES (?,?,?,?,?)";
 		let params_in = set_params!(
-			invited_user.to_string(),
-			group_id.to_string(),
+			str_clone!(invited_user),
+			str_clone!(group_id),
 			GROUP_INVITE_TYPE_INVITE_REQ,
 			time.to_string(),
 			user_type
@@ -160,7 +162,12 @@ pub(super) async fn invite_request(
 	Ok(session_id)
 }
 
-pub(super) async fn get_invite_req_to_user(app_id: AppId, user_id: UserId, last_fetched_time: u128, last_id: GroupId) -> AppRes<Vec<GroupInviteReq>>
+pub(super) async fn get_invite_req_to_user(
+	app_id: str_t!(),
+	user_id: str_t!(),
+	last_fetched_time: u128,
+	last_id: str_t!(),
+) -> AppRes<Vec<GroupInviteReq>>
 {
 	//called from the user not the group
 
@@ -182,18 +189,21 @@ WHERE
 		(
 			sql,
 			set_params!(
-				user_id,
+				str_get!(user_id),
 				GROUP_INVITE_TYPE_INVITE_REQ,
-				app_id,
+				str_get!(app_id),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
-				last_id
+				str_get!(last_id)
 			),
 		)
 	} else {
 		let sql = sql + " ORDER BY i.time DESC, group_id LIMIT 50";
-		(sql, set_params!(user_id, GROUP_INVITE_TYPE_INVITE_REQ, app_id))
+		(
+			sql,
+			set_params!(str_get!(user_id), GROUP_INVITE_TYPE_INVITE_REQ, str_get!(app_id)),
+		)
 	};
 
 	let invite_req: Vec<GroupInviteReq> = query_string(sql1, params).await?;
@@ -201,14 +211,17 @@ WHERE
 	Ok(invite_req)
 }
 
-pub(super) async fn reject_invite(group_id: GroupId, user_id: UserId) -> AppRes<()>
+pub(super) async fn reject_invite(group_id: str_t!(), user_id: str_t!()) -> AppRes<()>
 {
+	let group_id = str_get!(group_id);
+	let user_id = str_get!(user_id);
+
 	//check if there is an invite (this is important, because we delete the user keys too)
-	check_for_invite(user_id.to_string(), group_id.to_string()).await?;
+	check_for_invite(str_clone!(user_id), str_clone!(group_id)).await?;
 
 	//language=SQL
 	let sql = "DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ?";
-	let params_in = set_params!(group_id.to_string(), user_id.to_string());
+	let params_in = set_params!(str_clone!(group_id), str_clone!(user_id));
 
 	//delete the keys from the users table -> no trigger in the db
 
@@ -231,15 +244,18 @@ pub(super) async fn reject_invite(group_id: GroupId, user_id: UserId) -> AppRes<
 	Ok(())
 }
 
-pub(super) async fn accept_invite(group_id: GroupId, user_id: UserId) -> AppRes<()>
+pub(super) async fn accept_invite(group_id: str_t!(), user_id: str_t!()) -> AppRes<()>
 {
+	let group_id = str_get!(group_id);
+	let user_id = str_get!(user_id);
+
 	//called from the invited user
-	let user_type = check_for_invite(user_id.to_string(), group_id.to_string()).await?;
+	let user_type = check_for_invite(str_clone!(user_id), str_clone!(group_id)).await?;
 
 	//delete the old entry
 	//language=SQL
 	let sql_del = "DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ?";
-	let params_del = set_params!(group_id.to_string(), user_id.to_string());
+	let params_del = set_params!(str_clone!(group_id), str_clone!(user_id));
 
 	//insert the user into the user group table, the keys are already there from the start invite
 	let time = get_time()?;
@@ -265,13 +281,16 @@ pub(super) async fn accept_invite(group_id: GroupId, user_id: UserId) -> AppRes<
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn join_req(app_id: AppId, group_id: GroupId, user_id: UserId, user_type: NewUserType) -> AppRes<()>
+pub(super) async fn join_req(app_id: str_t!(), group_id: str_t!(), user_id: str_t!(), user_type: NewUserType) -> AppRes<()>
 {
+	let group_id = str_get!(group_id);
+	let user_id = str_get!(user_id);
+
 	let user_type = match user_type {
 		NewUserType::Normal => 0,
 		NewUserType::Group => {
 			//when it is a group wants to join another group -> check if the group to join is a connected group
-			let cg = check_is_connected_group(group_id.to_string()).await?;
+			let cg = check_is_connected_group(str_clone!(group_id)).await?;
 
 			if cg != 1 {
 				return Err(HttpErr::new(
@@ -286,7 +305,7 @@ pub(super) async fn join_req(app_id: AppId, group_id: GroupId, user_id: UserId, 
 		},
 	};
 
-	let check = check_user_in_group(group_id.to_string(), user_id.to_string()).await?;
+	let check = check_user_in_group(str_clone!(group_id), str_clone!(user_id)).await?;
 
 	if check {
 		return Err(HttpErr::new(
@@ -298,7 +317,7 @@ pub(super) async fn join_req(app_id: AppId, group_id: GroupId, user_id: UserId, 
 	}
 
 	//check if this group can be invited
-	group_accept_invite(app_id, group_id.to_string()).await?;
+	group_accept_invite(app_id, str_clone!(group_id)).await?;
 
 	let time = get_time()?;
 
@@ -313,8 +332,8 @@ pub(super) async fn join_req(app_id: AppId, group_id: GroupId, user_id: UserId, 
 	exec(
 		sql,
 		set_params!(
-			user_id.to_string(),
-			group_id.to_string(),
+			user_id,
+			group_id,
 			GROUP_INVITE_TYPE_JOIN_REQ,
 			time.to_string(),
 			user_type
@@ -325,7 +344,7 @@ pub(super) async fn join_req(app_id: AppId, group_id: GroupId, user_id: UserId, 
 	Ok(())
 }
 
-pub(super) async fn reject_join_req(group_id: GroupId, user_id: UserId, admin_rank: i32) -> AppRes<()>
+pub(super) async fn reject_join_req(group_id: str_t!(), user_id: str_t!(), admin_rank: i32) -> AppRes<()>
 {
 	//called from the group admin
 	check_group_rank(admin_rank, 2)?;
@@ -333,23 +352,26 @@ pub(super) async fn reject_join_req(group_id: GroupId, user_id: UserId, admin_ra
 	//language=SQL
 	let sql = "DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ?";
 
-	exec(sql, set_params!(group_id, user_id)).await?;
+	exec(sql, set_params!(str_get!(group_id), str_get!(user_id))).await?;
 
 	Ok(())
 }
 
 pub(super) async fn accept_join_req(
-	group_id: GroupId,
-	user_id: UserId,
+	group_id: str_t!(),
+	user_id: str_t!(),
 	keys_for_new_user: Vec<GroupKeysForNewMember>,
 	key_session: bool,
 	admin_rank: i32,
 ) -> AppRes<Option<String>>
 {
+	let group_id = str_get!(group_id);
+	let user_id = str_get!(user_id);
+
 	check_group_rank(admin_rank, 2)?;
 
 	//this check in important (see invite user req -> check if there is an invite). we would insert the keys even if the user is already member
-	let check = check_user_in_group(group_id.to_string(), user_id.to_string()).await?;
+	let check = check_user_in_group(str_clone!(group_id), str_clone!(user_id)).await?;
 
 	if check {
 		return Err(HttpErr::new(
@@ -365,7 +387,7 @@ pub(super) async fn accept_join_req(
 	let sql = "SELECT user_type FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ? AND type = ?";
 	let check: Option<I32Entity> = query_first(
 		sql,
-		set_params!(group_id.to_string(), user_id.to_string(), GROUP_INVITE_TYPE_JOIN_REQ),
+		set_params!(str_clone!(group_id), str_clone!(user_id), GROUP_INVITE_TYPE_JOIN_REQ),
 	)
 	.await?;
 
@@ -387,7 +409,7 @@ pub(super) async fn accept_join_req(
 
 	//language=SQL
 	let sql_del = "DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ?";
-	let params_del = set_params!(group_id.to_string(), user_id.to_string());
+	let params_del = set_params!(str_clone!(group_id), str_clone!(user_id));
 
 	let (sql_in, params_in, session_id) = if key_session && keys_for_new_user.len() == 100 {
 		//if there are more keys than 100 -> use a session,
@@ -397,11 +419,11 @@ pub(super) async fn accept_join_req(
 		//language=SQL
 		let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, key_upload_session_id, type) VALUES (?,?,?,?,?,?)";
 		let params_in = set_params!(
-			user_id.to_string(),
-			group_id.to_string(),
+			str_clone!(user_id),
+			str_clone!(group_id),
 			time.to_string(),
 			4,
-			session_id.to_string(),
+			str_clone!(&session_id),
 			user_type
 		);
 
@@ -410,8 +432,8 @@ pub(super) async fn accept_join_req(
 		//language=SQL
 		let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
 		let params_in = set_params!(
-			user_id.to_string(),
-			group_id.to_string(),
+			str_clone!(user_id),
+			str_clone!(group_id),
 			time.to_string(),
 			4,
 			user_type
@@ -437,7 +459,7 @@ pub(super) async fn accept_join_req(
 	Ok(session_id)
 }
 
-pub(super) async fn get_join_req(group_id: GroupId, last_fetched_time: u128, last_id: UserId, admin_rank: i32) -> AppRes<Vec<GroupJoinReq>>
+pub(super) async fn get_join_req(group_id: str_t!(), last_fetched_time: u128, last_id: str_t!(), admin_rank: i32) -> AppRes<Vec<GroupJoinReq>>
 {
 	check_group_rank(admin_rank, 2)?;
 
@@ -453,17 +475,17 @@ WHERE group_id = ? AND type = ?"
 		(
 			sql,
 			set_params!(
-				group_id,
+				str_get!(group_id),
 				GROUP_INVITE_TYPE_JOIN_REQ,
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
-				last_id
+				str_get!(last_id)
 			),
 		)
 	} else {
 		let sql = sql + " ORDER BY time, user_id LIMIT 50";
-		(sql, set_params!(group_id, GROUP_INVITE_TYPE_JOIN_REQ))
+		(sql, set_params!(str_get!(group_id), GROUP_INVITE_TYPE_JOIN_REQ))
 	};
 
 	//fetch the user with public key in a separate req, when the user decided to accept a join req
@@ -472,7 +494,8 @@ WHERE group_id = ? AND type = ?"
 	Ok(join_req)
 }
 
-pub(super) async fn get_sent_join_req(app_id: AppId, user_id: UserId, last_fetched_time: u128, last_id: GroupId) -> AppRes<Vec<GroupInviteReq>>
+pub(super) async fn get_sent_join_req(app_id: str_t!(), user_id: str_t!(), last_fetched_time: u128, last_id: str_t!())
+	-> AppRes<Vec<GroupInviteReq>>
 {
 	//the same as get_invite_req_to_user but with another search type: join req instead of invites
 
@@ -496,18 +519,21 @@ WHERE
 		(
 			sql,
 			set_params!(
-				user_id,
+				str_get!(user_id),
 				GROUP_INVITE_TYPE_JOIN_REQ,
-				app_id,
+				str_get!(app_id),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
-				last_id
+				str_get!(last_id)
 			),
 		)
 	} else {
 		let sql = sql + " ORDER BY i.time DESC, group_id LIMIT 50";
-		(sql, set_params!(user_id, GROUP_INVITE_TYPE_JOIN_REQ, app_id))
+		(
+			sql,
+			set_params!(str_get!(user_id), GROUP_INVITE_TYPE_JOIN_REQ, str_get!(app_id)),
+		)
 	};
 
 	let invite_req: Vec<GroupInviteReq> = query_string(sql1, params).await?;
@@ -515,13 +541,15 @@ WHERE
 	Ok(invite_req)
 }
 
-pub(super) async fn delete_sent_join_req(app_id: AppId, user_id: UserId, group_id: GroupId) -> AppRes<()>
+pub(super) async fn delete_sent_join_req(app_id: str_t!(), user_id: str_t!(), group_id: str_t!()) -> AppRes<()>
 {
+	let group_id = str_get!(group_id);
+
 	//check the app id extra because sqlite doesn't support multiple tables in delete from
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group WHERE app_id = ? AND id = ?";
 
-	let check: Option<I64Entity> = query_first(sql, set_params!(app_id, group_id.clone())).await?;
+	let check: Option<I64Entity> = query_first(sql, set_params!(str_get!(app_id), str_clone!(group_id))).await?;
 
 	if check.is_none() {
 		return Err(HttpErr::new(
@@ -535,18 +563,21 @@ pub(super) async fn delete_sent_join_req(app_id: AppId, user_id: UserId, group_i
 	//language=SQL
 	let sql = "DELETE FROM sentc_group_user_invites_and_join_req WHERE user_id = ? AND group_id = ?";
 
-	exec(sql, set_params!(user_id, group_id)).await?;
+	exec(sql, set_params!(str_get!(user_id), group_id)).await?;
 
 	Ok(())
 }
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn user_leave_group(group_id: GroupId, user_id: UserId, rank: i32) -> AppRes<()>
+pub(super) async fn user_leave_group(group_id: str_t!(), user_id: str_t!(), rank: i32) -> AppRes<()>
 {
+	let group_id = str_get!(group_id);
+	let user_id = str_get!(user_id);
+
 	//get the rank of the user -> check if there is only one admin (check also here if the user is in the group)
 	if rank <= 1 {
-		let only_admin = check_for_only_one_admin(group_id.to_string(), user_id.to_string()).await?;
+		let only_admin = check_for_only_one_admin(str_clone!(group_id), str_clone!(user_id)).await?;
 
 		if only_admin {
 			return Err(HttpErr::new(
@@ -567,8 +598,11 @@ pub(super) async fn user_leave_group(group_id: GroupId, user_id: UserId, rank: i
 	Ok(())
 }
 
-pub(super) async fn kick_user_from_group(group_id: GroupId, user_id: UserId, rank: i32) -> AppRes<()>
+pub(super) async fn kick_user_from_group(group_id: str_t!(), user_id: str_t!(), rank: i32) -> AppRes<()>
 {
+	let group_id = str_get!(group_id);
+	let user_id = str_get!(user_id);
+
 	check_group_rank(rank, 2)?;
 
 	//check the rank of the member -> if it is the creator => don't kick
@@ -576,7 +610,7 @@ pub(super) async fn kick_user_from_group(group_id: GroupId, user_id: UserId, ran
 	//language=SQL
 	let sql = "SELECT `rank` FROM sentc_group_user WHERE user_id = ? AND group_id = ?";
 
-	let check: Option<I32Entity> = query_first(sql, set_params!(user_id.to_string(), group_id.to_string())).await?;
+	let check: Option<I32Entity> = query_first(sql, set_params!(str_clone!(user_id), str_clone!(group_id))).await?;
 
 	let check = match check {
 		Some(c) => c.0,
@@ -620,8 +654,11 @@ pub(super) async fn kick_user_from_group(group_id: GroupId, user_id: UserId, ran
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn update_rank(group_id: GroupId, admin_rank: i32, changed_user_id: UserId, new_rank: i32) -> AppRes<()>
+pub(super) async fn update_rank(group_id: str_t!(), admin_rank: i32, changed_user_id: str_t!(), new_rank: i32) -> AppRes<()>
 {
+	let group_id = str_get!(group_id);
+	let changed_user_id = str_get!(changed_user_id);
+
 	check_group_rank(admin_rank, 1)?;
 
 	//only one creator
@@ -638,7 +675,7 @@ pub(super) async fn update_rank(group_id: GroupId, admin_rank: i32, changed_user
 	//language=SQL
 	let sql = "SELECT `rank` FROM sentc_group_user WHERE user_id = ? AND group_id = ?";
 
-	let check: Option<I32Entity> = query_first(sql, set_params!(changed_user_id.to_string(), group_id.to_string())).await?;
+	let check: Option<I32Entity> = query_first(sql, set_params!(str_clone!(changed_user_id), str_clone!(group_id))).await?;
 
 	let check = match check {
 		Some(c) => c.0,
@@ -679,12 +716,14 @@ Use session to upload the keys.
 this session is automatically created when doing invite req or accepting join req
 */
 pub(super) async fn insert_user_keys_via_session(
-	group_id: GroupId,
-	session_id: String,
+	group_id: str_t!(),
+	session_id: str_t!(),
 	keys_for_new_user: Vec<GroupKeysForNewMember>,
 	insert_type: InsertNewUserType,
 ) -> AppRes<()>
 {
+	let group_id = str_get!(group_id);
+
 	//check the session id
 	let sql = match insert_type {
 		InsertNewUserType::Invite => {
@@ -697,7 +736,7 @@ pub(super) async fn insert_user_keys_via_session(
 		},
 	};
 
-	let user_id: Option<StringEntity> = query_first(sql, set_params!(group_id.to_string(), session_id)).await?;
+	let user_id: Option<StringEntity> = query_first(sql, set_params!(str_clone!(group_id), str_get!(session_id))).await?;
 	let user_id = match user_id {
 		Some(id) => id.0,
 		None => {
@@ -712,15 +751,18 @@ pub(super) async fn insert_user_keys_via_session(
 
 	let time = get_time()?;
 
-	insert_user_keys(group_id, user_id, time, keys_for_new_user).await?;
+	insert_user_keys(group_id, str_owned!(user_id), time, keys_for_new_user).await?;
 
 	Ok(())
 }
 
 //__________________________________________________________________________________________________
 
-async fn insert_user_keys(group_id: GroupId, new_user_id: UserId, time: u128, keys_for_new_user: Vec<GroupKeysForNewMember>) -> AppRes<()>
+async fn insert_user_keys(group_id: str_t!(), new_user_id: str_t!(), time: u128, keys_for_new_user: Vec<GroupKeysForNewMember>) -> AppRes<()>
 {
+	let group_id = str_get!(group_id);
+	let new_user_id = str_get!(new_user_id);
+
 	//insert the keys in the right table -> delete the keys from this table when user not accept the invite!
 	bulk_insert(
 		true,
@@ -737,12 +779,12 @@ async fn insert_user_keys(group_id: GroupId, new_user_id: UserId, time: u128, ke
 		keys_for_new_user,
 		move |ob| {
 			set_params!(
-				new_user_id.to_string(),
-				ob.key_id.to_string(),
-				group_id.to_string(),
-				ob.encrypted_group_key.to_string(),
-				ob.user_public_key_id.to_string(),
-				ob.encrypted_alg.to_string(),
+				str_clone!(new_user_id),
+				str_clone!(&ob.key_id),
+				str_clone!(group_id),
+				str_clone!(&ob.encrypted_group_key),
+				str_clone!(&ob.user_public_key_id),
+				str_clone!(&ob.encrypted_alg),
 				time.to_string()
 			)
 		},
@@ -752,12 +794,15 @@ async fn insert_user_keys(group_id: GroupId, new_user_id: UserId, time: u128, ke
 	Ok(())
 }
 
-async fn check_user_in_group(group_id: GroupId, user_id: UserId) -> AppRes<bool>
+async fn check_user_in_group(group_id: str_t!(), user_id: str_t!()) -> AppRes<bool>
 {
+	let group_id = str_get!(group_id);
+	let user_id = str_get!(user_id);
+
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group_user WHERE user_id = ? AND group_id = ? LIMIT 1";
 
-	let exists: Option<I32Entity> = query_first(sql, set_params!(user_id.to_string(), group_id.to_string())).await?;
+	let exists: Option<I32Entity> = query_first(sql, set_params!(str_clone!(user_id), str_clone!(group_id))).await?;
 
 	if exists.is_some() {
 		return Ok(true);
@@ -772,12 +817,16 @@ async fn check_user_in_group(group_id: GroupId, user_id: UserId) -> AppRes<bool>
 	}
 }
 
-async fn check_for_invite(user_id: UserId, group_id: GroupId) -> AppRes<i32>
+async fn check_for_invite(user_id: str_t!(), group_id: str_t!()) -> AppRes<i32>
 {
 	//language=SQL
 	let sql = "SELECT user_type FROM sentc_group_user_invites_and_join_req WHERE user_id = ? AND group_id = ? AND type = ?";
 
-	let check: Option<I32Entity> = query_first(sql, set_params!(user_id, group_id, GROUP_INVITE_TYPE_INVITE_REQ)).await?;
+	let check: Option<I32Entity> = query_first(
+		sql,
+		set_params!(str_get!(user_id), str_get!(group_id), GROUP_INVITE_TYPE_INVITE_REQ),
+	)
+	.await?;
 
 	match check {
 		Some(user_type) => Ok(user_type.0),
@@ -795,13 +844,13 @@ async fn check_for_invite(user_id: UserId, group_id: GroupId) -> AppRes<i32>
 /**
 Used for leave group and change the own rank
 */
-async fn check_for_only_one_admin(group_id: GroupId, user_id: UserId) -> AppRes<bool>
+async fn check_for_only_one_admin(group_id: str_t!(), user_id: str_t!()) -> AppRes<bool>
 {
 	//admin rank -> check if there is another admin. if not -> can't leave
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group_user WHERE group_id = ? AND user_id NOT LIKE ? AND `rank` <= 1 LIMIT 1";
 
-	let admin_found: Option<I32Entity> = query_first(sql, set_params!(group_id, user_id)).await?;
+	let admin_found: Option<I32Entity> = query_first(sql, set_params!(str_get!(group_id), str_get!(user_id))).await?;
 
 	//if there are more admins -> then the user is not the only admin
 	match admin_found {
@@ -811,12 +860,12 @@ async fn check_for_only_one_admin(group_id: GroupId, user_id: UserId) -> AppRes<
 }
 
 #[inline(always)]
-async fn group_accept_invite(app_id: AppId, group_id: GroupId) -> AppRes<()>
+async fn group_accept_invite(app_id: str_t!(), group_id: str_t!()) -> AppRes<()>
 {
 	//check if this group can be invited
 	//language=SQL
 	let sql = "SELECT invite FROM sentc_group WHERE app_id = ? AND id = ?";
-	let can_invite: Option<I32Entity> = query_first(sql, set_params!(app_id, group_id)).await?;
+	let can_invite: Option<I32Entity> = query_first(sql, set_params!(str_get!(app_id), str_get!(group_id))).await?;
 
 	match can_invite {
 		Some(ci) => {
@@ -842,11 +891,11 @@ async fn group_accept_invite(app_id: AppId, group_id: GroupId) -> AppRes<()>
 	Ok(())
 }
 
-async fn check_is_connected_group(group_id: GroupId) -> AppRes<i32>
+async fn check_is_connected_group(group_id: str_t!()) -> AppRes<i32>
 {
 	//language=SQL
 	let sql = "SELECT is_connected_group FROM sentc_group WHERE id = ?";
-	let is_connected_group: Option<I32Entity> = query_first(sql, set_params!(group_id)).await?;
+	let is_connected_group: Option<I32Entity> = query_first(sql, set_params!(str_get!(group_id))).await?;
 
 	if let Some(cg) = is_connected_group {
 		Ok(cg.0)

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use sentc_crypto_common::{AppId, GroupId, SymKeyId};
+use sentc_crypto::sdk_common::AppId;
+use sentc_crypto_common::{GroupId, SymKeyId};
 
 use crate::group::group_entities::{KeyRotationWorkerKey, UserEphKeyOut, UserGroupPublicKeyData};
 use crate::group::group_key_rotation::group_key_rotation_model;
@@ -15,25 +16,18 @@ enum LoopType
 
 pub async fn start(app_id: AppId, group_id: GroupId, key_id: SymKeyId, user_group: Option<String>) -> AppRes<()>
 {
-	let key = group_key_rotation_model::get_new_key(group_id.clone(), key_id.clone()).await?;
+	let key = group_key_rotation_model::get_new_key(&group_id, &key_id).await?;
 
 	let key_arc = Arc::new(key);
 
 	//get all for the user
-	let mut total_len = loop_user(
-		group_id.clone(),
-		key_id.clone(),
-		key_arc.clone(),
-		LoopType::User,
-		&user_group,
-	)
-	.await?;
+	let mut total_len = loop_user(&group_id, &key_id, key_arc.clone(), LoopType::User, &user_group).await?;
 
 	//don't call parent key rotation or group as member key rotation for user groups
 	if user_group.is_none() {
 		total_len += loop_user(
-			group_id.clone(),
-			key_id.clone(),
+			&group_id,
+			&key_id,
 			key_arc.clone(),
 			LoopType::GroupAsMember,
 			&user_group,
@@ -42,7 +36,7 @@ pub async fn start(app_id: AppId, group_id: GroupId, key_id: SymKeyId, user_grou
 	}
 
 	//key rotation for parent group. check first if this is already done for parent group (like user)
-	if let Some(item) = group_key_rotation_model::get_parent_group_and_public_key(group_id.clone(), key_id.clone()).await? {
+	if let Some(item) = group_key_rotation_model::get_parent_group_and_public_key(&group_id, &key_id).await? {
 		let user_keys = tokio::task::spawn_blocking(move || encrypt(&key_arc, vec![item]))
 			.await
 			.map_err(|e| {
@@ -55,13 +49,13 @@ pub async fn start(app_id: AppId, group_id: GroupId, key_id: SymKeyId, user_grou
 			})?;
 
 		//save the keys for the parent
-		group_key_rotation_model::save_user_eph_keys(group_id.clone(), key_id, user_keys).await?;
+		group_key_rotation_model::save_user_eph_keys(&group_id, &key_id, user_keys).await?;
 	}
 
 	//save the user action
 	user_service::save_user_action(
-		app_id,
-		group_id, //use the group id as user id
+		&app_id,
+		&group_id, //use the group id as user id
 		user_service::UserAction::KeyRotation,
 		total_len as i64,
 	)
@@ -71,8 +65,8 @@ pub async fn start(app_id: AppId, group_id: GroupId, key_id: SymKeyId, user_grou
 }
 
 async fn loop_user(
-	group_id: GroupId,
-	key_id: SymKeyId,
+	group_id: &str,
+	key_id: &str,
 	key_arc: Arc<KeyRotationWorkerKey>,
 	loop_type: LoopType,
 	user_group: &Option<String>,
@@ -89,27 +83,15 @@ async fn loop_user(
 		let users = match (&loop_type, user_group) {
 			(LoopType::GroupAsMember, None) => {
 				//get the data for the group as member
-				group_key_rotation_model::get_group_as_member_public_key(
-					group_id.clone(),
-					key_id.clone(),
-					last_time_fetched,
-					last_user_id.clone(),
-				)
-				.await?
+				group_key_rotation_model::get_group_as_member_public_key(group_id, key_id, last_time_fetched, &last_user_id).await?
 			},
 			(LoopType::User, Some(u_id)) => {
 				//for a user group key rotation use the device id as user id and as public key id
-				group_key_rotation_model::get_device_keys(u_id.clone(), key_id.clone(), last_time_fetched, last_user_id.clone()).await?
+				group_key_rotation_model::get_device_keys(u_id, key_id, last_time_fetched, &last_user_id).await?
 			},
 			(LoopType::User, None) => {
 				//normal fallback to fetch all users for a group
-				group_key_rotation_model::get_user_and_public_key(
-					group_id.clone(),
-					key_id.clone(),
-					last_time_fetched,
-					last_user_id.clone(),
-				)
-				.await?
+				group_key_rotation_model::get_user_and_public_key(group_id, key_id, last_time_fetched, &last_user_id).await?
 			},
 			(LoopType::GroupAsMember, Some(_)) => {
 				//Don't call the loop again with user group because user group wont get any group as member
@@ -141,7 +123,7 @@ async fn loop_user(
 			})?;
 
 		//save the keys for the user
-		group_key_rotation_model::save_user_eph_keys(group_id.clone(), key_id.clone(), user_keys).await?;
+		group_key_rotation_model::save_user_eph_keys(group_id, key_id, user_keys).await?;
 
 		if len < 100 {
 			//when there were less than 50 users in this fetch

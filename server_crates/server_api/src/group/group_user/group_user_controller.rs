@@ -39,10 +39,10 @@ pub async fn get_group_member(req: Request) -> JRes<Vec<GroupUserListItem>>
 	})?;
 
 	let list_fetch = group_user_model::get_group_member(
-		group_data.group_data.id.to_string(),
-		group_data.user_data.user_id.to_string(),
+		&group_data.group_data.id,
+		&group_data.user_data.user_id,
 		last_fetched_time,
-		last_user_id.to_string(),
+		last_user_id,
 	)
 	.await?;
 
@@ -78,7 +78,7 @@ async fn auto_invite(mut req: Request, user_type: NewUserType) -> JRes<GroupInvi
 
 	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
 
-	let session_id = group_user_service::invite_auto(group_data, input, to_invite.to_string(), user_type).await?;
+	let session_id = group_user_service::invite_auto(group_data, input, to_invite, user_type).await?;
 
 	let out = GroupInviteServerOutput {
 		session_id,
@@ -118,7 +118,7 @@ async fn invite(mut req: Request, user_type: NewUserType) -> JRes<GroupInviteSer
 
 	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
 
-	let session_id = group_user_service::invite_request(group_data, input, to_invite.to_string(), user_type).await?;
+	let session_id = group_user_service::invite_request(group_data, input, to_invite, user_type).await?;
 
 	let out = GroupInviteServerOutput {
 		session_id,
@@ -172,13 +172,7 @@ async fn get_invite_req_pri(req: Request, user_type: NewUserType) -> JRes<Vec<Gr
 		)
 	})?;
 
-	let out = group_user_service::get_invite_req(
-		app.app_data.app_id.to_string(),
-		id_to_check.to_string(),
-		last_fetched_time,
-		last_group_id.to_string(),
-	)
-	.await?;
+	let out = group_user_service::get_invite_req(&app.app_data.app_id, id_to_check, last_fetched_time, last_group_id).await?;
 
 	echo(out)
 }
@@ -213,7 +207,7 @@ async fn reject_invite_pri(req: Request, user_type: NewUserType) -> JRes<ServerS
 
 	let group_id = get_name_param_from_req(&req, key_id_to_reject)?;
 
-	group_user_model::reject_invite(group_id.to_string(), user_id.to_string()).await?;
+	group_user_model::reject_invite(group_id, user_id).await?;
 
 	echo_success()
 }
@@ -249,10 +243,10 @@ async fn accept_invite_pri(req: Request, user_type: NewUserType) -> JRes<ServerS
 	};
 
 	let group_id = get_name_param_from_req(&req, key_id_to_accept)?;
-	group_user_model::accept_invite(group_id.to_string(), user_id.to_string()).await?;
+	group_user_model::accept_invite(group_id, user_id).await?;
 
 	//delete the cache here so the user can join the group
-	let key_user = get_group_user_cache_key(app.app_data.app_id.as_str(), group_id, user_id);
+	let key_user = get_group_user_cache_key(&app.app_data.app_id, group_id, user_id);
 
 	cache::delete(&key_user).await;
 
@@ -306,13 +300,7 @@ async fn join_req_pri(req: Request, user_type: NewUserType) -> JRes<ServerSucces
 
 	let group_id_to_join = get_name_param_from_req(&req, key_for_group_id_to_join)?;
 
-	group_user_model::join_req(
-		app.app_data.app_id.to_string(),
-		group_id_to_join.to_string(),
-		id.to_string(),
-		user_type,
-	)
-	.await?;
+	group_user_model::join_req(&app.app_data.app_id, group_id_to_join, id, user_type).await?;
 
 	echo_success()
 }
@@ -336,9 +324,9 @@ pub async fn get_join_req(req: Request) -> JRes<Vec<GroupJoinReq>>
 	})?;
 
 	let reqs = group_user_model::get_join_req(
-		group_data.group_data.id.to_string(),
+		&group_data.group_data.id,
 		last_fetched_time,
-		last_user_id.to_string(),
+		last_user_id,
 		group_data.user_data.rank,
 	)
 	.await?;
@@ -377,13 +365,7 @@ async fn get_sent_join_req(req: Request, user_type: NewUserType) -> JRes<Vec<Gro
 		)
 	})?;
 
-	let out = group_user_model::get_sent_join_req(
-		app.app_data.app_id.clone(),
-		id_to_check.clone(),
-		last_fetched_time,
-		last_group_id.to_string(),
-	)
-	.await?;
+	let out = group_user_model::get_sent_join_req(&app.app_data.app_id, id_to_check, last_fetched_time, last_group_id).await?;
 
 	echo(out)
 }
@@ -396,12 +378,7 @@ pub async fn reject_join_req(req: Request) -> JRes<ServerSuccessOutput>
 
 	let join_user = get_name_param_from_req(&req, "join_user")?;
 
-	group_user_model::reject_join_req(
-		group_data.group_data.id.to_string(),
-		join_user.to_string(),
-		group_data.user_data.rank,
-	)
-	.await?;
+	group_user_model::reject_join_req(&group_data.group_data.id, join_user, group_data.user_data.rank).await?;
 
 	echo_success()
 }
@@ -437,8 +414,8 @@ pub async fn accept_join_req(mut req: Request) -> JRes<GroupAcceptJoinReqServerO
 	}
 
 	let session_id = group_user_model::accept_join_req(
-		group_data.group_data.id.to_string(),
-		join_user.to_string(),
+		&group_data.group_data.id,
+		join_user,
 		input.keys,
 		input.key_session,
 		group_data.user_data.rank,
@@ -452,11 +429,7 @@ pub async fn accept_join_req(mut req: Request) -> JRes<GroupAcceptJoinReqServerO
 
 	//delete user group cache. no need to delete the user group cache again for upload session,
 	// because after this fn the user is already registered
-	let key_user = get_group_user_cache_key(
-		group_data.group_data.app_id.as_str(),
-		group_data.group_data.id.as_str(),
-		join_user,
-	);
+	let key_user = get_group_user_cache_key(&group_data.group_data.app_id, &group_data.group_data.id, join_user);
 
 	cache::delete(&key_user).await;
 
@@ -482,7 +455,7 @@ async fn delete_sent_join_req(req: Request, user_type: NewUserType) -> JRes<Serv
 
 	let id = get_name_param_from_req(&req, "join_req_id")?;
 
-	group_user_model::delete_sent_join_req(app.app_data.app_id.clone(), id_to_check.to_string(), id.to_string()).await?;
+	group_user_model::delete_sent_join_req(&app.app_data.app_id, id_to_check, id).await?;
 
 	echo_success()
 }
@@ -526,7 +499,7 @@ pub async fn leave_group(req: Request) -> JRes<ServerSuccessOutput>
 	let group_data = get_group_user_data_from_req(&req)?;
 	let user = get_jwt_data_from_param(&req)?;
 
-	group_user_service::leave_group(group_data, Some(user.id.clone())).await?;
+	group_user_service::leave_group(group_data, Some(&user.id)).await?;
 
 	echo_success()
 }
@@ -539,21 +512,12 @@ pub async fn kick_user_from_group(req: Request) -> JRes<ServerSuccessOutput>
 
 	let user_id = get_name_param_from_req(&req, "user_id")?;
 
-	group_user_model::kick_user_from_group(
-		group_data.group_data.id.to_string(),
-		user_id.to_string(),
-		group_data.user_data.rank,
-	)
-	.await?;
+	group_user_model::kick_user_from_group(&group_data.group_data.id, user_id, group_data.user_data.rank).await?;
 
 	//delete the user cache
-	let key_group = get_group_user_cache_key(
-		group_data.group_data.app_id.as_str(),
-		group_data.group_data.id.as_str(),
-		user_id,
-	);
+	let key_group = get_group_user_cache_key(&group_data.group_data.app_id, &group_data.group_data.id, user_id);
 
-	cache::delete(key_group.as_str()).await;
+	cache::delete(&key_group).await;
 
 	echo_success()
 }
@@ -578,21 +542,21 @@ pub async fn change_rank(mut req: Request) -> JRes<ServerSuccessOutput>
 	let input: GroupChangeRankServerInput = bytes_to_json(&body)?;
 
 	group_user_model::update_rank(
-		group_data.group_data.id.to_string(),
+		&group_data.group_data.id,
 		group_data.user_data.rank,
-		input.changed_user_id.to_string(),
+		&input.changed_user_id,
 		input.new_rank,
 	)
 	.await?;
 
 	//delete user cache of the changed user
 	let key_group = get_group_user_cache_key(
-		group_data.group_data.app_id.as_str(),
-		group_data.group_data.id.as_str(),
-		input.changed_user_id.as_str(),
+		&group_data.group_data.app_id,
+		&group_data.group_data.id,
+		&input.changed_user_id,
 	);
 
-	cache::delete(key_group.as_str()).await;
+	cache::delete(&key_group).await;
 
 	echo_success()
 }
@@ -609,13 +573,7 @@ async fn insert_user_keys_via_session(mut req: Request, insert_type: InsertNewUs
 
 	let input: Vec<GroupKeysForNewMember> = bytes_to_json(&body)?;
 
-	group_user_service::insert_user_keys_via_session(
-		group_data.group_data.id.clone(),
-		key_session_id.to_string(),
-		insert_type,
-		input,
-	)
-	.await?;
+	group_user_service::insert_user_keys_via_session(&group_data.group_data.id, key_session_id, insert_type, input).await?;
 
 	echo_success()
 }

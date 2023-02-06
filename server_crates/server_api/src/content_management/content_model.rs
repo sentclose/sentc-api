@@ -1,18 +1,27 @@
-use sentc_crypto_common::{AppId, CategoryId, ContentId, GroupId, UserId};
 use server_core::db::{query_first, query_string};
-use server_core::set_params;
+use server_core::{set_params, str_clone, str_get, str_t};
 
 use crate::content_management::content_entity::{ContentItemAccess, ListContentItem};
 use crate::util::api_res::AppRes;
 
 pub(super) async fn get_content(
-	app_id: AppId,
-	user_id: UserId,
+	app_id: str_t!(),
+	user_id: str_t!(),
 	last_fetched_time: u128,
-	last_id: ContentId,
-	cat_id: Option<CategoryId>,
+	last_id: str_t!(),
+	cat_id: Option<str_t!()>,
 ) -> AppRes<Vec<ListContentItem>>
 {
+	let app_id = str_get!(app_id);
+	let user_id = str_get!(user_id);
+
+	//own the token in sqlite
+	#[cfg(feature = "sqlite")]
+	let cat_id = match cat_id {
+		Some(t) => Some(str_get!(t)),
+		None => None,
+	};
+
 	//can't use user_groups in the other cte. i got an mysql syntax error when using it in mysql_async.
 	//mysql explain says this are the same because the cte only helps to reduce code length.
 
@@ -64,35 +73,35 @@ WHERE
 		if let Some(c_id) = cat_id {
 			set_params!(
 				//group params
-				user_id.clone(),
-				app_id.clone(),
-				app_id.clone(),
+				str_clone!(user_id),
+				str_clone!(app_id),
+				str_clone!(app_id),
 				//query params
 				app_id,
-				user_id.clone(),
+				str_clone!(user_id),
 				user_id,
 				c_id,
 				//time params
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
-				last_id
+				str_get!(last_id)
 			)
 		} else {
 			set_params!(
 				//group params
-				user_id.clone(),
-				app_id.clone(),
-				app_id.clone(),
+				str_clone!(user_id),
+				str_clone!(app_id),
+				str_clone!(app_id),
 				//query params
 				app_id,
-				user_id.clone(),
+				str_clone!(user_id),
 				user_id,
 				//time params
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
-				last_id
+				str_get!(last_id)
 			)
 		}
 	} else {
@@ -101,24 +110,24 @@ WHERE
 		if let Some(c_id) = cat_id {
 			set_params!(
 				//group params
-				user_id.clone(),
-				app_id.clone(),
-				app_id.clone(),
+				str_clone!(user_id),
+				str_clone!(app_id),
+				str_clone!(app_id),
 				//query params
 				app_id,
-				user_id.clone(),
+				str_clone!(user_id),
 				user_id,
 				c_id
 			)
 		} else {
 			set_params!(
 				//group params
-				user_id.clone(),
-				app_id.clone(),
-				app_id.clone(),
+				str_clone!(user_id),
+				str_clone!(app_id),
+				str_clone!(app_id),
 				//query params
 				app_id,
-				user_id.clone(),
+				str_clone!(user_id),
 				user_id,
 			)
 		}
@@ -130,13 +139,23 @@ WHERE
 }
 
 pub(super) async fn get_content_for_group(
-	app_id: AppId,
-	group_id: GroupId,
+	app_id: str_t!(),
+	group_id: str_t!(),
 	last_fetched_time: u128,
-	last_id: ContentId,
-	cat_id: Option<CategoryId>,
+	last_id: str_t!(),
+	cat_id: Option<str_t!()>,
 ) -> AppRes<Vec<ListContentItem>>
 {
+	let app_id = str_get!(app_id);
+	let group_id = str_get!(group_id);
+
+	//own the token in sqlite
+	#[cfg(feature = "sqlite")]
+	let cat_id = match cat_id {
+		Some(t) => Some(str_get!(t)),
+		None => None,
+	};
+
 	//access over the group routes
 
 	//language=SQL
@@ -184,11 +203,11 @@ WHERE
 		if let Some(c_id) = cat_id {
 			set_params!(
 				//children params
-				group_id.clone(),
-				app_id.clone(),
-				app_id.clone(),
+				str_clone!(group_id),
+				str_clone!(app_id),
+				str_clone!(app_id),
 				//group as member params
-				group_id.clone(),
+				str_clone!(group_id),
 				//query params
 				app_id,
 				group_id,
@@ -197,16 +216,16 @@ WHERE
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
-				last_id
+				str_get!(last_id)
 			)
 		} else {
 			set_params!(
 				//children params
-				group_id.clone(),
-				app_id.clone(),
-				app_id.clone(),
+				str_clone!(group_id),
+				str_clone!(app_id),
+				str_clone!(app_id),
 				//group as member params
-				group_id.clone(),
+				str_clone!(group_id),
 				//query params
 				app_id,
 				group_id,
@@ -214,7 +233,7 @@ WHERE
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
-				last_id
+				str_get!(last_id)
 			)
 		}
 	} else {
@@ -223,11 +242,11 @@ WHERE
 		if let Some(c_id) = cat_id {
 			set_params!(
 				//children params
-				group_id.clone(),
-				app_id.clone(),
-				app_id.clone(),
+				str_clone!(group_id),
+				str_clone!(app_id),
+				str_clone!(app_id),
 				//group as member params
-				group_id.clone(),
+				str_clone!(group_id),
 				//query params
 				app_id,
 				group_id,
@@ -236,11 +255,11 @@ WHERE
 		} else {
 			set_params!(
 				//children params
-				group_id.clone(),
-				app_id.clone(),
-				app_id.clone(),
+				str_clone!(group_id),
+				str_clone!(app_id),
+				str_clone!(app_id),
 				//group as member params
-				group_id.clone(),
+				str_clone!(group_id),
 				//query params
 				app_id,
 				group_id
@@ -254,11 +273,11 @@ WHERE
 }
 
 pub(super) async fn get_content_to_user(
-	app_id: AppId,
-	user_id: UserId,
+	app_id: str_t!(),
+	user_id: str_t!(),
 	last_fetched_time: u128,
-	last_id: ContentId,
-	cat_id: Option<CategoryId>,
+	last_id: str_t!(),
+	cat_id: Option<str_t!()>,
 ) -> AppRes<Vec<ListContentItem>>
 {
 	//get content which directly belongs to the actual user
@@ -273,35 +292,42 @@ WHERE belongs_to_user = ? AND app_id = ?"
 		sql += " AND category = ?";
 	}
 
+	//own the token in sqlite
+	#[cfg(feature = "sqlite")]
+	let cat_id = match cat_id {
+		Some(t) => Some(str_get!(t)),
+		None => None,
+	};
+
 	let params = if last_fetched_time > 0 {
 		sql += " AND time <= ? AND (time < ? OR (time = ? AND c.id > ?)) ORDER BY time DESC, c.id LIMIT 100";
 		if let Some(c_id) = cat_id {
 			set_params!(
-				user_id,
-				app_id,
+				str_get!(user_id),
+				str_get!(app_id),
 				c_id,
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
-				last_id
+				str_get!(last_id)
 			)
 		} else {
 			set_params!(
-				user_id,
-				app_id,
+				str_get!(user_id),
+				str_get!(app_id),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
-				last_id
+				str_get!(last_id)
 			)
 		}
 	} else {
 		sql += " ORDER BY time DESC, c.id LIMIT 100";
 
 		if let Some(c_id) = cat_id {
-			set_params!(user_id, app_id, c_id)
+			set_params!(str_get!(user_id), str_get!(app_id), c_id)
 		} else {
-			set_params!(user_id, app_id)
+			set_params!(str_get!(user_id), str_get!(app_id))
 		}
 	};
 
@@ -310,7 +336,7 @@ WHERE belongs_to_user = ? AND app_id = ?"
 	Ok(list)
 }
 
-pub(super) async fn check_access_to_content_by_item(app_id: AppId, user_id: UserId, item: String) -> AppRes<ContentItemAccess>
+pub(super) async fn check_access_to_content_by_item(app_id: str_t!(), user_id: str_t!(), item: str_t!()) -> AppRes<ContentItemAccess>
 {
 	/*
 	   Do not return from which group (direct or children) the user got access or from belongs to user / is creator.
@@ -356,17 +382,20 @@ WHERE app_id = ? AND
 LIMIT 1
 ";
 
+	let app_id = str_get!(app_id);
+	let user_id = str_get!(user_id);
+
 	let out: Option<ContentItemAccess> = query_first(
 		sql,
 		set_params!(
 			//group params
-			user_id.clone(),
-			app_id.clone(),
-			app_id.clone(),
+			str_clone!(user_id),
+			str_clone!(app_id),
+			str_clone!(app_id),
 			//query params
 			app_id,
-			item,
-			user_id.clone(),
+			str_get!(item),
+			str_clone!(user_id),
 			user_id
 		),
 	)

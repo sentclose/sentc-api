@@ -1,12 +1,11 @@
 use base64::encode;
 use captcha::{gen, Difficulty};
-use sentc_crypto_common::AppId;
 use server_core::get_time;
 
 use crate::user::user_model;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
-pub async fn captcha(app_id: AppId) -> AppRes<(String, String)>
+pub async fn captcha(app_id: &str) -> AppRes<(String, String)>
 {
 	let (solution, png) = create_captcha()?;
 	let id = user_model::save_captcha_solution(app_id, solution).await?;
@@ -14,9 +13,9 @@ pub async fn captcha(app_id: AppId) -> AppRes<(String, String)>
 	Ok((id, png))
 }
 
-pub async fn validate_captcha(app_id: AppId, captcha_id: String, solution: String) -> AppRes<()>
+pub async fn validate_captcha(app_id: &str, captcha_id: String, solution: String) -> AppRes<()>
 {
-	let captcha = match user_model::get_captcha_solution(captcha_id.clone(), app_id.clone()).await? {
+	let captcha = match user_model::get_captcha_solution(&captcha_id, app_id).await? {
 		Some(c) => c,
 		None => {
 			return Err(HttpErr::new(
