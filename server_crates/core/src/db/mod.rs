@@ -311,3 +311,19 @@ macro_rules! str_clone {
 		$var.clone()
 	};
 }
+
+#[cfg(feature = "mysql")]
+#[macro_export]
+macro_rules! str_owned {
+	($var:expr) => {
+		&$var
+	};
+}
+
+#[cfg(feature = "sqlite")]
+#[macro_export]
+macro_rules! str_owned {
+	($var:expr) => {
+		$var
+	};
+}
