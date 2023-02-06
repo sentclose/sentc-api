@@ -1,5 +1,5 @@
 use server_core::db::{query_first, query_string};
-use server_core::{set_params, str_clone, str_get, str_t};
+use server_core::{set_params, str_clone, str_get, str_t, u128_get};
 
 use crate::content_management::content_entity::{ContentItemAccess, ListContentItem};
 use crate::util::api_res::AppRes;
@@ -82,9 +82,9 @@ WHERE
 				user_id,
 				c_id,
 				//time params
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_id)
 			)
 		} else {
@@ -98,9 +98,9 @@ WHERE
 				str_clone!(user_id),
 				user_id,
 				//time params
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_id)
 			)
 		}
@@ -213,9 +213,9 @@ WHERE
 				group_id,
 				c_id,
 				//time params
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_id)
 			)
 		} else {
@@ -230,9 +230,9 @@ WHERE
 				app_id,
 				group_id,
 				//time params
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_id)
 			)
 		}
@@ -306,18 +306,18 @@ WHERE belongs_to_user = ? AND app_id = ?"
 				str_get!(user_id),
 				str_get!(app_id),
 				c_id,
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_id)
 			)
 		} else {
 			set_params!(
 				str_get!(user_id),
 				str_get!(app_id),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_id)
 			)
 		}
