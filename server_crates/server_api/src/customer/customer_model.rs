@@ -1,6 +1,6 @@
 use server_api_common::customer::{CustomerData, CustomerUpdateInput};
 use server_core::db::{exec, query_first, I32Entity};
-use server_core::{get_time, set_params, str_get, str_t};
+use server_core::{get_time, set_params, str_get, str_t, u128_get};
 
 #[cfg(feature = "send_mail")]
 use crate::customer::customer_entities::RegisterEmailStatus;
@@ -57,7 +57,7 @@ pub(super) async fn register_customer(email: str_t!(), data: CustomerData, custo
 			data.name,
 			data.first_name,
 			data.company,
-			time.to_string(),
+			u128_get!(time),
 			email_validate,
 			email_status,
 			str_get!(validate_token)
@@ -229,7 +229,7 @@ WHERE id = ?";
 		sql,
 		set_params!(
 			data.new_email,
-			time.to_string(),
+			u128_get!(time),
 			email_validate,
 			email_status,
 			validate_token,
