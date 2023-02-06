@@ -40,7 +40,7 @@ INSERT INTO sentc_group_keys
 	let params = set_params!(
 		str_clone!(&key_id),
 		str_clone!(group_id),
-		app_id,
+		str_get!(app_id),
 		input.keypair_encrypt_alg,
 		input.encrypted_private_group_key,
 		input.public_group_key,
