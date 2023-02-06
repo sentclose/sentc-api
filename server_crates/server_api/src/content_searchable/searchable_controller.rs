@@ -14,16 +14,16 @@ use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
 
 pub(crate) async fn create(mut req: Request) -> JRes<ServerSuccessOutput>
 {
+	let body = get_raw_body(&mut req).await?;
+
 	let app = get_app_data_from_req(&req)?;
 
 	check_endpoint_with_app_options(app, Endpoint::ForceServer)?;
 
-	let app_id = app.app_data.app_id.clone();
+	let app_id = &app.app_data.app_id;
 
 	let group_data = get_group_user_data_from_req(&req)?;
-	let group_id = Some(group_data.group_data.id.clone());
-
-	let body = get_raw_body(&mut req).await?;
+	let group_id = Some(group_data.group_data.id.as_str());
 
 	let input: SearchCreateData = bytes_to_json(&body)?;
 
@@ -40,7 +40,7 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 
 	let item = get_name_param_from_req(&req, "item_ref")?;
 
-	searchable_service::delete_item(app.app_data.app_id.clone(), item.to_string()).await?;
+	searchable_service::delete_item(&app.app_data.app_id, item).await?;
 
 	echo_success()
 }
@@ -54,7 +54,7 @@ pub(crate) async fn delete_by_cat(req: Request) -> JRes<ServerSuccessOutput>
 	let item = get_name_param_from_req(&req, "item_ref")?;
 	let cat_id = get_name_param_from_req(&req, "cat_id")?;
 
-	searchable_service::delete_item_by_cat(app.app_data.app_id.clone(), item.to_string(), cat_id.to_string()).await?;
+	searchable_service::delete_item_by_cat(&app.app_data.app_id, item, cat_id).await?;
 
 	echo_success()
 }
@@ -104,15 +104,15 @@ async fn search(req: Request, cat: bool) -> JRes<Vec<ListSearchItem>>
 
 	let cat_id = match cat {
 		false => None,
-		true => Some(get_name_param_from_params(params, "cat_id")?.to_string()),
+		true => Some(get_name_param_from_params(params, "cat_id")?),
 	};
 
 	let list = searchable_service::search_item_for_group(
-		app.app_data.app_id.clone(),
-		group_data.group_data.id.clone(),
-		search_hash.to_string(),
+		&app.app_data.app_id,
+		&group_data.group_data.id,
+		search_hash,
 		last_fetched_time,
-		last_id.to_string(),
+		last_id,
 		50,
 		cat_id,
 	)

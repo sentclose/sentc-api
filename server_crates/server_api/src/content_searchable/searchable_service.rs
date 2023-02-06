@@ -1,11 +1,10 @@
 use sentc_crypto_common::content_searchable::SearchCreateData;
-use sentc_crypto_common::{AppId, CategoryId, ContentId, GroupId, UserId};
 
 use crate::content_searchable::searchable_entities::ListSearchItem;
 use crate::content_searchable::searchable_model;
 use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
-pub async fn create_searchable_content(app_id: AppId, data: SearchCreateData, group_id: Option<GroupId>, user_id: Option<UserId>) -> AppRes<()>
+pub async fn create_searchable_content(app_id: &str, data: SearchCreateData, group_id: Option<&str>, user_id: Option<&str>) -> AppRes<()>
 {
 	if data.item_ref.is_empty() {
 		return Err(HttpErr::new(
@@ -46,7 +45,7 @@ pub async fn create_searchable_content(app_id: AppId, data: SearchCreateData, gr
 	searchable_model::create(app_id, data, group_id, user_id).await
 }
 
-pub async fn delete_item(app_id: AppId, item_ref: String) -> AppRes<()>
+pub async fn delete_item(app_id: &str, item_ref: &str) -> AppRes<()>
 {
 	if item_ref.is_empty() {
 		return Err(HttpErr::new(
@@ -69,7 +68,7 @@ pub async fn delete_item(app_id: AppId, item_ref: String) -> AppRes<()>
 	searchable_model::delete(app_id, item_ref).await
 }
 
-pub async fn delete_item_by_cat(app_id: AppId, item_ref: String, cat: String) -> AppRes<()>
+pub async fn delete_item_by_cat(app_id: &str, item_ref: &str, cat: &str) -> AppRes<()>
 {
 	if item_ref.is_empty() {
 		return Err(HttpErr::new(
@@ -93,13 +92,13 @@ pub async fn delete_item_by_cat(app_id: AppId, item_ref: String, cat: String) ->
 }
 
 pub async fn search_item_for_group(
-	app_id: AppId,
-	group_id: GroupId,
-	search_hash: String,
+	app_id: &str,
+	group_id: &str,
+	search_hash: &str,
 	last_fetched_time: u128,
-	last_id: ContentId,
+	last_id: &str,
 	limit: u32,
-	cat_id: Option<CategoryId>,
+	cat_id: Option<&str>,
 ) -> AppRes<Vec<ListSearchItem>>
 {
 	if search_hash.is_empty() {
