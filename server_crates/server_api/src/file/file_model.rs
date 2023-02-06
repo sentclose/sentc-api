@@ -1,6 +1,6 @@
 use sentc_crypto_common::{AppId, FileId, SymKeyId};
 use server_core::db::{exec, exec_string, exec_transaction, get_in, query_first, query_string, TransactionData, TupleEntity};
-use server_core::{get_time, set_params, set_params_vec, set_params_vec_outer, str_clone, str_get, str_t};
+use server_core::{get_time, set_params, set_params_vec, set_params_vec_outer, str_clone, str_get, str_t, u128_get};
 use uuid::Uuid;
 
 use crate::file::file_entities::{FileExternalStorageUrl, FileMetaData, FilePartListItem, FilePartListItemDelete, FileSessionCheck};
@@ -46,9 +46,9 @@ pub(super) async fn register_file(
 		belongs_to_type,
 		str_clone!(app_id),
 		key_id,
-		time.to_string(),
-		FILE_STATUS_AVAILABLE.to_string(),
-		0.to_string(),
+		u128_get!(time),
+		FILE_STATUS_AVAILABLE,
+		u128_get!(0),
 		file_name,
 		master_key_id
 	);
@@ -59,7 +59,7 @@ pub(super) async fn register_file(
 		session_id.to_string(),
 		file_id.to_string(),
 		app_id,
-		time.to_string(),
+		u128_get!(time),
 		0,
 		MAX_CHUNK_SIZE.to_string()
 	);
@@ -155,7 +155,7 @@ pub(super) async fn save_part(
 			part_id,
 			file_id.clone(),
 			str_clone!(app_id),
-			size.to_string(),
+			u128_get!(size),
 			sequence,
 			extern_storage
 		),
@@ -288,7 +288,7 @@ pub(super) async fn delete_file(app_id: str_t!(), file_id: str_t!()) -> AppRes<(
 		sql,
 		set_params!(
 			FILE_STATUS_TO_DELETE,
-			time.to_string(),
+			u128_get!(time),
 			str_get!(file_id),
 			str_get!(app_id)
 		),
@@ -319,7 +319,7 @@ WHERE
 
 	exec(
 		sql,
-		set_params!(FILE_STATUS_TO_DELETE, time.to_string(), str_get!(customer_id)),
+		set_params!(FILE_STATUS_TO_DELETE, u128_get!(time), str_get!(customer_id)),
 	)
 	.await?;
 
@@ -335,7 +335,7 @@ pub(super) async fn delete_files_for_app(app_id: str_t!()) -> AppRes<()>
 
 	exec(
 		sql,
-		set_params!(FILE_STATUS_TO_DELETE, time.to_string(), str_get!(app_id)),
+		set_params!(FILE_STATUS_TO_DELETE, u128_get!(time), str_get!(app_id)),
 	)
 	.await?;
 
@@ -363,7 +363,7 @@ WHERE
 		sql,
 		set_params!(
 			FILE_STATUS_TO_DELETE,
-			time.to_string(),
+			u128_get!(time),
 			str_clone!(app_id),
 			FILE_BELONGS_TO_TYPE_GROUP,
 			str_get!(group_id),
@@ -433,11 +433,11 @@ WHERE
 	let (sql, params) = match last_part_id {
 		None => {
 			let sql = sql + " ORDER BY fp.id LIMIT 500";
-			(sql, set_params!(FILE_STATUS_TO_DELETE, start_time.to_string()))
+			(sql, set_params!(FILE_STATUS_TO_DELETE, u128_get!(start_time)))
 		},
 		Some(last) => {
 			let sql = sql + " AND fp.id > ? ORDER BY fp.id LIMIT 500";
-			(sql, set_params!(FILE_STATUS_TO_DELETE, start_time.to_string(), last))
+			(sql, set_params!(FILE_STATUS_TO_DELETE, u128_get!(start_time), last))
 		},
 	};
 
@@ -451,7 +451,7 @@ pub(super) async fn delete_file_complete(start_time: u128) -> AppRes<()>
 	//language=SQL
 	let sql = "DELETE FROM sentc_file WHERE delete_at < ? AND status = ?";
 
-	exec(sql, set_params!(start_time.to_string(), FILE_STATUS_TO_DELETE)).await?;
+	exec(sql, set_params!(u128_get!(start_time), FILE_STATUS_TO_DELETE)).await?;
 
 	Ok(())
 }

@@ -2,7 +2,7 @@ use sentc_crypto_common::{AppId, JwtKeyId};
 use server_api_common::app::{AppFileOptionsInput, AppJwtData, AppOptions, AppRegisterInput};
 use server_api_common::customer::CustomerAppList;
 use server_core::db::{exec, exec_transaction, query, query_first, query_string, I64Entity, Params, TransactionData};
-use server_core::{get_time, set_params, str_clone, str_get, str_t};
+use server_core::{get_time, set_params, str_clone, str_get, str_t, u128_get};
 use uuid::Uuid;
 
 use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppJwt, AuthWithToken};
@@ -213,9 +213,9 @@ pub(super) async fn get_all_apps(customer_id: str_t!(), last_fetched_time: u128,
 			sql,
 			set_params!(
 				str_get!(customer_id),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_app_id)
 			),
 		)
@@ -276,10 +276,10 @@ pub(super) async fn create_app(
 	input: AppRegisterInput,
 	hashed_secret_token: String,
 	hashed_public_token: String,
-	alg: &str,
-	first_jwt_sign_key: &str,
-	first_jwt_verify_key: &str,
-	first_jwt_alg: &str,
+	alg: str_t!(),
+	first_jwt_sign_key: str_t!(),
+	first_jwt_verify_key: str_t!(),
+	first_jwt_alg: str_t!(),
 ) -> AppRes<(AppId, JwtKeyId)>
 {
 	let app_id = Uuid::new_v4().to_string();
@@ -307,10 +307,10 @@ VALUES (?,?,?,?,?,?,?)";
 		str_clone!(&app_id),
 		str_get!(customer_id),
 		identifier,
-		hashed_secret_token.to_string(),
-		hashed_public_token.to_string(),
-		alg.to_string(),
-		time.to_string()
+		hashed_secret_token,
+		hashed_public_token,
+		str_get!(alg),
+		u128_get!(time)
 	);
 
 	let jwt_key_id = Uuid::new_v4().to_string();
@@ -318,12 +318,12 @@ VALUES (?,?,?,?,?,?,?)";
 	//language=SQL
 	let sql_jwt = "INSERT INTO sentc_app_jwt_keys (id, app_id, sign_key, verify_key, alg, time) VALUES (?,?,?,?,?,?)";
 	let params_jwt = set_params!(
-		jwt_key_id.to_string(),
+		str_clone!(&jwt_key_id),
 		str_clone!(&app_id),
-		first_jwt_sign_key.to_string(),
-		first_jwt_verify_key.to_string(),
-		first_jwt_alg.to_string(),
-		time.to_string()
+		str_get!(first_jwt_sign_key),
+		str_get!(first_jwt_verify_key),
+		str_get!(first_jwt_alg),
+		u128_get!(time)
 	);
 
 	let (sql_options, params_options) = prepare_options_insert(str_clone!(&app_id), input.options);
@@ -412,7 +412,7 @@ pub(super) async fn add_jwt_keys(
 			str_get!(new_jwt_sign_key),
 			str_get!(new_jwt_verify_key),
 			str_get!(new_jwt_alg),
-			time.to_string()
+			u128_get!(time)
 		),
 	)
 	.await?;

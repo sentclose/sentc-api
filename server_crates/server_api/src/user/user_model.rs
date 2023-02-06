@@ -2,7 +2,7 @@ use sentc_crypto::sdk_common::GroupId;
 use sentc_crypto_common::user::{ChangePasswordData, KeyDerivedData, MasterKey, ResetPasswordData, UserDeviceRegisterInput};
 use sentc_crypto_common::{AppId, DeviceId, UserId};
 use server_core::db::{exec, exec_transaction, query_first, query_string, I64Entity, Params, StringEntity, TransactionData};
-use server_core::{get_time, set_params, str_clone, str_get, str_t};
+use server_core::{get_time, set_params, str_clone, str_get, str_t, u128_get};
 use uuid::Uuid;
 
 use crate::user::user_entities::{
@@ -159,7 +159,7 @@ pub(super) async fn insert_refresh_token(app_id: str_t!(), device_id: str_t!(), 
 			str_get!(device_id),
 			str_get!(refresh_token),
 			str_get!(app_id),
-			time.to_string()
+			u128_get!(time)
 		),
 	)
 	.await?;
@@ -344,7 +344,7 @@ pub(super) async fn register(app_id: str_t!(), register_data: UserDeviceRegister
 		str_clone!(&user_id),
 		str_clone!(app_id),
 		"none".to_string(),
-		time.to_string()
+		u128_get!(time)
 	);
 
 	let master_key_info = register_data.master_key;
@@ -638,9 +638,9 @@ WHERE
 			set_params!(
 				str_get!(app_id),
 				str_get!(user_id),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_fetched_id)
 			),
 		)
@@ -690,7 +690,7 @@ pub(super) async fn save_user_action(app_id: str_t!(), user_id: str_t!(), action
 
 	exec(
 		sql,
-		set_params!(str_get!(user_id), time.to_string(), action, str_get!(app_id), amount),
+		set_params!(str_get!(user_id), u128_get!(time), action, str_get!(app_id), amount),
 	)
 	.await?;
 
@@ -709,7 +709,7 @@ pub(super) async fn save_captcha_solution(app_id: str_t!(), solution: String) ->
 
 	exec(
 		sql,
-		set_params!(str_clone!(&captcha_id), str_get!(app_id), solution, time.to_string()),
+		set_params!(str_clone!(&captcha_id), str_get!(app_id), solution, u128_get!(time)),
 	)
 	.await?;
 
@@ -799,7 +799,7 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 		master_key_info.master_key_alg,
 		master_key_info.encrypted_master_key_alg,
 		derived_data.hashed_authentication_key,
-		time.to_string(),
+		u128_get!(time),
 		token
 	);
 

@@ -1,7 +1,7 @@
 use sentc_crypto_common::content::CreateData;
 use sentc_crypto_common::ContentId;
 use server_core::db::exec;
-use server_core::{get_time, set_params, str_clone, str_get, str_t};
+use server_core::{get_time, set_params, str_clone, str_get, str_t, u128_get};
 use uuid::Uuid;
 
 use crate::util::api_res::AppRes;
@@ -39,7 +39,7 @@ pub(super) async fn create_content(
 			str_clone!(&content_id),
 			str_get!(app_id),
 			data.item,
-			time.to_string(),
+			u128_get!(time),
 			group_id,
 			user_id,
 			str_get!(creator_id),

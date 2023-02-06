@@ -327,3 +327,22 @@ macro_rules! str_owned {
 		$var
 	};
 }
+
+//__________________________________________________________________________________________________
+//u128 handling for sqlite. mysql is ok
+
+#[cfg(feature = "mysql")]
+#[macro_export]
+macro_rules! u128_get {
+	($var:expr) => {
+		$var
+	};
+}
+
+#[cfg(feature = "sqlite")]
+#[macro_export]
+macro_rules! u128_get {
+	($var:expr) => {
+		$var.to_string()
+	};
+}

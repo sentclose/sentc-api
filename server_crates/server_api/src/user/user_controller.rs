@@ -389,9 +389,9 @@ pub(crate) async fn user_group_key_rotation(mut req: Request) -> JRes<KeyRotatio
 	let input: KeyRotationData = bytes_to_json(&body)?;
 
 	let out = group_key_rotation_service::start_key_rotation(
-		app_data.app_data.app_id.clone(),
-		user.group_id.clone(),
-		user.device_id.clone(),
+		&app_data.app_data.app_id,
+		&user.group_id,
+		&user.device_id,
 		input,
 		Some(user.id.clone()),
 	)
@@ -407,12 +407,7 @@ pub(crate) async fn get_user_group_keys_for_update(req: Request) -> JRes<Vec<Gro
 
 	check_endpoint_with_app_options(app_data, Endpoint::UserKeyRotation)?;
 
-	let update = group_key_rotation_service::get_keys_for_update(
-		app_data.app_data.app_id.clone(),
-		user.group_id.clone(),
-		user.device_id.clone(),
-	)
-	.await?;
+	let update = group_key_rotation_service::get_keys_for_update(&app_data.app_data.app_id, &user.group_id, &user.device_id).await?;
 
 	echo(update)
 }
@@ -430,13 +425,7 @@ pub(crate) async fn done_key_rotation_for_device(mut req: Request) -> JRes<Serve
 
 	let input: DoneKeyRotationData = bytes_to_json(&body)?;
 
-	group_key_rotation_service::done_key_rotation_for_user(
-		user.group_id.clone(),
-		user.device_id.clone(),
-		key_id.to_string(),
-		input,
-	)
-	.await?;
+	group_key_rotation_service::done_key_rotation_for_user(&user.group_id, &user.device_id, key_id, input).await?;
 
 	echo_success()
 }

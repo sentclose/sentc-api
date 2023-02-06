@@ -21,9 +21,9 @@ pub async fn start_key_rotation(mut req: Request) -> JRes<KeyRotationStartServer
 	let input: KeyRotationData = bytes_to_json(&body)?;
 
 	let out = group_key_rotation_service::start_key_rotation(
-		group_data.group_data.app_id.clone(),
-		group_data.group_data.id.clone(),
-		group_data.user_data.user_id.clone(),
+		&group_data.group_data.app_id,
+		&group_data.group_data.id,
+		&group_data.user_data.user_id,
 		input,
 		None,
 	)
@@ -39,9 +39,9 @@ pub async fn get_keys_for_update(req: Request) -> JRes<Vec<GroupKeyUpdate>>
 	let group_data = get_group_user_data_from_req(&req)?;
 
 	let update = group_key_rotation_service::get_keys_for_update(
-		group_data.group_data.app_id.clone(),
-		group_data.group_data.id.clone(),
-		group_data.user_data.user_id.clone(),
+		&group_data.group_data.app_id,
+		&group_data.group_data.id,
+		&group_data.user_data.user_id,
 	)
 	.await?;
 
@@ -61,9 +61,9 @@ pub async fn done_key_rotation_for_user(mut req: Request) -> JRes<ServerSuccessO
 	let input: DoneKeyRotationData = bytes_to_json(&body)?;
 
 	group_key_rotation_service::done_key_rotation_for_user(
-		group_data.group_data.id.clone(),
-		group_data.user_data.user_id.clone(),
-		key_id.to_string(),
+		&group_data.group_data.id,
+		&group_data.user_data.user_id,
+		key_id,
 		input,
 	)
 	.await?;
