@@ -102,13 +102,13 @@ pub async fn register(app_id: &str, register_input: RegisterData) -> AppRes<Regi
 
 	//create user group, insert the device not the suer id because the devices are in the group not the user!
 	let group_id = group_service::create_group(
-		app_id.to_string(),
-		device_id.to_string(),
+		app_id,
+		&device_id,
 		group_data,
 		GROUP_TYPE_USER,
+		None::<&str>,
 		None,
-		None,
-		None,
+		None::<&str>,
 		false,
 	)
 	.await?

@@ -12,16 +12,16 @@ use crate::sentc_user_entities::UserPublicKeyDataEntity;
 use crate::util::api_res::AppRes;
 use crate::util::get_group_cache_key;
 
-pub fn create_group(
-	app_id: AppId,
-	user_id: UserId,
+pub fn create_group<'a>(
+	app_id: str_t!('a),
+	user_id: str_t!('a),
 	input: CreateData,
 	group_type: i32,
-	parent_group_id: Option<GroupId>,
+	parent_group_id: Option<str_t!('a)>,
 	user_rank: Option<i32>,
-	connected_group: Option<GroupId>,
+	connected_group: Option<str_t!('a)>,
 	is_connected_group: bool,
-) -> impl Future<Output = AppRes<(GroupId, SymKeyId)>>
+) -> impl Future<Output = AppRes<(GroupId, SymKeyId)>> + 'a
 {
 	group_model::create(
 		app_id,

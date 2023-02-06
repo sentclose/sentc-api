@@ -1,7 +1,7 @@
 use sentc_crypto_common::group::CreateData;
 use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
 use server_core::db::{exec, exec_string, exec_transaction, get_in, query, query_first, query_string, I32Entity, StringEntity, TransactionData};
-use server_core::{get_time, set_params, set_params_vec, str_get, str_t};
+use server_core::{get_time, set_params, set_params_vec, str_clone, str_get, str_t};
 use uuid::Uuid;
 
 use crate::group::group_entities::{
@@ -258,34 +258,40 @@ LIMIT 1";
 }
 
 pub(super) async fn create(
-	app_id: AppId,
-	user_id: UserId,
+	app_id: str_t!(),
+	user_id: str_t!(),
 	data: CreateData,
-	parent_group_id: Option<GroupId>,
+	parent_group_id: Option<str_t!()>,
 	user_rank: Option<i32>,
 	group_type: i32,
-	connected_group: Option<GroupId>,
+	connected_group: Option<str_t!()>,
 	is_connected_group: bool,
 ) -> AppRes<(GroupId, SymKeyId)>
 {
-	let (insert_user_id, user_type, group_connected) = match (&parent_group_id, user_rank, connected_group) {
+	let app_id = str_get!(app_id);
+
+	let (insert_user_id, user_type, group_connected, parent_group_id) = match (parent_group_id, user_rank, connected_group) {
 		(Some(p), Some(r), None) => {
 			//test here if the user has access to create a child group in this group
 			check_group_rank(r, 1)?;
 
 			//when it is a parent group -> use this id as user id for the group user insert
 			//when the parent group is a connected group, so the children are too
-			(p.to_string(), 1, is_connected_group)
+
+			//own the string first for sqlite. this is why we need parent group again.
+			let p = str_get!(p);
+
+			(str_clone!(p), 1, is_connected_group, Some(p))
 		},
 		(None, Some(r), Some(c)) => {
 			check_group_rank(r, 1)?;
 
 			// user type is group as member
-			(c, 2, true)
+			(str_get!(c), 2, true, None)
 		},
 		//when parent group is some then user rank must be some too,
 		// because this is set by the controller and not the user.
-		_ => (user_id, 0, false),
+		_ => (str_get!(user_id), 0, false, None),
 	};
 
 	let group_id = Uuid::new_v4().to_string();
@@ -307,8 +313,8 @@ INSERT INTO sentc_group
      ) VALUES (?,?,?,?,?,?,?,?)";
 
 	let group_params = set_params!(
-		group_id.to_string(),
-		app_id.to_string(),
+		str_clone!(&group_id),
+		str_clone!(app_id),
 		parent_group_id,
 		"".to_string(),
 		time.to_string(),
@@ -345,9 +351,9 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 	let previous_group_key_id: Option<String> = None;
 
 	let group_data_params = set_params!(
-		group_key_id.to_string(),
-		group_id.to_string(),
-		app_id.to_string(),
+		str_clone!(&group_key_id),
+		str_clone!(&group_id),
+		str_clone!(app_id),
 		data.keypair_encrypt_alg,
 		data.encrypted_private_group_key,
 		data.public_group_key,
@@ -379,11 +385,11 @@ VALUES (?,?,?,?,?,?,?)";
 
 	let group_hmac_params = set_params!(
 		group_hmac_key_id,
-		group_id.to_string(),
-		app_id.to_string(),
+		str_clone!(&group_id),
+		app_id,
 		data.encrypted_hmac_key,
 		data.encrypted_hmac_alg,
-		group_key_id.clone(),
+		str_clone!(&group_key_id),
 		time.to_string(),
 	);
 
@@ -393,8 +399,8 @@ VALUES (?,?,?,?,?,?,?)";
 	//language=SQL
 	let sql_group_user = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
 	let group_user_params = set_params!(
-		insert_user_id.to_string(),
-		group_id.to_string(),
+		str_clone!(insert_user_id),
+		str_clone!(&group_id),
 		time.to_string(),
 		0,
 		user_type
@@ -415,9 +421,9 @@ INSERT INTO sentc_group_user_keys
 VALUES (?,?,?,?,?,?,?)";
 
 	let group_user_keys_params = set_params!(
-		group_key_id.clone(),
+		str_clone!(&group_key_id),
 		insert_user_id,
-		group_id.to_string(),
+		str_clone!(&group_id),
 		data.encrypted_group_key,
 		data.encrypted_group_key_alg,
 		data.creator_public_key_id,
