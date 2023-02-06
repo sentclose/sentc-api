@@ -1,7 +1,7 @@
 use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerInput;
 use sentc_crypto_common::SymKeyId;
 use server_core::db::{exec, query_first, query_string};
-use server_core::{get_time, set_params, str_clone, str_get, str_t};
+use server_core::{get_time, set_params, str_clone, str_get, str_t, u128_get};
 use uuid::Uuid;
 
 use crate::key_management::key_entity::SymKeyEntity;
@@ -35,7 +35,7 @@ VALUES (?,?,?,?,?,?,?)";
 			str_get!(creator_id),
 			input.encrypted_key_string,
 			input.alg,
-			time.to_string()
+			u128_get!(time)
 		),
 	)
 	.await?;
@@ -96,9 +96,9 @@ pub(super) async fn get_all_sym_keys_to_master_key(
 			set_params!(
 				str_get!(app_id),
 				str_get!(master_key_id),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
-				last_fetched_time.to_string(),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
+				u128_get!(last_fetched_time),
 				str_get!(last_id)
 			),
 		)
