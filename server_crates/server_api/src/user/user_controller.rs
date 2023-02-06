@@ -255,7 +255,7 @@ pub(crate) async fn init_user(mut req: Request) -> JRes<UserInitEntity>
 	//this can be an expired jwt, but the app id must be valid
 	let user = get_jwt_data_from_param(&req)?;
 
-	let out = user_service::init_user(app_data, user.device_id.clone(), input).await?;
+	let out = user_service::init_user(app_data, &user.device_id, input).await?;
 
 	user_model::save_user_action(&app_data.app_data.app_id, &user.id, UserAction::Init, 1).await?;
 
@@ -275,7 +275,7 @@ pub(crate) async fn refresh_jwt(mut req: Request) -> JRes<DoneLoginLightServerOu
 	//to get the old token in the client when init the user client -> save the old jwt in the client like the keys
 	let user = get_jwt_data_from_param(&req)?;
 
-	let out = user_service::refresh_jwt(app_data, user.device_id.clone(), input).await?;
+	let out = user_service::refresh_jwt(app_data, &user.device_id, input).await?;
 
 	user_model::save_user_action(&app_data.app_data.app_id, &out.user_id, UserAction::Refresh, 1).await?;
 

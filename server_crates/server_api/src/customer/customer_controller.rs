@@ -38,7 +38,7 @@ pub async fn customer_captcha(req: Request) -> JRes<CaptchaCreateOutput>
 	//in extra controller fn because we need the internal app id
 	let app_data = get_app_data_from_req(&req)?;
 
-	let (id, png) = user::captcha::captcha(app_data.app_data.app_id.clone()).await?;
+	let (id, png) = user::captcha::captcha(&app_data.app_data.app_id).await?;
 
 	echo(CaptchaCreateOutput {
 		captcha_id: id,
@@ -56,7 +56,7 @@ pub async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 
 	//check the captcha
 	user::captcha::validate_captcha(
-		app_data.app_data.app_id.clone(),
+		&app_data.app_data.app_id,
 		register_data.captcha_input.captcha_id,
 		register_data.captcha_input.captcha_solution,
 	)
@@ -75,7 +75,7 @@ pub async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 		));
 	}
 
-	let (customer_id, _) = user::user_service::register_light(app_data.app_data.app_id.to_string(), register_data.register_data).await?;
+	let (customer_id, _) = user::user_service::register_light(&app_data.app_data.app_id, register_data.register_data).await?;
 
 	//send the normal token via email
 	let validate_token = generate_email_validate_token()?;
@@ -184,7 +184,7 @@ pub(crate) async fn refresh_jwt(mut req: Request) -> JRes<DoneLoginLightServerOu
 	let app_data = get_app_data_from_req(&req)?;
 	let user = get_jwt_data_from_param(&req)?;
 
-	let out = user::user_service::refresh_jwt(app_data, user.device_id.to_string(), input).await?;
+	let out = user::user_service::refresh_jwt(app_data, &user.device_id, input).await?;
 
 	echo(out)
 }
@@ -197,7 +197,7 @@ pub async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 
 	let app_data = get_app_data_from_req(&req)?;
 
-	user::user_service::delete(user, app_data.app_data.app_id.clone()).await?;
+	user::user_service::delete(user, &app_data.app_data.app_id).await?;
 
 	//files must be deleted before customer delete. we need the apps for the customer
 	file_service::delete_file_for_customer(user.id.as_str()).await?;
@@ -235,7 +235,7 @@ pub async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 	//update in user table too
 	user::user_service::update(
 		user,
-		app_data.app_data.app_id.clone(),
+		&app_data.app_data.app_id,
 		UserUpdateServerInput {
 			user_identifier: email.to_string(),
 		},
@@ -270,7 +270,7 @@ pub async fn change_password(mut req: Request) -> JRes<ServerSuccessOutput>
 	let app_data = get_app_data_from_req(&req)?;
 
 	//the jwt can only be created at our backend
-	user::user_service::change_password(user, app_data.app_data.app_id.clone(), update_data).await?;
+	user::user_service::change_password(user, &app_data.app_data.app_id, update_data).await?;
 
 	echo_success()
 }
@@ -287,7 +287,7 @@ pub async fn prepare_reset_password(mut req: Request) -> JRes<ServerSuccessOutpu
 
 	//check the captcha
 	user::captcha::validate_captcha(
-		app_data.app_data.app_id.clone(),
+		&app_data.app_data.app_id,
 		data.captcha_input.captcha_id,
 		data.captcha_input.captcha_solution,
 	)
@@ -338,7 +338,7 @@ pub async fn done_reset_password(mut req: Request) -> JRes<ServerSuccessOutput>
 
 	let token_data = customer_model::get_email_by_token(input.token).await?;
 
-	user::user_service::reset_password(token_data.id, token_data.device_id, input.reset_password_data).await?;
+	user::user_service::reset_password(&token_data.id, &token_data.device_id, input.reset_password_data).await?;
 
 	echo_success()
 }

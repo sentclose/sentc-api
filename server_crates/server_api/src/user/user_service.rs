@@ -21,7 +21,7 @@ use sentc_crypto_common::user::{
 	UserIdentifierAvailableServerOutput,
 	UserUpdateServerInput,
 };
-use sentc_crypto_common::{AppId, DeviceId, GroupId, SymKeyId};
+use sentc_crypto_common::{AppId, GroupId, SymKeyId};
 use server_core::db::StringEntity;
 use server_core::{cache, str_t};
 
@@ -256,8 +256,8 @@ pub async fn done_login_light(app_data: &AppData, done_login: DoneLoginServerInp
 	};
 
 	let jwt = create_jwt(
-		id.user_id.to_string(),
-		id.device_id.to_string(),
+		&id.user_id,
+		&id.device_id,
 		&app_data.jwt_data[0], //use always the latest created jwt data
 		true,
 	)
@@ -307,8 +307,8 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 
 	// and create the jwt
 	let jwt = create_jwt(
-		device_keys.user_id.to_string(),
-		device_keys.device_id.to_string(),
+		&device_keys.user_id,
+		&device_keys.device_id,
 		&app_data.jwt_data[0], //use always the latest created jwt data
 		true,
 	)
@@ -405,10 +405,10 @@ pub fn get_verify_key_by_id<'a>(
 //__________________________________________________________________________________________________
 // user fn with jwt
 
-pub async fn init_user(app_data: &AppData, device_id: DeviceId, input: JwtRefreshInput) -> AppRes<UserInitEntity>
+pub async fn init_user(app_data: &AppData, device_id: &str, input: JwtRefreshInput) -> AppRes<UserInitEntity>
 {
 	//first refresh the user
-	let jwt = refresh_jwt(app_data, device_id.to_string(), input).await?;
+	let jwt = refresh_jwt(app_data, device_id, input).await?;
 
 	//2nd get all group invites
 	let invites = group_user_service::get_invite_req(
@@ -425,10 +425,10 @@ pub async fn init_user(app_data: &AppData, device_id: DeviceId, input: JwtRefres
 	})
 }
 
-pub async fn refresh_jwt(app_data: &AppData, device_id: DeviceId, input: JwtRefreshInput) -> AppRes<DoneLoginLightServerOutput>
+pub async fn refresh_jwt(app_data: &AppData, device_id: &str, input: JwtRefreshInput) -> AppRes<DoneLoginLightServerOutput>
 {
 	//get the token from the db
-	let check = user_model::check_refresh_token(&app_data.app_data.app_id, &device_id, input.refresh_token).await?;
+	let check = user_model::check_refresh_token(&app_data.app_data.app_id, device_id, input.refresh_token).await?;
 
 	let device_identifier = match check {
 		Some(u) => u,
@@ -443,8 +443,8 @@ pub async fn refresh_jwt(app_data: &AppData, device_id: DeviceId, input: JwtRefr
 	};
 
 	let jwt = create_jwt(
-		device_identifier.user_id.to_string(),
-		device_id.to_string(),
+		&device_identifier.user_id,
+		device_id,
 		&app_data.jwt_data[0], //use always the latest created jwt data
 		false,
 	)
@@ -453,7 +453,7 @@ pub async fn refresh_jwt(app_data: &AppData, device_id: DeviceId, input: JwtRefr
 	let out = DoneLoginLightServerOutput {
 		user_id: device_identifier.user_id,
 		jwt,
-		device_id,
+		device_id: device_id.to_string(),
 	};
 
 	Ok(out)

@@ -60,20 +60,20 @@ pub fn get_jwt_data_from_param(req: &Request) -> Result<&UserJwtEntity, HttpErr>
 	}
 }
 
-pub(crate) async fn create_jwt(internal_user_id: UserId, device_id: DeviceId, customer_jwt_data: &AppJwt, fresh: bool) -> Result<String, HttpErr>
+pub(crate) async fn create_jwt(internal_user_id: &str, device_id: &str, customer_jwt_data: &AppJwt, fresh: bool) -> Result<String, HttpErr>
 {
 	let iat = get_time_in_sec()?;
 	let expiration = iat + 60 * 5; //exp in 5 min
 
 	let claims = Claims {
 		iat: iat as usize,
-		aud: internal_user_id,
-		sub: device_id,
+		aud: internal_user_id.into(),
+		sub: device_id.into(),
 		exp: expiration as usize,
 		fresh,
 	};
 
-	let mut header = Header::new(Algorithm::from_str(customer_jwt_data.jwt_alg.as_str()).unwrap());
+	let mut header = Header::new(Algorithm::from_str(&customer_jwt_data.jwt_alg).unwrap());
 	header.kid = Some(customer_jwt_data.jwt_key_id.to_string());
 
 	//get it from the db (no cache for the sign key)
