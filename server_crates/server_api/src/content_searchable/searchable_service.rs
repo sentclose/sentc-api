@@ -1,4 +1,5 @@
 use sentc_crypto_common::content_searchable::SearchCreateData;
+use sentc_crypto_common::{AppId, CategoryId, ContentId, GroupId, UserId};
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::res::AppRes;
 
@@ -6,7 +7,12 @@ use crate::content_searchable::searchable_entities::ListSearchItem;
 use crate::content_searchable::searchable_model;
 use crate::util::api_res::ApiErrorCodes;
 
-pub async fn create_searchable_content(app_id: &str, data: SearchCreateData, group_id: Option<&str>, user_id: Option<&str>) -> AppRes<()>
+pub async fn create_searchable_content(
+	app_id: impl Into<AppId>,
+	data: SearchCreateData,
+	group_id: Option<GroupId>,
+	user_id: Option<UserId>,
+) -> AppRes<()>
 {
 	if data.item_ref.is_empty() {
 		return Err(SentcCoreError::new_msg(
@@ -43,8 +49,10 @@ pub async fn create_searchable_content(app_id: &str, data: SearchCreateData, gro
 	searchable_model::create(app_id, data, group_id, user_id).await
 }
 
-pub async fn delete_item(app_id: &str, item_ref: &str) -> AppRes<()>
+pub async fn delete_item(app_id: impl Into<AppId>, item_ref: impl Into<String>) -> AppRes<()>
 {
+	let item_ref = item_ref.into();
+
 	if item_ref.is_empty() {
 		return Err(SentcCoreError::new_msg(
 			400,
@@ -64,8 +72,10 @@ pub async fn delete_item(app_id: &str, item_ref: &str) -> AppRes<()>
 	searchable_model::delete(app_id, item_ref).await
 }
 
-pub async fn delete_item_by_cat(app_id: &str, item_ref: &str, cat: &str) -> AppRes<()>
+pub async fn delete_item_by_cat(app_id: impl Into<AppId>, item_ref: impl Into<String>, cat: impl Into<CategoryId>) -> AppRes<()>
 {
+	let item_ref = item_ref.into();
+
 	if item_ref.is_empty() {
 		return Err(SentcCoreError::new_msg(
 			400,
@@ -86,15 +96,17 @@ pub async fn delete_item_by_cat(app_id: &str, item_ref: &str, cat: &str) -> AppR
 }
 
 pub async fn search_item_for_group(
-	app_id: &str,
-	group_id: &str,
-	search_hash: &str,
+	app_id: impl Into<AppId>,
+	group_id: impl Into<GroupId>,
+	search_hash: impl Into<String>,
 	last_fetched_time: u128,
-	last_id: &str,
+	last_id: impl Into<ContentId>,
 	limit: u32,
-	cat_id: Option<&str>,
+	cat_id: Option<CategoryId>,
 ) -> AppRes<Vec<ListSearchItem>>
 {
+	let search_hash = search_hash.into();
+
 	if search_hash.is_empty() {
 		return Err(SentcCoreError::new_msg(
 			400,
