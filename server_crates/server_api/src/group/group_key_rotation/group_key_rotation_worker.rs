@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
-use sentc_crypto::sdk_common::AppId;
-use sentc_crypto_common::{GroupId, SymKeyId};
+use sentc_crypto_common::{AppId, GroupId, SymKeyId};
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::res::AppRes;
 

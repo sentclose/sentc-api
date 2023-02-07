@@ -1,6 +1,5 @@
-use sentc_crypto::sdk_common::GroupId;
 use sentc_crypto_common::user::{ChangePasswordData, KeyDerivedData, MasterKey, ResetPasswordData, UserDeviceRegisterInput};
-use sentc_crypto_common::{AppId, DeviceId, UserId};
+use sentc_crypto_common::{AppId, DeviceId, GroupId, UserId};
 use server_core::db::{exec, exec_transaction, query_first, query_string, I64Entity, Params, StringEntity, TransactionData};
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::res::AppRes;
