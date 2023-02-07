@@ -23,6 +23,8 @@ use sentc_crypto_common::user::{
 };
 use sentc_crypto_common::AppId;
 use server_core::db::StringEntity;
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
+use server_core::res::AppRes;
 use server_core::{cache, str_t};
 
 use crate::group::group_entities::{GroupUserKeys, InternalGroupData, InternalGroupDataComplete, InternalUserGroupData};
@@ -33,7 +35,7 @@ use crate::sentc_user_entities::{UserPublicKeyDataEntity, UserVerifyKeyDataEntit
 use crate::user::jwt::create_jwt;
 use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserJwtEntity, SERVER_RANDOM_VALUE};
 use crate::user::user_model;
-use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::util::api_res::ApiErrorCodes;
 use crate::util::get_user_in_app_key;
 
 pub enum UserAction
@@ -147,11 +149,10 @@ pub async fn prepare_register_device(app_id: &str, input: UserDeviceRegisterInpu
 
 	if check {
 		//check true == user exists
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::UserExists,
-			"Identifier already exists".to_string(),
-			None,
+			"Identifier already exists",
 		));
 	}
 
@@ -246,11 +247,10 @@ pub async fn done_login_light(app_data: &AppData, done_login: DoneLoginServerInp
 	let id = match id {
 		Some(d) => d,
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				401,
 				ApiErrorCodes::Login,
-				"Wrong username or password".to_owned(),
-				None,
+				"Wrong username or password",
 			))
 		},
 	};
@@ -296,11 +296,10 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 	let device_keys = match device_keys {
 		Some(d) => d,
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				401,
 				ApiErrorCodes::Login,
-				"Wrong username or password".to_owned(),
-				None,
+				"Wrong username or password",
 			))
 		},
 	};
@@ -427,11 +426,10 @@ pub async fn refresh_jwt(app_data: &AppData, device_id: &str, input: JwtRefreshI
 	let device_identifier = match check {
 		Some(u) => u,
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::RefreshToken,
-				"Refresh token not found".to_string(),
-				None,
+				"Refresh token not found",
 			))
 		},
 	};
@@ -457,11 +455,10 @@ pub async fn delete(user: &UserJwtEntity, app_id: &str) -> AppRes<()>
 {
 	//the user needs a jwt which was created from login and no refreshed jwt
 	if !user.fresh {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			401,
 			ApiErrorCodes::WrongJwtAction,
-			"The jwt is not valid for this action".to_string(),
-			None,
+			"The jwt is not valid for this action",
 		));
 	}
 
@@ -484,11 +481,10 @@ pub async fn delete_device(user: &UserJwtEntity, app_id: &str, device_id: &str) 
 {
 	//this can be any device don't need to be the device to delete
 	if !user.fresh {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			401,
 			ApiErrorCodes::WrongJwtAction,
-			"The jwt is not valid for this action".to_string(),
-			None,
+			"The jwt is not valid for this action",
 		));
 	}
 
@@ -538,11 +534,10 @@ pub async fn update(user: &UserJwtEntity, app_id: &str, update_input: UserUpdate
 	let exists = user_model::check_user_exists(app_id, update_input.user_identifier.as_str()).await?;
 
 	if exists {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::UserExists,
-			"User identifier already exists".to_string(),
-			None,
+			"User identifier already exists",
 		));
 	}
 
@@ -555,11 +550,10 @@ pub async fn change_password(user: &UserJwtEntity, app_id: &str, input: ChangePa
 {
 	//the user needs a jwt which was created from login and no refreshed jwt
 	if !user.fresh {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			401,
 			ApiErrorCodes::WrongJwtAction,
-			"The jwt is not valid for this action".to_string(),
-			None,
+			"The jwt is not valid for this action",
 		));
 	}
 
@@ -569,11 +563,10 @@ pub async fn change_password(user: &UserJwtEntity, app_id: &str, input: ChangePa
 	let device_identifier = match user_model::get_device_identifier(app_id, &user.id, &user.device_id).await? {
 		Some(i) => i.0,
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				401,
 				ApiErrorCodes::WrongJwtAction,
-				"No device found for this jwt".to_string(),
-				None,
+				"No device found for this jwt",
 			))
 		},
 	};
@@ -616,7 +609,7 @@ async fn create_salt(app_id: &str, user_identifier: &str) -> AppRes<PrepareLogin
 	};
 
 	let salt_string = sentc_crypto::util::server::generate_salt_from_base64_to_string(client_random_value.as_str(), alg.as_str(), add_str)
-		.map_err(|_e| HttpErr::new(401, ApiErrorCodes::SaltError, "Can't create salt".to_owned(), None))?;
+		.map_err(|_e| SentcCoreError::new_msg(401, ApiErrorCodes::SaltError, "Can't create salt"))?;
 
 	let out = PrepareLoginSaltServerOutput {
 		salt_string,
@@ -632,14 +625,8 @@ fn create_refresh_token() -> AppRes<String>
 
 	let mut token = [0u8; 50];
 
-	rng.try_fill_bytes(&mut token).map_err(|_| {
-		HttpErr::new(
-			400,
-			ApiErrorCodes::AppTokenWrongFormat,
-			"Can't create refresh token".to_string(),
-			None,
-		)
-	})?;
+	rng.try_fill_bytes(&mut token)
+		.map_err(|_| SentcCoreError::new_msg(400, ApiErrorCodes::AppTokenWrongFormat, "Can't create refresh token"))?;
 
 	let token_string = base64::encode_config(token, base64::URL_SAFE_NO_PAD);
 
@@ -654,11 +641,10 @@ async fn auth_user(app_id: &str, user_identifier: &str, auth_key: String) -> App
 	let (hashed_user_auth_key, alg) = match login_data {
 		Some(d) => (d.hashed_authentication_key, d.derived_alg),
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				401,
 				ApiErrorCodes::UserNotFound,
-				"No user found with this identifier".to_string(),
-				None,
+				"No user found with this identifier",
 			))
 		},
 	};
@@ -666,11 +652,10 @@ async fn auth_user(app_id: &str, user_identifier: &str, auth_key: String) -> App
 	//hash the auth key and use the first 16 bytes
 	let (server_hashed_auth_key, hashed_client_key) =
 		sentc_crypto::util::server::get_auth_keys_from_base64(auth_key.as_str(), hashed_user_auth_key.as_str(), alg.as_str()).map_err(|_e| {
-			HttpErr::new(
+			SentcCoreError::new_msg(
 				401,
 				ApiErrorCodes::AuthKeyFormat,
-				"The authentication key has a wrong format".to_owned(),
-				None,
+				"The authentication key has a wrong format",
 			)
 		})?;
 
@@ -679,11 +664,10 @@ async fn auth_user(app_id: &str, user_identifier: &str, auth_key: String) -> App
 
 	//if not correct -> err msg
 	if !check {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			401,
 			ApiErrorCodes::Login,
-			"Wrong username or password".to_owned(),
-			None,
+			"Wrong username or password",
 		));
 	}
 

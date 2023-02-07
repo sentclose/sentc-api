@@ -2,6 +2,8 @@ use sentc_crypto::sdk_common::GroupId;
 use sentc_crypto_common::user::{ChangePasswordData, KeyDerivedData, MasterKey, ResetPasswordData, UserDeviceRegisterInput};
 use sentc_crypto_common::{AppId, DeviceId, UserId};
 use server_core::db::{exec, exec_transaction, query_first, query_string, I64Entity, Params, StringEntity, TransactionData};
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
+use server_core::res::AppRes;
 use server_core::{get_time, set_params, str_clone, str_get, str_t, u128_get};
 use uuid::Uuid;
 
@@ -16,7 +18,7 @@ use crate::user::user_entities::{
 	UserVerifyKeyDataEntity,
 };
 use crate::user::user_service::UserAction;
-use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::util::api_res::ApiErrorCodes;
 
 pub(super) async fn get_jwt_sign_key(kid: str_t!()) -> AppRes<Option<StringEntity>>
 {
@@ -222,11 +224,10 @@ WHERE
 	match data {
 		Some(d) => Ok(d),
 		None => {
-			Err(HttpErr::new(
+			Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::UserNotFound,
-				"Public key from this user not found".to_string(),
-				None,
+				"Public key from this user not found",
 			))
 		},
 	}
@@ -255,11 +256,10 @@ LIMIT 1";
 	match data {
 		Some(d) => Ok(d),
 		None => {
-			Err(HttpErr::new(
+			Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::UserNotFound,
-				"Public key from this user not found".to_string(),
-				None,
+				"Public key from this user not found",
 			))
 		},
 	}
@@ -288,11 +288,10 @@ WHERE
 	match data {
 		Some(d) => Ok(d),
 		None => {
-			Err(HttpErr::new(
+			Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::UserNotFound,
-				"Verify key from this user not found".to_string(),
-				None,
+				"Verify key from this user not found",
 			))
 		},
 	}
@@ -325,11 +324,10 @@ pub(super) async fn register(app_id: str_t!(), register_data: UserDeviceRegister
 
 	if check {
 		//check true == user exists
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::UserExists,
-			"User already exists".to_string(),
-			None,
+			"User already exists",
 		));
 	}
 
@@ -406,11 +404,10 @@ pub(super) async fn register_device(app_id: str_t!(), input: UserDeviceRegisterI
 pub(super) async fn get_done_register_device(app_id: str_t!(), token: String) -> AppRes<DeviceId>
 {
 	if token.as_str() == "NULL" || token.as_str() == "null" {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::UserNotFound,
-			"Device was not found for this token".to_string(),
-			None,
+			"Device was not found for this token",
 		));
 	}
 
@@ -422,11 +419,10 @@ pub(super) async fn get_done_register_device(app_id: str_t!(), token: String) ->
 	let device_id: DeviceId = match out {
 		Some(id) => id.0,
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::UserNotFound,
-				"Device was not found for this token".to_string(),
-				None,
+				"Device was not found for this token",
 			))
 		},
 	};
@@ -470,20 +466,18 @@ pub(super) async fn delete_device(user_id: str_t!(), app_id: str_t!(), device_id
 	match device_count {
 		Some(c) => {
 			if c.0 < 2 {
-				return Err(HttpErr::new(
+				return Err(SentcCoreError::new_msg(
 					400,
 					ApiErrorCodes::UserDeviceDelete,
-					"Can't delete the last device. Use user delete instead.".to_string(),
-					None,
+					"Can't delete the last device. Use user delete instead.",
 				));
 			}
 		},
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::UserDeviceNotFound,
-				"No device found".to_string(),
-				None,
+				"No device found",
 			));
 		},
 	}
@@ -569,11 +563,10 @@ pub(super) async fn reset_password(user_id: str_t!(), device_id: str_t!(), data:
 	let row = match row {
 		Some(r) => r,
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::UserNotFound,
-				"No keys to update".to_string(),
-				None,
+				"No keys to update",
 			))
 		},
 	};
