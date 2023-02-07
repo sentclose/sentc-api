@@ -2,11 +2,13 @@ use std::sync::Arc;
 
 use sentc_crypto::sdk_common::AppId;
 use sentc_crypto_common::{GroupId, SymKeyId};
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
+use server_core::res::AppRes;
 
 use crate::group::group_entities::{KeyRotationWorkerKey, UserEphKeyOut, UserGroupPublicKeyData};
 use crate::group::group_key_rotation::group_key_rotation_model;
 use crate::user::user_service;
-use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::util::api_res::ApiErrorCodes;
 
 enum LoopType
 {
@@ -40,10 +42,10 @@ pub async fn start(app_id: AppId, group_id: GroupId, key_id: SymKeyId, user_grou
 		let user_keys = tokio::task::spawn_blocking(move || encrypt(&key_arc, vec![item]))
 			.await
 			.map_err(|e| {
-				HttpErr::new(
+				SentcCoreError::new_msg_and_debug(
 					400,
 					ApiErrorCodes::GroupKeyRotationThread,
-					"Error in user key rotation".to_string(),
+					"Error in user key rotation",
 					Some(format!("error in user key rotation: {}", e)),
 				)
 			})?;
@@ -114,10 +116,10 @@ async fn loop_user(
 		let user_keys = tokio::task::spawn_blocking(move || encrypt(&key_cap, users))
 			.await
 			.map_err(|e| {
-				HttpErr::new(
+				SentcCoreError::new_msg_and_debug(
 					400,
 					ApiErrorCodes::GroupKeyRotationThread,
-					"Error in user key rotation".to_string(),
+					"Error in user key rotation",
 					Some(format!("error in user key rotation: {}", e)),
 				)
 			})?;

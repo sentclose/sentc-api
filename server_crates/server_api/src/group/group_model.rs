@@ -1,6 +1,8 @@
 use sentc_crypto_common::group::CreateData;
 use sentc_crypto_common::{GroupId, SymKeyId};
 use server_core::db::{exec, exec_string, exec_transaction, get_in, query, query_first, query_string, I32Entity, StringEntity, TransactionData};
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
+use server_core::res::AppRes;
 use server_core::{get_time, set_params, set_params_vec, str_clone, str_get, str_t, u128_get};
 use uuid::Uuid;
 
@@ -15,7 +17,7 @@ use crate::group::group_entities::{
 use crate::group::{GROUP_TYPE_NORMAL, GROUP_TYPE_USER};
 use crate::sentc_group_entities::GroupHmacData;
 use crate::user::user_entities::UserPublicKeyDataEntity;
-use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::util::api_res::ApiErrorCodes;
 
 pub(crate) async fn get_internal_group_data(app_id: str_t!(), group_id: str_t!()) -> AppRes<InternalGroupData>
 {
@@ -30,11 +32,10 @@ pub(crate) async fn get_internal_group_data(app_id: str_t!(), group_id: str_t!()
 	match group {
 		Some(d) => Ok(d),
 		None => {
-			Err(HttpErr::new(
+			Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupAccess,
-				"No access to this group".to_string(),
-				None,
+				"No access to this group",
 			))
 		},
 	}
@@ -234,11 +235,10 @@ WHERE
 	match key {
 		Some(k) => Ok(k),
 		None => {
-			Err(HttpErr::new(
+			Err(SentcCoreError::new_msg(
 				200,
 				ApiErrorCodes::GroupKeyNotFound,
-				"Group key not found".to_string(),
-				None,
+				"Group key not found",
 			))
 		},
 	}
@@ -571,11 +571,10 @@ Then check if the rank fits
 pub(super) fn check_group_rank(user_rank: i32, req_rank: i32) -> AppRes<()>
 {
 	if user_rank > req_rank {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupUserRank,
-			"Wrong group rank for this action".to_string(),
-			None,
+			"Wrong group rank for this action",
 		));
 	}
 
@@ -662,11 +661,10 @@ LIMIT 1";
 	match data {
 		Some(d) => Ok(d),
 		None => {
-			Err(HttpErr::new(
+			Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupKeyNotFound,
-				"Public key from this group was not found".to_string(),
-				None,
+				"Public key from this group was not found",
 			))
 		},
 	}

@@ -10,8 +10,10 @@ use sentc_crypto_common::group::{
 };
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use server_core::cache;
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::input_helper::{bytes_to_json, get_raw_body};
-use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
+use server_core::res::AppRes;
+use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_time_from_url_param};
 
 use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use crate::group::group_entities::{GroupInviteReq, GroupJoinReq, GroupUserListItem};
@@ -19,7 +21,7 @@ use crate::group::group_user::{group_user_model, group_user_service};
 use crate::group::group_user_service::{InsertNewUserType, NewUserType};
 use crate::group::{get_group_user_data_from_req, group_model};
 use crate::user::jwt::get_jwt_data_from_param;
-use crate::util::api_res::{echo, echo_success, ApiErrorCodes, AppRes, HttpErr, JRes};
+use crate::util::api_res::{echo, echo_success, ApiErrorCodes, JRes};
 use crate::util::get_group_user_cache_key;
 
 pub async fn get_group_member(req: Request) -> JRes<Vec<GroupUserListItem>>
@@ -29,14 +31,7 @@ pub async fn get_group_member(req: Request) -> JRes<Vec<GroupUserListItem>>
 	let params = get_params(&req)?;
 	let last_user_id = get_name_param_from_params(params, "last_user_id")?;
 	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
-	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
-		HttpErr::new(
-			400,
-			ApiErrorCodes::UnexpectedTime,
-			"last fetched time is wrong".to_string(),
-			None,
-		)
-	})?;
+	let last_fetched_time = get_time_from_url_param(last_fetched_time)?;
 
 	let list_fetch = group_user_model::get_group_member(
 		&group_data.group_data.id,
@@ -163,14 +158,7 @@ async fn get_invite_req_pri(req: Request, user_type: NewUserType) -> JRes<Vec<Gr
 	let params = get_params(&req)?;
 	let last_group_id = get_name_param_from_params(params, "last_group_id")?;
 	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
-	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
-		HttpErr::new(
-			400,
-			ApiErrorCodes::UnexpectedTime,
-			"last fetched time is wrong".to_string(),
-			None,
-		)
-	})?;
+	let last_fetched_time = get_time_from_url_param(last_fetched_time)?;
 
 	let out = group_user_service::get_invite_req(&app.app_data.app_id, id_to_check, last_fetched_time, last_group_id).await?;
 
@@ -281,11 +269,10 @@ async fn join_req_pri(req: Request, user_type: NewUserType) -> JRes<ServerSucces
 			//only normal groups can be a member in connected groups but not connected groups in another group
 			//check in the model if the group to join is a connected group
 			if group_data.group_data.is_connected_group {
-				return Err(HttpErr::new(
+				return Err(SentcCoreError::new_msg(
 					400,
 					ApiErrorCodes::GroupJoinAsConnectedGroup,
-					"Can't join another group when this group is a connected group".to_string(),
-					None,
+					"Can't join another group when this group is a connected group",
 				));
 			}
 
@@ -314,14 +301,7 @@ pub async fn get_join_req(req: Request) -> JRes<Vec<GroupJoinReq>>
 	let params = get_params(&req)?;
 	let last_user_id = get_name_param_from_params(params, "last_user_id")?;
 	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
-	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
-		HttpErr::new(
-			400,
-			ApiErrorCodes::UnexpectedTime,
-			"last fetched time is wrong".to_string(),
-			None,
-		)
-	})?;
+	let last_fetched_time = get_time_from_url_param(last_fetched_time)?;
 
 	let reqs = group_user_model::get_join_req(
 		&group_data.group_data.id,
@@ -356,14 +336,7 @@ async fn get_sent_join_req(req: Request, user_type: NewUserType) -> JRes<Vec<Gro
 	let params = get_params(&req)?;
 	let last_group_id = get_name_param_from_params(params, "last_group_id")?;
 	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
-	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
-		HttpErr::new(
-			400,
-			ApiErrorCodes::UnexpectedTime,
-			"last fetched time is wrong".to_string(),
-			None,
-		)
-	})?;
+	let last_fetched_time = get_time_from_url_param(last_fetched_time)?;
 
 	let out = group_user_model::get_sent_join_req(&app.app_data.app_id, id_to_check, last_fetched_time, last_group_id).await?;
 
@@ -396,20 +369,18 @@ pub async fn accept_join_req(mut req: Request) -> JRes<GroupAcceptJoinReqServerO
 	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
 
 	if input.keys.is_empty() {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupNoKeys,
-			"No group keys for the user".to_string(),
-			None,
+			"No group keys for the user",
 		));
 	}
 
 	if input.keys.len() > 100 {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupTooManyKeys,
-			"Too many group keys for the user. Split the keys and use pagination".to_string(),
-			None,
+			"Too many group keys for the user. Split the keys and use pagination",
 		));
 	}
 

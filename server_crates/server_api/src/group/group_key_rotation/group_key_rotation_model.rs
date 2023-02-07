@@ -1,11 +1,13 @@
 use sentc_crypto_common::group::{DoneKeyRotationData, KeyRotationData};
 use sentc_crypto_common::SymKeyId;
 use server_core::db::{bulk_insert, exec, exec_transaction, query, query_first, query_string, TransactionData};
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
+use server_core::res::AppRes;
 use server_core::{get_time, set_params, str_clone, str_get, str_t, u128_get};
 use uuid::Uuid;
 
 use crate::group::group_entities::{GroupKeyUpdate, KeyRotationWorkerKey, UserEphKeyOut, UserGroupPublicKeyData};
-use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::util::api_res::ApiErrorCodes;
 
 pub(super) async fn start_key_rotation(app_id: str_t!(), group_id: str_t!(), user_id: str_t!(), input: KeyRotationData) -> AppRes<SymKeyId>
 {
@@ -185,11 +187,10 @@ pub(super) async fn get_new_key(group_id: str_t!(), key_id: str_t!()) -> AppRes<
 	match key {
 		Some(k) => Ok(k),
 		None => {
-			Err(HttpErr::new(
+			Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupKeyRotationKeysNotFound,
-				"Internal error, no group keys found, please try again".to_string(),
-				None,
+				"Internal error, no group keys found, please try again",
 			))
 		},
 	}
