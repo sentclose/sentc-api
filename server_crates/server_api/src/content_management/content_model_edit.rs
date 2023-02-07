@@ -1,31 +1,18 @@
 use sentc_crypto_common::content::CreateData;
-use sentc_crypto_common::ContentId;
+use sentc_crypto_common::{AppId, ContentId, GroupId, UserId};
 use server_core::db::exec;
 use server_core::res::AppRes;
-use server_core::{get_time, set_params, str_clone, str_get, str_t, u128_get};
+use server_core::{get_time, set_params};
 use uuid::Uuid;
 
 pub(super) async fn create_content(
-	app_id: str_t!(),
-	creator_id: str_t!(),
+	app_id: impl Into<AppId>,
+	creator_id: impl Into<UserId>,
 	data: CreateData,
-	group_id: Option<str_t!()>,
-	user_id: Option<str_t!()>,
+	group_id: Option<GroupId>,
+	user_id: Option<UserId>,
 ) -> AppRes<ContentId>
 {
-	//own the token in sqlite
-	#[cfg(feature = "sqlite")]
-	let group_id = match group_id {
-		Some(t) => Some(str_get!(t)),
-		None => None,
-	};
-
-	#[cfg(feature = "sqlite")]
-	let user_id = match user_id {
-		Some(t) => Some(str_get!(t)),
-		None => None,
-	};
-
 	let content_id = Uuid::new_v4().to_string();
 	let time = get_time()?;
 
@@ -35,13 +22,13 @@ pub(super) async fn create_content(
 	exec(
 		sql,
 		set_params!(
-			str_clone!(&content_id),
-			str_get!(app_id),
+			content_id.clone(),
+			app_id.into(),
 			data.item,
-			u128_get!(time),
+			time.to_string(),
 			group_id,
 			user_id,
-			str_get!(creator_id),
+			creator_id.into(),
 			data.category
 		),
 	)
@@ -50,24 +37,24 @@ pub(super) async fn create_content(
 	Ok(content_id)
 }
 
-pub(super) async fn delete_content_by_id(app_id: str_t!(), content_id: str_t!()) -> AppRes<()>
+pub(super) async fn delete_content_by_id(app_id: impl Into<AppId>, content_id: impl Into<ContentId>) -> AppRes<()>
 {
 	//no user access check here because this is only called from a service or backend only
 
 	//language=SQL
 	let sql = "DELETE FROM sentc_content WHERE app_id = ? AND id = ?";
 
-	exec(sql, set_params!(str_get!(app_id), str_get!(content_id))).await?;
+	exec(sql, set_params!(app_id.into(), content_id.into())).await?;
 
 	Ok(())
 }
 
-pub(super) async fn delete_content_by_item(app_id: str_t!(), item: str_t!()) -> AppRes<()>
+pub(super) async fn delete_content_by_item(app_id: impl Into<AppId>, item: impl Into<String>) -> AppRes<()>
 {
 	//language=SQL
 	let sql = "DELETE FROM sentc_content WHERE app_id = ? AND item = ?";
 
-	exec(sql, set_params!(str_get!(app_id), str_get!(item))).await?;
+	exec(sql, set_params!(app_id.into(), item.into())).await?;
 
 	Ok(())
 }
