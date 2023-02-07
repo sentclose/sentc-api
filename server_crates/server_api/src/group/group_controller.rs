@@ -3,6 +3,7 @@ use std::future::Future;
 use rustgram::Request;
 use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDataCheckUpdateServerOutput, GroupLightServerData};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
+use sentc_crypto_common::GroupId;
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::res::{echo, JRes};
@@ -25,63 +26,59 @@ pub enum GroupCreateType
 
 pub fn create(req: Request) -> impl Future<Output = JRes<GroupCreateOutput>>
 {
-	create_group(req, GroupCreateType::Normal)
+	create_group(req, None, None, None, false)
 }
 
-pub fn create_child_group(req: Request) -> impl Future<Output = JRes<GroupCreateOutput>>
+pub async fn create_child_group(req: Request) -> JRes<GroupCreateOutput>
 {
-	create_group(req, GroupCreateType::Parent)
+	//this is called in the group mw from the parent group id
+	let group_data = get_group_user_data_from_req(&req)?;
+	let parent_group_id = Some(group_data.group_data.id.to_string());
+	let user_rank = Some(group_data.user_data.rank);
+
+	//a connected group can also got children but these children will be a connected group too
+	let is_connected_group = group_data.group_data.is_connected_group;
+
+	create_group(req, parent_group_id, user_rank, None, is_connected_group).await
 }
 
-pub fn create_connected_group_from_group(req: Request) -> impl Future<Output = JRes<GroupCreateOutput>>
+pub async fn create_connected_group_from_group(req: Request) -> JRes<GroupCreateOutput>
 {
-	create_group(req, GroupCreateType::Connected)
+	/*
+	- A connected group is a group where other groups can join or can get invited, not only users.
+	- A connected group can also got children (which are marked as connected group too)
+	- A connected group cannot be created from a already connected group.
+		Because the users of the one connected group cannot access the connected group.
+		So only non connected groups can create connected groups.
+
+	- Users can join both groups
+	 */
+
+	//the same as parent group, but this time with the group as member, not as parent
+	let group_data = get_group_user_data_from_req(&req)?;
+	let connected_group_id = Some(group_data.group_data.id.to_string());
+	let user_rank = Some(group_data.user_data.rank);
+
+	if group_data.group_data.is_connected_group {
+		return Err(SentcCoreError::new_msg(
+			400,
+			ApiErrorCodes::GroupConnectedFromConnected,
+			"Can't create a connected group from a connected group",
+		));
+	}
+
+	create_group(req, None, user_rank, connected_group_id, true).await
 }
 
-async fn create_group(mut req: Request, group_create_type: GroupCreateType) -> JRes<GroupCreateOutput>
+async fn create_group(
+	mut req: Request,
+	parent_group_id: Option<GroupId>,
+	user_rank: Option<i32>,
+	connected_group: Option<GroupId>,
+	is_connected_group: bool,
+) -> JRes<GroupCreateOutput>
 {
 	let body = get_raw_body(&mut req).await?;
-
-	let (parent_group_id, connected_group, user_rank, is_connected_group) = match group_create_type {
-		GroupCreateType::Normal => (None, None, None, false),
-		GroupCreateType::Parent => {
-			//this is called in the group mw from the parent group id
-			let group_data = get_group_user_data_from_req(&req)?;
-			let parent_group_id = Some(group_data.group_data.id.as_str());
-			let user_rank = Some(group_data.user_data.rank);
-
-			//a connected group can also got children but these children will be a connected group too
-			let is_connected_group = group_data.group_data.is_connected_group;
-
-			(parent_group_id, None, user_rank, is_connected_group)
-		},
-		GroupCreateType::Connected => {
-			/*
-			- A connected group is a group where other groups can join or can get invited, not only users.
-			- A connected group can also got children (which are marked as connected group too)
-			- A connected group cannot be created from a already connected group.
-				Because the users of the one connected group cannot access the connected group.
-				So only non connected groups can create connected groups.
-
-			- Users can join both groups
-			 */
-
-			//the same as parent group, but this time with the group as member, not as parent
-			let group_data = get_group_user_data_from_req(&req)?;
-			let connected_group_id = Some(group_data.group_data.id.as_str());
-			let user_rank = Some(group_data.user_data.rank);
-
-			if group_data.group_data.is_connected_group {
-				return Err(SentcCoreError::new_msg(
-					400,
-					ApiErrorCodes::GroupConnectedFromConnected,
-					"Can't create a connected group from a connected group",
-				));
-			}
-
-			(None, connected_group_id, user_rank, true)
-		},
-	};
 
 	let app = get_app_data_from_req(&req)?;
 

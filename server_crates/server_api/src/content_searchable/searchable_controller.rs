@@ -25,7 +25,7 @@ pub(crate) async fn create(mut req: Request) -> JRes<ServerSuccessOutput>
 	let app_id = &app.app_data.app_id;
 
 	let group_data = get_group_user_data_from_req(&req)?;
-	let group_id = Some(group_data.group_data.id.as_str());
+	let group_id = Some(group_data.group_data.id.clone());
 
 	let input: SearchCreateData = bytes_to_json(&body)?;
 
@@ -98,7 +98,7 @@ async fn search(req: Request, cat: bool) -> JRes<Vec<ListSearchItem>>
 
 	let cat_id = match cat {
 		false => None,
-		true => Some(get_name_param_from_params(params, "cat_id")?),
+		true => Some(get_name_param_from_params(params, "cat_id")?.to_string()),
 	};
 
 	let list = searchable_service::search_item_for_group(

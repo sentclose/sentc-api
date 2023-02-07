@@ -1,15 +1,19 @@
 use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerInput;
-use sentc_crypto_common::SymKeyId;
+use sentc_crypto_common::{AppId, SymKeyId, UserId};
 use server_core::db::{exec, query_first, query_string};
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::res::AppRes;
-use server_core::{get_time, set_params, str_clone, str_get, str_t, u128_get};
+use server_core::{get_time, set_params};
 use uuid::Uuid;
 
 use crate::key_management::key_entity::SymKeyEntity;
 use crate::util::api_res::ApiErrorCodes;
 
-pub(super) async fn register_sym_key(app_id: str_t!(), creator_id: str_t!(), input: GeneratedSymKeyHeadServerInput) -> AppRes<SymKeyId>
+pub(super) async fn register_sym_key(
+	app_id: impl Into<AppId>,
+	creator_id: impl Into<UserId>,
+	input: GeneratedSymKeyHeadServerInput,
+) -> AppRes<SymKeyId>
 {
 	let key_id = Uuid::new_v4().to_string();
 	let time = get_time()?;
@@ -31,13 +35,13 @@ VALUES (?,?,?,?,?,?,?)";
 	exec(
 		sql,
 		set_params!(
-			str_clone!(&key_id),
-			str_get!(app_id),
+			key_id.clone(),
+			app_id.into(),
 			input.master_key_id,
-			str_get!(creator_id),
+			creator_id.into(),
 			input.encrypted_key_string,
 			input.alg,
-			u128_get!(time)
+			time.to_string()
 		),
 	)
 	.await?;
@@ -45,26 +49,22 @@ VALUES (?,?,?,?,?,?,?)";
 	Ok(key_id)
 }
 
-pub(super) async fn delete_sym_key(app_id: str_t!(), creator_id: str_t!(), key_id: str_t!()) -> AppRes<()>
+pub(super) async fn delete_sym_key(app_id: impl Into<AppId>, creator_id: impl Into<UserId>, key_id: impl Into<SymKeyId>) -> AppRes<()>
 {
 	//language=SQL
 	let sql = "DELETE FROM sentc_sym_key_management WHERE app_id = ? AND creator_id = ? AND id = ?";
 
-	exec(
-		sql,
-		set_params!(str_get!(app_id), str_get!(creator_id), str_get!(key_id)),
-	)
-	.await?;
+	exec(sql, set_params!(app_id.into(), creator_id.into(), key_id.into())).await?;
 
 	Ok(())
 }
 
-pub(super) async fn get_sym_key_by_id(app_id: str_t!(), key_id: str_t!()) -> AppRes<SymKeyEntity>
+pub(super) async fn get_sym_key_by_id(app_id: impl Into<AppId>, key_id: impl Into<SymKeyId>) -> AppRes<SymKeyEntity>
 {
 	//language=SQL
 	let sql = "SELECT id, master_key_id, encrypted_key, master_key_alg, time FROM sentc_sym_key_management WHERE app_id = ? AND id = ?";
 
-	let key: Option<SymKeyEntity> = query_first(sql, set_params!(str_get!(app_id), str_get!(key_id))).await?;
+	let key: Option<SymKeyEntity> = query_first(sql, set_params!(app_id.into(), key_id.into())).await?;
 
 	match key {
 		Some(k) => Ok(k),
@@ -79,10 +79,10 @@ pub(super) async fn get_sym_key_by_id(app_id: str_t!(), key_id: str_t!()) -> App
 }
 
 pub(super) async fn get_all_sym_keys_to_master_key(
-	app_id: str_t!(),
-	master_key_id: str_t!(),
+	app_id: impl Into<AppId>,
+	master_key_id: impl Into<SymKeyId>,
 	last_fetched_time: u128,
-	last_id: str_t!(),
+	last_id: impl Into<SymKeyId>,
 ) -> AppRes<Vec<SymKeyEntity>>
 {
 	//language=SQL
@@ -95,18 +95,18 @@ pub(super) async fn get_all_sym_keys_to_master_key(
 		(
 			sql,
 			set_params!(
-				str_get!(app_id),
-				str_get!(master_key_id),
-				u128_get!(last_fetched_time),
-				u128_get!(last_fetched_time),
-				u128_get!(last_fetched_time),
-				str_get!(last_id)
+				app_id.into(),
+				master_key_id.into(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_id.into()
 			),
 		)
 	} else {
 		let sql = sql + " ORDER BY time DESC, id LIMIT 50";
 
-		(sql, set_params!(str_get!(app_id), str_get!(master_key_id)))
+		(sql, set_params!(app_id.into(), master_key_id.into(),))
 	};
 
 	let keys: Vec<SymKeyEntity> = query_string(sql, params).await?;

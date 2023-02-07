@@ -45,7 +45,7 @@ pub(crate) async fn exists(mut req: Request) -> JRes<UserIdentifierAvailableServ
 
 	check_endpoint_with_app_options(app_data, Endpoint::UserExists)?;
 
-	let out = user_service::exists(app_data, data).await?;
+	let out = user_service::exists(&app_data.app_data.app_id, data).await?;
 
 	echo(out)
 }
@@ -127,7 +127,7 @@ pub(crate) async fn prepare_login(mut req: Request) -> JRes<PrepareLoginSaltServ
 
 	check_endpoint_with_app_options(app_data, Endpoint::UserPrepLogin)?;
 
-	let out = user_service::prepare_login(app_data, user_identifier).await?;
+	let out = user_service::prepare_login(app_data, &user_identifier.user_identifier).await?;
 
 	echo(out)
 }

@@ -1,9 +1,10 @@
 use std::future::Future;
 
 use sentc_crypto_common::group::{GroupKeysForNewMember, GroupKeysForNewMemberServerInput};
+use sentc_crypto_common::{AppId, GroupId, UserId};
+use server_core::cache;
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::res::AppRes;
-use server_core::{cache, str_t};
 
 use crate::group::group_entities::{GroupInviteReq, InternalGroupDataComplete};
 use crate::group::group_model;
@@ -24,10 +25,10 @@ pub enum NewUserType
 }
 
 pub fn get_invite_req<'a>(
-	app_id: str_t!('a),
-	user_id: str_t!('a),
+	app_id: impl Into<AppId> + 'a,
+	user_id: impl Into<UserId> + 'a,
 	last_fetched_time: u128,
-	last_id: str_t!('a),
+	last_id: impl Into<GroupId> + 'a,
 ) -> impl Future<Output = AppRes<Vec<GroupInviteReq>>> + 'a
 {
 	group_user_model::get_invite_req_to_user(app_id, user_id, last_fetched_time, last_id)
@@ -41,7 +42,7 @@ The invited user must accept the invite to join the group
 pub async fn invite_request(
 	group_data: &InternalGroupDataComplete,
 	input: GroupKeysForNewMemberServerInput,
-	invited_user: &str,
+	invited_user: impl Into<UserId>,
 	user_type: NewUserType,
 ) -> AppRes<Option<String>>
 {
@@ -102,11 +103,13 @@ The first half is the same as invite_request but after accept the invite request
 pub async fn invite_auto(
 	group_data: &InternalGroupDataComplete,
 	input: GroupKeysForNewMemberServerInput,
-	invited_user: &str,
+	invited_user: impl Into<UserId>,
 	user_type: NewUserType,
 ) -> AppRes<Option<String>>
 {
-	let session_id = invite_request(group_data, input, invited_user, user_type).await?;
+	let invited_user = invited_user.into();
+
+	let session_id = invite_request(group_data, input, &invited_user, user_type).await?;
 
 	group_user_model::accept_invite(&group_data.group_data.id, invited_user).await?;
 
@@ -114,8 +117,8 @@ pub async fn invite_auto(
 }
 
 pub async fn insert_user_keys_via_session(
-	group_id: &str,
-	key_session_id: &str,
+	group_id: impl Into<GroupId>,
+	key_session_id: impl Into<String>,
 	insert_type: InsertNewUserType,
 	input: Vec<GroupKeysForNewMember>,
 ) -> AppRes<()>

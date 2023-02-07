@@ -90,7 +90,7 @@ pub async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 	.await?;
 
 	#[cfg(feature = "send_mail")]
-	send_mail::send_mail(email, validate_token, customer_id.to_string(), EmailTopic::Register).await;
+	send_mail::send_mail(email, validate_token, &customer_id, EmailTopic::Register).await;
 
 	let out = CustomerRegisterOutput {
 		customer_id,
@@ -134,13 +134,7 @@ pub async fn resend_email(req: Request) -> JRes<ServerSuccessOutput>
 	let _token = customer_model::get_email_token(customer_id).await?;
 
 	#[cfg(feature = "send_mail")]
-	send_mail::send_mail(
-		_token.email.as_str(),
-		_token.email_token,
-		customer_id.to_string(),
-		EmailTopic::Register,
-	)
-	.await;
+	send_mail::send_mail(_token.email, _token.email_token, customer_id, EmailTopic::Register).await;
 
 	echo_success()
 }
@@ -154,7 +148,7 @@ pub async fn prepare_login(mut req: Request) -> JRes<PrepareLoginSaltServerOutpu
 
 	let app_data = get_app_data_from_req(&req)?;
 
-	let out = user::user_service::prepare_login(app_data, user_identifier).await?;
+	let out = user::user_service::prepare_login(app_data, &user_identifier.user_identifier).await?;
 
 	echo(out)
 }
@@ -246,13 +240,7 @@ pub async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 	customer_model::update(update_data, &user.id, validate_token.to_string()).await?;
 
 	#[cfg(feature = "send_mail")]
-	send_mail::send_mail(
-		email.as_str(),
-		validate_token,
-		user.id.to_string(),
-		EmailTopic::EmailUpdate,
-	)
-	.await;
+	send_mail::send_mail(email, validate_token, &user.id, EmailTopic::EmailUpdate).await;
 
 	echo_success()
 }
@@ -292,9 +280,9 @@ pub async fn prepare_reset_password(mut req: Request) -> JRes<ServerSuccessOutpu
 	)
 	.await?;
 
-	let email = data.email.to_string();
+	let email = &data.email;
 
-	let email_check = email::check_email(email.as_str());
+	let email_check = email::check_email(email);
 
 	if !email_check {
 		return Err(SentcCoreError::new_msg(
@@ -305,7 +293,7 @@ pub async fn prepare_reset_password(mut req: Request) -> JRes<ServerSuccessOutpu
 	}
 
 	//model will notify the user if the email is not found
-	let email_data = customer_model::get_customer_email_data_by_email(data.email).await?;
+	let email_data = customer_model::get_customer_email_data_by_email(email).await?;
 
 	if email_data.email_valid == 0 {
 		return Err(SentcCoreError::new_msg(
@@ -320,7 +308,7 @@ pub async fn prepare_reset_password(mut req: Request) -> JRes<ServerSuccessOutpu
 	customer_model::reset_password_token_save(&email_data.id, &validate_token).await?;
 
 	#[cfg(feature = "send_mail")]
-	send_mail::send_mail(email.as_str(), validate_token, email_data.id, EmailTopic::PwReset).await;
+	send_mail::send_mail(email, validate_token, email_data.id, EmailTopic::PwReset).await;
 
 	echo_success()
 }

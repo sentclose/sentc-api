@@ -1,10 +1,9 @@
 use std::future::Future;
 
 use sentc_crypto_common::content::CreateData;
-use sentc_crypto_common::ContentId;
+use sentc_crypto_common::{AppId, ContentId, GroupId, UserId};
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::res::AppRes;
-use server_core::str_t;
 
 use crate::content_management::content_model_edit;
 use crate::util::api_res::ApiErrorCodes;
@@ -16,7 +15,13 @@ pub enum ContentRelatedType
 	None,
 }
 
-pub async fn create_content(app_id: &str, creator_id: &str, data: CreateData, group_id: Option<&str>, user_id: Option<&str>) -> AppRes<ContentId>
+pub async fn create_content(
+	app_id: impl Into<AppId>,
+	creator_id: impl Into<UserId>,
+	data: CreateData,
+	group_id: Option<GroupId>,
+	user_id: Option<UserId>,
+) -> AppRes<ContentId>
 {
 	if data.item.is_empty() {
 		return Err(SentcCoreError::new_msg(
@@ -37,13 +42,15 @@ pub async fn create_content(app_id: &str, creator_id: &str, data: CreateData, gr
 	content_model_edit::create_content(app_id, creator_id, data, group_id, user_id).await
 }
 
-pub fn delete_content_by_id<'a>(app_id: str_t!('a), content_id: str_t!('a)) -> impl Future<Output = AppRes<()>> + 'a
+pub fn delete_content_by_id<'a>(app_id: impl Into<AppId> + 'a, content_id: impl Into<ContentId> + 'a) -> impl Future<Output = AppRes<()>> + 'a
 {
 	content_model_edit::delete_content_by_id(app_id, content_id)
 }
 
-pub async fn delete_content_by_item(app_id: &str, item: &str) -> AppRes<()>
+pub async fn delete_content_by_item(app_id: impl Into<AppId>, item: impl Into<String>) -> AppRes<()>
 {
+	let item = item.into();
+
 	if item.is_empty() {
 		return Err(SentcCoreError::new_msg(
 			400,

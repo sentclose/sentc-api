@@ -59,7 +59,12 @@ pub fn get_jwt_data_from_param(req: &Request) -> Result<&UserJwtEntity, SentcCor
 	}
 }
 
-pub(crate) async fn create_jwt(internal_user_id: &str, device_id: &str, customer_jwt_data: &AppJwt, fresh: bool) -> Result<String, SentcCoreError>
+pub(crate) async fn create_jwt(
+	internal_user_id: impl Into<UserId>,
+	device_id: impl Into<DeviceId>,
+	customer_jwt_data: &AppJwt,
+	fresh: bool,
+) -> Result<String, SentcCoreError>
 {
 	let iat = get_time_in_sec()?;
 	let expiration = iat + 60 * 5; //exp in 5 min
@@ -73,7 +78,7 @@ pub(crate) async fn create_jwt(internal_user_id: &str, device_id: &str, customer
 	};
 
 	let mut header = Header::new(Algorithm::from_str(&customer_jwt_data.jwt_alg).unwrap());
-	header.kid = Some(customer_jwt_data.jwt_key_id.to_string());
+	header.kid = Some(customer_jwt_data.jwt_key_id.clone());
 
 	//get it from the db (no cache for the sign key)
 	let sign_key = get_sign_key(&customer_jwt_data.jwt_key_id).await?;
@@ -90,7 +95,7 @@ pub(crate) async fn create_jwt(internal_user_id: &str, device_id: &str, customer
 	})
 }
 
-pub async fn auth(app_id: AppId, jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), SentcCoreError>
+pub async fn auth(app_id: impl Into<AppId>, jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), SentcCoreError>
 {
 	let header = decode_header(jwt).map_err(|_e| SentcCoreError::new_msg(401, ApiErrorCodes::JwtWrongFormat, "Can't decode the jwt"))?;
 
@@ -269,9 +274,12 @@ async fn get_verify_key(key_id: &str) -> AppRes<String>
 	}
 }
 
-async fn get_user_in_app(app_id: AppId, user_id: &str) -> AppRes<GroupId>
+async fn get_user_in_app(app_id: impl Into<String>, user_id: impl Into<String>) -> AppRes<GroupId>
 {
-	let cache_key = get_user_in_app_key(&app_id, user_id);
+	let app_id = app_id.into();
+	let user_id = user_id.into();
+
+	let cache_key = get_user_in_app_key(&app_id, &user_id);
 
 	match cache::get(&cache_key).await {
 		Some(c) => {

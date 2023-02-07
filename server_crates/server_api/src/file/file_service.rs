@@ -1,9 +1,9 @@
 use std::future::Future;
 
 use sentc_crypto_common::file::{BelongsToType, FileRegisterInput, FileRegisterOutput};
+use sentc_crypto_common::{AppId, CustomerId, FileId, GroupId};
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::res::AppRes;
-use server_core::str_t;
 
 use crate::file::file_entities::FileMetaData;
 use crate::file::file_model;
@@ -16,7 +16,7 @@ pub(super) const FILE_BELONGS_TO_TYPE_NONE: i32 = 0;
 pub(super) const FILE_BELONGS_TO_TYPE_GROUP: i32 = 1;
 pub(super) const FILE_BELONGS_TO_TYPE_USER: i32 = 2;
 
-pub async fn register_file(input: FileRegisterInput, app_id: &str, user_id: &str, group_id: Option<&str>) -> AppRes<FileRegisterOutput>
+pub async fn register_file(input: FileRegisterInput, app_id: &str, user_id: &str, group_id: Option<GroupId>) -> AppRes<FileRegisterOutput>
 {
 	//check first if belongs to is set
 
@@ -44,7 +44,7 @@ pub async fn register_file(input: FileRegisterInput, app_id: &str, user_id: &str
 						));
 					}
 
-					(FILE_BELONGS_TO_TYPE_USER, Some(id.as_str()))
+					(FILE_BELONGS_TO_TYPE_USER, Some(id.clone()))
 				},
 			}
 		},
@@ -163,9 +163,13 @@ pub async fn update_file_name(app_id: &str, user_id: &str, file_id: &str, file_n
 
 //__________________________________________________________________________________________________
 
-pub async fn delete_file(file_id: &str, app_id: &str, user_id: &str, group: Option<&InternalGroupDataComplete>) -> AppRes<()>
+pub async fn delete_file(file_id: impl Into<FileId>, app_id: impl Into<AppId>, user_id: &str, group: Option<&InternalGroupDataComplete>)
+	-> AppRes<()>
 {
-	let file = file_model::get_file(app_id, file_id).await?;
+	let app_id = app_id.into();
+	let file_id = file_id.into();
+
+	let file = file_model::get_file(&app_id, &file_id).await?;
 
 	if file.owner != *user_id {
 		match file.belongs_to_type {
@@ -215,18 +219,22 @@ pub async fn delete_file(file_id: &str, app_id: &str, user_id: &str, group: Opti
 }
 
 #[allow(clippy::needless_lifetimes)]
-pub fn delete_file_for_customer<'a>(customer_id: str_t!('a)) -> impl Future<Output = AppRes<()>> + 'a
+pub fn delete_file_for_customer<'a>(customer_id: impl Into<CustomerId> + 'a) -> impl Future<Output = AppRes<()>> + 'a
 {
 	file_model::delete_files_for_customer(customer_id)
 }
 
 #[allow(clippy::needless_lifetimes)]
-pub fn delete_file_for_app<'a>(app_id: str_t!('a)) -> impl Future<Output = AppRes<()>> + 'a
+pub fn delete_file_for_app<'a>(app_id: impl Into<AppId> + 'a) -> impl Future<Output = AppRes<()>> + 'a
 {
 	file_model::delete_files_for_app(app_id)
 }
 
-pub fn delete_file_for_group<'a>(app_id: str_t!('a), group_id: str_t!('a), children: Vec<String>) -> impl Future<Output = AppRes<()>> + 'a
+pub fn delete_file_for_group<'a>(
+	app_id: impl Into<AppId> + 'a,
+	group_id: impl Into<GroupId> + 'a,
+	children: Vec<String>,
+) -> impl Future<Output = AppRes<()>> + 'a
 {
 	file_model::delete_files_for_group(app_id, group_id, children)
 }

@@ -69,12 +69,12 @@ async fn create_content(mut req: Request, content_related_type: ContentRelatedTy
 			//get the user id from the url param
 			let user_id = get_name_param_from_req(&req, "user_id")?;
 
-			(None, Some(user_id))
+			(None, Some(user_id.to_string()))
 		},
 		ContentRelatedType::Group => {
 			let group_data = get_group_user_data_from_req(&req)?;
 
-			(Some(group_data.group_data.id.as_str()), None)
+			(Some(group_data.group_data.id.clone()), None)
 		},
 	};
 
@@ -180,7 +180,7 @@ async fn get_content(req: Request, content_related_type: ContentRelatedType, cat
 
 	let cat_id = match cat {
 		false => None,
-		true => Some(get_name_param_from_params(params, "cat_id")?),
+		true => Some(get_name_param_from_params(params, "cat_id")?.to_string()),
 	};
 
 	let list = match content_related_type {

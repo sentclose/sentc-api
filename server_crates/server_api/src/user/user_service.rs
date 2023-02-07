@@ -10,7 +10,6 @@ use sentc_crypto_common::user::{
 	DoneLoginServerInput,
 	JwtRefreshInput,
 	PrepareLoginSaltServerOutput,
-	PrepareLoginServerInput,
 	RegisterData,
 	RegisterServerOutput,
 	ResetPasswordData,
@@ -21,11 +20,11 @@ use sentc_crypto_common::user::{
 	UserIdentifierAvailableServerOutput,
 	UserUpdateServerInput,
 };
-use sentc_crypto_common::AppId;
+use sentc_crypto_common::{AppId, DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, SymKeyId, UserId};
+use server_core::cache;
 use server_core::db::StringEntity;
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::res::AppRes;
-use server_core::{cache, str_t};
 
 use crate::group::group_entities::{GroupUserKeys, InternalGroupData, InternalGroupDataComplete, InternalUserGroupData};
 use crate::group::group_user_service::NewUserType;
@@ -49,25 +48,32 @@ pub enum UserAction
 	KeyRotation,
 }
 
-pub fn save_user_action<'a>(app_id: str_t!('a), user_id: str_t!('a), action: UserAction, amount: i64) -> impl Future<Output = AppRes<()>> + 'a
+pub fn save_user_action<'a>(
+	app_id: impl Into<String> + 'a,
+	user_id: impl Into<String> + 'a,
+	action: UserAction,
+	amount: i64,
+) -> impl Future<Output = AppRes<()>> + 'a
 {
 	user_model::save_user_action(app_id, user_id, action, amount)
 }
 
-pub fn check_user_in_app_by_user_id<'a>(app_id: str_t!('a), user_id: str_t!('a)) -> impl Future<Output = AppRes<bool>> + 'a
+pub fn check_user_in_app_by_user_id<'a>(app_id: impl Into<AppId> + 'a, user_id: impl Into<UserId> + 'a) -> impl Future<Output = AppRes<bool>> + 'a
 {
 	user_model::check_user_in_app(app_id, user_id)
 }
 
-#[allow(clippy::needless_lifetimes)]
-pub fn get_user_group_id<'a>(app_id: AppId, user_id: str_t!('a)) -> impl Future<Output = AppRes<Option<StringEntity>>> + 'a
+pub fn get_user_group_id<'a>(
+	app_id: impl Into<AppId> + 'a,
+	user_id: impl Into<UserId> + 'a,
+) -> impl Future<Output = AppRes<Option<StringEntity>>> + 'a
 {
 	user_model::get_user_group_id(app_id, user_id)
 }
 
-pub async fn exists(app_data: &AppData, data: UserIdentifierAvailableServerInput) -> AppRes<UserIdentifierAvailableServerOutput>
+pub async fn exists(app_id: impl Into<AppId>, data: UserIdentifierAvailableServerInput) -> AppRes<UserIdentifierAvailableServerOutput>
 {
-	let exists = user_model::check_user_exists(&app_data.app_data.app_id, data.user_identifier.as_str()).await?;
+	let exists = user_model::check_user_exists(app_id, &data.user_identifier).await?;
 
 	let out = UserIdentifierAvailableServerOutput {
 		user_identifier: data.user_identifier,
@@ -77,40 +83,44 @@ pub async fn exists(app_data: &AppData, data: UserIdentifierAvailableServerInput
 	Ok(out)
 }
 
-pub async fn register_light(app_id: &str, input: UserDeviceRegisterInput) -> AppRes<(String, String)>
+pub async fn register_light(app_id: impl Into<AppId>, input: UserDeviceRegisterInput) -> AppRes<(String, String)>
 {
-	let (user_id, device_id) = user_model::register(app_id, input).await?;
+	let app_id = app_id.into();
+
+	let (user_id, device_id) = user_model::register(&app_id, input).await?;
 
 	//delete the user in app check cache from the jwt mw
 	//it can happened that a user id was used before which doesn't exists yet
-	let cache_key = get_user_in_app_key(app_id, &user_id);
+	let cache_key = get_user_in_app_key(&app_id, &user_id);
 	cache::delete(&cache_key).await;
 
 	Ok((user_id, device_id))
 }
 
-pub async fn register(app_id: &str, register_input: RegisterData) -> AppRes<RegisterServerOutput>
+pub async fn register(app_id: impl Into<AppId>, register_input: RegisterData) -> AppRes<RegisterServerOutput>
 {
 	let mut group_data = register_input.group;
 	let device_data = register_input.device;
 
 	let device_identifier = device_data.device_identifier.to_string(); //save this value before because of dropping
 
+	let app_id = app_id.into();
+
 	//save the data
-	let (user_id, device_id) = user_model::register(app_id, device_data).await?;
+	let (user_id, device_id) = user_model::register(&app_id, device_data).await?;
 
 	//update creator public key id in group data (with the device id), this is needed to know what public key was used to encrypt the group key
 	group_data.creator_public_key_id = device_id.to_string();
 
 	//create user group, insert the device not the suer id because the devices are in the group not the user!
 	let group_id = group_service::create_group(
-		app_id,
+		&app_id,
 		&device_id,
 		group_data,
 		GROUP_TYPE_USER,
-		None::<&str>,
 		None,
-		None::<&str>,
+		None,
+		None,
 		false,
 	)
 	.await?
@@ -118,7 +128,7 @@ pub async fn register(app_id: &str, register_input: RegisterData) -> AppRes<Regi
 
 	//delete the user in app check cache from the jwt mw
 	//it can happened that a user id was used before which doesn't exists yet
-	let cache_key = get_user_in_app_key(app_id, &user_id);
+	let cache_key = get_user_in_app_key(&app_id, &user_id);
 	cache::delete(&cache_key).await;
 
 	//now update the user group id
@@ -143,9 +153,11 @@ In the client:
 - transport the token to the active device
 - call done register device with the device id and the token
 */
-pub async fn prepare_register_device(app_id: &str, input: UserDeviceRegisterInput) -> AppRes<UserDeviceRegisterOutput>
+pub async fn prepare_register_device(app_id: impl Into<AppId>, input: UserDeviceRegisterInput) -> AppRes<UserDeviceRegisterOutput>
 {
-	let check = user_model::check_user_exists(app_id, &input.device_identifier).await?;
+	let app_id = app_id.into();
+
+	let check = user_model::check_user_exists(&app_id, &input.device_identifier).await?;
 
 	if check {
 		//check true == user exists
@@ -182,16 +194,23 @@ In the client:
 1. auto invite the new device
 2. same as group auto invite
 */
-pub async fn done_register_device(app_id: &str, user_id: &str, user_group_id: &str, input: UserDeviceDoneRegisterInput) -> AppRes<Option<String>>
+pub async fn done_register_device(
+	app_id: impl Into<AppId>,
+	user_id: impl Into<UserId>,
+	user_group_id: impl Into<GroupId>,
+	input: UserDeviceDoneRegisterInput,
+) -> AppRes<Option<String>>
 {
-	let device_id = user_model::get_done_register_device(app_id, input.token).await?;
+	let app_id = app_id.into();
+
+	let device_id = user_model::get_done_register_device(&app_id, input.token).await?;
 
 	//for the auto invite we only need the group id and the group user rank
 	let session_id = group_user_service::invite_auto(
 		&InternalGroupDataComplete {
 			group_data: InternalGroupData {
-				app_id: app_id.to_string(),
-				id: user_group_id.to_string(),
+				app_id: app_id.clone(),
+				id: user_group_id.into(),
 				time: 0,
 				parent: None,
 				invite: 1, //must be 1 to accept the device invite
@@ -219,11 +238,9 @@ pub async fn done_register_device(app_id: &str, user_id: &str, user_group_id: &s
 
 //__________________________________________________________________________________________________
 
-pub async fn prepare_login(app_data: &AppData, user_identifier: PrepareLoginServerInput) -> AppRes<PrepareLoginSaltServerOutput>
+pub fn prepare_login<'a>(app_data: &'a AppData, user_identifier: &'a str) -> impl Future<Output = AppRes<PrepareLoginSaltServerOutput>> + 'a
 {
-	let out = create_salt(&app_data.app_data.app_id, user_identifier.user_identifier.as_str()).await?;
-
-	Ok(out)
+	create_salt(&app_data.app_data.app_id, user_identifier)
 }
 
 /**
@@ -351,9 +368,9 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 
 pub fn get_user_keys<'a>(
 	user: &'a UserJwtEntity,
-	app_id: str_t!('a),
+	app_id: impl Into<AppId> + 'a,
 	last_fetched_time: u128,
-	last_k_id: str_t!('a),
+	last_k_id: impl Into<SymKeyId> + 'a,
 ) -> impl Future<Output = AppRes<Vec<GroupUserKeys>>> + 'a
 {
 	group_service::get_user_group_keys(
@@ -365,7 +382,11 @@ pub fn get_user_keys<'a>(
 	)
 }
 
-pub fn get_user_key<'a>(user: &'a UserJwtEntity, app_id: str_t!('a), key_id: str_t!('a)) -> impl Future<Output = AppRes<GroupUserKeys>> + 'a
+pub fn get_user_key<'a>(
+	user: &'a UserJwtEntity,
+	app_id: impl Into<AppId> + 'a,
+	key_id: impl Into<SymKeyId> + 'a,
+) -> impl Future<Output = AppRes<GroupUserKeys>> + 'a
 {
 	group_service::get_user_group_key(
 		app_id,
@@ -379,23 +400,26 @@ pub fn get_user_key<'a>(user: &'a UserJwtEntity, app_id: str_t!('a), key_id: str
 //public user fn
 
 pub fn get_public_key_by_id<'a>(
-	app_id: str_t!('a),
-	user_id: str_t!('a),
-	public_key_id: str_t!('a),
+	app_id: impl Into<AppId> + 'a,
+	user_id: impl Into<UserId> + 'a,
+	public_key_id: impl Into<EncryptionKeyPairId> + 'a,
 ) -> impl Future<Output = AppRes<UserPublicKeyDataEntity>> + 'a
 {
 	user_model::get_public_key_by_id(app_id, user_id, public_key_id)
 }
 
-pub fn get_public_key_data<'a>(app_id: str_t!('a), user_id: str_t!('a)) -> impl Future<Output = AppRes<UserPublicKeyDataEntity>> + 'a
+pub fn get_public_key_data<'a>(
+	app_id: impl Into<AppId> + 'a,
+	user_id: impl Into<UserId> + 'a,
+) -> impl Future<Output = AppRes<UserPublicKeyDataEntity>> + 'a
 {
 	user_model::get_public_key_data(app_id, user_id)
 }
 
 pub fn get_verify_key_by_id<'a>(
-	app_id: str_t!('a),
-	user_id: str_t!('a),
-	verify_key_id: str_t!('a),
+	app_id: impl Into<AppId> + 'a,
+	user_id: impl Into<UserId> + 'a,
+	verify_key_id: impl Into<SignKeyPairId> + 'a,
 ) -> impl Future<Output = AppRes<UserVerifyKeyDataEntity>> + 'a
 {
 	user_model::get_verify_key_by_id(app_id, user_id, verify_key_id)
@@ -418,10 +442,12 @@ pub async fn init_user(app_data: &AppData, device_id: &str, input: JwtRefreshInp
 	})
 }
 
-pub async fn refresh_jwt(app_data: &AppData, device_id: &str, input: JwtRefreshInput) -> AppRes<DoneLoginLightServerOutput>
+pub async fn refresh_jwt(app_data: &AppData, device_id: impl Into<DeviceId>, input: JwtRefreshInput) -> AppRes<DoneLoginLightServerOutput>
 {
+	let device_id = device_id.into();
+
 	//get the token from the db
-	let check = user_model::check_refresh_token(&app_data.app_data.app_id, device_id, input.refresh_token).await?;
+	let check = user_model::check_refresh_token(&app_data.app_data.app_id, &device_id, input.refresh_token).await?;
 
 	let device_identifier = match check {
 		Some(u) => u,
@@ -436,7 +462,7 @@ pub async fn refresh_jwt(app_data: &AppData, device_id: &str, input: JwtRefreshI
 
 	let jwt = create_jwt(
 		&device_identifier.user_id,
-		device_id,
+		&device_id,
 		&app_data.jwt_data[0], //use always the latest created jwt data
 		false,
 	)
@@ -445,14 +471,16 @@ pub async fn refresh_jwt(app_data: &AppData, device_id: &str, input: JwtRefreshI
 	let out = DoneLoginLightServerOutput {
 		user_id: device_identifier.user_id,
 		jwt,
-		device_id: device_id.to_string(),
+		device_id,
 	};
 
 	Ok(out)
 }
 
-pub async fn delete(user: &UserJwtEntity, app_id: &str) -> AppRes<()>
+pub async fn delete(user: &UserJwtEntity, app_id: impl Into<AppId>) -> AppRes<()>
 {
+	let app_id = app_id.into();
+
 	//the user needs a jwt which was created from login and no refreshed jwt
 	if !user.fresh {
 		return Err(SentcCoreError::new_msg(
@@ -465,10 +493,10 @@ pub async fn delete(user: &UserJwtEntity, app_id: &str) -> AppRes<()>
 	let user_id = &user.id;
 	let group_id = &user.group_id;
 
-	user_model::delete(user_id, app_id).await?;
+	user_model::delete(user_id, &app_id).await?;
 
 	//delete the user in app check cache from the jwt mw
-	let cache_key = get_user_in_app_key(app_id, user_id);
+	let cache_key = get_user_in_app_key(&app_id, user_id);
 	cache::delete(&cache_key).await;
 
 	//delete the user group
@@ -477,8 +505,10 @@ pub async fn delete(user: &UserJwtEntity, app_id: &str) -> AppRes<()>
 	Ok(())
 }
 
-pub async fn delete_device(user: &UserJwtEntity, app_id: &str, device_id: &str) -> AppRes<()>
+pub async fn delete_device(user: &UserJwtEntity, app_id: impl Into<AppId>, device_id: impl Into<DeviceId>) -> AppRes<()>
 {
+	let app_id = app_id.into();
+
 	//this can be any device don't need to be the device to delete
 	if !user.fresh {
 		return Err(SentcCoreError::new_msg(
@@ -490,12 +520,12 @@ pub async fn delete_device(user: &UserJwtEntity, app_id: &str, device_id: &str) 
 
 	let user_id = &user.id;
 
-	user_model::delete_device(user_id, app_id, device_id).await?;
+	user_model::delete_device(user_id, &app_id, device_id).await?;
 
 	group_user_service::leave_group(
 		&InternalGroupDataComplete {
 			group_data: InternalGroupData {
-				app_id: app_id.to_string(),
+				app_id,
 				id: user.group_id.to_string(),
 				time: 0,
 				parent: None,
@@ -517,10 +547,10 @@ pub async fn delete_device(user: &UserJwtEntity, app_id: &str, device_id: &str) 
 }
 
 pub fn get_devices<'a>(
-	app_id: str_t!('a),
-	user_id: str_t!('a),
+	app_id: impl Into<AppId> + 'a,
+	user_id: impl Into<UserId> + 'a,
 	last_fetched_time: u128,
-	last_fetched_id: str_t!('a),
+	last_fetched_id: impl Into<DeviceId> + 'a,
 ) -> impl Future<Output = AppRes<Vec<UserDeviceList>>> + 'a
 {
 	user_model::get_devices(app_id, user_id, last_fetched_time, last_fetched_id)
@@ -578,7 +608,11 @@ pub async fn change_password(user: &UserJwtEntity, app_id: &str, input: ChangePa
 	Ok(())
 }
 
-pub fn reset_password<'a>(user_id: str_t!('a), device_id: str_t!('a), input: ResetPasswordData) -> impl Future<Output = AppRes<()>> + 'a
+pub fn reset_password<'a>(
+	user_id: impl Into<UserId> + 'a,
+	device_id: impl Into<DeviceId> + 'a,
+	input: ResetPasswordData,
+) -> impl Future<Output = AppRes<()>> + 'a
 {
 	//no fresh jwt here because the user can't login and get a fresh jwt without the password
 	//but still needs a valid jwt. jwt refresh is possible without a password!
@@ -589,7 +623,7 @@ pub fn reset_password<'a>(user_id: str_t!('a), device_id: str_t!('a), input: Res
 //__________________________________________________________________________________________________
 //internal fn
 
-async fn create_salt(app_id: &str, user_identifier: &str) -> AppRes<PrepareLoginSaltServerOutput>
+async fn create_salt(app_id: impl Into<AppId>, user_identifier: &str) -> AppRes<PrepareLoginSaltServerOutput>
 {
 	//check the user id in the db
 	let login_data = user_model::get_user_login_data(app_id, user_identifier).await?;
