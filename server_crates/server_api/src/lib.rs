@@ -50,6 +50,7 @@ pub use key_management::{key_controller as sentc_key_controller, key_entity as s
 pub use middleware::app_token::app_token_transform as sentc_app_mw;
 pub use middleware::group::group_transform as sentc_group_mw;
 pub use middleware::jwt::{jwt_optional_transform as sentc_jwt_optional_mw, jwt_transform as sentc_jwt_mw};
+use server_core::error::SentcErrorConstructor;
 pub use user::{
 	jwt as sentc_user_jwt_service,
 	user_controller as sentc_user_controller,
@@ -59,11 +60,10 @@ pub use user::{
 
 pub async fn not_found_handler(_req: Request) -> util::api_res::JRes<String>
 {
-	Err(util::api_res::HttpErr::new(
+	Err(server_core::error::SentcCoreError::new_msg(
 		404,
 		util::api_res::ApiErrorCodes::PageNotFound,
-		"Not found".into(),
-		None,
+		"Not found",
 	))
 }
 
