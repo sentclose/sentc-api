@@ -1,10 +1,11 @@
+use sentc_crypto_common::CustomerId;
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::res::AppRes;
 
 use crate::customer::customer_model;
 use crate::util::api_res::ApiErrorCodes;
 
-pub(crate) async fn check_customer_valid(customer_id: &str) -> AppRes<()>
+pub(crate) async fn check_customer_valid(customer_id: impl Into<CustomerId>) -> AppRes<()>
 {
 	let valid = customer_model::check_customer_valid(customer_id).await?;
 

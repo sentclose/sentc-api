@@ -9,10 +9,10 @@ use crate::customer::{customer_model, EmailTopic};
 /**
 Send the validation email.
  */
-pub(super) async fn send_mail(email: &str, token: String, customer_id: sentc_crypto_common::CustomerId, topic: EmailTopic)
+pub(super) async fn send_mail(email: impl Into<String>, token: String, customer_id: impl Into<sentc_crypto_common::CustomerId>, topic: EmailTopic)
 {
 	//don't wait for the response
-	tokio::task::spawn(process_send_mail(email.to_string(), customer_id, token, topic));
+	tokio::task::spawn(process_send_mail(email.into(), customer_id.into(), token, topic));
 }
 
 async fn process_send_mail(email: String, customer_id: sentc_crypto_common::CustomerId, token: String, topic: EmailTopic) -> AppRes<()>

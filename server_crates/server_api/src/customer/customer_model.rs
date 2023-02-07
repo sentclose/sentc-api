@@ -1,20 +1,21 @@
+use sentc_crypto_common::CustomerId;
 use server_api_common::customer::{CustomerData, CustomerUpdateInput};
 use server_core::db::{exec, query_first, I32Entity};
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::res::AppRes;
-use server_core::{get_time, set_params, str_get, str_t, u128_get};
+use server_core::{get_time, set_params};
 
 #[cfg(feature = "send_mail")]
 use crate::customer::customer_entities::RegisterEmailStatus;
 use crate::customer::customer_entities::{CustomerDataByEmailEntity, CustomerDataEntity, CustomerEmailByToken, CustomerEmailToken};
 use crate::util::api_res::ApiErrorCodes;
 
-pub(super) async fn check_customer_valid(customer_id: str_t!()) -> AppRes<I32Entity>
+pub(super) async fn check_customer_valid(customer_id: impl Into<CustomerId>) -> AppRes<I32Entity>
 {
 	//language=SQL
 	let sql = "SELECT email_validate FROM sentc_customer WHERE id = ?";
 
-	let valid: Option<I32Entity> = query_first(sql, set_params!(str_get!(customer_id))).await?;
+	let valid: Option<I32Entity> = query_first(sql, set_params!(customer_id.into())).await?;
 
 	let valid = match valid {
 		Some(v) => v,
@@ -30,7 +31,12 @@ pub(super) async fn check_customer_valid(customer_id: str_t!()) -> AppRes<I32Ent
 	Ok(valid)
 }
 
-pub(super) async fn register_customer(email: str_t!(), data: CustomerData, customer_id: str_t!(), validate_token: str_t!()) -> AppRes<()>
+pub(super) async fn register_customer(
+	email: impl Into<String>,
+	data: CustomerData,
+	customer_id: impl Into<CustomerId>,
+	validate_token: impl Into<String>,
+) -> AppRes<()>
 {
 	//customer id comes from the user register before
 
@@ -53,15 +59,15 @@ pub(super) async fn register_customer(email: str_t!(), data: CustomerData, custo
 	exec(
 		sql,
 		set_params!(
-			str_get!(customer_id),
-			str_get!(email),
+			customer_id.into(),
+			email.into(),
 			data.name,
 			data.first_name,
 			data.company,
-			u128_get!(time),
+			time.to_string(),
 			email_validate,
 			email_status,
-			str_get!(validate_token)
+			validate_token.into()
 		),
 	)
 	.await?;
@@ -70,7 +76,7 @@ pub(super) async fn register_customer(email: str_t!(), data: CustomerData, custo
 }
 
 #[cfg(feature = "send_mail")]
-pub(super) async fn sent_mail(customer_id: sentc_crypto_common::CustomerId, status: RegisterEmailStatus) -> AppRes<()>
+pub(super) async fn sent_mail(customer_id: impl Into<CustomerId>, status: RegisterEmailStatus) -> AppRes<()>
 {
 	//owned customer id because it is already owned in the worker because of tokio spawn
 
@@ -84,27 +90,27 @@ pub(super) async fn sent_mail(customer_id: sentc_crypto_common::CustomerId, stat
 	//language=SQL
 	let sql = "UPDATE sentc_customer SET email_status = ?, email_error_msg = ? WHERE id = ?";
 
-	exec(sql, set_params!(status, err, customer_id)).await?;
+	exec(sql, set_params!(status, err, customer_id.into())).await?;
 
 	Ok(())
 }
 
-pub(super) async fn done_register(customer_id: str_t!()) -> AppRes<()>
+pub(super) async fn done_register(customer_id: impl Into<CustomerId>) -> AppRes<()>
 {
 	//language=SQL
 	let sql = "UPDATE sentc_customer SET email_validate = 1, email_status = 1 WHERE id = ?";
 
-	exec(sql, set_params!(str_get!(customer_id))).await?;
+	exec(sql, set_params!(customer_id.into())).await?;
 
 	Ok(())
 }
 
-pub(super) async fn get_email_token(customer_id: str_t!()) -> AppRes<CustomerEmailToken>
+pub(super) async fn get_email_token(customer_id: impl Into<CustomerId>) -> AppRes<CustomerEmailToken>
 {
 	//language=SQL
 	let sql = "SELECT email_token, email FROM sentc_customer WHERE id = ?";
 
-	let token: Option<CustomerEmailToken> = query_first(sql, set_params!(str_get!(customer_id))).await?;
+	let token: Option<CustomerEmailToken> = query_first(sql, set_params!(customer_id.into())).await?;
 
 	match token {
 		Some(t) => Ok(t),
@@ -144,12 +150,12 @@ WHERE
 	}
 }
 
-pub(super) async fn get_customer_data(customer_id: str_t!()) -> AppRes<CustomerDataEntity>
+pub(super) async fn get_customer_data(customer_id: impl Into<CustomerId>) -> AppRes<CustomerDataEntity>
 {
 	//language=SQL
 	let sql = "SELECT email,email_validate, email_validate_sent, email_status, company, first_name, name FROM sentc_customer WHERE id= ?";
 
-	let customer: Option<CustomerDataEntity> = query_first(sql, set_params!(str_get!(customer_id))).await?;
+	let customer: Option<CustomerDataEntity> = query_first(sql, set_params!(customer_id.into())).await?;
 
 	match customer {
 		Some(c) => Ok(c),
@@ -163,12 +169,12 @@ pub(super) async fn get_customer_data(customer_id: str_t!()) -> AppRes<CustomerD
 	}
 }
 
-pub(super) async fn get_customer_email_data_by_email(email: String) -> AppRes<CustomerDataByEmailEntity>
+pub(super) async fn get_customer_email_data_by_email(email: impl Into<String>) -> AppRes<CustomerDataByEmailEntity>
 {
 	//language=SQL
 	let sql = "SELECT id, email_validate, email_validate_sent, email_status FROM sentc_customer WHERE email= ?";
 
-	let customer: Option<CustomerDataByEmailEntity> = query_first(sql, set_params!(email)).await?;
+	let customer: Option<CustomerDataByEmailEntity> = query_first(sql, set_params!(email.into())).await?;
 
 	match customer {
 		Some(c) => Ok(c),
@@ -184,19 +190,19 @@ pub(super) async fn get_customer_email_data_by_email(email: String) -> AppRes<Cu
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn delete(customer_id: str_t!()) -> AppRes<()>
+pub(super) async fn delete(customer_id: impl Into<CustomerId>) -> AppRes<()>
 {
 	//language=SQL
 	let sql = "DELETE FROM sentc_customer WHERE id = ?";
 
-	exec(sql, set_params!(str_get!(customer_id))).await?;
+	exec(sql, set_params!(customer_id.into())).await?;
 
 	Ok(())
 }
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn update(data: CustomerUpdateInput, customer_id: str_t!(), validate_token: String) -> AppRes<()>
+pub(super) async fn update(data: CustomerUpdateInput, customer_id: impl Into<CustomerId>, validate_token: String) -> AppRes<()>
 {
 	let time = get_time()?;
 
@@ -226,11 +232,11 @@ WHERE id = ?";
 		sql,
 		set_params!(
 			data.new_email,
-			u128_get!(time),
+			time.to_string(),
 			email_validate,
 			email_status,
 			validate_token,
-			str_get!(customer_id),
+			customer_id.into(),
 		),
 	)
 	.await?;
@@ -238,28 +244,24 @@ WHERE id = ?";
 	Ok(())
 }
 
-pub(super) async fn reset_password_token_save(customer_id: str_t!(), validate_token: str_t!()) -> AppRes<()>
+pub(super) async fn reset_password_token_save(customer_id: impl Into<CustomerId>, validate_token: impl Into<String>) -> AppRes<()>
 {
 	//language=SQL
 	let sql = "UPDATE sentc_customer SET email_token = ? WHERE id = ?";
 
-	exec(sql, set_params!(str_get!(validate_token), str_get!(customer_id))).await?;
+	exec(sql, set_params!(validate_token.into(), customer_id.into())).await?;
 
 	Ok(())
 }
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn update_data(id: str_t!(), data: CustomerData) -> AppRes<()>
+pub(super) async fn update_data(id: impl Into<CustomerId>, data: CustomerData) -> AppRes<()>
 {
 	//language=SQL
 	let sql = "UPDATE sentc_customer SET name = ?, first_name = ?, company = ? WHERE id = ?";
 
-	exec(
-		sql,
-		set_params!(data.name, data.first_name, data.company, str_get!(id)),
-	)
-	.await?;
+	exec(sql, set_params!(data.name, data.first_name, data.company, id.into())).await?;
 
 	Ok(())
 }
