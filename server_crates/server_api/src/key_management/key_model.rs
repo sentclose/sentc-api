@@ -1,11 +1,13 @@
 use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerInput;
 use sentc_crypto_common::SymKeyId;
 use server_core::db::{exec, query_first, query_string};
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
+use server_core::res::AppRes;
 use server_core::{get_time, set_params, str_clone, str_get, str_t, u128_get};
 use uuid::Uuid;
 
 use crate::key_management::key_entity::SymKeyEntity;
-use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::util::api_res::ApiErrorCodes;
 
 pub(super) async fn register_sym_key(app_id: str_t!(), creator_id: str_t!(), input: GeneratedSymKeyHeadServerInput) -> AppRes<SymKeyId>
 {
@@ -67,11 +69,10 @@ pub(super) async fn get_sym_key_by_id(app_id: str_t!(), key_id: str_t!()) -> App
 	match key {
 		Some(k) => Ok(k),
 		None => {
-			Err(HttpErr::new(
+			Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::KeyNotFound,
-				"Key not found".to_string(),
-				None,
+				"Key not found",
 			))
 		},
 	}
