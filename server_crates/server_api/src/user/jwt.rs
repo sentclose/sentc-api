@@ -5,8 +5,7 @@ use jsonwebtoken::{decode, decode_header, encode, Algorithm, DecodingKey, Encodi
 use ring::rand;
 use ring::signature::{self, KeyPair};
 use rustgram::Request;
-use sentc_crypto::sdk_common::AppId;
-use sentc_crypto_common::{DeviceId, GroupId, UserId};
+use sentc_crypto_common::{AppId, DeviceId, GroupId, UserId};
 use serde::{Deserialize, Serialize};
 use server_core::cache::{CacheVariant, LONG_TTL};
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
