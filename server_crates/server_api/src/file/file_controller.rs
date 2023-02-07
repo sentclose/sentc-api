@@ -4,7 +4,9 @@ use sentc_crypto_common::file::{FileNameUpdate, FilePartRegisterOutput, FileRegi
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::FileId;
 use server_api_common::app::{FILE_STORAGE_OWN, FILE_STORAGE_SENTC};
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::input_helper::{bytes_to_json, get_raw_body};
+use server_core::res::AppRes;
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 use uuid::Uuid;
 
@@ -13,7 +15,7 @@ use crate::file::file_entities::{FileMetaData, FilePartListItem};
 use crate::file::{file_model, file_service};
 use crate::group::get_group_user_data_from_req;
 use crate::user::jwt::get_jwt_data_from_param;
-use crate::util::api_res::{echo, echo_success, ApiErrorCodes, AppRes, HttpErr, JRes};
+use crate::util::api_res::{echo, echo_success, ApiErrorCodes, JRes};
 
 pub async fn register_file(mut req: Request) -> JRes<FileRegisterOutput>
 {
@@ -61,11 +63,10 @@ pub async fn delete_registered_file_part(req: Request) -> JRes<ServerSuccessOutp
 	let file_options = &app.file_options;
 
 	if file_options.file_storage != FILE_STORAGE_OWN {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::FileUploadAllowed,
-			"File upload is not allowed".to_string(),
-			None,
+			"File upload is not allowed",
 		));
 	}
 
@@ -87,11 +88,10 @@ pub async fn register_file_part(req: Request) -> JRes<FilePartRegisterOutput>
 	let file_options = &app.file_options;
 
 	if file_options.file_storage != FILE_STORAGE_OWN {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::FileUploadAllowed,
-			"File upload is not allowed".to_string(),
-			None,
+			"File upload is not allowed",
 		));
 	}
 
@@ -120,11 +120,10 @@ pub async fn upload_part(req: Request) -> JRes<ServerSuccessOutput>
 	let app_id = app.app_data.app_id.clone(); //must be owned because req is dropped before save part with app id
 
 	if file_options.file_storage != FILE_STORAGE_SENTC {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::FileUploadAllowed,
-			"File upload is not allowed".to_string(),
-			None,
+			"File upload is not allowed",
 		));
 	}
 
@@ -146,22 +145,16 @@ async fn check_session(req: &Request, app_id: &str, user_id: &str) -> AppRes<(Fi
 	let session_id = get_name_param_from_params(params, "session_id")?;
 	let sequence = get_name_param_from_params(params, "seq")?;
 	let sequence: i32 = sequence.parse().map_err(|_e| {
-		HttpErr::new(
+		SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::UnexpectedTime,
-			"Parameter sequence has a wrong format".to_string(),
-			None,
+			"Parameter sequence has a wrong format",
 		)
 	})?;
 	let end = get_name_param_from_params(params, "end")?;
-	let end: bool = end.parse().map_err(|_e| {
-		HttpErr::new(
-			400,
-			ApiErrorCodes::UnexpectedTime,
-			"Parameter end has a wrong format".to_string(),
-			None,
-		)
-	})?;
+	let end: bool = end
+		.parse()
+		.map_err(|_e| SentcCoreError::new_msg(400, ApiErrorCodes::UnexpectedTime, "Parameter end has a wrong format"))?;
 
 	let (file_id, chunk_size) = file_model::check_session(app_id, session_id, user_id).await?;
 
@@ -217,14 +210,9 @@ pub async fn get_parts(req: Request) -> JRes<Vec<FilePartListItem>>
 	let params = get_params(&req)?;
 	let file_id = get_name_param_from_params(params, "file_id")?;
 	let last_sequence = get_name_param_from_params(params, "last_sequence")?;
-	let last_sequence: i32 = last_sequence.parse().map_err(|_e| {
-		HttpErr::new(
-			400,
-			ApiErrorCodes::UnexpectedTime,
-			"last fetched sequence is wrong".to_string(),
-			None,
-		)
-	})?;
+	let last_sequence: i32 = last_sequence
+		.parse()
+		.map_err(|_e| SentcCoreError::new_msg(400, ApiErrorCodes::UnexpectedTime, "last fetched sequence is wrong"))?;
 
 	let parts = file_model::get_file_parts(&app_data.app_data.app_id, file_id, last_sequence).await?;
 
@@ -245,7 +233,7 @@ pub async fn download_part_internally(req: Request) -> AppRes<Response>
 
 	let part_id = get_name_param_from_req(&req, "part_id")?;
 
-	Ok(server_core::file::get_part(part_id).await?)
+	server_core::file::get_part(part_id).await
 }
 
 pub async fn update_file_name(mut req: Request) -> JRes<ServerSuccessOutput>
