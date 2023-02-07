@@ -8,12 +8,13 @@ use rustgram::{Request, Response};
 use sentc_crypto_common::AppId;
 use server_core::cache;
 use server_core::cache::{CacheVariant, LONG_TTL};
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::input_helper::{bytes_to_json, json_to_string};
 
 use crate::customer_app::app_entities::AppData;
 use crate::customer_app::app_model;
 use crate::customer_app::app_util::{get_app_data_from_req, hash_token_from_string_to_string};
-use crate::util::api_res::{ApiErrorCodes, HttpErr};
+use crate::util::api_res::ApiErrorCodes;
 use crate::util::APP_TOKEN_CACHE;
 
 pub struct AppTokenMiddleware<S>
@@ -84,13 +85,7 @@ where
 			};
 
 			if app_data.app_data.app_id != app_id {
-				return HttpErr::new(
-					400,
-					ApiErrorCodes::CustomerWrongAppToken,
-					"Wrong app token used".to_string(),
-					None,
-				)
-				.into_response();
+				return SentcCoreError::new_msg(400, ApiErrorCodes::CustomerWrongAppToken, "Wrong app token used").into_response();
 			}
 
 			next.call(req).await
@@ -110,7 +105,7 @@ pub fn app_token_base_app_transform<S>(inner: S) -> AppTokenBaseAppMiddleware<S>
 
 //__________________________________________________________________________________________________
 
-async fn token_check(req: &mut Request) -> Result<(), HttpErr>
+async fn token_check(req: &mut Request) -> Result<(), SentcCoreError>
 {
 	let app_token = get_from_req(req)?;
 	//hash the app token
@@ -145,11 +140,10 @@ async fn token_check(req: &mut Request) -> Result<(), HttpErr>
 	let entity = match entity {
 		CacheVariant::Some(d) => d,
 		CacheVariant::None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				401,
 				ApiErrorCodes::AppTokenNotFound,
-				"No valid app token".to_owned(),
-				None,
+				"No valid app token",
 			))
 		},
 	};
@@ -159,29 +153,22 @@ async fn token_check(req: &mut Request) -> Result<(), HttpErr>
 	Ok(())
 }
 
-fn get_from_req(req: &Request) -> Result<String, HttpErr>
+fn get_from_req(req: &Request) -> Result<String, SentcCoreError>
 {
 	let headers = req.headers();
 	let header = match headers.get("x-sentc-app-token") {
 		Some(v) => v,
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				401,
 				ApiErrorCodes::AppTokenNotFound,
-				"No valid app token".to_owned(),
-				None,
+				"No valid app token",
 			))
 		},
 	};
 
-	let app_token = std::str::from_utf8(header.as_bytes()).map_err(|_e| {
-		HttpErr::new(
-			401,
-			ApiErrorCodes::AppTokenWrongFormat,
-			"Wrong format".to_owned(),
-			None,
-		)
-	})?;
+	let app_token =
+		std::str::from_utf8(header.as_bytes()).map_err(|_e| SentcCoreError::new_msg(401, ApiErrorCodes::AppTokenWrongFormat, "Wrong format"))?;
 
 	Ok(app_token.to_string())
 }
