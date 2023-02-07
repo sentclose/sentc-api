@@ -11,7 +11,7 @@ use crate::key_management::key_model;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::echo_success;
 
-pub(crate) async fn register_sym_key(mut req: Request) -> JRes<GeneratedSymKeyHeadServerRegisterOutput>
+pub async fn register_sym_key(mut req: Request) -> JRes<GeneratedSymKeyHeadServerRegisterOutput>
 {
 	let body = get_raw_body(&mut req).await?;
 	let input: GeneratedSymKeyHeadServerInput = bytes_to_json(&body)?;
@@ -29,7 +29,7 @@ pub(crate) async fn register_sym_key(mut req: Request) -> JRes<GeneratedSymKeyHe
 	echo(out)
 }
 
-pub(crate) async fn delete_sym_key(req: Request) -> JRes<ServerSuccessOutput>
+pub async fn delete_sym_key(req: Request) -> JRes<ServerSuccessOutput>
 {
 	let app = get_app_data_from_req(&req)?;
 	check_endpoint_with_app_options(app, Endpoint::KeyRegister)?;
@@ -43,7 +43,7 @@ pub(crate) async fn delete_sym_key(req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
-pub(crate) async fn get_sym_key_by_id(req: Request) -> JRes<SymKeyEntity>
+pub async fn get_sym_key_by_id(req: Request) -> JRes<SymKeyEntity>
 {
 	let app_data = get_app_data_from_req(&req)?;
 	check_endpoint_with_app_options(app_data, Endpoint::KeyGet)?;
@@ -55,7 +55,7 @@ pub(crate) async fn get_sym_key_by_id(req: Request) -> JRes<SymKeyEntity>
 	echo(key)
 }
 
-pub(crate) async fn get_all_sym_keys_to_master_key(req: Request) -> JRes<Vec<SymKeyEntity>>
+pub async fn get_all_sym_keys_to_master_key(req: Request) -> JRes<Vec<SymKeyEntity>>
 {
 	let app_data = get_app_data_from_req(&req)?;
 	check_endpoint_with_app_options(app_data, Endpoint::KeyGet)?;
