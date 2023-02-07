@@ -118,7 +118,7 @@ async fn token_check(req: &mut Request) -> Result<(), SentcCoreError>
 		Some(j) => bytes_to_json(j.as_bytes())?,
 		None => {
 			//load the info from the db
-			let data = match app_model::get_app_data(hashed_token.as_str()).await {
+			let data = match app_model::get_app_data(hashed_token).await {
 				Ok(d) => d,
 				Err(e) => {
 					//save the wrong token in the cache
