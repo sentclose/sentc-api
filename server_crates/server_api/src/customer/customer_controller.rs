@@ -24,7 +24,7 @@ use server_api_common::customer::{
 use server_core::email;
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::input_helper::{bytes_to_json, get_raw_body};
-use server_core::res::AppRes;
+use server_core::res::{echo, AppRes, JRes};
 
 use crate::customer::customer_model;
 #[cfg(feature = "send_mail")]
@@ -33,7 +33,7 @@ use crate::customer_app::app_util::get_app_data_from_req;
 use crate::file::file_service;
 use crate::user;
 use crate::user::jwt::get_jwt_data_from_param;
-use crate::util::api_res::{echo, echo_success, ApiErrorCodes, JRes};
+use crate::util::api_res::{echo_success, ApiErrorCodes};
 
 pub async fn customer_captcha(req: Request) -> JRes<CaptchaCreateOutput>
 {

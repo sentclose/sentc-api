@@ -58,7 +58,7 @@ pub use user::{
 	user_service as sentc_user_service,
 };
 
-pub async fn not_found_handler(_req: Request) -> util::api_res::JRes<String>
+pub async fn not_found_handler(_req: Request) -> server_core::res::JRes<String>
 {
 	Err(server_core::error::SentcCoreError::new_msg(
 		404,

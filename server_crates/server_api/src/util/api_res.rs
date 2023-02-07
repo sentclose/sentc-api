@@ -1,7 +1,6 @@
 use sentc_crypto_common::server_default::ServerSuccessOutput;
-use serde::Serialize;
 use server_core::error::{CoreErrorCodes, SentcErrorCodes};
-use server_core::res::JsonRes;
+use server_core::res::{echo, JRes};
 
 #[derive(Debug)]
 pub enum ApiErrorCodes
@@ -209,13 +208,6 @@ impl SentcErrorCodes for ApiErrorCodes
 			ApiErrorCodes::ContentSearchableQueryMissing => 810,
 		}
 	}
-}
-
-pub type JRes<T> = server_core::res::JRes<T>;
-
-pub fn echo<T: Serialize>(obj: T) -> JRes<T>
-{
-	Ok(JsonRes(obj))
 }
 
 pub fn echo_success() -> JRes<ServerSuccessOutput>
