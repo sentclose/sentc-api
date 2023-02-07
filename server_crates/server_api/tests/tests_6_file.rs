@@ -524,7 +524,7 @@ async fn test_14_get_not_files_in_group_without_group_access()
 
 	let out = ServerOutput::<FileData>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, false);
+	assert!(!out.status);
 }
 
 #[tokio::test]
@@ -560,7 +560,7 @@ async fn test_15_not_upload_file_in_a_group_without_access()
 
 	let out = ServerOutput::<FileRegisterOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, false);
+	assert!(!out.status);
 
 	match sentc_crypto::file::done_register_file(body.as_str()) {
 		Ok(_) => {
@@ -619,7 +619,7 @@ async fn test_16_no_file_access_when_for_child_group_user()
 
 	let out = ServerOutput::<FileData>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, false);
+	assert!(!out.status);
 }
 
 #[tokio::test]
@@ -705,7 +705,7 @@ async fn test_18_access_the_child_group_file()
 		&file_data.part_list[0].part_id,
 		state.user_data_1.jwt.as_str(),
 		state.app_data.public_token.as_str(),
-		&file_key,
+		file_key,
 	)
 	.await;
 
@@ -734,7 +734,7 @@ async fn test_18_access_the_child_group_file()
 		&file_data.part_list[0].part_id,
 		state.user_data.jwt.as_str(),
 		state.app_data.public_token.as_str(),
-		&file_key,
+		file_key,
 	)
 	.await;
 
@@ -1191,7 +1191,7 @@ async fn test_31_download_chunked_file()
 			part_id,
 			state.user_data.jwt.as_str(),
 			state.app_data.public_token.as_str(),
-			&file_key,
+			file_key,
 		)
 		.await;
 
@@ -1358,7 +1358,7 @@ async fn test_0_large_file()
 		let part_id = &part.part_id;
 
 		//should all internal storage
-		let mut decrypted_part = get_and_decrypt_file_part(part_id, key_data.jwt.as_str(), public_token.as_str(), &file_key).await;
+		let mut decrypted_part = get_and_decrypt_file_part(part_id, key_data.jwt.as_str(), public_token.as_str(), file_key).await;
 
 		downloaded_file.append(&mut decrypted_part);
 	}
