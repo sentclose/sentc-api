@@ -4,11 +4,11 @@ use rustgram::Request;
 use serde::{de, Serialize};
 use serde_json::{from_slice, to_string};
 
-use crate::error::{CoreError, CoreErrorCodes};
+use crate::error::{CoreErrorCodes, SentcCoreError, SentcErrorConstructor};
 
 const MAX_SIZE_JSON: usize = 262_144; // max payload size is 256k
 
-pub async fn get_raw_body(req: &mut Request) -> Result<BytesMut, CoreError>
+pub async fn get_raw_body(req: &mut Request) -> Result<BytesMut, SentcCoreError>
 {
 	//read the json to memory
 	let req_body = req.body_mut();
@@ -18,11 +18,10 @@ pub async fn get_raw_body(req: &mut Request) -> Result<BytesMut, CoreError>
 		match bytes {
 			Ok(chunk) => {
 				if (body.len() + chunk.len()) > MAX_SIZE_JSON {
-					return Err(CoreError::new(
+					return Err(SentcCoreError::new_msg(
 						413,
 						CoreErrorCodes::InputTooBig,
-						"Input was too big to handle".to_owned(),
-						None,
+						"Input was too big to handle",
 					));
 				}
 
@@ -37,14 +36,14 @@ pub async fn get_raw_body(req: &mut Request) -> Result<BytesMut, CoreError>
 	Ok(body)
 }
 
-pub fn json_to_string<T>(value: &T) -> Result<String, CoreError>
+pub fn json_to_string<T>(value: &T) -> Result<String, SentcCoreError>
 where
 	T: ?Sized + Serialize,
 {
 	match to_string(value) {
 		Ok(o) => Ok(o),
 		Err(e) => {
-			Err(CoreError::new(
+			Err(SentcCoreError::new_msg_owned(
 				422,
 				CoreErrorCodes::JsonToString,
 				format!("json parse err: {:?}", e),
@@ -54,14 +53,14 @@ where
 	}
 }
 
-pub fn bytes_to_json<'a, T>(v: &'a [u8]) -> Result<T, CoreError>
+pub fn bytes_to_json<'a, T>(v: &'a [u8]) -> Result<T, SentcCoreError>
 where
 	T: de::Deserialize<'a>,
 {
 	match from_slice::<T>(v) {
 		Ok(o) => Ok(o),
 		Err(e) => {
-			Err(CoreError::new(
+			Err(SentcCoreError::new_msg_owned(
 				422,
 				CoreErrorCodes::JsonParse,
 				format!("Wrong input: {:?}", e),

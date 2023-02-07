@@ -100,12 +100,9 @@ async fn test_db_insert_and_fetch()
 		.await
 		.unwrap();
 
-	let not_found_datum = match test_datum {
-		None => true,
-		Some(_) => false,
-	};
+	let not_found_datum = test_datum.is_none();
 
-	assert_eq!(not_found_datum, true);
+	assert!(not_found_datum);
 }
 
 async fn test_db_insert_and_fetch_with_get_ins()

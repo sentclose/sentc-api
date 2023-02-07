@@ -6,7 +6,7 @@ use lettre::transport::smtp::authentication::Credentials;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 use tokio::sync::OnceCell;
 
-use crate::error::{CoreError, CoreErrorCodes};
+use crate::error::{CoreErrorCodes, SentcCoreError, SentcErrorConstructor};
 
 static EMAIL_SENDER_REGISTER: OnceCell<Email> = OnceCell::const_new();
 
@@ -29,7 +29,7 @@ pub fn send_mail_registration<'a>(
 	subject: &'a str,
 	body_txt: String,
 	body_html: String,
-) -> impl Future<Output = Result<(), CoreError>> + 'a
+) -> impl Future<Output = Result<(), SentcCoreError>> + 'a
 {
 	let email = EMAIL_SENDER_REGISTER.get().unwrap();
 
@@ -65,7 +65,7 @@ impl Email
 		}
 	}
 
-	pub async fn send_email_smpt(&self, to: &str, subject: &str, body_txt: String, body_html: String) -> Result<(), CoreError>
+	pub async fn send_email_smpt(&self, to: &str, subject: &str, body_txt: String, body_html: String) -> Result<(), SentcCoreError>
 	{
 		let smtp_credentials = Credentials::new(self.user.to_string(), self.pw.to_string());
 		let mailer = AsyncSmtpTransport::<Tokio1Executor>::relay(self.server.as_str())
@@ -74,14 +74,9 @@ impl Email
 			.port(self.port)
 			.build();
 
-		let to = to.parse().map_err(|_e| {
-			CoreError::new(
-				400,
-				CoreErrorCodes::EmailMessage,
-				"Error in email message".to_string(),
-				None,
-			)
-		})?;
+		let to = to
+			.parse()
+			.map_err(|_e| SentcCoreError::new_msg(400, CoreErrorCodes::EmailMessage, "Error in email message"))?;
 
 		let email = Message::builder()
 			.from(self.from.clone())
@@ -101,17 +96,10 @@ impl Email
 							.body(body_html),
 					),
 			)
-			.map_err(|_e| {
-				CoreError::new(
-					400,
-					CoreErrorCodes::EmailMessage,
-					"Error in email message".to_string(),
-					None,
-				)
-			})?;
+			.map_err(|_e| SentcCoreError::new_msg(400, CoreErrorCodes::EmailMessage, "Error in email message"))?;
 
 		mailer.send(email).await.map_err(|e| {
-			CoreError::new(
+			SentcCoreError::new_msg_owned(
 				400,
 				CoreErrorCodes::EmailSend,
 				format!("Error in email send: {}", e),
