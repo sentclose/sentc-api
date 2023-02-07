@@ -5,7 +5,7 @@ use deadpool_sqlite::{Config, Pool, Runtime};
 use rusqlite::{params_from_iter, Connection, Row, ToSql};
 
 use crate::db::{db_bulk_insert_err, db_exec_err, db_query_err, db_tx_err, SQLITE_DB_CONN};
-use crate::error::{CoreError, CoreErrorCodes};
+use crate::error::{CoreErrorCodes, SentcCoreError, SentcErrorConstructor};
 
 #[macro_export]
 macro_rules! take_or_err {
@@ -128,22 +128,22 @@ where
 	pub params: P,
 }
 
-pub async fn get_conn() -> Result<deadpool_sqlite::Object, CoreError>
+pub async fn get_conn() -> Result<deadpool_sqlite::Object, SentcCoreError>
 {
 	match SQLITE_DB_CONN.get().unwrap().get().await {
 		Ok(c) => Ok(c),
 		Err(e) => {
-			Err(CoreError::new(
+			Err(SentcCoreError::new_msg_and_debug(
 				500,
 				CoreErrorCodes::NoDbConnection,
-				"No db connection".to_owned(),
+				"No db connection",
 				Some(format!("db connection error for sqlite: {:?}", e)),
 			))
 		},
 	}
 }
 
-fn query_sync<T, P>(conn: &mut Connection, sql: &str, params: P) -> Result<Vec<T>, CoreError>
+fn query_sync<T, P>(conn: &mut Connection, sql: &str, params: P) -> Result<Vec<T>, SentcCoreError>
 where
 	T: FromSqliteRow,
 	P: IntoIterator,
@@ -207,7 +207,7 @@ async fn lol()
 
 ````
 */
-pub async fn query<T, P>(sql: &'static str, params: P) -> Result<Vec<T>, CoreError>
+pub async fn query<T, P>(sql: &'static str, params: P) -> Result<Vec<T>, SentcCoreError>
 where
 	T: FromSqliteRow + Send + 'static,
 	P: IntoIterator + Send + 'static,
@@ -228,7 +228,7 @@ The same as query but sql with a string.
 
 This is used to get the sql string from the get in fn
  */
-pub async fn query_string<T, P>(sql: String, params: P) -> Result<Vec<T>, CoreError>
+pub async fn query_string<T, P>(sql: String, params: P) -> Result<Vec<T>, SentcCoreError>
 where
 	T: FromSqliteRow + Send + 'static,
 	P: IntoIterator + Send + 'static,
@@ -244,7 +244,7 @@ where
 	Ok(result)
 }
 
-fn query_first_sync<T, P>(conn: &mut Connection, sql: &str, params: P) -> Result<Option<T>, CoreError>
+fn query_first_sync<T, P>(conn: &mut Connection, sql: &str, params: P) -> Result<Option<T>, SentcCoreError>
 where
 	T: FromSqliteRow,
 	P: IntoIterator,
@@ -267,7 +267,7 @@ where
 
 No vec gets returned, but an options enum
 */
-pub async fn query_first<T, P>(sql: &'static str, params: P) -> Result<Option<T>, CoreError>
+pub async fn query_first<T, P>(sql: &'static str, params: P) -> Result<Option<T>, SentcCoreError>
 where
 	T: FromSqliteRow + Send + 'static,
 	P: IntoIterator + Send + 'static,
@@ -288,7 +288,7 @@ The same as query but sql with a string.
 
 This is used to get the sql string from the get in fn
  */
-pub async fn query_first_string<T, P>(sql: String, params: P) -> Result<Option<T>, CoreError>
+pub async fn query_first_string<T, P>(sql: String, params: P) -> Result<Option<T>, SentcCoreError>
 where
 	T: FromSqliteRow + Send + 'static,
 	P: IntoIterator + Send + 'static,
@@ -304,7 +304,7 @@ where
 	Ok(result)
 }
 
-fn exec_sync<P>(conn: &mut Connection, sql: &str, params: P) -> Result<usize, CoreError>
+fn exec_sync<P>(conn: &mut Connection, sql: &str, params: P) -> Result<usize, SentcCoreError>
 where
 	P: IntoIterator,
 	P::Item: ToSql,
@@ -334,7 +334,7 @@ async fn lol()
 
 ````
 */
-pub async fn exec<P>(sql: &'static str, params: P) -> Result<usize, CoreError>
+pub async fn exec<P>(sql: &'static str, params: P) -> Result<usize, SentcCoreError>
 where
 	P: IntoIterator + Send + 'static,
 	P::Item: ToSql,
@@ -349,7 +349,7 @@ where
 	Ok(result)
 }
 
-pub async fn exec_string<P>(sql: String, params: P) -> Result<usize, CoreError>
+pub async fn exec_string<P>(sql: String, params: P) -> Result<usize, SentcCoreError>
 where
 	P: IntoIterator + Send + 'static,
 	P::Item: ToSql,
@@ -364,7 +364,7 @@ where
 	Ok(result)
 }
 
-fn exec_transaction_sync<P>(conn: &mut Connection, data: Vec<TransactionData<P>>) -> Result<(), CoreError>
+fn exec_transaction_sync<P>(conn: &mut Connection, data: Vec<TransactionData<P>>) -> Result<(), SentcCoreError>
 where
 	P: IntoIterator,
 	P::Item: ToSql,
@@ -384,7 +384,7 @@ where
 
 can be multiple stmt with params in one transition
  */
-pub async fn exec_transaction<P>(data: Vec<TransactionData<P>>) -> Result<(), CoreError>
+pub async fn exec_transaction<P>(data: Vec<TransactionData<P>>) -> Result<(), SentcCoreError>
 where
 	P: IntoIterator + Send + 'static,
 	P::Item: ToSql,
@@ -396,7 +396,14 @@ where
 		.map_err(|e| db_exec_err(&e))?
 }
 
-fn bulk_insert_sync<F, T>(conn: &mut Connection, ignore: bool, table: String, cols: Vec<String>, objects: &Vec<T>, fun: F) -> Result<usize, CoreError>
+fn bulk_insert_sync<F, T>(
+	conn: &mut Connection,
+	ignore: bool,
+	table: String,
+	cols: Vec<String>,
+	objects: &Vec<T>,
+	fun: F,
+) -> Result<usize, SentcCoreError>
 where
 	F: Fn(&T) -> Vec<rusqlite::types::Value>,
 {
@@ -467,7 +474,7 @@ pub async fn bulk_insert<F: 'static + Send + Sync, T: 'static + Send + Sync>(
 	cols: Vec<String>,
 	objects: Vec<T>, //must be pass by value because we need static lifetime here for the deadpool interact
 	fun: F,
-) -> Result<usize, CoreError>
+) -> Result<usize, SentcCoreError>
 where
 	F: Fn(&T) -> Vec<rusqlite::types::Value>,
 {

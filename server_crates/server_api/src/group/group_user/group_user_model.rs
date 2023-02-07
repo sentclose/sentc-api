@@ -1,5 +1,7 @@
 use sentc_crypto_common::group::GroupKeysForNewMember;
 use server_core::db::{bulk_insert, exec, exec_transaction, query_first, query_string, I32Entity, I64Entity, StringEntity, TransactionData};
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
+use server_core::res::AppRes;
 use server_core::{get_time, set_params, str_clone, str_get, str_owned, str_t, u128_get};
 use uuid::Uuid;
 
@@ -7,7 +9,7 @@ use crate::group::group_entities::{GroupInviteReq, GroupJoinReq, GroupUserListIt
 use crate::group::group_model;
 use crate::group::group_model::check_group_rank;
 use crate::group::group_user_service::{InsertNewUserType, NewUserType};
-use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::util::api_res::ApiErrorCodes;
 
 pub(super) async fn get_group_member(
 	group_id: str_t!(),
@@ -74,11 +76,10 @@ pub(super) async fn invite_request(
 			let cg = check_is_connected_group(str_clone!(invited_user)).await?;
 
 			if cg == 1 {
-				return Err(HttpErr::new(
+				return Err(SentcCoreError::new_msg(
 					400,
 					ApiErrorCodes::GroupJoinAsConnectedGroup,
-					"Can't invite group when the group is a connected group".to_string(),
-					None,
+					"Can't invite group when the group is a connected group",
 				));
 			}
 
@@ -90,11 +91,10 @@ pub(super) async fn invite_request(
 	let check = check_user_in_group(str_clone!(group_id), str_clone!(invited_user)).await?;
 
 	if check {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupUserExists,
-			"Invited user is already in the group".to_string(),
-			None,
+			"Invited user is already in the group",
 		));
 	}
 
@@ -112,11 +112,10 @@ pub(super) async fn invite_request(
 	.await?;
 
 	if invite_exists.is_some() {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			200,
 			ApiErrorCodes::GroupUserExists,
-			"User was already invited".to_string(),
-			None,
+			"User was already invited",
 		));
 	}
 
@@ -293,11 +292,10 @@ pub(super) async fn join_req(app_id: str_t!(), group_id: str_t!(), user_id: str_
 			let cg = check_is_connected_group(str_clone!(group_id)).await?;
 
 			if cg != 1 {
-				return Err(HttpErr::new(
+				return Err(SentcCoreError::new_msg(
 					400,
 					ApiErrorCodes::GroupJoinAsConnectedGroup,
-					"Can't join a group when it is not a connected group".to_string(),
-					None,
+					"Can't join a group when it is not a connected group",
 				));
 			}
 
@@ -308,11 +306,10 @@ pub(super) async fn join_req(app_id: str_t!(), group_id: str_t!(), user_id: str_
 	let check = check_user_in_group(str_clone!(group_id), str_clone!(user_id)).await?;
 
 	if check {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupUserExists,
-			"User is already in the group".to_string(),
-			None,
+			"User is already in the group",
 		));
 	}
 
@@ -374,11 +371,10 @@ pub(super) async fn accept_join_req(
 	let check = check_user_in_group(str_clone!(group_id), str_clone!(user_id)).await?;
 
 	if check {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupUserExists,
-			"Invited user is already in the group".to_string(),
-			None,
+			"Invited user is already in the group",
 		));
 	}
 
@@ -394,11 +390,10 @@ pub(super) async fn accept_join_req(
 	let user_type = match check {
 		Some(c) => c.0,
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupJoinReqNotFound,
-				"Join request not found".to_string(),
-				None,
+				"Join request not found",
 			));
 		},
 	};
@@ -552,11 +547,10 @@ pub(super) async fn delete_sent_join_req(app_id: str_t!(), user_id: str_t!(), gr
 	let check: Option<I64Entity> = query_first(sql, set_params!(str_get!(app_id), str_clone!(group_id))).await?;
 
 	if check.is_none() {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupAccess,
-			"Group not found".to_string(),
-			None,
+			"Group not found",
 		));
 	}
 
@@ -580,11 +574,10 @@ pub(super) async fn user_leave_group(group_id: str_t!(), user_id: str_t!(), rank
 		let only_admin = check_for_only_one_admin(str_clone!(group_id), str_clone!(user_id)).await?;
 
 		if only_admin {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupOnlyOneAdmin,
-				"Can't leave the group, because no other admin found in the group. Please update the rank of another user to admin".to_string(),
-				None,
+				"Can't leave the group, because no other admin found in the group. Please update the rank of another user to admin",
 			));
 		}
 	}
@@ -615,32 +608,29 @@ pub(super) async fn kick_user_from_group(group_id: str_t!(), user_id: str_t!(), 
 	let check = match check {
 		Some(c) => c.0,
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupUserNotFound,
-				"User not found in this group".to_string(),
-				None,
+				"User not found in this group",
 			))
 		},
 	};
 
 	if check == 0 {
 		//changed user is creator
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupUserKick,
-			"Can't delete the group creator".to_string(),
-			None,
+			"Can't delete the group creator",
 		));
 	}
 
 	if check < rank {
 		//changed user has a higher rank
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupUserKickRank,
-			"Can't delete a higher rank.".to_string(),
-			None,
+			"Can't delete a higher rank.",
 		));
 	}
 
@@ -663,11 +653,10 @@ pub(super) async fn update_rank(group_id: str_t!(), admin_rank: i32, changed_use
 
 	//only one creator
 	if new_rank == 0 || new_rank > 4 {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupUserRankUpdate,
-			"Wrong rank used".to_string(),
-			None,
+			"Wrong rank used",
 		));
 	}
 
@@ -680,22 +669,20 @@ pub(super) async fn update_rank(group_id: str_t!(), admin_rank: i32, changed_use
 	let check = match check {
 		Some(c) => c.0,
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupUserNotFound,
-				"User not found in this group".to_string(),
-				None,
+				"User not found in this group",
 			))
 		},
 	};
 
 	if check == 0 {
 		//changed user is creator
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupUserRankUpdate,
-			"Can't change the rank of a group creator".to_string(),
-			None,
+			"Can't change the rank of a group creator",
 		));
 	}
 
@@ -740,11 +727,10 @@ pub(super) async fn insert_user_keys_via_session(
 	let user_id = match user_id {
 		Some(id) => id.0,
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupKeySession,
-				"No session found to upload the keys".to_string(),
-				None,
+				"No session found to upload the keys",
 			))
 		},
 	};
@@ -831,11 +817,10 @@ async fn check_for_invite(user_id: str_t!(), group_id: str_t!()) -> AppRes<i32>
 	match check {
 		Some(user_type) => Ok(user_type.0),
 		None => {
-			Err(HttpErr::new(
+			Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupInviteNotFound,
-				"No invite found".to_string(),
-				None,
+				"No invite found",
 			))
 		},
 	}
@@ -870,20 +855,18 @@ async fn group_accept_invite(app_id: str_t!(), group_id: str_t!()) -> AppRes<()>
 	match can_invite {
 		Some(ci) => {
 			if ci.0 == 0 {
-				return Err(HttpErr::new(
+				return Err(SentcCoreError::new_msg(
 					400,
 					ApiErrorCodes::GroupInviteStop,
-					"No invites allowed for this group".to_string(),
-					None,
+					"No invites allowed for this group",
 				));
 			}
 		},
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupAccess,
-				"Group not found".to_string(),
-				None,
+				"Group not found",
 			))
 		},
 	}
@@ -900,11 +883,10 @@ async fn check_is_connected_group(group_id: str_t!()) -> AppRes<i32>
 	if let Some(cg) = is_connected_group {
 		Ok(cg.0)
 	} else {
-		Err(HttpErr::new(
+		Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupAccess,
-			"Group to invite not found".to_string(),
-			None,
+			"Group to invite not found",
 		))
 	}
 }

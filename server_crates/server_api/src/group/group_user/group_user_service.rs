@@ -1,12 +1,14 @@
 use std::future::Future;
 
 use sentc_crypto_common::group::{GroupKeysForNewMember, GroupKeysForNewMemberServerInput};
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
+use server_core::res::AppRes;
 use server_core::{cache, str_t};
 
 use crate::group::group_entities::{GroupInviteReq, InternalGroupDataComplete};
 use crate::group::group_model;
 use crate::group::group_user::group_user_model;
-use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::util::api_res::ApiErrorCodes;
 use crate::util::get_group_user_cache_key;
 
 pub enum InsertNewUserType
@@ -44,29 +46,26 @@ pub async fn invite_request(
 ) -> AppRes<Option<String>>
 {
 	if input.keys.is_empty() {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupNoKeys,
-			"No group keys for the user".to_string(),
-			None,
+			"No group keys for the user",
 		));
 	}
 
 	if input.keys.len() > 100 {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupTooManyKeys,
-			"Too many group keys for the user. Split the keys and use pagination".to_string(),
-			None,
+			"Too many group keys for the user. Split the keys and use pagination",
 		));
 	}
 
 	if group_data.group_data.invite == 0 {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupInviteStop,
-			"No invites allowed for this group".to_string(),
-			None,
+			"No invites allowed for this group",
 		));
 	}
 
@@ -74,11 +73,10 @@ pub async fn invite_request(
 		//only connected groups can have other groups as member
 		//check in the model if the group to invite a non connected group
 		if !group_data.group_data.is_connected_group {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupJoinAsConnectedGroup,
-				"Can't invite another group when this group is not a connected group".to_string(),
-				None,
+				"Can't invite another group when this group is not a connected group",
 			));
 		}
 	}
@@ -123,20 +121,18 @@ pub async fn insert_user_keys_via_session(
 ) -> AppRes<()>
 {
 	if input.is_empty() {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupNoKeys,
-			"No group keys for the user".to_string(),
-			None,
+			"No group keys for the user",
 		));
 	}
 
 	if input.len() > 100 {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupTooManyKeys,
-			"Too many group keys for the user. Split the keys and use pagination".to_string(),
-			None,
+			"Too many group keys for the user. Split the keys and use pagination",
 		));
 	}
 
@@ -160,11 +156,10 @@ pub async fn leave_group(group_data: &InternalGroupDataComplete, real_user_id: O
 				group_model::check_group_rank(data.rank, 1)?;
 			},
 			None => {
-				return Err(HttpErr::new(
+				return Err(SentcCoreError::new_msg(
 					400,
 					ApiErrorCodes::GroupUserRank,
-					"Wrong group rank for this action".to_string(),
-					None,
+					"Wrong group rank for this action",
 				));
 			},
 		}

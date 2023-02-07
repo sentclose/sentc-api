@@ -3,8 +3,10 @@ use std::future::Future;
 use rustgram::Request;
 use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDataCheckUpdateServerOutput, GroupLightServerData};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::input_helper::{bytes_to_json, get_raw_body};
-use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
+use server_core::res::{echo, JRes};
+use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_time_from_url_param};
 
 use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use crate::group::group_entities::{GroupChildrenList, GroupServerData, GroupUserKeys, ListGroups};
@@ -12,7 +14,7 @@ use crate::group::group_user_service::NewUserType;
 use crate::group::{get_group_user_data_from_req, group_model, group_service, GROUP_TYPE_NORMAL};
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::user::user_entities::UserPublicKeyDataEntity;
-use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
+use crate::util::api_res::{echo_success, ApiErrorCodes};
 
 pub enum GroupCreateType
 {
@@ -70,11 +72,10 @@ async fn create_group(mut req: Request, group_create_type: GroupCreateType) -> J
 			let user_rank = Some(group_data.user_data.rank);
 
 			if group_data.group_data.is_connected_group {
-				return Err(HttpErr::new(
+				return Err(SentcCoreError::new_msg(
 					400,
 					ApiErrorCodes::GroupConnectedFromConnected,
-					"Can't create a connected group from a connected group".to_string(),
-					None,
+					"Can't create a connected group from a connected group",
 				));
 			}
 
@@ -187,14 +188,7 @@ pub async fn get_user_group_keys(req: Request) -> JRes<Vec<GroupUserKeys>>
 	let params = get_params(&req)?;
 	let last_k_id = get_name_param_from_params(params, "last_k_id")?;
 	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
-	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
-		HttpErr::new(
-			400,
-			ApiErrorCodes::UnexpectedTime,
-			"last fetched time is wrong".to_string(),
-			None,
-		)
-	})?;
+	let last_fetched_time = get_time_from_url_param(last_fetched_time)?;
 
 	let user_keys = group_service::get_user_group_keys(
 		&group_data.group_data.app_id,
@@ -269,14 +263,7 @@ pub async fn get_all_first_level_children(req: Request) -> JRes<Vec<GroupChildre
 	let params = get_params(&req)?;
 	let last_id = get_name_param_from_params(params, "last_id")?;
 	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
-	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
-		HttpErr::new(
-			400,
-			ApiErrorCodes::UnexpectedTime,
-			"last fetched time is wrong".to_string(),
-			None,
-		)
-	})?;
+	let last_fetched_time = get_time_from_url_param(last_fetched_time)?;
 
 	let list = group_service::get_first_level_children(
 		&group_data.group_data.app_id,
@@ -301,14 +288,7 @@ async fn get_all_groups_for(req: Request, user_type: NewUserType) -> JRes<Vec<Li
 	let params = get_params(&req)?;
 	let last_group_id = get_name_param_from_params(params, "last_group_id")?;
 	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
-	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
-		HttpErr::new(
-			400,
-			ApiErrorCodes::UnexpectedTime,
-			"last fetched time is wrong".to_string(),
-			None,
-		)
-	})?;
+	let last_fetched_time = get_time_from_url_param(last_fetched_time)?;
 
 	let user_id = match user_type {
 		NewUserType::Normal => {

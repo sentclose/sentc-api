@@ -14,7 +14,8 @@ use server_api_common::app::{
 use server_api_common::customer::CustomerAppList;
 use server_core::cache;
 use server_core::input_helper::{bytes_to_json, get_raw_body};
-use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
+use server_core::res::{echo, JRes};
+use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_time_from_url_param};
 
 use crate::customer::customer_util;
 use crate::customer_app::app_service::check_file_options;
@@ -22,7 +23,7 @@ use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
 use crate::customer_app::{app_model, app_service, generate_tokens};
 use crate::file::file_service;
 use crate::user::jwt::{create_jwt_keys, get_jwt_data_from_param};
-use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
+use crate::util::api_res::echo_success;
 use crate::util::{get_app_jwt_sign_key, get_app_jwt_verify_key, APP_TOKEN_CACHE};
 
 pub(crate) async fn get_all_apps(req: Request) -> JRes<Vec<CustomerAppList>>
@@ -32,14 +33,7 @@ pub(crate) async fn get_all_apps(req: Request) -> JRes<Vec<CustomerAppList>>
 	let params = get_params(&req)?;
 	let last_app_id = get_name_param_from_params(params, "last_app_id")?;
 	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
-	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
-		HttpErr::new(
-			400,
-			ApiErrorCodes::UnexpectedTime,
-			"last fetched time is wrong".to_string(),
-			None,
-		)
-	})?;
+	let last_fetched_time = get_time_from_url_param(last_fetched_time)?;
 
 	let list = app_model::get_all_apps(&user.id, last_fetched_time, last_app_id).await?;
 

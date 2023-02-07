@@ -2,10 +2,12 @@ use std::future::Future;
 
 use sentc_crypto_common::content::CreateData;
 use sentc_crypto_common::ContentId;
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
+use server_core::res::AppRes;
 use server_core::str_t;
 
 use crate::content_management::content_model_edit;
-use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::util::api_res::ApiErrorCodes;
 
 pub enum ContentRelatedType
 {
@@ -17,20 +19,18 @@ pub enum ContentRelatedType
 pub async fn create_content(app_id: &str, creator_id: &str, data: CreateData, group_id: Option<&str>, user_id: Option<&str>) -> AppRes<ContentId>
 {
 	if data.item.is_empty() {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentItemNotSet,
-			"Item is not set".to_string(),
-			None,
+			"Item is not set",
 		));
 	}
 
 	if data.item.len() > 50 {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentItemTooBig,
-			"Item is too big. Only 50 characters are allowed".to_string(),
-			None,
+			"Item is too big. Only 50 characters are allowed",
 		));
 	}
 
@@ -45,20 +45,18 @@ pub fn delete_content_by_id<'a>(app_id: str_t!('a), content_id: str_t!('a)) -> i
 pub async fn delete_content_by_item(app_id: &str, item: &str) -> AppRes<()>
 {
 	if item.is_empty() {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentItemNotSet,
-			"Item is not set".to_string(),
-			None,
+			"Item is not set",
 		));
 	}
 
 	if item.len() > 50 {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentItemTooBig,
-			"Item is too big. Only 50 characters are allowed".to_string(),
-			None,
+			"Item is too big. Only 50 characters are allowed",
 		));
 	}
 

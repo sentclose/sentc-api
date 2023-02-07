@@ -1,12 +1,6 @@
-use hyper::StatusCode;
-use rustgram::service::IntoResponse;
-use rustgram::Response;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
-use sentc_crypto_common::ServerOutput;
-use serde::Serialize;
-use server_core::error::{CoreError, CoreErrorCodes};
-use server_core::get_time;
-use server_core::input_helper::json_to_string;
+use server_core::error::{CoreErrorCodes, SentcErrorCodes};
+use server_core::res::{echo, JRes};
 
 #[derive(Debug)]
 pub enum ApiErrorCodes
@@ -115,37 +109,12 @@ impl From<CoreErrorCodes> for ApiErrorCodes
 	}
 }
 
-impl ApiErrorCodes
+impl SentcErrorCodes for ApiErrorCodes
 {
-	pub fn get_int_code(&self) -> u32
+	fn get_int_code(&self) -> u32
 	{
 		match self {
-			ApiErrorCodes::Core(core) => {
-				match core {
-					CoreErrorCodes::JsonToString => 10,
-					CoreErrorCodes::JsonParse => 11,
-					CoreErrorCodes::InputTooBig => 12,
-					CoreErrorCodes::UnexpectedTime => 13,
-
-					CoreErrorCodes::NoDbConnection => 20,
-					CoreErrorCodes::DbQuery => 21,
-					CoreErrorCodes::DbExecute => 22,
-					CoreErrorCodes::DbBulkInsert => 23,
-					CoreErrorCodes::DbTx => 24,
-
-					CoreErrorCodes::NoParameter => 40,
-					CoreErrorCodes::NoUrlQuery => 41,
-
-					CoreErrorCodes::EmailSend => 50,
-					CoreErrorCodes::EmailMessage => 51,
-
-					CoreErrorCodes::FileLocalOpen => 500,
-					CoreErrorCodes::FileRemove => 501,
-					CoreErrorCodes::FileSave => 502,
-					CoreErrorCodes::FileDownload => 503,
-					CoreErrorCodes::FileTooLarge => 504,
-				}
-			},
+			ApiErrorCodes::Core(core) => core.get_int_code(),
 
 			ApiErrorCodes::PageNotFound => 404,
 
@@ -239,115 +208,6 @@ impl ApiErrorCodes
 			ApiErrorCodes::ContentSearchableQueryMissing => 810,
 		}
 	}
-}
-
-#[derive(Debug)]
-pub struct HttpErr
-{
-	pub http_status_code: u16,
-	pub api_error_code: ApiErrorCodes,
-	pub msg: String,
-	pub debug_msg: Option<String>,
-}
-
-impl From<CoreError> for HttpErr
-{
-	fn from(e: CoreError) -> Self
-	{
-		Self {
-			http_status_code: e.http_status_code,
-			api_error_code: e.error_code.into(),
-			msg: e.msg,
-			debug_msg: e.debug_msg,
-		}
-	}
-}
-
-impl HttpErr
-{
-	pub fn new(http_status_code: u16, api_error_code: ApiErrorCodes, msg: String, debug_msg: Option<String>) -> Self
-	{
-		Self {
-			http_status_code,
-			api_error_code,
-			msg,
-			debug_msg,
-		}
-	}
-}
-
-impl IntoResponse<Response> for HttpErr
-{
-	fn into_response(self) -> Response
-	{
-		let status = match StatusCode::from_u16(self.http_status_code) {
-			Ok(s) => s,
-			Err(_e) => StatusCode::BAD_REQUEST,
-		};
-
-		//msg for the developer only
-		//for std out to get logged with 3rd party service.
-		if self.debug_msg.is_some() {
-			let time = get_time().unwrap_or(0);
-			println!("Http Error at time: {} Error: {:?}", time, self.debug_msg);
-		}
-
-		let body = ServerOutput::<String> {
-			status: false,
-			result: None,
-			err_msg: Some(self.msg),
-			err_code: Some(self.api_error_code.get_int_code()),
-		};
-		//this should be right everytime
-		let body = json_to_string(&body).unwrap();
-
-		hyper::Response::builder()
-			.status(status)
-			.header("Content-Type", "application/json")
-			.header("Access-Control-Allow-Origin", "*")
-			.body(hyper::Body::from(body))
-			.unwrap()
-	}
-}
-
-pub type AppRes<T> = Result<T, HttpErr>;
-
-pub type JRes<T> = Result<JsonRes<T>, HttpErr>;
-
-/**
-Creates a json response with the json header
-
-Creates a string from the obj
-*/
-pub struct JsonRes<T: Serialize>(pub T);
-
-impl<T: Serialize> IntoResponse<Response> for JsonRes<T>
-{
-	fn into_response(self) -> Response
-	{
-		let out = ServerOutput {
-			status: true,
-			err_msg: None,
-			err_code: None,
-			result: Some(self.0),
-		};
-
-		let string = match json_to_string(&out) {
-			Ok(s) => s,
-			Err(e) => return Into::<HttpErr>::into(e).into_response(),
-		};
-
-		hyper::Response::builder()
-			.header("Content-Type", "application/json")
-			.header("Access-Control-Allow-Origin", "*")
-			.body(string.into())
-			.unwrap()
-	}
-}
-
-pub fn echo<T: Serialize>(obj: T) -> JRes<T>
-{
-	Ok(JsonRes(obj))
 }
 
 pub fn echo_success() -> JRes<ServerSuccessOutput>

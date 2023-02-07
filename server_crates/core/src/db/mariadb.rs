@@ -4,7 +4,7 @@ use mysql_async::prelude::{FromRow, Queryable};
 use mysql_async::{Params, Pool, TxOpts};
 
 use crate::db::{db_bulk_insert_err, db_exec_err, db_query_err, db_tx_err, MARIA_DB_COMM};
-use crate::error::{CoreError, CoreErrorCodes};
+use crate::error::{CoreErrorCodes, SentcCoreError, SentcErrorConstructor};
 
 #[macro_export]
 macro_rules! take_or_err {
@@ -75,7 +75,7 @@ pub async fn create_db() -> Pool
 	pool
 }
 
-pub async fn get_conn() -> Result<mysql_async::Conn, CoreError>
+pub async fn get_conn() -> Result<mysql_async::Conn, SentcCoreError>
 {
 	//get conn with a loop because for very much workload we getting an err -> try again
 	let maria_db = MARIA_DB_COMM.get().unwrap();
@@ -84,10 +84,10 @@ pub async fn get_conn() -> Result<mysql_async::Conn, CoreError>
 
 	loop {
 		if i > 10 {
-			return Err(CoreError::new(
+			return Err(SentcCoreError::new_msg_and_debug(
 				500,
 				CoreErrorCodes::NoDbConnection,
-				"No db connection".to_owned(),
+				"No db connection",
 				Some("No connection after 10 tries".to_owned()),
 			));
 		}
@@ -141,7 +141,7 @@ let result = conn
 Ok(to_string(&result).unwrap())
 ```
  */
-pub async fn query<T, P>(sql: &'static str, params: P) -> Result<Vec<T>, CoreError>
+pub async fn query<T, P>(sql: &'static str, params: P) -> Result<Vec<T>, SentcCoreError>
 where
 	T: FromRow + Send + 'static,
 	P: Into<Params> + Send,
@@ -158,7 +158,7 @@ The same as query but sql with a string.
 
 This is used to get the sql string from the get in fn
 */
-pub async fn query_string<T, P>(sql: String, params: P) -> Result<Vec<T>, CoreError>
+pub async fn query_string<T, P>(sql: String, params: P) -> Result<Vec<T>, SentcCoreError>
 where
 	T: FromRow + Send + 'static,
 	P: Into<Params> + Send,
@@ -175,7 +175,7 @@ where
 
 No vec gets returned, but an options enum
 */
-pub async fn query_first<T, P>(sql: &'static str, params: P) -> Result<Option<T>, CoreError>
+pub async fn query_first<T, P>(sql: &'static str, params: P) -> Result<Option<T>, SentcCoreError>
 where
 	T: FromRow + Send + 'static,
 	P: Into<Params> + Send,
@@ -192,7 +192,7 @@ The same as query but sql with a string.
 
 This is used to get the sql string from the get in fn
  */
-pub async fn query_first_string<T, P>(sql: String, params: P) -> Result<Option<T>, CoreError>
+pub async fn query_first_string<T, P>(sql: String, params: P) -> Result<Option<T>, SentcCoreError>
 where
 	T: FromRow + Send + 'static,
 	P: Into<Params> + Send,
@@ -209,7 +209,7 @@ where
 
 drop the result just execute
 */
-pub async fn exec<P>(sql: &str, params: P) -> Result<(), CoreError>
+pub async fn exec<P>(sql: &str, params: P) -> Result<(), SentcCoreError>
 where
 	P: Into<Params> + Send,
 {
@@ -220,7 +220,7 @@ where
 		.map_err(|e| db_exec_err(&e))
 }
 
-pub async fn exec_string<P>(sql: String, params: P) -> Result<(), CoreError>
+pub async fn exec_string<P>(sql: String, params: P) -> Result<(), SentcCoreError>
 where
 	P: Into<Params> + Send,
 {
@@ -236,7 +236,7 @@ where
 
 can be multiple stmt with params in one transition
 */
-pub async fn exec_transaction<P>(data: Vec<TransactionData<'_, P>>) -> Result<(), CoreError>
+pub async fn exec_transaction<P>(data: Vec<TransactionData<'_, P>>) -> Result<(), SentcCoreError>
 where
 	P: Into<Params> + Send,
 {
@@ -271,7 +271,7 @@ creates a query like this:
 INSERT INTO table (fields...) VALUES (?, ?, ?), (?, ?, ?), (?, ?, ?), ...
 ```
  */
-pub async fn bulk_insert<F, P, T>(ignore: bool, table: String, cols: Vec<String>, objects: Vec<T>, fun: F) -> Result<(), CoreError>
+pub async fn bulk_insert<F, P, T>(ignore: bool, table: String, cols: Vec<String>, objects: Vec<T>, fun: F) -> Result<(), SentcCoreError>
 where
 	F: Fn(&T) -> P,
 	P: Into<Params>,

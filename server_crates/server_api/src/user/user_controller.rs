@@ -25,7 +25,8 @@ use sentc_crypto_common::user::{
 	UserUpdateServerInput,
 };
 use server_core::input_helper::{bytes_to_json, get_raw_body};
-use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
+use server_core::res::{echo, JRes};
+use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_time_from_url_param};
 
 use crate::customer_app::app_util::{check_endpoint_with_app_options, get_app_data_from_req, Endpoint};
 use crate::group::group_entities::{GroupKeyUpdate, GroupUserKeys};
@@ -34,7 +35,7 @@ use crate::user::jwt::get_jwt_data_from_param;
 use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
 use crate::user::user_service::UserAction;
 use crate::user::{user_model, user_service};
-use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
+use crate::util::api_res::echo_success;
 
 pub(crate) async fn exists(mut req: Request) -> JRes<UserIdentifierAvailableServerOutput>
 {
@@ -164,14 +165,7 @@ pub(crate) async fn get_user_keys(req: Request) -> JRes<Vec<GroupUserKeys>>
 	let params = get_params(&req)?;
 	let last_k_id = get_name_param_from_params(params, "last_k_id")?;
 	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
-	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
-		HttpErr::new(
-			400,
-			ApiErrorCodes::UnexpectedTime,
-			"last fetched time is wrong".to_string(),
-			None,
-		)
-	})?;
+	let last_fetched_time = get_time_from_url_param(last_fetched_time)?;
 
 	let user_keys = user_service::get_user_keys(user, &app.app_data.app_id, last_fetched_time, last_k_id).await?;
 
@@ -314,14 +308,7 @@ pub(crate) async fn get_devices(req: Request) -> JRes<Vec<UserDeviceList>>
 	let params = get_params(&req)?;
 	let last_id = get_name_param_from_params(params, "last_id")?;
 	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
-	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
-		HttpErr::new(
-			400,
-			ApiErrorCodes::UnexpectedTime,
-			"last fetched time is wrong".to_string(),
-			None,
-		)
-	})?;
+	let last_fetched_time = get_time_from_url_param(last_fetched_time)?;
 
 	let out = user_service::get_devices(&app.app_data.app_id, &user.id, last_fetched_time, last_id).await?;
 

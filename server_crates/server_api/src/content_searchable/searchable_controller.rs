@@ -3,14 +3,16 @@ use std::future::Future;
 use rustgram::Request;
 use sentc_crypto_common::content_searchable::SearchCreateData;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::input_helper::{bytes_to_json, get_raw_body};
-use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_query_params};
+use server_core::res::{echo, JRes};
+use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_query_params, get_time_from_url_param};
 
 use crate::content_searchable::searchable_entities::ListSearchItem;
 use crate::content_searchable::searchable_service;
 use crate::get_group_user_data_from_req;
 use crate::sentc_app_utils::{check_endpoint_with_app_options, get_app_data_from_req, Endpoint};
-use crate::util::api_res::{echo, echo_success, ApiErrorCodes, HttpErr, JRes};
+use crate::util::api_res::{echo_success, ApiErrorCodes};
 
 pub(crate) async fn create(mut req: Request) -> JRes<ServerSuccessOutput>
 {
@@ -78,24 +80,16 @@ async fn search(req: Request, cat: bool) -> JRes<Vec<ListSearchItem>>
 	let params = get_params(&req)?;
 	let last_id = get_name_param_from_params(params, "last_id")?;
 	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
-	let last_fetched_time: u128 = last_fetched_time.parse().map_err(|_e| {
-		HttpErr::new(
-			400,
-			ApiErrorCodes::UnexpectedTime,
-			"last fetched time is wrong".to_string(),
-			None,
-		)
-	})?;
+	let last_fetched_time = get_time_from_url_param(last_fetched_time)?;
 
 	let url_query = get_query_params(&req)?;
 	let search_hash = match url_query.get("search") {
 		Some(q) => q,
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::ContentSearchableQueryMissing,
-				"The search query is missing".to_string(),
-				None,
+				"The search query is missing",
 			));
 		},
 	};

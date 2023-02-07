@@ -1,44 +1,42 @@
 use sentc_crypto_common::content_searchable::SearchCreateData;
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
+use server_core::res::AppRes;
 
 use crate::content_searchable::searchable_entities::ListSearchItem;
 use crate::content_searchable::searchable_model;
-use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::util::api_res::ApiErrorCodes;
 
 pub async fn create_searchable_content(app_id: &str, data: SearchCreateData, group_id: Option<&str>, user_id: Option<&str>) -> AppRes<()>
 {
 	if data.item_ref.is_empty() {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableItemRefNotSet,
-			"Item is not set".to_string(),
-			None,
+			"Item is not set",
 		));
 	}
 
 	if data.item_ref.len() > 50 {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableItemRefTooBig,
-			"Item ref is too big. Only 50 characters are allowed".to_string(),
-			None,
+			"Item ref is too big. Only 50 characters are allowed",
 		));
 	}
 
 	if data.hashes.is_empty() {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableNoHashes,
-			"No hashes sent".to_string(),
-			None,
+			"No hashes sent",
 		));
 	}
 
 	if data.hashes.len() > 200 {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableTooManyHashes,
-			"Item is too big. Only 200 characters are allowed".to_string(),
-			None,
+			"Item is too big. Only 200 characters are allowed",
 		));
 	}
 
@@ -48,20 +46,18 @@ pub async fn create_searchable_content(app_id: &str, data: SearchCreateData, gro
 pub async fn delete_item(app_id: &str, item_ref: &str) -> AppRes<()>
 {
 	if item_ref.is_empty() {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableItemRefNotSet,
-			"Item is not set".to_string(),
-			None,
+			"Item is not set",
 		));
 	}
 
 	if item_ref.len() > 50 {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableItemRefTooBig,
-			"Item ref is too big. Only 50 characters are allowed".to_string(),
-			None,
+			"Item ref is too big. Only 50 characters are allowed",
 		));
 	}
 
@@ -71,20 +67,18 @@ pub async fn delete_item(app_id: &str, item_ref: &str) -> AppRes<()>
 pub async fn delete_item_by_cat(app_id: &str, item_ref: &str, cat: &str) -> AppRes<()>
 {
 	if item_ref.is_empty() {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableItemRefNotSet,
-			"Item is not set".to_string(),
-			None,
+			"Item is not set",
 		));
 	}
 
 	if item_ref.len() > 50 {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableItemRefTooBig,
-			"Item ref is too big. Only 50 characters are allowed".to_string(),
-			None,
+			"Item ref is too big. Only 50 characters are allowed",
 		));
 	}
 
@@ -102,20 +96,18 @@ pub async fn search_item_for_group(
 ) -> AppRes<Vec<ListSearchItem>>
 {
 	if search_hash.is_empty() {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableNoHashes,
-			"No hash sent".to_string(),
-			None,
+			"No hash sent",
 		));
 	}
 
 	if search_hash.len() > 200 {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableTooManyHashes,
-			"Hash is too big.".to_string(),
-			None,
+			"Hash is too big.",
 		));
 	}
 

@@ -22,7 +22,9 @@ use server_api_common::customer::{
 	CustomerUpdateInput,
 };
 use server_core::email;
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::input_helper::{bytes_to_json, get_raw_body};
+use server_core::res::{echo, AppRes, JRes};
 
 use crate::customer::customer_model;
 #[cfg(feature = "send_mail")]
@@ -31,7 +33,7 @@ use crate::customer_app::app_util::get_app_data_from_req;
 use crate::file::file_service;
 use crate::user;
 use crate::user::jwt::get_jwt_data_from_param;
-use crate::util::api_res::{echo, echo_success, ApiErrorCodes, AppRes, HttpErr, JRes};
+use crate::util::api_res::{echo_success, ApiErrorCodes};
 
 pub async fn customer_captcha(req: Request) -> JRes<CaptchaCreateOutput>
 {
@@ -67,11 +69,10 @@ pub async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 	let email_check = email::check_email(email);
 
 	if !email_check {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::CustomerEmailSyntax,
-			"E-mail address is not valid".to_string(),
-			None,
+			"E-mail address is not valid",
 		));
 	}
 
@@ -113,11 +114,10 @@ pub async fn done_register(mut req: Request) -> JRes<ServerSuccessOutput>
 	let db_token = customer_model::get_email_token(customer_id).await?;
 
 	if input.token != db_token.email_token {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::CustomerEmailTokenValid,
-			"Email address is not valid".to_string(),
-			None,
+			"Email address is not valid",
 		));
 	}
 
@@ -221,11 +221,10 @@ pub async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 	let email_check = email::check_email(email.as_str());
 
 	if !email_check {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::CustomerEmailSyntax,
-			"E-mail address is not valid".to_string(),
-			None,
+			"E-mail address is not valid",
 		));
 	}
 
@@ -298,11 +297,10 @@ pub async fn prepare_reset_password(mut req: Request) -> JRes<ServerSuccessOutpu
 	let email_check = email::check_email(email.as_str());
 
 	if !email_check {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::CustomerEmailSyntax,
-			"E-mail address is not valid".to_string(),
-			None,
+			"E-mail address is not valid",
 		));
 	}
 
@@ -310,11 +308,10 @@ pub async fn prepare_reset_password(mut req: Request) -> JRes<ServerSuccessOutpu
 	let email_data = customer_model::get_customer_email_data_by_email(data.email).await?;
 
 	if email_data.email_valid == 0 {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::CustomerEmailValidate,
-			"E-mail address is not active. Please validate your email first.".to_string(),
-			None,
+			"E-mail address is not active. Please validate your email first.",
 		));
 	}
 
@@ -363,14 +360,8 @@ fn generate_email_validate_token() -> AppRes<String>
 
 	let mut token = [0u8; 30];
 
-	rng.try_fill_bytes(&mut token).map_err(|_| {
-		HttpErr::new(
-			400,
-			ApiErrorCodes::AppTokenWrongFormat,
-			"Can't create email token".to_string(),
-			None,
-		)
-	})?;
+	rng.try_fill_bytes(&mut token)
+		.map_err(|_| SentcCoreError::new_msg(400, ApiErrorCodes::AppTokenWrongFormat, "Can't create email token"))?;
 
 	let token_string = base64::encode_config(token, base64::URL_SAFE_NO_PAD);
 

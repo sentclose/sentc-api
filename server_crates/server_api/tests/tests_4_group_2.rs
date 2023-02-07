@@ -19,6 +19,7 @@ use sentc_crypto_common::{GroupId, ServerOutput, UserId};
 use server_api::util::api_res::ApiErrorCodes;
 use server_api_common::app::AppRegisterOutput;
 use server_api_common::customer::CustomerDoneLoginOutput;
+use server_core::error::SentcErrorCodes;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{

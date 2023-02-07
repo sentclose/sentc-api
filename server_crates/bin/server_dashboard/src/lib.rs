@@ -5,7 +5,8 @@ use std::path::Path;
 use hyper::http::HeaderValue;
 use rustgram::service::IntoResponse;
 use rustgram::{r, Request, Response, Router};
-use server_api::util::api_res::{ApiErrorCodes, HttpErr};
+use server_api::util::api_res::ApiErrorCodes;
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::file;
 use server_core::file::FileHandler;
 use server_core::url_helper::get_name_param_from_req;
@@ -51,7 +52,7 @@ async fn read_file(req: Request) -> Response
 		Some(e) => {
 			match OsStr::to_str(e) {
 				Some(s) => s,
-				None => return HttpErr::new(404, ApiErrorCodes::PageNotFound, "Page not found".to_string(), None).into_response(),
+				None => return SentcCoreError::new_msg(404, ApiErrorCodes::PageNotFound, "Page not found").into_response(),
 			}
 		},
 		None => {
@@ -71,7 +72,7 @@ async fn read_file(req: Request) -> Response
 		"jpeg" => "image/jpeg",
 		"svg" => "image/svg+xml",
 		"woff2" => "font/woff2",
-		_ => return HttpErr::new(404, ApiErrorCodes::PageNotFound, "Page not found".to_string(), None).into_response(),
+		_ => return SentcCoreError::new_msg(404, ApiErrorCodes::PageNotFound, "Page not found").into_response(),
 	};
 
 	let handler = LOCAL_FILE_HANDLER.get().unwrap();
@@ -87,7 +88,7 @@ async fn read_file(req: Request) -> Response
 			//try index
 			match handler.get_part("index.html", Some("html")).await {
 				Ok(res) => res,
-				Err(e) => Into::<HttpErr>::into(e).into_response(),
+				Err(e) => Into::<SentcCoreError>::into(e).into_response(),
 			}
 		},
 	}

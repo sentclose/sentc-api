@@ -1,11 +1,13 @@
 use server_api_common::customer::{CustomerData, CustomerUpdateInput};
 use server_core::db::{exec, query_first, I32Entity};
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
+use server_core::res::AppRes;
 use server_core::{get_time, set_params, str_get, str_t, u128_get};
 
 #[cfg(feature = "send_mail")]
 use crate::customer::customer_entities::RegisterEmailStatus;
 use crate::customer::customer_entities::{CustomerDataByEmailEntity, CustomerDataEntity, CustomerEmailByToken, CustomerEmailToken};
-use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::util::api_res::ApiErrorCodes;
 
 pub(super) async fn check_customer_valid(customer_id: str_t!()) -> AppRes<I32Entity>
 {
@@ -17,11 +19,10 @@ pub(super) async fn check_customer_valid(customer_id: str_t!()) -> AppRes<I32Ent
 	let valid = match valid {
 		Some(v) => v,
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::CustomerNotFound,
-				"No account found for this id".to_string(),
-				None,
+				"No account found for this id",
 			))
 		},
 	};
@@ -108,11 +109,10 @@ pub(super) async fn get_email_token(customer_id: str_t!()) -> AppRes<CustomerEma
 	match token {
 		Some(t) => Ok(t),
 		None => {
-			Err(HttpErr::new(
+			Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::CustomerNotFound,
-				"No token found".to_string(),
-				None,
+				"No token found",
 			))
 		},
 	}
@@ -135,11 +135,10 @@ WHERE
 	match token {
 		Some(t) => Ok(t),
 		None => {
-			Err(HttpErr::new(
+			Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::CustomerNotFound,
-				"No token found".to_string(),
-				None,
+				"No token found",
 			))
 		},
 	}
@@ -155,11 +154,10 @@ pub(super) async fn get_customer_data(customer_id: str_t!()) -> AppRes<CustomerD
 	match customer {
 		Some(c) => Ok(c),
 		None => {
-			Err(HttpErr::new(
+			Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::CustomerNotFound,
-				"Customer not found".to_string(),
-				None,
+				"Customer not found",
 			))
 		},
 	}
@@ -175,11 +173,10 @@ pub(super) async fn get_customer_email_data_by_email(email: String) -> AppRes<Cu
 	match customer {
 		Some(c) => Ok(c),
 		None => {
-			Err(HttpErr::new(
+			Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::CustomerNotFound,
-				"Customer not found".to_string(),
-				None,
+				"Customer not found",
 			))
 		},
 	}

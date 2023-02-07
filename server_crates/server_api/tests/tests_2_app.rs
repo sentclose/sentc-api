@@ -18,6 +18,7 @@ use server_api_common::app::{
 	AppUpdateInput,
 };
 use server_api_common::customer::{CustomerAppList, CustomerDoneLoginOutput};
+use server_core::error::SentcErrorCodes;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{add_app_jwt_keys, auth_header, create_app, create_test_customer, customer_delete, delete_app, delete_app_jwt_key, get_url};
@@ -87,7 +88,7 @@ async fn test_10_create_app()
 
 	let out = ServerOutput::<AppRegisterOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
 	let out = match out.result {
@@ -155,7 +156,7 @@ async fn test_12_renew_tokens()
 
 	let out = ServerOutput::<AppTokenRenewOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
 	let out = match out.result {
@@ -195,7 +196,7 @@ async fn test_13_add_new_jwt_keys()
 
 	let out = ServerOutput::<AppJwtRegisterOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();
@@ -235,7 +236,7 @@ async fn test_14_get_app_jwt_keys()
 
 	let out = ServerOutput::<Vec<AppJwtData>>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();
@@ -295,7 +296,7 @@ async fn test_16_get_all_apps()
 
 	let out = ServerOutput::<Vec<CustomerAppList>>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();
@@ -358,7 +359,7 @@ async fn test_17_update_app_options()
 	//normally user register result but it's an err so it's ok to use the default
 	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, false);
+	assert!(!out.status);
 	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::AppAction.get_int_code());
 
 	//change the app options to lax -> so we can register user via public token
@@ -401,7 +402,7 @@ async fn test_17_update_app_options()
 
 	let register_out = ServerOutput::<RegisterServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(register_out.status, true);
+	assert!(register_out.status);
 	assert_eq!(register_out.err_code, None);
 
 	let register_out = register_out.result.unwrap();
@@ -484,7 +485,7 @@ async fn test_20_get_all_apps_via_pagination()
 
 	let out = ServerOutput::<Vec<CustomerAppList>>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();
@@ -508,7 +509,7 @@ async fn test_20_get_all_apps_via_pagination()
 
 	let out = ServerOutput::<Vec<CustomerAppList>>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();

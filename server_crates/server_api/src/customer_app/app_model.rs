@@ -2,12 +2,14 @@ use sentc_crypto_common::{AppId, JwtKeyId};
 use server_api_common::app::{AppFileOptionsInput, AppJwtData, AppOptions, AppRegisterInput};
 use server_api_common::customer::CustomerAppList;
 use server_core::db::{exec, exec_transaction, query, query_first, query_string, I64Entity, Params, TransactionData};
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
+use server_core::res::AppRes;
 use server_core::{get_time, set_params, str_clone, str_get, str_t, u128_get};
 use uuid::Uuid;
 
 use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppJwt, AuthWithToken};
 use crate::sentc_app_entities::AppFileOptions;
-use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::util::api_res::ApiErrorCodes;
 
 pub(super) async fn get_app_options(app_id: str_t!()) -> AppRes<AppOptions>
 {
@@ -63,11 +65,10 @@ WHERE
 	let options = match options {
 		Some(o) => o,
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				401,
 				ApiErrorCodes::AppNotFound,
-				"App not found".to_string(),
-				None,
+				"App not found",
 			))
 		},
 	};
@@ -95,11 +96,10 @@ WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 	let app_data = match app_data {
 		Some(d) => d,
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				401,
 				ApiErrorCodes::AppTokenNotFound,
-				"App token not found".to_string(),
-				None,
+				"App token not found",
 			))
 		},
 	};
@@ -114,11 +114,10 @@ WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 	} else if hashed_token == app_data.hashed_secret_token {
 		AuthWithToken::Secret
 	} else {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			401,
 			ApiErrorCodes::AppTokenNotFound,
-			"App token not found".to_string(),
-			None,
+			"App token not found",
 		));
 	};
 
@@ -132,11 +131,10 @@ WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 	let file_options = match file_options {
 		Some(o) => o,
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				401,
 				ApiErrorCodes::AppNotFound,
-				"App not found".to_string(),
-				None,
+				"App not found",
 			))
 		},
 	};
@@ -170,11 +168,10 @@ WHERE customer_id = ? AND id = ? LIMIT 1";
 	match app_data {
 		Some(d) => Ok(d),
 		None => {
-			Err(HttpErr::new(
+			Err(SentcCoreError::new_msg(
 				401,
 				ApiErrorCodes::AppTokenNotFound,
-				"App token not found".to_string(),
-				None,
+				"App token not found",
 			))
 		},
 	}
@@ -239,11 +236,10 @@ pub(super) async fn get_app_view(customer_id: str_t!(), app_id: str_t!()) -> App
 	match out {
 		Some(o) => Ok(o),
 		None => {
-			Err(HttpErr::new(
+			Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::AppNotFound,
-				"App not found".to_string(),
-				None,
+				"App not found",
 			))
 		},
 	}
@@ -259,11 +255,10 @@ pub(super) async fn get_app_file_options(app_id: str_t!()) -> AppRes<AppFileOpti
 	match out {
 		Some(o) => Ok(o),
 		None => {
-			Err(HttpErr::new(
+			Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::AppNotFound,
-				"App not found".to_string(),
-				None,
+				"App not found",
 			))
 		},
 	}
@@ -511,11 +506,10 @@ pub(super) async fn check_app_exists(customer_id: str_t!(), app_id: str_t!()) ->
 	match app_exists {
 		Some(_) => {},
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::AppNotFound,
-				"App not found in this user space".to_string(),
-				None,
+				"App not found in this user space",
 			))
 		},
 	}

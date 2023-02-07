@@ -14,6 +14,7 @@ use sentc_crypto_common::ServerOutput;
 use server_api::util::api_res::ApiErrorCodes;
 use server_api_common::customer::{CustomerData, CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput, CustomerUpdateInput};
 use server_core::db::StringEntity;
+use server_core::error::SentcErrorCodes;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{auth_header, get_captcha, get_url, login_customer};
@@ -76,7 +77,7 @@ async fn test_0_register_customer_with_email()
 
 	let out = ServerOutput::<CustomerRegisterOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 }
 
@@ -143,7 +144,7 @@ async fn test_10_register_without_valid_email()
 
 	let out = ServerOutput::<CustomerRegisterOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, false);
+	assert!(!out.status);
 	assert_eq!(
 		out.err_code.unwrap(),
 		ApiErrorCodes::CustomerEmailSyntax.get_int_code()
@@ -190,7 +191,7 @@ async fn test_11_register_customer()
 
 	let out = ServerOutput::<CustomerRegisterOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
 	let out = out.result.unwrap();
@@ -244,7 +245,7 @@ async fn test_12_login_customer()
 
 	let out = ServerOutput::<CustomerDoneLoginOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
+	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
 	let login_data = out.result.unwrap();
@@ -391,7 +392,7 @@ async fn test_13_update_customer()
 
 	let out = ServerOutput::<CustomerDoneLoginOutput>::from_string(body.as_str()).unwrap();
 
-	assert_eq!(out.status, false);
+	assert!(!out.status);
 
 	//______________________________________________________________________________________________
 	//login with the right data
@@ -511,7 +512,7 @@ async fn test_14_change_password()
 
 	let out = ServerOutput::<CustomerDoneLoginOutput>::from_string(body_done_login.as_str()).unwrap();
 
-	assert_eq!(out.status, false);
+	assert!(!out.status);
 
 	//______________________________________________________________________________________________
 	//login with new password
@@ -629,7 +630,7 @@ async fn test_15_change_password_again_from_pw_change()
 
 	let out = ServerOutput::<CustomerDoneLoginOutput>::from_string(body_done_login.as_str()).unwrap();
 
-	assert_eq!(out.status, false);
+	assert!(!out.status);
 
 	//______________________________________________________________________________________________
 	//login with new password
@@ -720,9 +721,7 @@ fn get_fake_pw_change_data(prepare_login_auth_key_input: &str, old_pw: &str, new
 	let auth_key = DoneLoginServerInput::from_string(prepare_login_auth_key_input).unwrap();
 
 	pw_change_data.old_auth_key = auth_key.auth_key;
-	let pw_change_data = pw_change_data.to_string().unwrap();
-
-	pw_change_data
+	pw_change_data.to_string().unwrap()
 }
 
 //__________________________________________________________________________________________________
@@ -851,7 +850,7 @@ async fn test_16_reset_customer_password()
 
 	let out = ServerOutput::<CustomerDoneLoginOutput>::from_string(body_done_login.as_str()).unwrap();
 
-	assert_eq!(out.status, false);
+	assert!(!out.status);
 
 	//______________________________________________________________________________________________
 	//login with new password

@@ -1,10 +1,10 @@
 use sentc_crypto_common::content_searchable::SearchCreateData;
 use server_core::db::{bulk_insert, exec, query_string};
+use server_core::res::AppRes;
 use server_core::{get_time, set_params, str_clone, str_get, str_t, u128_get};
 use uuid::Uuid;
 
 use crate::content_searchable::searchable_entities::ListSearchItem;
-use crate::util::api_res::AppRes;
 
 pub(super) async fn create(app_id: str_t!(), data: SearchCreateData, group_id: Option<str_t!()>, user_id: Option<str_t!()>) -> AppRes<()>
 {

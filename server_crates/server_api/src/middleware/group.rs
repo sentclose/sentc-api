@@ -6,14 +6,16 @@ use rustgram::service::{IntoResponse, Service};
 use rustgram::{Request, Response};
 use server_core::cache;
 use server_core::cache::{CacheVariant, LONG_TTL, SHORT_TTL};
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::input_helper::{bytes_to_json, json_to_string};
+use server_core::res::AppRes;
 use server_core::url_helper::get_name_param_from_req;
 
 use crate::customer_app::app_util::get_app_data_from_req;
 use crate::group::group_entities::{InternalGroupData, InternalGroupDataComplete, InternalUserGroupData, InternalUserGroupDataFromParent};
 use crate::group::group_model;
 use crate::user::jwt::get_jwt_data_from_param;
-use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::util::api_res::ApiErrorCodes;
 use crate::util::{get_group_cache_key, get_group_user_cache_key, get_group_user_parent_ref_key};
 
 pub struct GroupMiddleware<S>
@@ -118,11 +120,10 @@ async fn get_group(app_id: &str, group_id: &str, user_id: &str, group_as_member_
 	let entity_group = match entity {
 		CacheVariant::Some(d) => d,
 		CacheVariant::None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupAccess,
-				"No access to this group".to_string(),
-				None,
+				"No access to this group",
 			))
 		},
 	};
@@ -269,11 +270,10 @@ async fn get_group_user(app_id: &str, group_id: &str, user_id: &str, group_as_me
 	let entity = match entity {
 		CacheVariant::Some(d) => d,
 		CacheVariant::None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupAccess,
-				"No access to this group".to_string(),
-				None,
+				"No access to this group",
 			))
 		},
 	};
@@ -301,11 +301,10 @@ async fn get_user_from_parent(group_id: &str, user_id: &str) -> AppRes<InternalU
 					)
 					.await;
 
-					return Err(HttpErr::new(
+					return Err(SentcCoreError::new_msg(
 						400,
 						ApiErrorCodes::GroupAccess,
-						"No access to this group".to_string(),
-						None,
+						"No access to this group",
 					));
 				},
 			};
@@ -322,11 +321,10 @@ async fn get_user_from_parent(group_id: &str, user_id: &str) -> AppRes<InternalU
 	let entity = match entity {
 		CacheVariant::Some(d) => d,
 		CacheVariant::None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupAccess,
-				"No access to this group".to_string(),
-				None,
+				"No access to this group",
 			))
 		},
 	};

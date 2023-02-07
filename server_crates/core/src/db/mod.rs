@@ -2,7 +2,7 @@ use std::error::Error;
 
 use tokio::sync::OnceCell;
 
-use crate::error::{CoreError, CoreErrorCodes};
+use crate::error::{CoreErrorCodes, SentcCoreError, SentcErrorConstructor};
 
 #[cfg(feature = "mysql")]
 mod mariadb;
@@ -73,42 +73,42 @@ pub fn get_in<T>(objects: &[T]) -> String
 	)
 }
 
-fn db_query_err<E: Error>(e: &E) -> CoreError
+fn db_query_err<E: Error>(e: &E) -> SentcCoreError
 {
-	CoreError::new(
+	SentcCoreError::new_msg_and_debug(
 		422,
 		CoreErrorCodes::DbQuery,
-		"db error".to_owned(),
+		"db error",
 		Some(format!("db fetch err, {:?}", e)),
 	)
 }
 
-fn db_exec_err<E: Error>(e: &E) -> CoreError
+fn db_exec_err<E: Error>(e: &E) -> SentcCoreError
 {
-	CoreError::new(
+	SentcCoreError::new_msg_and_debug(
 		422,
 		CoreErrorCodes::DbExecute,
-		"db error".to_owned(),
+		"db error",
 		Some(format!("db execute err, {:?}", e)),
 	)
 }
 
-fn db_bulk_insert_err<E: Error>(e: &E) -> CoreError
+fn db_bulk_insert_err<E: Error>(e: &E) -> SentcCoreError
 {
-	CoreError::new(
+	SentcCoreError::new_msg_and_debug(
 		422,
 		CoreErrorCodes::DbBulkInsert,
-		"db error".to_owned(),
+		"db error",
 		Some(format!("db bulk insert err, {:?}", e)),
 	)
 }
 
-fn db_tx_err<E: Error>(e: &E) -> CoreError
+fn db_tx_err<E: Error>(e: &E) -> SentcCoreError
 {
-	CoreError::new(
+	SentcCoreError::new_msg_and_debug(
 		422,
 		CoreErrorCodes::DbTx,
-		"Db error".to_owned(),
+		"Db error",
 		Some(format!("Db transaction error: {:?}", e)),
 	)
 }

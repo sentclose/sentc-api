@@ -11,12 +11,13 @@ use rustgram::{Request, Response};
 use sentc_crypto_common::AppId;
 use server_core::cache;
 use server_core::cache::{CacheVariant, DEFAULT_TTL};
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::input_helper::{bytes_to_json, json_to_string};
 
 use crate::sentc_app_utils::get_app_data_from_req;
 use crate::user::jwt::auth;
 use crate::user::user_entities::UserJwtEntity;
-use crate::util::api_res::{ApiErrorCodes, HttpErr};
+use crate::util::api_res::ApiErrorCodes;
 use crate::util::get_user_jwt_key;
 
 const BEARER: &str = "Bearer ";
@@ -128,7 +129,7 @@ pub fn jwt_customer_app_transform<S>(inner: S) -> JwtMiddlewareApp<S>
 
 //__________________________________________________________________________________________________
 
-async fn jwt_check(req: &mut Request, optional: bool, check_exp: bool, app_id: AppId) -> Result<(), HttpErr>
+async fn jwt_check(req: &mut Request, optional: bool, check_exp: bool, app_id: AppId) -> Result<(), SentcCoreError>
 {
 	//get and validate the jwt. then save it in the req param.
 	//cache the jwt under with the jwt hash as key to save the validation process everytime. save false jwt too
@@ -159,37 +160,35 @@ async fn jwt_check(req: &mut Request, optional: bool, check_exp: bool, app_id: A
 	Ok(())
 }
 
-fn get_jwt_from_req(req: &Request) -> Result<String, HttpErr>
+fn get_jwt_from_req(req: &Request) -> Result<String, SentcCoreError>
 {
 	let headers = req.headers();
 	let header = match headers.get(AUTHORIZATION) {
 		Some(v) => v,
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				401,
 				ApiErrorCodes::JwtNotFound,
-				"No valid jwt".to_owned(),
-				None,
+				"No valid jwt",
 			))
 		},
 	};
 
 	let auth_header =
-		std::str::from_utf8(header.as_bytes()).map_err(|_e| HttpErr::new(401, ApiErrorCodes::JwtWrongFormat, "Wrong format".to_owned(), None))?;
+		std::str::from_utf8(header.as_bytes()).map_err(|_e| SentcCoreError::new_msg(401, ApiErrorCodes::JwtWrongFormat, "Wrong format"))?;
 
 	if !auth_header.starts_with(BEARER) {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			401,
 			ApiErrorCodes::JwtNotFound,
-			"No valid jwt".to_owned(),
-			None,
+			"No valid jwt",
 		));
 	}
 
 	Ok(auth_header.trim_start_matches(BEARER).to_string())
 }
 
-async fn validate(app_id: AppId, jwt: &str, check_exp: bool) -> Result<UserJwtEntity, HttpErr>
+async fn validate(app_id: AppId, jwt: &str, check_exp: bool) -> Result<UserJwtEntity, SentcCoreError>
 {
 	//hash the jwt and check if it is in the cache
 
@@ -234,11 +233,10 @@ async fn validate(app_id: AppId, jwt: &str, check_exp: bool) -> Result<UserJwtEn
 	let entity = match entity {
 		CacheVariant::Some(d) => d,
 		CacheVariant::None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				401,
 				ApiErrorCodes::JwtNotFound,
-				"No valid jwt".to_owned(),
-				None,
+				"No valid jwt",
 			))
 		},
 	};

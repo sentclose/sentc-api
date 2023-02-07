@@ -1,13 +1,15 @@
 use std::future::Future;
 
 use sentc_crypto_common::file::{BelongsToType, FileRegisterInput, FileRegisterOutput};
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
+use server_core::res::AppRes;
 use server_core::str_t;
 
 use crate::file::file_entities::FileMetaData;
 use crate::file::file_model;
 use crate::group::group_entities::InternalGroupDataComplete;
 use crate::user::user_service;
-use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::util::api_res::ApiErrorCodes;
 
 //same values as in file entity
 pub(super) const FILE_BELONGS_TO_TYPE_NONE: i32 = 0;
@@ -35,11 +37,10 @@ pub async fn register_file(input: FileRegisterInput, app_id: &str, user_id: &str
 					let check = user_service::check_user_in_app_by_user_id(app_id, id).await?;
 
 					if !check {
-						return Err(HttpErr::new(
+						return Err(SentcCoreError::new_msg(
 							400,
 							ApiErrorCodes::FileNotFound,
-							"User not found".to_string(),
-							None,
+							"User not found",
 						));
 					}
 
@@ -82,21 +83,19 @@ pub async fn get_file(app_id: &str, user_id: Option<&str>, file_id: &str, group_
 					match group_id {
 						None => {
 							//user tries to access the file outside of the group routes
-							return Err(HttpErr::new(
+							return Err(SentcCoreError::new_msg(
 								400,
 								ApiErrorCodes::FileAccess,
-								"No access to this file".to_string(),
-								None,
+								"No access to this file",
 							));
 						},
 						Some(g_id) => {
 							//user tires to access the file from another group (where he got access in this group)
 							if g_id != id {
-								return Err(HttpErr::new(
+								return Err(SentcCoreError::new_msg(
 									400,
 									ApiErrorCodes::FileAccess,
-									"No access to this file".to_string(),
-									None,
+									"No access to this file",
 								));
 							}
 						},
@@ -113,21 +112,19 @@ pub async fn get_file(app_id: &str, user_id: Option<&str>, file_id: &str, group_
 					match user_id {
 						//no valid jwt to get the user id
 						None => {
-							return Err(HttpErr::new(
+							return Err(SentcCoreError::new_msg(
 								400,
 								ApiErrorCodes::FileAccess,
-								"No access to this file".to_string(),
-								None,
+								"No access to this file",
 							));
 						},
 						Some(user_id) => {
 							//valid jwt but user got no access
 							if *user_id != *id && user_id != file.owner {
-								return Err(HttpErr::new(
+								return Err(SentcCoreError::new_msg(
 									400,
 									ApiErrorCodes::FileAccess,
-									"No access to this file".to_string(),
-									None,
+									"No access to this file",
 								));
 							}
 						},
@@ -152,11 +149,10 @@ pub async fn update_file_name(app_id: &str, user_id: &str, file_id: &str, file_n
 	//just check for write access, if owner == user id
 
 	if user_id != file.owner {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::FileAccess,
-			"No access to this file".to_string(),
-			None,
+			"No access to this file",
 		));
 	}
 
@@ -175,19 +171,17 @@ pub async fn delete_file(file_id: &str, app_id: &str, user_id: &str, group: Opti
 		match file.belongs_to_type {
 			//just check if the user the file owner
 			BelongsToType::None => {
-				return Err(HttpErr::new(
+				return Err(SentcCoreError::new_msg(
 					400,
 					ApiErrorCodes::FileAccess,
-					"No access to this file".to_string(),
-					None,
+					"No access to this file",
 				));
 			},
 			BelongsToType::User => {
-				return Err(HttpErr::new(
+				return Err(SentcCoreError::new_msg(
 					400,
 					ApiErrorCodes::FileAccess,
-					"No access to this file".to_string(),
-					None,
+					"No access to this file",
 				));
 			},
 			BelongsToType::Group => {
@@ -195,20 +189,18 @@ pub async fn delete_file(file_id: &str, app_id: &str, user_id: &str, group: Opti
 				match group {
 					None => {
 						//user tries to access the file outside of the group routes
-						return Err(HttpErr::new(
+						return Err(SentcCoreError::new_msg(
 							400,
 							ApiErrorCodes::FileAccess,
-							"No access to this file".to_string(),
-							None,
+							"No access to this file",
 						));
 					},
 					Some(g) => {
 						if g.user_data.rank > 3 {
-							return Err(HttpErr::new(
+							return Err(SentcCoreError::new_msg(
 								400,
 								ApiErrorCodes::FileAccess,
-								"No access to this file".to_string(),
-								None,
+								"No access to this file",
 							));
 						}
 					},

@@ -9,13 +9,15 @@ use sentc_crypto::sdk_common::AppId;
 use sentc_crypto_common::{DeviceId, GroupId, UserId};
 use serde::{Deserialize, Serialize};
 use server_core::cache::{CacheVariant, LONG_TTL};
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::input_helper::{bytes_to_json, json_to_string};
+use server_core::res::AppRes;
 use server_core::{cache, get_time_in_sec};
 
 use crate::customer_app::app_entities::AppJwt;
 use crate::user::user_entities::UserJwtEntity;
 use crate::user::{user_model, user_service};
-use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::util::api_res::ApiErrorCodes;
 use crate::util::{get_app_jwt_sign_key, get_app_jwt_verify_key, get_user_in_app_key};
 
 pub const JWT_ALG: &str = "ES384";
@@ -32,7 +34,7 @@ struct Claims
 }
 
 #[allow(clippy::collapsible_match)]
-pub fn get_jwt_data_from_param(req: &Request) -> Result<&UserJwtEntity, HttpErr>
+pub fn get_jwt_data_from_param(req: &Request) -> Result<&UserJwtEntity, SentcCoreError>
 {
 	match req.extensions().get::<Option<UserJwtEntity>>() {
 		Some(p) => {
@@ -40,27 +42,25 @@ pub fn get_jwt_data_from_param(req: &Request) -> Result<&UserJwtEntity, HttpErr>
 			match p {
 				Some(p1) => Ok(p1),
 				None => {
-					Err(HttpErr::new(
+					Err(SentcCoreError::new_msg(
 						400,
 						ApiErrorCodes::JwtNotFound,
-						"No valid jwt".to_owned(),
-						None,
+						"No valid jwt",
 					))
 				},
 			}
 		},
 		None => {
-			Err(HttpErr::new(
+			Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::JwtNotFound,
-				"No valid jwt".to_owned(),
-				None,
+				"No valid jwt",
 			))
 		},
 	}
 }
 
-pub(crate) async fn create_jwt(internal_user_id: &str, device_id: &str, customer_jwt_data: &AppJwt, fresh: bool) -> Result<String, HttpErr>
+pub(crate) async fn create_jwt(internal_user_id: &str, device_id: &str, customer_jwt_data: &AppJwt, fresh: bool) -> Result<String, SentcCoreError>
 {
 	let iat = get_time_in_sec()?;
 	let expiration = iat + 60 * 5; //exp in 5 min
@@ -82,34 +82,26 @@ pub(crate) async fn create_jwt(internal_user_id: &str, device_id: &str, customer
 	let sign_key = decode_jwt_key(sign_key)?;
 
 	encode(&header, &claims, &EncodingKey::from_ec_der(&sign_key)).map_err(|e| {
-		HttpErr::new(
+		SentcCoreError::new_msg_and_debug(
 			401,
 			ApiErrorCodes::JwtCreation,
-			"Can't create jwt".to_owned(),
+			"Can't create jwt",
 			Some(format!("err in jwt creation: {}", e)),
 		)
 	})
 }
 
-pub async fn auth(app_id: AppId, jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), HttpErr>
+pub async fn auth(app_id: AppId, jwt: &str, check_exp: bool) -> Result<(UserJwtEntity, usize), SentcCoreError>
 {
-	let header = decode_header(jwt).map_err(|_e| {
-		HttpErr::new(
-			401,
-			ApiErrorCodes::JwtWrongFormat,
-			"Can't decode the jwt".to_owned(),
-			None,
-		)
-	})?;
+	let header = decode_header(jwt).map_err(|_e| SentcCoreError::new_msg(401, ApiErrorCodes::JwtWrongFormat, "Can't decode the jwt"))?;
 
 	let key_id = match header.kid {
 		Some(k) => k,
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				401,
 				ApiErrorCodes::JwtWrongFormat,
-				"Can't decode the jwt".to_owned(),
-				None,
+				"Can't decode the jwt",
 			))
 		},
 	};
@@ -128,7 +120,7 @@ pub async fn auth(app_id: AppId, jwt: &str, check_exp: bool) -> Result<(UserJwtE
 	validation.validate_exp = check_exp;
 
 	let decoded = decode::<Claims>(jwt, &DecodingKey::from_ec_der(&verify_key), &validation)
-		.map_err(|_e| HttpErr::new(401, ApiErrorCodes::JwtValidation, "Wrong jwt".to_owned(), None))?;
+		.map_err(|_e| SentcCoreError::new_msg(401, ApiErrorCodes::JwtValidation, "Wrong jwt"))?;
 
 	//now check if the user is in the app
 	//this is necessary because now we check if the values inside the jwt are correct.
@@ -146,7 +138,7 @@ pub async fn auth(app_id: AppId, jwt: &str, check_exp: bool) -> Result<(UserJwtE
 	))
 }
 
-pub fn create_jwt_keys() -> Result<(String, String, &'static str), HttpErr>
+pub fn create_jwt_keys() -> Result<(String, String, &'static str), SentcCoreError>
 {
 	let rng = rand::SystemRandom::new();
 	let bytes = signature::EcdsaKeyPair::generate_pkcs8(&signature::ECDSA_P384_SHA384_FIXED_SIGNING, &rng).map_err(map_create_key_err)?;
@@ -161,24 +153,17 @@ pub fn create_jwt_keys() -> Result<(String, String, &'static str), HttpErr>
 	Ok((keypair, verify_key, JWT_ALG))
 }
 
-fn decode_jwt_key(key: String) -> Result<Vec<u8>, HttpErr>
+fn decode_jwt_key(key: String) -> Result<Vec<u8>, SentcCoreError>
 {
-	base64::decode(key).map_err(|_e| {
-		HttpErr::new(
-			401,
-			ApiErrorCodes::JwtWrongFormat,
-			"Can't decode the jwt".to_owned(),
-			None,
-		)
-	})
+	base64::decode(key).map_err(|_e| SentcCoreError::new_msg(401, ApiErrorCodes::JwtWrongFormat, "Can't decode the jwt"))
 }
 
-fn map_create_key_err<E: Error>(e: E) -> HttpErr
+fn map_create_key_err<E: Error>(e: E) -> SentcCoreError
 {
-	HttpErr::new(
+	SentcCoreError::new_msg_and_debug(
 		500,
 		ApiErrorCodes::JwtKeyCreation,
-		"Can't create keys".to_owned(),
+		"Can't create keys",
 		Some(format!("Err in Jwt key creation: {}", e)),
 	)
 }
@@ -193,11 +178,10 @@ async fn get_sign_key(key_id: &str) -> AppRes<String>
 			match bytes_to_json::<CacheVariant<String>>(c.as_bytes())? {
 				CacheVariant::Some(k) => Ok(k),
 				CacheVariant::None => {
-					Err(HttpErr::new(
+					Err(SentcCoreError::new_msg(
 						200,
 						ApiErrorCodes::JwtKeyNotFound,
-						"No matched key to this key id".to_string(),
-						None,
+						"No matched key to this key id",
 					))
 				},
 			}
@@ -224,11 +208,10 @@ async fn get_sign_key(key_id: &str) -> AppRes<String>
 					)
 					.await;
 
-					Err(HttpErr::new(
+					Err(SentcCoreError::new_msg(
 						200,
 						ApiErrorCodes::JwtKeyNotFound,
-						"No matched key to this key id".to_string(),
-						None,
+						"No matched key to this key id",
 					))
 				},
 			}
@@ -246,11 +229,10 @@ async fn get_verify_key(key_id: &str) -> AppRes<String>
 			match bytes_to_json::<CacheVariant<String>>(c.as_bytes())? {
 				CacheVariant::Some(k) => Ok(k),
 				CacheVariant::None => {
-					Err(HttpErr::new(
+					Err(SentcCoreError::new_msg(
 						200,
 						ApiErrorCodes::JwtKeyNotFound,
-						"No matched key to this key id".to_string(),
-						None,
+						"No matched key to this key id",
 					))
 				},
 			}
@@ -277,11 +259,10 @@ async fn get_verify_key(key_id: &str) -> AppRes<String>
 					)
 					.await;
 
-					Err(HttpErr::new(
+					Err(SentcCoreError::new_msg(
 						200,
 						ApiErrorCodes::JwtKeyNotFound,
-						"No matched key to this key id".to_string(),
-						None,
+						"No matched key to this key id",
 					))
 				},
 			}
@@ -298,11 +279,10 @@ async fn get_user_in_app(app_id: AppId, user_id: &str) -> AppRes<GroupId>
 			match bytes_to_json::<CacheVariant<GroupId>>(c.as_bytes())? {
 				CacheVariant::Some(k) => Ok(k),
 				CacheVariant::None => {
-					Err(HttpErr::new(
+					Err(SentcCoreError::new_msg(
 						400,
 						ApiErrorCodes::UserNotFound,
-						"User not found".to_string(),
-						None,
+						"User not found",
 					))
 				},
 			}
@@ -318,11 +298,10 @@ async fn get_user_in_app(app_id: AppId, user_id: &str) -> AppRes<GroupId>
 					//cache wrong user in app too
 					cache::add(cache_key, json_to_string(&CacheVariant::<String>::None)?, LONG_TTL).await;
 
-					Err(HttpErr::new(
+					Err(SentcCoreError::new_msg(
 						400,
 						ApiErrorCodes::UserNotFound,
-						"User not found".to_string(),
-						None,
+						"User not found",
 					))
 				},
 			}

@@ -1,11 +1,13 @@
 use sentc_crypto_common::{AppId, FileId, SymKeyId};
 use server_core::db::{exec, exec_string, exec_transaction, get_in, query_first, query_string, TransactionData, TupleEntity};
+use server_core::error::{SentcCoreError, SentcErrorConstructor};
+use server_core::res::AppRes;
 use server_core::{get_time, set_params, set_params_vec, set_params_vec_outer, str_clone, str_get, str_t, u128_get};
 use uuid::Uuid;
 
 use crate::file::file_entities::{FileExternalStorageUrl, FileMetaData, FilePartListItem, FilePartListItemDelete, FileSessionCheck};
 use crate::file::file_service::FILE_BELONGS_TO_TYPE_GROUP;
-use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
+use crate::util::api_res::ApiErrorCodes;
 
 const MAX_CHUNK_SIZE: usize = 5 * 1024 * 1024;
 const MAX_SESSION_ALIVE_TIME: u128 = 24 * 60 * 60 * 1000;
@@ -105,11 +107,10 @@ WHERE
 	let check = match check {
 		Some(o) => o,
 		None => {
-			return Err(HttpErr::new(
+			return Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::FileSessionNotFound,
-				"File upload session not found".to_string(),
-				None,
+				"File upload session not found",
 			));
 		},
 	};
@@ -121,11 +122,10 @@ WHERE
 		//session exp
 		delete_session(session_id, app_id).await?;
 
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::FileSessionExpired,
-			"File upload session expired".to_string(),
-			None,
+			"File upload session expired",
 		));
 	}
 
@@ -219,11 +219,10 @@ WHERE
 	match file {
 		Some(f) => Ok(f),
 		None => {
-			Err(HttpErr::new(
+			Err(SentcCoreError::new_msg(
 				400,
 				ApiErrorCodes::FileNotFound,
-				"File not found".to_string(),
-				None,
+				"File not found",
 			))
 		},
 	}
@@ -253,11 +252,10 @@ WHERE
 	let file_parts: Vec<FilePartListItem> = query_string(sql, params).await?;
 
 	if file_parts.is_empty() {
-		return Err(HttpErr::new(
+		return Err(SentcCoreError::new_msg(
 			400,
 			ApiErrorCodes::FileNotFound,
-			"File not found".to_string(),
-			None,
+			"File not found",
 		));
 	}
 
