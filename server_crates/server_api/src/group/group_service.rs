@@ -1,9 +1,9 @@
 use std::future::Future;
 
 use sentc_crypto_common::group::{CreateData, GroupLightServerData, GroupUserAccessBy};
-use sentc_crypto_common::{GroupId, SymKeyId};
+use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
+use server_core::cache;
 use server_core::res::AppRes;
-use server_core::{cache, str_t};
 
 use crate::file::file_service;
 use crate::group::group_entities::{GroupChildrenList, GroupServerData, GroupUserKeys, InternalGroupDataComplete};
@@ -13,13 +13,13 @@ use crate::sentc_user_entities::UserPublicKeyDataEntity;
 use crate::util::get_group_cache_key;
 
 pub fn create_group<'a>(
-	app_id: str_t!('a),
-	user_id: str_t!('a),
+	app_id: impl Into<AppId> + 'a,
+	user_id: impl Into<UserId> + 'a,
 	input: CreateData,
 	group_type: i32,
-	parent_group_id: Option<str_t!('a)>,
+	parent_group_id: Option<GroupId>,
 	user_rank: Option<i32>,
-	connected_group: Option<str_t!('a)>,
+	connected_group: Option<GroupId>,
 	is_connected_group: bool,
 ) -> impl Future<Output = AppRes<(GroupId, SymKeyId)>> + 'a
 {
@@ -48,7 +48,7 @@ pub async fn delete_group(app_id: &str, group_id: &str, user_rank: i32) -> AppRe
 	Ok(())
 }
 
-pub fn delete_user_group<'a>(app_id: str_t!('a), group_id: str_t!('a)) -> impl Future<Output = AppRes<()>> + 'a
+pub fn delete_user_group<'a>(app_id: impl Into<AppId> + 'a, group_id: impl Into<GroupId> + 'a) -> impl Future<Output = AppRes<()>> + 'a
 {
 	group_model::delete_user_group(app_id, group_id)
 }
@@ -142,27 +142,30 @@ fn extract_parent_and_access_by(group_data: &InternalGroupDataComplete) -> (Opti
 }
 
 pub fn get_group_hmac<'a>(
-	app_id: str_t!('a),
-	group_id: str_t!('a),
+	app_id: impl Into<AppId> + 'a,
+	group_id: impl Into<GroupId> + 'a,
 	last_fetched_time: u128,
-	last_k_id: str_t!('a),
+	last_k_id: impl Into<SymKeyId> + 'a,
 ) -> impl Future<Output = AppRes<Vec<GroupHmacData>>> + 'a
 {
 	group_model::get_group_hmac(app_id, group_id, last_fetched_time, last_k_id)
 }
 
 pub fn get_user_group_keys<'a>(
-	app_id: str_t!('a),
-	group_id: str_t!('a),
-	user_id: str_t!('a),
+	app_id: impl Into<AppId> + 'a,
+	group_id: impl Into<GroupId> + 'a,
+	user_id: impl Into<UserId> + 'a,
 	last_fetched_time: u128,
-	last_k_id: str_t!('a),
+	last_k_id: impl Into<SymKeyId> + 'a,
 ) -> impl Future<Output = AppRes<Vec<GroupUserKeys>>> + 'a
 {
 	group_model::get_user_group_keys(app_id, group_id, user_id, last_fetched_time, last_k_id)
 }
 
-pub fn get_public_key_data<'a>(app_id: str_t!('a), group_id: str_t!('a)) -> impl Future<Output = AppRes<UserPublicKeyDataEntity>> + 'a
+pub fn get_public_key_data<'a>(
+	app_id: impl Into<AppId> + 'a,
+	group_id: impl Into<GroupId> + 'a,
+) -> impl Future<Output = AppRes<UserPublicKeyDataEntity>> + 'a
 {
 	group_model::get_public_key_data(app_id, group_id)
 }
@@ -171,20 +174,20 @@ pub fn get_public_key_data<'a>(app_id: str_t!('a), group_id: str_t!('a)) -> impl
 # Get a single key
 */
 pub fn get_user_group_key<'a>(
-	app_id: str_t!('a),
-	group_id: str_t!('a),
-	user_id: str_t!('a),
-	key_id: str_t!('a),
+	app_id: impl Into<AppId> + 'a,
+	group_id: impl Into<GroupId> + 'a,
+	user_id: impl Into<UserId> + 'a,
+	key_id: impl Into<SymKeyId> + 'a,
 ) -> impl Future<Output = AppRes<GroupUserKeys>> + 'a
 {
 	group_model::get_user_group_key(app_id, group_id, user_id, key_id)
 }
 
 pub fn get_first_level_children<'a>(
-	app_id: str_t!('a),
-	group_id: str_t!('a),
+	app_id: impl Into<AppId> + 'a,
+	group_id: impl Into<GroupId> + 'a,
 	last_fetched_time: u128,
-	last_id: str_t!('a),
+	last_id: impl Into<GroupId> + 'a,
 ) -> impl Future<Output = AppRes<Vec<GroupChildrenList>>> + 'a
 {
 	group_model::get_first_level_children(app_id, group_id, last_fetched_time, last_id)

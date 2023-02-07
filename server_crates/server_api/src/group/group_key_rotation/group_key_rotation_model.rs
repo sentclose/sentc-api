@@ -1,17 +1,22 @@
 use sentc_crypto_common::group::{DoneKeyRotationData, KeyRotationData};
-use sentc_crypto_common::SymKeyId;
+use sentc_crypto_common::{AppId, DeviceId, GroupId, SymKeyId, UserId};
 use server_core::db::{bulk_insert, exec, exec_transaction, query, query_first, query_string, TransactionData};
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::res::AppRes;
-use server_core::{get_time, set_params, str_clone, str_get, str_t, u128_get};
+use server_core::{get_time, set_params};
 use uuid::Uuid;
 
 use crate::group::group_entities::{GroupKeyUpdate, KeyRotationWorkerKey, UserEphKeyOut, UserGroupPublicKeyData};
 use crate::util::api_res::ApiErrorCodes;
 
-pub(super) async fn start_key_rotation(app_id: str_t!(), group_id: str_t!(), user_id: str_t!(), input: KeyRotationData) -> AppRes<SymKeyId>
+pub(super) async fn start_key_rotation(
+	app_id: impl Into<AppId>,
+	group_id: impl Into<GroupId>,
+	user_id: impl Into<UserId>,
+	input: KeyRotationData,
+) -> AppRes<SymKeyId>
 {
-	let group_id = str_get!(group_id);
+	let group_id = group_id.into();
 
 	//insert the new group key
 
@@ -40,9 +45,9 @@ INSERT INTO sentc_group_keys
      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let params = set_params!(
-		str_clone!(&key_id),
-		str_clone!(group_id),
-		str_get!(app_id),
+		key_id.clone(),
+		group_id.clone(),
+		app_id.into(),
 		input.keypair_encrypt_alg,
 		input.encrypted_private_group_key,
 		input.public_group_key,
@@ -51,7 +56,7 @@ INSERT INTO sentc_group_keys
 		input.encrypted_group_key_by_ephemeral,
 		input.previous_group_key_id,
 		input.ephemeral_alg,
-		u128_get!(time),
+		time.to_string(),
 		input.encrypted_sign_key,
 		input.verify_key,
 		input.keypair_sign_alg
@@ -73,13 +78,13 @@ INSERT INTO sentc_group_user_keys
      ) VALUES (?,?,?,?,?,?,?)";
 
 	let params_user = set_params!(
-		str_clone!(&key_id),
-		str_get!(user_id),
+		key_id.clone(),
+		user_id.into(),
 		group_id,
 		input.encrypted_group_key_by_user,
 		input.encrypted_group_key_alg,
 		input.invoker_public_key_id,
-		u128_get!(time)
+		time.to_string()
 	);
 
 	exec_transaction(vec![
@@ -97,7 +102,11 @@ INSERT INTO sentc_group_user_keys
 	Ok(key_id)
 }
 
-pub(super) async fn get_keys_for_key_update(app_id: str_t!(), group_id: str_t!(), user_id: str_t!()) -> AppRes<Vec<GroupKeyUpdate>>
+pub(super) async fn get_keys_for_key_update(
+	app_id: impl Into<AppId>,
+	group_id: impl Into<GroupId>,
+	user_id: impl Into<UserId>,
+) -> AppRes<Vec<GroupKeyUpdate>>
 {
 	//check if there was a key rotation, fetch all rotation keys in the table
 	//order by ASC is important because we may need the old group key to decrypt the newer eph key
@@ -121,20 +130,21 @@ WHERE user_id = ? AND
       key_id = gk.id
 ORDER BY gk.time";
 
-	let out: Vec<GroupKeyUpdate> = query(
-		sql,
-		set_params!(str_get!(user_id), str_get!(group_id), str_get!(app_id)),
-	)
-	.await?;
+	let out: Vec<GroupKeyUpdate> = query(sql, set_params!(user_id.into(), group_id.into(), app_id.into())).await?;
 
 	Ok(out)
 }
 
-pub(super) async fn done_key_rotation_for_user(group_id: str_t!(), user_id: str_t!(), key_id: str_t!(), input: DoneKeyRotationData) -> AppRes<()>
+pub(super) async fn done_key_rotation_for_user(
+	group_id: impl Into<GroupId>,
+	user_id: impl Into<UserId>,
+	key_id: impl Into<SymKeyId>,
+	input: DoneKeyRotationData,
+) -> AppRes<()>
 {
-	let key_id = str_get!(key_id);
-	let user_id = str_get!(user_id);
-	let group_id = str_get!(group_id);
+	let key_id = key_id.into();
+	let user_id = user_id.into();
+	let group_id = group_id.into();
 
 	let time = get_time()?;
 
@@ -154,13 +164,13 @@ INSERT INTO sentc_group_user_keys
 	exec(
 		sql,
 		set_params!(
-			str_clone!(key_id),
-			str_clone!(user_id),
-			str_clone!(group_id),
+			key_id.clone(),
+			user_id.clone(),
+			group_id.clone(),
 			input.encrypted_new_group_key,
 			input.encrypted_alg,
 			input.public_key_id,
-			u128_get!(time)
+			time.to_string()
 		),
 	)
 	.await?;
@@ -177,12 +187,12 @@ INSERT INTO sentc_group_user_keys
 //__________________________________________________________________________________________________
 //Worker
 
-pub(super) async fn get_new_key(group_id: str_t!(), key_id: str_t!()) -> AppRes<KeyRotationWorkerKey>
+pub(super) async fn get_new_key(group_id: impl Into<GroupId>, key_id: impl Into<SymKeyId>) -> AppRes<KeyRotationWorkerKey>
 {
 	//language=SQL
 	let sql = "SELECT ephemeral_alg,encrypted_ephemeral_key FROM sentc_group_keys WHERE group_id = ? AND id = ?";
 
-	let key: Option<KeyRotationWorkerKey> = query_first(sql, set_params!(str_get!(group_id), str_get!(key_id))).await?;
+	let key: Option<KeyRotationWorkerKey> = query_first(sql, set_params!(group_id.into(), key_id.into())).await?;
 
 	match key {
 		Some(k) => Ok(k),
@@ -197,13 +207,13 @@ pub(super) async fn get_new_key(group_id: str_t!(), key_id: str_t!()) -> AppRes<
 }
 
 pub(super) async fn get_user_and_public_key(
-	group_id: str_t!(),
-	key_id: str_t!(),
+	group_id: impl Into<GroupId>,
+	key_id: impl Into<SymKeyId>,
 	last_fetched_time: u128,
-	last_id: str_t!(),
+	last_id: impl Into<UserId>,
 ) -> AppRes<Vec<UserGroupPublicKeyData>>
 {
-	let key_id = str_get!(key_id);
+	let key_id = key_id.into();
 
 	//get the public key from the user group
 	//language=SQL
@@ -251,18 +261,18 @@ WHERE
 		(
 			sql,
 			set_params!(
-				str_get!(group_id),
-				str_clone!(key_id),
+				group_id.into(),
+				key_id.clone(),
 				key_id,
-				u128_get!(last_fetched_time),
-				u128_get!(last_fetched_time),
-				u128_get!(last_fetched_time),
-				str_get!(last_id)
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_id.into()
 			),
 		)
 	} else {
 		let sql = sql + " ORDER BY gu.time DESC, gu.user_id LIMIT 100";
-		(sql, set_params!(str_get!(group_id), str_clone!(key_id), key_id))
+		(sql, set_params!(group_id.into(), key_id.clone(), key_id))
 	};
 
 	let users: Vec<UserGroupPublicKeyData> = query_string(sql1, params).await?;
@@ -271,13 +281,13 @@ WHERE
 }
 
 pub(super) async fn get_group_as_member_public_key(
-	group_id: str_t!(),
-	key_id: str_t!(),
+	group_id: impl Into<GroupId>,
+	key_id: impl Into<SymKeyId>,
 	last_fetched_time: u128,
-	last_id: str_t!(),
+	last_id: impl Into<GroupId>,
 ) -> AppRes<Vec<UserGroupPublicKeyData>>
 {
-	let key_id = str_get!(key_id);
+	let key_id = key_id.into();
 
 	//get here the public key data from a group as member
 
@@ -319,18 +329,18 @@ WHERE
 		(
 			sql,
 			set_params!(
-				str_get!(group_id),
-				str_clone!(key_id),
+				group_id.into(),
+				key_id.clone(),
 				key_id,
-				u128_get!(last_fetched_time),
-				u128_get!(last_fetched_time),
-				u128_get!(last_fetched_time),
-				str_get!(last_id)
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_id.into()
 			),
 		)
 	} else {
 		let sql = sql + " ORDER BY gu.time DESC, gu.user_id LIMIT 100";
-		(sql, set_params!(str_get!(group_id), str_clone!(key_id), key_id))
+		(sql, set_params!(group_id.into(), key_id.clone(), key_id))
 	};
 
 	let keys: Vec<UserGroupPublicKeyData> = query_string(sql1, params).await?;
@@ -338,9 +348,12 @@ WHERE
 	Ok(keys)
 }
 
-pub(super) async fn get_parent_group_and_public_key(group_id: str_t!(), key_id: str_t!()) -> AppRes<Option<UserGroupPublicKeyData>>
+pub(super) async fn get_parent_group_and_public_key(
+	group_id: impl Into<GroupId>,
+	key_id: impl Into<SymKeyId>,
+) -> AppRes<Option<UserGroupPublicKeyData>>
 {
-	let key_id = str_get!(key_id);
+	let key_id = key_id.into();
 
 	//no pagination needed because there is only one parent group
 	//k.time is not needed here for parent but is needed for the entity (which is also needed for the key rotation fn)
@@ -370,19 +383,19 @@ ORDER BY k.time DESC
 LIMIT 1
 ";
 
-	let keys: Option<UserGroupPublicKeyData> = query_first(sql, set_params!(str_get!(group_id), str_clone!(key_id), key_id)).await?;
+	let keys: Option<UserGroupPublicKeyData> = query_first(sql, set_params!(group_id.into(), key_id.clone(), key_id)).await?;
 
 	Ok(keys)
 }
 
 pub(super) async fn get_device_keys(
-	user_id: str_t!(),
-	key_id: str_t!(),
+	user_id: impl Into<UserId>,
+	key_id: impl Into<SymKeyId>,
 	last_fetched_time: u128,
-	last_id: str_t!(),
+	last_id: impl Into<DeviceId>,
 ) -> AppRes<Vec<UserGroupPublicKeyData>>
 {
-	let key_id = str_get!(key_id);
+	let key_id = key_id.into();
 
 	//device keys for user key rotation
 
@@ -416,18 +429,18 @@ WHERE
 		(
 			sql,
 			set_params!(
-				str_get!(user_id),
-				str_clone!(key_id),
+				user_id.into(),
+				key_id.clone(),
 				key_id,
-				u128_get!(last_fetched_time),
-				u128_get!(last_fetched_time),
-				u128_get!(last_fetched_time),
-				str_get!(last_id)
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_id.into()
 			),
 		)
 	} else {
 		let sql = sql + " ORDER BY ud.time DESC, ud.id LIMIT 100";
-		(sql, set_params!(str_get!(user_id), str_clone!(key_id), key_id))
+		(sql, set_params!(user_id.into(), key_id.clone(), key_id))
 	};
 
 	let devices: Vec<UserGroupPublicKeyData> = query_string(sql, params).await?;
@@ -435,10 +448,10 @@ WHERE
 	Ok(devices)
 }
 
-pub(super) async fn save_user_eph_keys(group_id: str_t!(), key_id: str_t!(), keys: Vec<UserEphKeyOut>) -> AppRes<()>
+pub(super) async fn save_user_eph_keys(group_id: impl Into<GroupId>, key_id: impl Into<SymKeyId>, keys: Vec<UserEphKeyOut>) -> AppRes<()>
 {
-	let group_id = str_get!(group_id);
-	let key_id = str_get!(key_id);
+	let group_id = group_id.into();
+	let key_id = key_id.into();
 
 	bulk_insert(
 		true,
@@ -453,11 +466,11 @@ pub(super) async fn save_user_eph_keys(group_id: str_t!(), key_id: str_t!(), key
 		keys,
 		move |ob| {
 			set_params!(
-				str_clone!(key_id),
-				str_clone!(group_id),
-				str_clone!(&ob.user_id),
-				str_clone!(&ob.encrypted_ephemeral_key),
-				str_clone!(&ob.encrypted_eph_key_key_id)
+				key_id.clone(),
+				group_id.clone(),
+				ob.user_id.clone(),
+				ob.encrypted_ephemeral_key.clone(),
+				ob.encrypted_eph_key_key_id.clone()
 			)
 		},
 	)
