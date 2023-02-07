@@ -1,10 +1,10 @@
 use std::env;
 
 use server_core::email::send_mail::send_mail_registration;
+use server_core::res::AppRes;
 
 use crate::customer::customer_entities::RegisterEmailStatus;
 use crate::customer::{customer_model, EmailTopic};
-use crate::util::api_res::{ApiErrorCodes, AppRes, HttpErr};
 
 /**
 Send the validation email.
@@ -22,12 +22,10 @@ async fn process_send_mail(email: String, customer_id: sentc_crypto_common::Cust
 	let status = match send_mail_registration(email.as_str(), title, text_body, html).await {
 		Ok(_) => RegisterEmailStatus::Success,
 		Err(e) => {
-			let err: HttpErr = e.into();
-
-			match err.api_error_code {
-				ApiErrorCodes::EmailMessage => RegisterEmailStatus::FailedMessage(err.msg),
-				ApiErrorCodes::EmailSend => RegisterEmailStatus::FailedSend(err.msg),
-				_ => RegisterEmailStatus::Other(err.msg),
+			match e.error_code {
+				51 /* ApiErrorCodes::EmailMessage */ => RegisterEmailStatus::FailedMessage(e.msg.to_string()),
+				50 /* ApiErrorCodes::EmailSend */ => RegisterEmailStatus::FailedSend(e.msg.to_string()),
+				_ => RegisterEmailStatus::Other(e.msg.to_string()),
 			}
 		},
 	};
