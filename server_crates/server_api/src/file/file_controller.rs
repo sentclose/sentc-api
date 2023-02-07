@@ -48,7 +48,7 @@ pub async fn register_file_in_group(mut req: Request) -> JRes<FileRegisterOutput
 		input,
 		&group_data.group_data.app_id,
 		&user.id,
-		Some(&group_data.group_data.id),
+		Some(group_data.group_data.id.clone()),
 	)
 	.await?;
 
