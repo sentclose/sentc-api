@@ -1,5 +1,6 @@
 use base64::encode;
 use captcha::{gen, Difficulty};
+use sentc_crypto_common::AppId;
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::get_time;
 use server_core::res::AppRes;
@@ -7,7 +8,7 @@ use server_core::res::AppRes;
 use crate::user::user_model;
 use crate::util::api_res::ApiErrorCodes;
 
-pub async fn captcha(app_id: &str) -> AppRes<(String, String)>
+pub async fn captcha(app_id: impl Into<AppId>) -> AppRes<(String, String)>
 {
 	let (solution, png) = create_captcha()?;
 	let id = user_model::save_captcha_solution(app_id, solution).await?;
@@ -15,9 +16,11 @@ pub async fn captcha(app_id: &str) -> AppRes<(String, String)>
 	Ok((id, png))
 }
 
-pub async fn validate_captcha(app_id: &str, captcha_id: String, solution: String) -> AppRes<()>
+pub async fn validate_captcha(app_id: impl Into<AppId>, captcha_id: String, solution: String) -> AppRes<()>
 {
-	let captcha = match user_model::get_captcha_solution(&captcha_id, app_id).await? {
+	let app_id = app_id.into();
+
+	let captcha = match user_model::get_captcha_solution(&captcha_id, &app_id).await? {
 		Some(c) => c,
 		None => {
 			return Err(SentcCoreError::new_msg(
@@ -30,7 +33,7 @@ pub async fn validate_captcha(app_id: &str, captcha_id: String, solution: String
 
 	//captcha is 20 min valid
 	if captcha.time + (1000 * 20 * 60) < get_time()? {
-		user_model::delete_captcha(app_id, captcha_id).await?;
+		user_model::delete_captcha(&app_id, captcha_id).await?;
 
 		return Err(SentcCoreError::new_msg(
 			400,
