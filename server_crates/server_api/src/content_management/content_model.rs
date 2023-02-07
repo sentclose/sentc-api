@@ -1,8 +1,8 @@
 use server_core::db::{query_first, query_string};
+use server_core::res::AppRes;
 use server_core::{set_params, str_clone, str_get, str_t, u128_get};
 
 use crate::content_management::content_entity::{ContentItemAccess, ListContentItem};
-use crate::util::api_res::AppRes;
 
 pub(super) async fn get_content(
 	app_id: str_t!(),
