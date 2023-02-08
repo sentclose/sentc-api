@@ -24,7 +24,7 @@ fn main_routes()
 fn file_routes()
 {
 	route_parser::start(
-		"server_crates/bin/server_api_file/routes.yml".to_string(),
-		"server_crates/bin/server_api_file/src/routes.rs".to_string(),
+		"server_crates/bin/server_bin/src/file/routes.yml".to_string(),
+		"server_crates/bin/server_bin/src/file/routes.rs".to_string(),
 	);
 }
