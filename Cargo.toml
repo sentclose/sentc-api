@@ -1,10 +1,7 @@
 [workspace]
 members = [
     # bin
-    "server_crates/bin/server_api_all",
-    "server_crates/bin/server_api_rest",
-    "server_crates/bin/server_api_file",
-    "server_crates/bin/server_dashboard",
+    "server_crates/bin/server_bin",
 
     # bin for dev
     "server_crates/bin_dev/server_api_route_builder",
