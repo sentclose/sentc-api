@@ -1,12 +1,12 @@
 use std::env;
 
-use server_api_rest::{routes, start};
+use server_api::{rest_routes, start};
 
 #[tokio::main]
 pub async fn main()
 {
 	start().await;
-	let router = routes();
+	let router = rest_routes();
 
 	let addr = format!(
 		"{}:{}",

@@ -2,6 +2,7 @@ use std::env;
 
 use rustgram::{r, Router};
 use server_api::{cors_handler, index_handler, not_found_handler, start};
+use server_bin::file::file_routes;
 
 #[tokio::main]
 pub async fn main()
@@ -10,7 +11,7 @@ pub async fn main()
 
 	let mut router = Router::new(not_found_handler);
 
-	server_api_file::routes(&mut router);
+	file_routes(&mut router);
 
 	router.get("/", r(index_handler));
 
