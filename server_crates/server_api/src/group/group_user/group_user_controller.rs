@@ -231,12 +231,7 @@ async fn accept_invite_pri(req: Request, user_type: NewUserType) -> JRes<ServerS
 	};
 
 	let group_id = get_name_param_from_req(&req, key_id_to_accept)?;
-	group_user_model::accept_invite(group_id, user_id).await?;
-
-	//delete the cache here so the user can join the group
-	let key_user = get_group_user_cache_key(&app.app_data.app_id, group_id, user_id);
-
-	cache::delete(&key_user).await;
+	group_user_service::accept_invite(&app.app_data.app_id, group_id, user_id).await?;
 
 	echo_success()
 }

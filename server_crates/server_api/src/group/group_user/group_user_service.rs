@@ -95,6 +95,21 @@ pub async fn invite_request(
 	Ok(session_id)
 }
 
+pub async fn accept_invite(app_id: &str, group_id: impl Into<GroupId>, invited_user: impl Into<UserId>) -> AppRes<()>
+{
+	let invited_user = invited_user.into();
+	let group_id = group_id.into();
+
+	group_user_model::accept_invite(&group_id, &invited_user).await?;
+
+	//delete the cache here so the user can join the group
+	let key_user = get_group_user_cache_key(app_id, &group_id, &invited_user);
+
+	cache::delete(&key_user).await;
+
+	Ok(())
+}
+
 /**
 # Invite a non group member user and accept the invite
 
@@ -111,7 +126,12 @@ pub async fn invite_auto(
 
 	let session_id = invite_request(group_data, input, &invited_user, user_type).await?;
 
-	group_user_model::accept_invite(&group_data.group_data.id, invited_user).await?;
+	accept_invite(
+		&group_data.group_data.app_id,
+		&group_data.group_data.id,
+		&invited_user,
+	)
+	.await?;
 
 	Ok(session_id)
 }
