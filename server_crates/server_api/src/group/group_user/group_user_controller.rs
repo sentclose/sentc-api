@@ -478,7 +478,7 @@ pub async fn kick_user_from_group(req: Request) -> JRes<ServerSuccessOutput>
 
 	let user_id = get_name_param_from_req(&req, "user_id")?;
 
-	group_user_service::kick_user_from_group(&group_data, user_id).await?;
+	group_user_service::kick_user_from_group(group_data, user_id).await?;
 
 	echo_success()
 }
