@@ -205,3 +205,17 @@ pub async fn leave_group(group_data: &InternalGroupDataComplete, real_user_id: O
 
 	Ok(())
 }
+
+pub async fn kick_user_from_group(group_data: &InternalGroupDataComplete, user_id: impl Into<UserId>) -> AppRes<()>
+{
+	let user_id = user_id.into();
+
+	//delete the user cache
+	let key_group = get_group_user_cache_key(&group_data.group_data.app_id, &group_data.group_data.id, &user_id);
+
+	cache::delete(&key_group).await;
+
+	group_user_model::kick_user_from_group(&group_data.group_data.id, &user_id, group_data.user_data.rank).await?;
+
+	Ok(())
+}

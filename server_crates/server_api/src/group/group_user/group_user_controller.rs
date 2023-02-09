@@ -478,12 +478,7 @@ pub async fn kick_user_from_group(req: Request) -> JRes<ServerSuccessOutput>
 
 	let user_id = get_name_param_from_req(&req, "user_id")?;
 
-	group_user_model::kick_user_from_group(&group_data.group_data.id, user_id, group_data.user_data.rank).await?;
-
-	//delete the user cache
-	let key_group = get_group_user_cache_key(&group_data.group_data.app_id, &group_data.group_data.id, user_id);
-
-	cache::delete(&key_group).await;
+	group_user_service::kick_user_from_group(&group_data, user_id).await?;
 
 	echo_success()
 }
