@@ -100,12 +100,11 @@ pub async fn accept_invite(app_id: &str, group_id: impl Into<GroupId>, invited_u
 	let invited_user = invited_user.into();
 	let group_id = group_id.into();
 
-	group_user_model::accept_invite(&group_id, &invited_user).await?;
-
 	//delete the cache here so the user can join the group
 	let key_user = get_group_user_cache_key(app_id, &group_id, &invited_user);
-
 	cache::delete(&key_user).await;
+
+	group_user_model::accept_invite(group_id, invited_user).await?;
 
 	Ok(())
 }
@@ -212,10 +211,9 @@ pub async fn kick_user_from_group(group_data: &InternalGroupDataComplete, user_i
 
 	//delete the user cache
 	let key_group = get_group_user_cache_key(&group_data.group_data.app_id, &group_data.group_data.id, &user_id);
-
 	cache::delete(&key_group).await;
 
-	group_user_model::kick_user_from_group(&group_data.group_data.id, &user_id, group_data.user_data.rank).await?;
+	group_user_model::kick_user_from_group(&group_data.group_data.id, user_id, group_data.user_data.rank).await?;
 
 	Ok(())
 }
