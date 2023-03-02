@@ -6,11 +6,13 @@ use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::{SdkError, UserData};
 use sentc_crypto_common::group::{
+	CreateData,
 	GroupAcceptJoinReqServerOutput,
 	GroupCreateOutput,
 	GroupInviteReqList,
 	GroupInviteServerOutput,
 	GroupJoinReqList,
+	GroupKeysForNewMemberServerInput,
 	GroupServerData,
 	ListGroups,
 };
@@ -520,6 +522,103 @@ async fn test_14_not_send_join_req_as_connected_group()
 	let server_err = get_server_error_from_normal_res(&body);
 
 	assert_eq!(server_err, ApiErrorCodes::GroupJoinAsConnectedGroup.get_int_code());
+}
+
+#[tokio::test]
+async fn test_14_z_connect_conn_group_to_other_conn_group_by_service()
+{
+	let app_data = APP_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+	let con_groups = CONNECTED_GROUP_STATE.get().unwrap().read().await;
+
+	let conn_group1 = &con_groups[0];
+
+	server_api::start().await;
+	//change path for sqlite because test files are executed from a different dir than the normal api
+	std::env::set_var("DB_PATH", std::env::var("DB_PATH_TEST").unwrap());
+
+	//create a 2nd connected group to test
+	let group_1 = &groups[0];
+	let group_1_public_key = &group_1
+		.decrypted_group_keys
+		.get(&group_1.group_member[0])
+		.unwrap()[0]
+		.public_group_key;
+
+	let group_input = sentc_crypto::group::prepare_create(group_1_public_key).unwrap();
+
+	let (conn_group_2_id, _) = server_api::sentc_group_service::create_group(
+		app_data.app_id.to_string(),
+		"",
+		CreateData::from_string(&group_input).unwrap(),
+		server_api::GROUP_TYPE_NORMAL,
+		None,
+		Some(0),
+		Some(group_1.group_id.clone()),
+		true,
+	)
+	.await
+	.unwrap();
+
+	//prepare the keys
+
+	let user_keys = conn_group1
+		.decrypted_group_keys
+		.get(&conn_group1.group_member[0])
+		.unwrap();
+
+	let mut group_keys_ref = vec![];
+
+	for decrypted_group_key in user_keys {
+		group_keys_ref.push(&decrypted_group_key.group_key);
+	}
+
+	//get the public key of the con group 2 from the service
+	let key = server_api::sentc_group_service::get_public_key_data(app_data.app_id.to_string(), &conn_group_2_id)
+		.await
+		.unwrap();
+
+	let server_out = ServerOutput {
+		status: true,
+		err_msg: None,
+		err_code: None,
+		result: Some(key),
+	};
+	let server_out = server_out.to_string().unwrap();
+
+	let group_to_invite_public_key = sentc_crypto::util::public::import_public_key_from_string_into_format(&server_out).unwrap();
+
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(&group_to_invite_public_key, &group_keys_ref, false).unwrap();
+
+	let input = GroupKeysForNewMemberServerInput::from_string(&invite).unwrap();
+
+	let group_data = server_api::sentc_group_entities::InternalGroupDataComplete {
+		group_data: server_api::sentc_group_entities::InternalGroupData {
+			id: conn_group1.group_id.to_string(),
+			app_id: app_data.app_id.to_string(),
+			parent: None,
+			time: 0,
+			invite: 1,                //must be true
+			is_connected_group: true, //no err when calling this fn directly
+		},
+		user_data: server_api::sentc_group_entities::InternalUserGroupData {
+			user_id: "".to_string(),
+			real_user_id: "".to_string(),
+			joined_time: 0,
+			rank: 0, //can be admin rank
+			get_values_from_parent: None,
+			get_values_from_group_as_member: None,
+		},
+	};
+
+	server_api::sentc_group_user_service::invite_auto(
+		&group_data,
+		input,
+		&conn_group_2_id,
+		server_api::sentc_group_user_service::NewUserType::Group,
+	)
+	.await
+	.unwrap();
 }
 
 #[tokio::test]

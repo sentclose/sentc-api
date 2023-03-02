@@ -34,6 +34,11 @@ pub fn get_invite_req<'a>(
 	group_user_model::get_invite_req_to_user(app_id, user_id, last_fetched_time, last_id)
 }
 
+pub fn check_is_connected_group<'a>(group_id: impl Into<GroupId> + 'a) -> impl Future<Output = AppRes<i32>> + 'a
+{
+	group_user_model::check_is_connected_group(group_id)
+}
+
 /**
 # Group invite request to a non group member user
 
@@ -68,18 +73,6 @@ pub async fn invite_request(
 			ApiErrorCodes::GroupInviteStop,
 			"No invites allowed for this group",
 		));
-	}
-
-	if let NewUserType::Group = user_type {
-		//only connected groups can have other groups as member
-		//check in the model if the group to invite a non connected group
-		if !group_data.group_data.is_connected_group {
-			return Err(SentcCoreError::new_msg(
-				400,
-				ApiErrorCodes::GroupJoinAsConnectedGroup,
-				"Can't invite another group when this group is not a connected group",
-			));
-		}
 	}
 
 	let session_id = group_user_model::invite_request(

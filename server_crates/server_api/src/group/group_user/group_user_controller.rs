@@ -20,6 +20,7 @@ use crate::group::group_entities::{GroupInviteReq, GroupJoinReq, GroupUserListIt
 use crate::group::group_user::{group_user_model, group_user_service};
 use crate::group::group_user_service::{InsertNewUserType, NewUserType};
 use crate::group::{get_group_user_data_from_req, group_model};
+use crate::sentc_group_entities::InternalGroupDataComplete;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::{echo_success, ApiErrorCodes};
 use crate::util::get_group_user_cache_key;
@@ -64,12 +65,7 @@ async fn auto_invite(mut req: Request, user_type: NewUserType) -> JRes<GroupInvi
 
 	let group_data = get_group_user_data_from_req(&req)?;
 
-	let (key, msg) = match user_type {
-		NewUserType::Normal => ("invited_user", "Group"),
-		NewUserType::Group => ("invited_group", "User"),
-	};
-
-	let to_invite = get_name_param_from_req(&req, key)?;
+	let (to_invite, msg) = check_invited_group(&req, group_data, &user_type).await?;
 
 	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
 
@@ -81,6 +77,40 @@ async fn auto_invite(mut req: Request, user_type: NewUserType) -> JRes<GroupInvi
 	};
 
 	echo(out)
+}
+
+async fn check_invited_group<'a>(req: &'a Request, group_data: &InternalGroupDataComplete, user_type: &NewUserType) -> AppRes<(&'a str, &'a str)>
+{
+	match *user_type {
+		NewUserType::Normal => Ok((get_name_param_from_req(req, "invited_user")?, "Group")),
+		NewUserType::Group => {
+			//only connected groups can have other groups as member
+			//check in the model if the group to invite a non connected group
+			if !group_data.group_data.is_connected_group {
+				return Err(SentcCoreError::new_msg(
+					400,
+					ApiErrorCodes::GroupJoinAsConnectedGroup,
+					"Can't invite another group when this group is not a connected group",
+				));
+			}
+
+			let to_invite = get_name_param_from_req(req, "invited_group")?;
+
+			//get the int user type and if it is a group check if the group is a non connected group
+			// do it with the model because we don't get any infos about the group until now
+			let cg = group_user_service::check_is_connected_group(to_invite).await?;
+
+			if cg == 1 {
+				return Err(SentcCoreError::new_msg(
+					400,
+					ApiErrorCodes::GroupJoinAsConnectedGroup,
+					"Can't invite group when the group is a connected group",
+				));
+			}
+
+			Ok((to_invite, "User"))
+		},
+	}
 }
 
 pub fn invite_request(req: Request) -> impl Future<Output = JRes<GroupInviteServerOutput>>
@@ -104,12 +134,7 @@ async fn invite(mut req: Request, user_type: NewUserType) -> JRes<GroupInviteSer
 
 	let group_data = get_group_user_data_from_req(&req)?;
 
-	let (key, msg) = match user_type {
-		NewUserType::Normal => ("invited_user", "Group"),
-		NewUserType::Group => ("invited_group", "User"),
-	};
-
-	let to_invite = get_name_param_from_req(&req, key)?;
+	let (to_invite, msg) = check_invited_group(&req, group_data, &user_type).await?;
 
 	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
 

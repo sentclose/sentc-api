@@ -69,23 +69,10 @@ pub(super) async fn invite_request(
 	//1. check the rights of the starter
 	check_group_rank(admin_rank, 2)?;
 
-	//2. get the int user type and if it is a group check if the group is a non connected group
-	// do it in the model because we don't get any infos about the group until now
+	//2. get the int user type. the connected group check is done in the controller and is ignored in the service
 	let user_type = match user_type {
 		NewUserType::Normal => 0,
-		NewUserType::Group => {
-			let cg = check_is_connected_group(invited_user.clone()).await?;
-
-			if cg == 1 {
-				return Err(SentcCoreError::new_msg(
-					400,
-					ApiErrorCodes::GroupJoinAsConnectedGroup,
-					"Can't invite group when the group is a connected group",
-				));
-			}
-
-			2
-		},
+		NewUserType::Group => 2,
 	};
 
 	//3. check if the user is already in the group
@@ -880,7 +867,7 @@ async fn group_accept_invite(app_id: impl Into<AppId>, group_id: impl Into<Group
 	Ok(())
 }
 
-async fn check_is_connected_group(group_id: impl Into<GroupId>) -> AppRes<i32>
+pub(super) async fn check_is_connected_group(group_id: impl Into<GroupId>) -> AppRes<i32>
 {
 	//language=SQL
 	let sql = "SELECT is_connected_group FROM sentc_group WHERE id = ?";
