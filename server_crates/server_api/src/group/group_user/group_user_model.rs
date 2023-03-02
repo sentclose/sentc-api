@@ -880,7 +880,7 @@ async fn group_accept_invite(app_id: impl Into<AppId>, group_id: impl Into<Group
 	Ok(())
 }
 
-async fn check_is_connected_group(group_id: impl Into<GroupId>) -> AppRes<i32>
+pub(super) async fn check_is_connected_group(group_id: impl Into<GroupId>) -> AppRes<i32>
 {
 	//language=SQL
 	let sql = "SELECT is_connected_group FROM sentc_group WHERE id = ?";

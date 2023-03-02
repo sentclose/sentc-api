@@ -34,6 +34,11 @@ pub fn get_invite_req<'a>(
 	group_user_model::get_invite_req_to_user(app_id, user_id, last_fetched_time, last_id)
 }
 
+pub fn check_is_connected_group<'a>(group_id: impl Into<GroupId> + 'a) -> impl Future<Output = AppRes<i32>> + 'a
+{
+	group_user_model::check_is_connected_group(group_id)
+}
+
 /**
 # Group invite request to a non group member user
 
