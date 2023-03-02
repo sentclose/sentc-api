@@ -66,7 +66,18 @@ async fn auto_invite(mut req: Request, user_type: NewUserType) -> JRes<GroupInvi
 
 	let (key, msg) = match user_type {
 		NewUserType::Normal => ("invited_user", "Group"),
-		NewUserType::Group => ("invited_group", "User"),
+		NewUserType::Group => {
+			//only connected groups can have other groups as member
+			//check in the model if the group to invite a non connected group
+			if !group_data.group_data.is_connected_group {
+				return Err(SentcCoreError::new_msg(
+					400,
+					ApiErrorCodes::GroupJoinAsConnectedGroup,
+					"Can't invite another group when this group is not a connected group",
+				));
+			}
+			("invited_group", "User")
+		},
 	};
 
 	let to_invite = get_name_param_from_req(&req, key)?;
@@ -106,7 +117,19 @@ async fn invite(mut req: Request, user_type: NewUserType) -> JRes<GroupInviteSer
 
 	let (key, msg) = match user_type {
 		NewUserType::Normal => ("invited_user", "Group"),
-		NewUserType::Group => ("invited_group", "User"),
+		NewUserType::Group => {
+			//only connected groups can have other groups as member
+			//check in the model if the group to invite a non connected group
+			if !group_data.group_data.is_connected_group {
+				return Err(SentcCoreError::new_msg(
+					400,
+					ApiErrorCodes::GroupJoinAsConnectedGroup,
+					"Can't invite another group when this group is not a connected group",
+				));
+			}
+
+			("invited_group", "User")
+		},
 	};
 
 	let to_invite = get_name_param_from_req(&req, key)?;

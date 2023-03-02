@@ -70,18 +70,6 @@ pub async fn invite_request(
 		));
 	}
 
-	if let NewUserType::Group = user_type {
-		//only connected groups can have other groups as member
-		//check in the model if the group to invite a non connected group
-		if !group_data.group_data.is_connected_group {
-			return Err(SentcCoreError::new_msg(
-				400,
-				ApiErrorCodes::GroupJoinAsConnectedGroup,
-				"Can't invite another group when this group is not a connected group",
-			));
-		}
-	}
-
 	let session_id = group_user_model::invite_request(
 		&group_data.group_data.id,
 		invited_user,
