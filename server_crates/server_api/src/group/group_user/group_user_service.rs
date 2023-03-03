@@ -210,3 +210,30 @@ pub async fn kick_user_from_group(group_data: &InternalGroupDataComplete, user_i
 
 	Ok(())
 }
+
+/**
+Update the user rank. The rank of a creator cannot changed.
+
+When deleting the cache for this group, and the group got children then for all children the rank must be updated too.
+This is done because we use a reference to the parent group when we look for the user rank in the group mw.
+If this user is not in a parent group -> this wouldn't effect any groups
+ */
+pub async fn change_rank(group_data: &InternalGroupDataComplete, user_id: impl Into<UserId>, new_rank: i32) -> AppRes<()>
+{
+	let user_id = user_id.into();
+
+	group_user_model::update_rank(
+		&group_data.group_data.id,
+		group_data.user_data.rank,
+		&user_id,
+		new_rank,
+	)
+	.await?;
+
+	//delete user cache of the changed user
+	let key_group = get_group_user_cache_key(&group_data.group_data.app_id, &group_data.group_data.id, &user_id);
+
+	cache::delete(&key_group).await;
+
+	Ok(())
+}
