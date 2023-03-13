@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use rustgram::service::{IntoResponse, Service};
 use rustgram::{Request, Response};
+use sentc_crypto_common::GroupId;
 use server_core::cache;
 use server_core::cache::{CacheVariant, LONG_TTL, SHORT_TTL};
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
@@ -128,18 +129,22 @@ async fn get_group(app_id: &str, group_id: &str, user_id: &str, group_as_member_
 		},
 	};
 
-	let (user_data, search_again) = get_group_user(app_id, group_id, user_id, group_as_member_id).await?;
+	let (user_data, search_again) = get_group_user(app_id, group_id, user_id, &entity_group.parent, group_as_member_id).await?;
 
 	let mut user_data = if search_again {
 		//when there was just a ref to a parent group for the user data -> get the parent group user data
 		match user_data.get_values_from_parent {
 			Some(id) => {
-				let (result, _) = get_group_user(app_id, id.as_str(), user_id, group_as_member_id).await?;
+				let (result, _) = get_group_user(app_id, id.as_str(), user_id, &entity_group.parent, group_as_member_id).await?;
 
-				//create the user data from parent (rank in the parent group and jointed time)
+				//create the user data from parent (rank in the parent group and jointed time and the user id of the direct parent)
 				// and the user data of the child group
 				InternalUserGroupData {
-					user_id: id.to_string(),
+					user_id: entity_group
+						.parent
+						.as_ref()
+						.ok_or_else(|| SentcCoreError::new_msg(400, ApiErrorCodes::GroupAccess, "Parent access not available"))?
+						.clone(),
 					real_user_id: user_id.to_string(),
 					joined_time: user_data.joined_time,
 					rank: result.rank,
@@ -156,11 +161,11 @@ async fn get_group(app_id: &str, group_id: &str, user_id: &str, group_as_member_
 	//now check if the user got access to the group which from he/she tries to enter
 	//check also parent access
 	if let Some(id) = group_as_member_id {
-		let (real_user_data, search_again) = get_group_user(app_id, id, user_id, None).await?;
+		let (real_user_data, search_again) = get_group_user(app_id, id, user_id, &entity_group.parent, None).await?;
 
 		let real_rank = if search_again {
 			if let Some(id) = real_user_data.get_values_from_parent {
-				let (result, _) = get_group_user(app_id, id.as_str(), user_id, None).await?;
+				let (result, _) = get_group_user(app_id, id.as_str(), user_id, &entity_group.parent, None).await?;
 
 				result.rank
 			} else {
@@ -215,7 +220,13 @@ Example usage:
 		 - return the data,
 		 - in get_group fn we are searching for the real user data from the ref parent group again (mostly via cache), to see if the cache is still valid
 */
-async fn get_group_user(app_id: &str, group_id: &str, user_id: &str, group_as_member_id: Option<&str>) -> AppRes<(InternalUserGroupData, bool)>
+async fn get_group_user(
+	app_id: &str,
+	group_id: &str,
+	user_id: &str,
+	parent_group_id: &Option<GroupId>,
+	group_as_member_id: Option<&str>,
+) -> AppRes<(InternalUserGroupData, bool)>
 {
 	//when the user wants to access the group by a group as member
 	let check_user_id = match group_as_member_id {
@@ -241,7 +252,10 @@ async fn get_group_user(app_id: &str, group_id: &str, user_id: &str, group_as_me
 					let parent_ref = get_user_from_parent(group_id, check_user_id).await?;
 
 					InternalUserGroupData {
-						user_id: parent_ref.get_values_from_parent.to_string(), //the the parent group id as user id when user comes from parent
+						user_id: parent_group_id
+							.as_ref()
+							.ok_or_else(|| SentcCoreError::new_msg(400, ApiErrorCodes::GroupAccess, "Parent access not available"))?
+							.clone(), //the user id is the direct parent of the group to access
 						real_user_id: check_user_id.to_string(),
 						joined_time: parent_ref.joined_time,
 						rank: parent_ref.rank,
