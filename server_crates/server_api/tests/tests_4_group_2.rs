@@ -647,6 +647,11 @@ async fn test_15_connected_another_group_to_connected_group_by_invite()
 		.get(&group_1.group_member[0])
 		.unwrap()[0]
 		.private_group_key;
+	let group_1_exported_public_key = &group_1
+		.decrypted_group_keys
+		.get(&group_1.group_member[0])
+		.unwrap()[0]
+		.exported_public_key;
 
 	let data_1 = add_group_by_invite(
 		secret_token,
@@ -654,6 +659,7 @@ async fn test_15_connected_another_group_to_connected_group_by_invite()
 		&group_to_connect.group_id,
 		user_keys,
 		&group_1.group_id,
+		group_1_exported_public_key,
 		&creator_group_1.user_data.jwt,
 		group_1_private_key,
 		Some(&group_from_con.group_id),
@@ -689,6 +695,11 @@ async fn test_16_connected_child_group()
 		.get(&child_2.group_member[0])
 		.unwrap()[0]
 		.private_group_key;
+	let group_1_exported_public_key = &child_2
+		.decrypted_group_keys
+		.get(&child_2.group_member[0])
+		.unwrap()[0]
+		.exported_public_key;
 
 	let data_1 = add_group_by_invite(
 		secret_token,
@@ -696,6 +707,7 @@ async fn test_16_connected_child_group()
 		&group_to_connect.group_id,
 		user_keys,
 		&child_2.group_id,
+		group_1_exported_public_key,
 		&creator_group_1.user_data.jwt,
 		group_1_private_key,
 		Some(&group_from_con.group_id),

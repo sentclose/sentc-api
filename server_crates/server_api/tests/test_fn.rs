@@ -8,6 +8,7 @@ use reqwest::StatusCode;
 use sentc_crypto::group::{DoneGettingGroupKeysOutput, GroupKeyData, GroupOutData};
 use sentc_crypto::sdk_common::file::FileData;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupHmacData, GroupInviteServerOutput};
+use sentc_crypto::sdk_common::user::UserPublicKeyData;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::util::{HmacKeyFormat, UserKeyDataInt};
 use sentc_crypto::{PrivateKeyFormat, PublicKeyFormat, SdkError, SymKeyFormat, UserData};
@@ -597,7 +598,7 @@ pub async fn add_user_by_invite(
 	keys: &Vec<GroupKeyData>,
 	user_to_invite_id: &str,
 	user_to_invite_jwt: &str,
-	user_to_add_public_key: &sentc_crypto::sdk_common::user::UserPublicKeyData,
+	user_to_add_public_key: &UserPublicKeyData,
 	user_to_add_private_key: &PrivateKeyFormat,
 ) -> (GroupOutData, Vec<GroupKeyData>)
 {
@@ -651,7 +652,7 @@ pub async fn add_user_by_invite_as_group_as_member(
 	keys: &Vec<GroupKeyData>,
 	user_to_invite_id: &str,
 	user_to_invite_jwt: &str,
-	user_to_add_public_key: &sentc_crypto::sdk_common::user::UserPublicKeyData,
+	user_to_add_public_key: &UserPublicKeyData,
 	user_to_add_private_key: &PrivateKeyFormat,
 ) -> (GroupOutData, Vec<GroupKeyData>)
 {
@@ -704,6 +705,7 @@ pub async fn add_group_by_invite(
 	group_id: &str,
 	keys: &Vec<GroupKeyData>,
 	group_to_invite_id: &str,
+	group_to_invite_exported_public_key: &UserPublicKeyData,
 	group_to_invite_member_jwt: &str,
 	group_to_invite_private_key: &PrivateKeyFormat,
 	group_as_member_id: Option<&str>,
@@ -715,23 +717,7 @@ pub async fn add_group_by_invite(
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	//fetch the public key data like user for a group which should connect to group
-	let url = get_url("api/v1/group/".to_owned() + group_to_invite_id + "/public_key");
-
-	let client = reqwest::Client::new();
-	let res = client
-		.get(url)
-		.header(AUTHORIZATION, auth_header(jwt))
-		.header("x-sentc-app-token", secret_token)
-		.send()
-		.await
-		.unwrap();
-
-	let body = res.text().await.unwrap();
-
-	let group_to_invite_public_key = sentc_crypto::util::public::import_public_key_from_string_into_format(&body).unwrap();
-
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(&group_to_invite_public_key, &group_keys_ref, false).unwrap();
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(group_to_invite_exported_public_key, &group_keys_ref, false).unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group_id + "/invite_group_auto/" + group_to_invite_id);
 
