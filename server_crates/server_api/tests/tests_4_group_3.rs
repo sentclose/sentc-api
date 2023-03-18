@@ -1,14 +1,17 @@
 use std::collections::HashMap;
 
+use reqwest::header::AUTHORIZATION;
 use sentc_crypto::group::{GroupKeyData, GroupOutData};
+use sentc_crypto::util::public::handle_server_response;
 use sentc_crypto::UserData;
-use sentc_crypto_common::group::GroupKeysForNewMemberServerInput;
-use sentc_crypto_common::{GroupId, ServerOutput, UserId};
+use sentc_crypto_common::group::GroupInviteServerOutput;
+use sentc_crypto_common::{GroupId, UserId};
 use server_api_common::app::AppRegisterOutput;
 use server_api_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{
+	auth_header,
 	create_app,
 	create_group,
 	create_test_customer,
@@ -18,6 +21,7 @@ use crate::test_fn::{
 	delete_user,
 	get_group,
 	get_group_from_group_as_member,
+	get_url,
 };
 
 mod test_fn;
@@ -234,9 +238,9 @@ async fn test_11_access_group_3_as_parent_again_to_check_the_cache()
 async fn test_12_connect_group_to_group_one()
 {
 	//connect 4. group to group 1.
-	//use the service because connecting to a non connected group is not allowed from the controller
+	//use the force auto invite endpoint
 
-	let app_data = APP_TEST_STATE.get().unwrap().read().await;
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
 
@@ -245,10 +249,6 @@ async fn test_12_connect_group_to_group_one()
 	let group = &groups[0];
 
 	let group_to_connect_to = &groups[3];
-
-	server_api::start().await;
-	//change path for sqlite because test files are executed from a different dir than the normal api
-	std::env::set_var("DB_PATH", std::env::var("DB_PATH_TEST").unwrap());
 
 	//prepare the keys
 
@@ -263,52 +263,33 @@ async fn test_12_connect_group_to_group_one()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	//get the public key of the con group 2 from the service
-	let key = server_api::sentc_group_service::get_public_key_data(app_data.app_id.to_string(), &group_to_connect_to.group_id)
-		.await
-		.unwrap();
-
-	let server_out = ServerOutput {
-		status: true,
-		err_msg: None,
-		err_code: None,
-		result: Some(key),
-	};
-	let server_out = server_out.to_string().unwrap();
-
-	let group_to_invite_public_key = sentc_crypto::util::public::import_public_key_from_string_into_format(&server_out).unwrap();
-
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(&group_to_invite_public_key, &group_keys_ref, false).unwrap();
-
-	let input = GroupKeysForNewMemberServerInput::from_string(&invite).unwrap();
-
-	let group_data = server_api::sentc_group_entities::InternalGroupDataComplete {
-		group_data: server_api::sentc_group_entities::InternalGroupData {
-			id: group.group_id.to_string(),
-			app_id: app_data.app_id.to_string(),
-			parent: None,
-			time: 0,
-			invite: 1,                //must be true
-			is_connected_group: true, //no err when calling this fn directly
-		},
-		user_data: server_api::sentc_group_entities::InternalUserGroupData {
-			user_id: "".to_string(),
-			real_user_id: "".to_string(),
-			joined_time: 0,
-			rank: 0, //can be admin rank
-			get_values_from_parent: None,
-			get_values_from_group_as_member: None,
-		},
-	};
-
-	server_api::sentc_group_user_service::invite_auto(
-		&group_data,
-		input,
-		&group_to_connect_to.group_id,
-		server_api::sentc_group_user_service::NewUserType::Group,
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(
+		&group_to_connect_to
+			.decrypted_group_keys
+			.get(user.user_id.as_str())
+			.unwrap()[0]
+			.exported_public_key,
+		&group_keys_ref,
+		false,
 	)
-	.await
 	.unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + &group.group_id + "/invite_group_auto_force/" + &group_to_connect_to.group_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(&user.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.body(invite);
+
+	let res = res.send().await.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let invite_res: GroupInviteServerOutput = handle_server_response(&body).unwrap();
+
+	assert_eq!(invite_res.session_id, None);
 }
 
 #[tokio::test]

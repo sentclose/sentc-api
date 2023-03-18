@@ -579,6 +579,13 @@ pub(crate) fn routes(router: &mut Router)
 			.add(app_token::app_token_transform),
 	);
 	router.put(
+		"/api/v1/group/:group_id/invite_group_auto_force/:invited_group",
+		r(crate::group::invite_auto_group_force)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.put(
 		"/api/v1/group/:group_id/invite/session/:key_session_id",
 		r(crate::group::insert_user_keys_via_session_invite)
 			.add(group::group_transform)
