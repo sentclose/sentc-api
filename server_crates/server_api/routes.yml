@@ -228,6 +228,7 @@ routes:
                           - put: {p: "/invite_group/:invited_group", s: crate::group::invite_request_to_group}
                           - put: {p: "/invite_auto/:invited_user", s: crate::group::invite_auto}
                           - put: {p: "/invite_group_auto/:invited_group", s: crate::group::invite_auto_group}
+                          - put: {p: "/invite_group_auto_force/:invited_group", s: crate::group::invite_auto_group_force}
                           - put: {p: "/invite/session/:key_session_id", s: crate::group::insert_user_keys_via_session_invite}
 
                           - put: {p: "/change_rank", s: crate::group::change_rank}
