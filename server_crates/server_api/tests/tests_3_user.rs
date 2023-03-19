@@ -15,6 +15,7 @@ use sentc_crypto_common::user::{
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
 	UserInitServerOutput,
+	UserJwtInfo,
 	UserPublicKeyDataServerOutput,
 	UserUpdateServerInput,
 	UserVerifyKeyDataServerOutput,
@@ -738,6 +739,29 @@ async fn test_21_get_user_public_data()
 			.key_id
 			.to_string()
 	);
+}
+
+#[tokio::test]
+async fn test_21_z_get_user_jwt_info()
+{
+	let user = &USER_TEST_STATE.get().unwrap().read().await;
+	let jwt = &user.user_data.as_ref().unwrap().jwt;
+
+	let url = get_url("api/v1/user/jwt".to_owned());
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: UserJwtInfo = handle_server_response(&body).unwrap();
+
+	assert_eq!(out.id, user.user_data.as_ref().unwrap().user_id);
 }
 
 #[tokio::test]
