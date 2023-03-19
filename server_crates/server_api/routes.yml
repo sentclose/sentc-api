@@ -75,6 +75,7 @@ routes:
               - post: {p: "/prepare_login", s: crate::user::prepare_login}
               - post: {p: "/done_login", s: crate::user::done_login}
               - post: {p: "/user/prepare_register_device", s: crate::user::prepare_register_device}
+              - delete: {p: "/user/force/:user_id", s: crate::user::delete_user}
               #_________________________________________________________________________________________________________
               # group with exp jwt mw -> the jwt can be exp for this routes
               - group:

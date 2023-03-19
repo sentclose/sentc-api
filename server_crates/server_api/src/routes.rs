@@ -156,6 +156,10 @@ pub(crate) fn routes(router: &mut Router)
 		"/api/v1/user/prepare_register_device",
 		r(crate::user::prepare_register_device).add(app_token::app_token_transform),
 	);
+	router.delete(
+		"/api/v1/user/force/:user_id",
+		r(crate::user::delete_user).add(app_token::app_token_transform),
+	);
 	router.put(
 		"/api/v1/refresh",
 		r(crate::user::refresh_jwt)
