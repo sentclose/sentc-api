@@ -5,8 +5,8 @@ use jsonwebtoken::{decode, decode_header, encode, Algorithm, DecodingKey, Encodi
 use ring::rand;
 use ring::signature::{self, KeyPair};
 use rustgram::Request;
+use sentc_crypto_common::user::Claims;
 use sentc_crypto_common::{AppId, DeviceId, GroupId, UserId};
-use serde::{Deserialize, Serialize};
 use server_core::cache::{CacheVariant, LONG_TTL};
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::input_helper::{bytes_to_json, json_to_string};
@@ -20,17 +20,6 @@ use crate::util::api_res::ApiErrorCodes;
 use crate::util::{get_app_jwt_sign_key, get_app_jwt_verify_key, get_user_in_app_key};
 
 pub const JWT_ALG: &str = "ES384";
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Claims
-{
-	//jwt defaults
-	aud: UserId,   //the user id
-	sub: DeviceId, //the device id
-	exp: usize,
-	iat: usize,
-	fresh: bool, //was this token from refresh jwt or from login
-}
 
 #[allow(clippy::collapsible_match)]
 pub fn get_jwt_data_from_param(req: &Request) -> Result<&UserJwtEntity, SentcCoreError>
