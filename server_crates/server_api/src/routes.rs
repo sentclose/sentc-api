@@ -194,6 +194,12 @@ pub(crate) fn routes(router: &mut Router)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
+	router.get(
+		"/api/v1/user/jwt",
+		r(crate::user::get_user_data_from_jwt)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
 	router.put(
 		"/api/v1/user",
 		r(crate::user::update)
