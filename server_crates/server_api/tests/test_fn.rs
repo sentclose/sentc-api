@@ -351,13 +351,12 @@ pub async fn register_user(app_secret_token: &str, username: &str, password: &st
 	user_id
 }
 
-pub async fn delete_user(app_secret_token: &str, jwt: &str)
+pub async fn delete_user(app_secret_token: &str, user_id: &str)
 {
-	let url = get_url("api/v1/user".to_owned());
+	let url = get_url("api/v1/user/force/".to_owned() + user_id);
 	let client = reqwest::Client::new();
 	let res = client
 		.delete(url)
-		.header(AUTHORIZATION, auth_header(jwt))
 		.header("x-sentc-app-token", app_secret_token)
 		.send()
 		.await

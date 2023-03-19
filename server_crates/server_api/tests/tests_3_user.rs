@@ -1377,7 +1377,7 @@ async fn test_32_register_and_login_user_via_test_fn()
 
 	assert_eq!(id, login.user_id);
 
-	delete_user(&user.app_data.secret_token, login.jwt.as_str()).await;
+	delete_user(&user.app_data.secret_token, &login.user_id).await;
 }
 
 #[tokio::test]

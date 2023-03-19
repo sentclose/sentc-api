@@ -2182,7 +2182,7 @@ async fn zzz_clean_up()
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 
 	for user in users.iter() {
-		delete_user(secret_token, user.user_data.jwt.as_str()).await;
+		delete_user(secret_token, &user.user_data.user_id).await;
 	}
 
 	let customer_jwt = &CUSTOMER_TEST_STATE
