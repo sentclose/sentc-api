@@ -431,3 +431,19 @@ pub(crate) async fn get_user_data_from_jwt(req: Request) -> JRes<UserJwtInfo>
 		device_id: user.device_id.clone(),
 	})
 }
+
+//__________________________________________________________________________________________________
+
+pub(crate) async fn delete_user(req: Request) -> JRes<ServerSuccessOutput>
+{
+	//this deletes the user from server without the jwt
+
+	let user_id = get_name_param_from_req(&req, "user_id")?;
+	let app_data = get_app_data_from_req(&req)?;
+
+	check_endpoint_with_app_options(app_data, Endpoint::ForceServer)?;
+
+	user_service::delete_from_server(user_id, &app_data.app_data.app_id).await?;
+
+	echo_success()
+}
