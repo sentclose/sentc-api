@@ -22,6 +22,7 @@ use sentc_crypto_common::user::{
 	UserDeviceRegisterOutput,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
+	UserJwtInfo,
 	UserUpdateServerInput,
 };
 use server_core::input_helper::{bytes_to_json, get_raw_body};
@@ -31,6 +32,7 @@ use server_core::url_helper::{get_name_param_from_params, get_name_param_from_re
 use crate::customer_app::app_util::{check_endpoint_with_app_options, get_app_data_from_req, Endpoint};
 use crate::group::group_entities::{GroupKeyUpdate, GroupUserKeys};
 use crate::group::{group_key_rotation_service, group_user_service};
+use crate::sentc_app_utils::check_endpoint_with_req;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
 use crate::user::user_service::UserAction;
@@ -415,4 +417,17 @@ pub(crate) async fn done_key_rotation_for_device(mut req: Request) -> JRes<Serve
 	group_key_rotation_service::done_key_rotation_for_user(&user.group_id, &user.device_id, key_id, input).await?;
 
 	echo_success()
+}
+
+//__________________________________________________________________________________________________
+
+pub(crate) async fn get_user_data_from_jwt(req: Request) -> JRes<UserJwtInfo>
+{
+	check_endpoint_with_req(&req, Endpoint::ForceServer)?;
+	let user = get_jwt_data_from_param(&req)?;
+
+	echo(UserJwtInfo {
+		id: user.id.clone(),
+		device_id: user.device_id.clone(),
+	})
 }
