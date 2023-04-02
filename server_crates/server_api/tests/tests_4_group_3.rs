@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use reqwest::header::AUTHORIZATION;
 use sentc_crypto::group::{GroupKeyData, GroupOutData};
+use sentc_crypto::sdk_common::group::GroupCreateOutput;
 use sentc_crypto::util::public::handle_server_response;
 use sentc_crypto::UserData;
 use sentc_crypto_common::group::GroupInviteServerOutput;
@@ -81,7 +82,7 @@ async fn aaa_init_global_test()
 	let secret_token_str = secret_token.as_str();
 	let public_token_str = public_token.as_str();
 
-	for i in 0..1 {
+	for i in 0..2 {
 		let username = "hi".to_string() + i.to_string().as_str();
 
 		let (user_id, key_data) = create_test_user(secret_token_str, public_token_str, username.as_str(), user_pw).await;
@@ -150,6 +151,35 @@ async fn test_01_create_groups()
 
 	let (data_4, group_4_data_for_creator) = get_group(secret_token.as_str(), jwt, &group_id_4, private_key, false).await;
 
+	//5. group. group 3 is connected as member to this group
+	let url = get_url("api/v1/group".to_owned() + "/" + &group_id_3 + "/connected");
+
+	let group_input = sentc_crypto::group::prepare_create(&group_3_data_for_creator[0].public_group_key).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.header("x-sentc-app-token", secret_token)
+		.body(group_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: GroupCreateOutput = handle_server_response(&body).unwrap();
+	let group_id_5 = out.group_id;
+
+	let (data_5, group_5_data_for_creator) = get_group_from_group_as_member(
+		secret_token,
+		jwt,
+		&group_id_5,
+		&group_id_3,
+		&group_3_data_for_creator[0].private_group_key,
+	)
+	.await;
+
 	//save the data
 
 	GROUP_TEST_STATE
@@ -179,6 +209,12 @@ async fn test_01_create_groups()
 						parent_id: None,
 						group_data: data_4,
 						decrypted_group_keys: HashMap::from([(user.user_id.to_string(), group_4_data_for_creator)]),
+					},
+					GroupState {
+						group_id: group_id_5,
+						parent_id: None,
+						group_data: data_5,
+						decrypted_group_keys: HashMap::from([(user.user_id.to_string(), group_5_data_for_creator)]),
 					},
 				])
 			}
@@ -296,6 +332,7 @@ async fn test_12_connect_group_to_group_one()
 async fn test_13_access_group_3_as_parent_from_connected_group()
 {
 	//access the 3. group from the connected group via parent
+	//use group 4 (as member in group 1, group 1 is parent of group 2 which is also parent of group 3)
 
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
@@ -325,6 +362,81 @@ async fn test_13_access_group_3_as_parent_from_connected_group()
 
 	assert_eq!(data_3.group_id, group.group_id);
 	assert_eq!(group_3_data_for_creator.len(), 1);
+}
+
+#[tokio::test]
+async fn test_20_access_connected_group_from_parent_group_directly_without_cache()
+{
+	//do not load the groups after creating
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let user = &users[0];
+	let user_to_invite = &users[1];
+
+	//use a group which is a parent and a child group is connected to another group
+	let group = &groups[0];
+
+	let user_keys = group
+		.decrypted_group_keys
+		.get(user.user_id.as_str())
+		.unwrap();
+
+	let mut group_keys_ref = vec![];
+
+	for decrypted_group_key in user_keys {
+		group_keys_ref.push(&decrypted_group_key.group_key);
+	}
+
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(
+		&user_to_invite.user_data.user_keys[0].exported_public_key,
+		&group_keys_ref,
+		false,
+	)
+	.unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + &group.group_id + "/invite_auto/" + &user_to_invite.user_id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(&user.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.body(invite);
+
+	let res = res.send().await.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let invite_res: GroupInviteServerOutput = handle_server_response(&body).unwrap();
+
+	assert_eq!(invite_res.session_id, None);
+
+	/*
+	now try to access the connected group with a child group as connected group id.
+	connected group is not a child (so parent is None).
+	this cause an error because a parent group was omitted to the get group but this parent was None.
+	The access is however over a parent group.
+	 */
+
+	let url = get_url("api/v1/group/".to_owned() + &groups[4].group_id);
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(&user_to_invite.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-group-access-id", &groups[2].group_id)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let data = sentc_crypto::group::get_group_data(body.as_str()).unwrap();
+
+	assert_eq!(data.rank, 4);
 }
 
 //__________________________________________________________________________________________________

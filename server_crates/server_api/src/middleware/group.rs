@@ -88,6 +88,29 @@ async fn get_group_from_req(req: &mut Request) -> AppRes<()>
 
 async fn get_group(app_id: &str, group_id: &str, user_id: &str, group_as_member_id: Option<&str>) -> AppRes<InternalGroupDataComplete>
 {
+	let mut group = load_group(app_id, group_id, user_id, group_as_member_id).await?;
+
+	//now check if the user got access to the group which from he/she tries to enter
+	//check also parent access
+	if let Some(id) = group_as_member_id {
+		let group_as_member_group = load_group(app_id, id, user_id, None).await?;
+
+		//get the right rank. when the user got a lower rank in the connected group then hold that rank
+		/*
+		check in the group mw the real rank when user access the group from a connected group.
+		if the rank is lower, then use this rank.
+		otherwise the group rank of the connected group
+		 */
+		if group_as_member_group.user_data.rank > group.user_data.rank {
+			group.user_data.rank = group_as_member_group.user_data.rank;
+		}
+	}
+
+	Ok(group)
+}
+
+async fn load_group(app_id: &str, group_id: &str, user_id: &str, group_as_member_id: Option<&str>) -> AppRes<InternalGroupDataComplete>
+{
 	let key_group = get_group_cache_key(app_id, group_id);
 
 	//use to different caches, one for the group, the other for the group user.
@@ -131,7 +154,7 @@ async fn get_group(app_id: &str, group_id: &str, user_id: &str, group_as_member_
 
 	let (user_data, search_again) = get_group_user(app_id, group_id, user_id, &entity_group.parent, group_as_member_id).await?;
 
-	let mut user_data = if search_again {
+	let user_data = if search_again {
 		//when there was just a ref to a parent group for the user data -> get the parent group user data
 		match user_data.get_values_from_parent {
 			Some(id) => {
@@ -157,34 +180,6 @@ async fn get_group(app_id: &str, group_id: &str, user_id: &str, group_as_member_
 	} else {
 		user_data
 	};
-
-	//now check if the user got access to the group which from he/she tries to enter
-	//check also parent access
-	if let Some(id) = group_as_member_id {
-		let (real_user_data, search_again) = get_group_user(app_id, id, user_id, &entity_group.parent, None).await?;
-
-		let real_rank = if search_again {
-			if let Some(id) = real_user_data.get_values_from_parent {
-				let (result, _) = get_group_user(app_id, id.as_str(), user_id, &entity_group.parent, None).await?;
-
-				result.rank
-			} else {
-				real_user_data.rank
-			}
-		} else {
-			real_user_data.rank
-		};
-
-		//get the right rank. when the user got a lower rank in the connected group then hold that rank
-		/*
-		check in the group mw the real rank when user access the group from a connected group.
-		if the rank is lower, then use this rank.
-		otherwise the group rank of the connected group
-		 */
-		if real_rank > user_data.rank {
-			user_data.rank = real_rank;
-		}
-	}
 
 	let group_data = InternalGroupDataComplete {
 		group_data: entity_group,
