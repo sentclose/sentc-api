@@ -259,7 +259,7 @@ pub async fn delete_file(req: Request) -> JRes<ServerSuccessOutput>
 {
 	let app = get_app_data_from_req(&req)?;
 
-	check_endpoint_with_app_options(app, Endpoint::FilePartDownload)?;
+	check_endpoint_with_app_options(app, Endpoint::FileDelete)?;
 
 	let user = get_jwt_data_from_param(&req)?;
 
@@ -272,7 +272,7 @@ pub async fn delete_file(req: Request) -> JRes<ServerSuccessOutput>
 
 pub async fn delete_file_in_group(req: Request) -> JRes<ServerSuccessOutput>
 {
-	check_endpoint_with_req(&req, Endpoint::FilePartDownload)?;
+	check_endpoint_with_req(&req, Endpoint::FileDelete)?;
 
 	let group_data = get_group_user_data_from_req(&req)?;
 	let user = get_jwt_data_from_param(&req)?;

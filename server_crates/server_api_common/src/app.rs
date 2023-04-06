@@ -57,6 +57,7 @@ pub struct AppOptions
 	pub file_part_upload: i32,
 	pub file_get: i32,
 	pub file_part_download: i32,
+	pub file_delete: i32,
 
 	pub user_device_register: i32,
 	pub user_device_delete: i32,
@@ -107,6 +108,7 @@ impl Default for AppOptions
 			file_part_upload: 1,
 			file_get: 1,
 			file_part_download: 1,
+			file_delete: 1,
 			user_device_register: 1,
 			user_device_delete: 1,
 			user_device_list: 1,
@@ -155,6 +157,7 @@ impl AppOptions
 			file_part_upload: 0,
 			file_get: 0,
 			file_part_download: 0,
+			file_delete: 0,
 			user_device_register: 0,
 			user_device_delete: 0,
 			user_device_list: 0,
@@ -200,6 +203,7 @@ impl AppOptions
 			file_part_upload: 1,
 			file_get: 1,
 			file_part_download: 1,
+			file_delete: 1,
 			user_device_register: 1,
 			user_device_delete: 1,
 			user_device_list: 1,
@@ -270,6 +274,8 @@ impl server_core::db::mysql_async_export::prelude::FromRow for AppOptions
 			user_key_update: server_core::take_or_err!(row, 37, i32),
 
 			content_search: server_core::take_or_err!(row, 38, i32),
+
+			file_delete: server_core::take_or_err!(row, 39, i32),
 		})
 	}
 }
@@ -334,6 +340,8 @@ impl server_core::db::FromSqliteRow for AppOptions
 			user_key_update: server_core::take_or_err!(row, 37),
 
 			content_search: server_core::take_or_err!(row, 38),
+
+			file_delete: server_core::take_or_err!(row, 39),
 		})
 	}
 }
