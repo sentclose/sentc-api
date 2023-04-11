@@ -2,6 +2,7 @@ use std::env;
 use std::ffi::OsStr;
 use std::path::Path;
 
+use hyper::header::ACCEPT_ENCODING;
 use hyper::http::HeaderValue;
 use rustgram::service::IntoResponse;
 use rustgram::{r, Request, Response, Router};
@@ -75,12 +76,42 @@ async fn read_file(req: Request) -> Response
 		_ => return SentcCoreError::new_msg(404, ApiErrorCodes::PageNotFound, "Page not found").into_response(),
 	};
 
+	let headers = req.headers().get(ACCEPT_ENCODING);
+
+	let encoding = if ext == "js" {
+		if let Some(h) = headers {
+			if let Ok(h) = std::str::from_utf8(h.as_bytes()) {
+				if h.contains("br") {
+					//use brotli
+					file += ".br";
+					Some("br")
+				} else if h.contains("gzip") {
+					//use the zip js
+					file += ".gz";
+					Some("gzip")
+				} else {
+					None
+				}
+			} else {
+				None
+			}
+		} else {
+			None
+		}
+	} else {
+		None
+	};
+
 	let handler = LOCAL_FILE_HANDLER.get().unwrap();
 
 	match handler.get_part(&file, Some(content_type)).await {
 		Ok(mut res) => {
-			res.headers_mut()
-				.insert("Cache-Control", HeaderValue::from_static("public, max-age=31536000"));
+			let res_headers = res.headers_mut();
+
+			res_headers.insert("Cache-Control", HeaderValue::from_static("public, max-age=31536000"));
+			if let Some(e) = encoding {
+				res_headers.insert("Content-Encoding", HeaderValue::from_static(e));
+			}
 
 			res
 		},
