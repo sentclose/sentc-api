@@ -1820,7 +1820,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#a4a98ad04af14417076c75b4de061f245dc5fced"
+source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#b3c5a2410a58c7f677c1aaeeaa45b6f3e2982db1"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -1841,7 +1841,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-common"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#a4a98ad04af14417076c75b4de061f245dc5fced"
+source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#b3c5a2410a58c7f677c1aaeeaa45b6f3e2982db1"
 dependencies = [
  "serde",
  "serde_json",
@@ -1850,7 +1850,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-core"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#a4a98ad04af14417076c75b4de061f245dc5fced"
+source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#b3c5a2410a58c7f677c1aaeeaa45b6f3e2982db1"
 dependencies = [
  "aes-gcm",
  "argon2",
