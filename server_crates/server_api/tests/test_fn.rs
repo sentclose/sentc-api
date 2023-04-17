@@ -607,7 +607,7 @@ pub async fn add_user_by_invite(
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(user_to_add_public_key, &group_keys_ref, false).unwrap();
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(user_to_add_public_key, &group_keys_ref, false, None).unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group_id + "/invite_auto/" + user_to_invite_id);
 
@@ -661,7 +661,7 @@ pub async fn add_user_by_invite_as_group_as_member(
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(user_to_add_public_key, &group_keys_ref, false).unwrap();
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(user_to_add_public_key, &group_keys_ref, false, None).unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group_id + "/invite_auto/" + user_to_invite_id);
 
@@ -716,7 +716,7 @@ pub async fn add_group_by_invite(
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(group_to_invite_exported_public_key, &group_keys_ref, false).unwrap();
+	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(group_to_invite_exported_public_key, &group_keys_ref, false, None).unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group_id + "/invite_group_auto/" + group_to_invite_id);
 

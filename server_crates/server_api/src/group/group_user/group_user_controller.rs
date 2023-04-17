@@ -73,7 +73,7 @@ async fn auto_invite(mut req: Request, user_type: NewUserType) -> JRes<GroupInvi
 
 	let out = GroupInviteServerOutput {
 		session_id,
-		message: msg.to_string() + " was invited. Please wait until the user accepts the invite.",
+		message: msg.to_string() + " was auto invited. The user is now a group member.",
 	};
 
 	echo(out)
@@ -283,6 +283,38 @@ async fn accept_invite_pri(req: Request, user_type: NewUserType) -> JRes<ServerS
 	echo_success()
 }
 
+pub fn re_invite_auto(req: Request) -> impl Future<Output = JRes<GroupInviteServerOutput>>
+{
+	re_invite_user(req, NewUserType::Normal)
+}
+
+pub fn re_invite_auto_group(req: Request) -> impl Future<Output = JRes<GroupInviteServerOutput>>
+{
+	re_invite_user(req, NewUserType::Group)
+}
+
+async fn re_invite_user(mut req: Request, user_type: NewUserType) -> JRes<GroupInviteServerOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+
+	check_endpoint_with_req(&req, Endpoint::GroupAutoInvite)?;
+
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let (to_invite, msg) = check_invited_group(&req, group_data, &user_type).await?;
+
+	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
+
+	let session_id = group_user_service::re_invite_user(group_data, input, to_invite, user_type).await?;
+
+	let out = GroupInviteServerOutput {
+		session_id,
+		message: msg.to_string() + " was re invited. The user is a group member again.",
+	};
+
+	echo(out)
+}
+
 //__________________________________________________________________________________________________
 
 pub fn join_req(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
@@ -426,11 +458,30 @@ pub async fn accept_join_req(mut req: Request) -> JRes<GroupAcceptJoinReqServerO
 		));
 	}
 
+	let rank = input.rank.unwrap_or(4);
+
+	if rank < 1 {
+		return Err(SentcCoreError::new_msg(
+			400,
+			ApiErrorCodes::GroupUserRank,
+			"User group rank got the wrong format",
+		));
+	}
+
+	if rank < group_data.user_data.rank {
+		return Err(SentcCoreError::new_msg(
+			400,
+			ApiErrorCodes::GroupUserRank,
+			"The set rank cannot be higher than your rank",
+		));
+	}
+
 	let session_id = group_user_model::accept_join_req(
 		&group_data.group_data.id,
 		join_user,
 		input.keys,
 		input.key_session,
+		rank,
 		group_data.user_data.rank,
 	)
 	.await?;

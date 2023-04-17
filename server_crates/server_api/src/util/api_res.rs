@@ -76,6 +76,7 @@ pub enum ApiErrorCodes
 	GroupInviteStop,
 	GroupConnectedFromConnected,
 	GroupJoinAsConnectedGroup,
+	GroupReInviteMemberNotFound,
 
 	KeyNotFound,
 
@@ -183,6 +184,7 @@ impl SentcErrorCodes for ApiErrorCodes
 			ApiErrorCodes::GroupInviteStop => 317,
 			ApiErrorCodes::GroupConnectedFromConnected => 318,
 			ApiErrorCodes::GroupJoinAsConnectedGroup => 319,
+			ApiErrorCodes::GroupReInviteMemberNotFound => 320,
 
 			ApiErrorCodes::KeyNotFound => 400,
 

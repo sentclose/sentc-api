@@ -353,6 +353,7 @@ impl Into<GroupInviteReqList> for GroupInviteReq
 pub struct GroupKeyUpdate
 {
 	pub new_group_key_id: SymKeyId,
+	pub error: Option<String>,
 	pub encrypted_ephemeral_key_by_group_key_and_public_key: String,
 	pub encrypted_eph_key_key_id: String,
 	pub encrypted_group_key_by_ephemeral: EncryptionKeyPairId,
@@ -366,6 +367,7 @@ impl Into<KeyRotationInput> for GroupKeyUpdate
 	fn into(self) -> KeyRotationInput
 	{
 		KeyRotationInput {
+			error: self.error,
 			encrypted_ephemeral_key_by_group_key_and_public_key: self.encrypted_ephemeral_key_by_group_key_and_public_key,
 			encrypted_group_key_by_ephemeral: self.encrypted_group_key_by_ephemeral,
 			ephemeral_alg: self.ephemeral_alg,
@@ -492,3 +494,11 @@ impl Into<sentc_crypto_common::group::GroupChildrenList> for GroupChildrenList
 }
 
 //__________________________________________________________________________________________________
+
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
+pub struct GroupUserInvitesAndJoinReq
+{
+	pub user_type: i32,
+	pub new_user_rank: i32,
+}

@@ -115,6 +115,7 @@ pub(super) async fn get_keys_for_key_update(
 	let sql = r"
 SELECT 
     gk.id,
+    error,
     gkr.encrypted_ephemeral_key, 
     gkr.encrypted_eph_key_key_id,	-- the key id of the public key which was used to encrypt the eph key on the server
     encrypted_group_key_by_eph_key,
@@ -462,6 +463,7 @@ pub(super) async fn save_user_eph_keys(group_id: impl Into<GroupId>, key_id: imp
 			"user_id".to_string(),
 			"encrypted_ephemeral_key".to_string(),
 			"encrypted_eph_key_key_id".to_string(),
+			"error".to_string(),
 		],
 		keys,
 		move |ob| {
@@ -470,7 +472,8 @@ pub(super) async fn save_user_eph_keys(group_id: impl Into<GroupId>, key_id: imp
 				group_id.clone(),
 				ob.user_id.clone(),
 				ob.encrypted_ephemeral_key.clone(),
-				ob.encrypted_eph_key_key_id.clone()
+				ob.encrypted_eph_key_key_id.clone(),
+				ob.rotation_err.clone()
 			)
 		},
 	)
