@@ -494,3 +494,11 @@ impl Into<sentc_crypto_common::group::GroupChildrenList> for GroupChildrenList
 }
 
 //__________________________________________________________________________________________________
+
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
+pub struct GroupUserInvitesAndJoinReq
+{
+	pub user_type: i32,
+	pub new_user_rank: i32,
+}

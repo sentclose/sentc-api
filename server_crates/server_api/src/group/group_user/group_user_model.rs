@@ -10,7 +10,25 @@ use crate::group::group_entities::{GroupInviteReq, GroupJoinReq, GroupUserListIt
 use crate::group::group_model;
 use crate::group::group_model::check_group_rank;
 use crate::group::group_user_service::{InsertNewUserType, NewUserType};
+use crate::sentc_group_entities::GroupUserInvitesAndJoinReq;
 use crate::util::api_res::ApiErrorCodes;
+
+pub(super) async fn check_user_in_group_direct(group_id: impl Into<GroupId>, user_id: impl Into<UserId>) -> AppRes<Option<i32>>
+{
+	//do not check the parent group access
+
+	let group_id = group_id.into();
+	let user_id = user_id.into();
+
+	//language=SQL
+	let sql = "SELECT `rank` FROM sentc_group_user WHERE user_id = ? AND group_id = ? LIMIT 1";
+
+	Ok(
+		query_first::<I32Entity, _>(sql, set_params!(user_id.clone(), group_id.clone()))
+			.await?
+			.map(|v| v.0),
+	)
+}
 
 pub(super) async fn get_group_member(
 	group_id: impl Into<GroupId>,
@@ -59,6 +77,7 @@ pub(super) async fn invite_request(
 	invited_user: impl Into<UserId>,
 	keys_for_new_user: Vec<GroupKeysForNewMember>,
 	key_session: bool,
+	new_user_rank: i32,
 	admin_rank: i32,
 	user_type: NewUserType,
 ) -> AppRes<Option<String>>
@@ -113,26 +132,29 @@ pub(super) async fn invite_request(
 		let session_id = Uuid::new_v4().to_string();
 
 		//language=SQL
-		let sql_in = "INSERT INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, key_upload_session_id, user_type) VALUES (?,?,?,?,?,?)";
+		let sql_in = "INSERT INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, key_upload_session_id, user_type, new_user_rank) VALUES (?,?,?,?,?,?,?)";
 		let params_in = set_params!(
 			invited_user.clone(),
 			group_id.clone(),
 			GROUP_INVITE_TYPE_INVITE_REQ,
 			time.to_string(),
 			session_id.clone(),
-			user_type
+			user_type,
+			new_user_rank
 		);
 
 		(sql_in, params_in, Some(session_id))
 	} else {
 		//language=SQL
-		let sql_in = "INSERT INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, user_type) VALUES (?,?,?,?,?)";
+		let sql_in =
+			"INSERT INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, user_type, new_user_rank) VALUES (?,?,?,?,?,?)";
 		let params_in = set_params!(
 			invited_user.clone(),
 			group_id.clone(),
 			GROUP_INVITE_TYPE_INVITE_REQ,
 			time.to_string(),
-			user_type
+			user_type,
+			new_user_rank
 		);
 
 		(sql_in, params_in, None)
@@ -245,7 +267,13 @@ pub(super) async fn accept_invite(group_id: impl Into<GroupId>, user_id: impl In
 
 	//language=SQL
 	let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
-	let params_in = set_params!(user_id, group_id, time.to_string(), 4, user_type);
+	let params_in = set_params!(
+		user_id,
+		group_id,
+		time.to_string(),
+		user_type.new_user_rank,
+		user_type.user_type
+	);
 
 	exec_transaction(vec![
 		TransactionData {
@@ -306,10 +334,11 @@ pub(super) async fn join_req(app_id: impl Into<AppId>, group_id: impl Into<Group
 	//org, sql query, but wont work on sqlite
 	#[cfg(feature = "mysql")]
 	//language=SQL
-	let sql = "INSERT IGNORE INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, user_type) VALUES (?,?,?,?,?)";
+	let sql = "INSERT IGNORE INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, user_type, new_user_rank) VALUES (?,?,?,?,?,4)";
 
 	#[cfg(feature = "sqlite")]
-	let sql = "INSERT OR IGNORE INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, user_type) VALUES (?,?,?,?,?)";
+	let sql =
+		"INSERT OR IGNORE INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, user_type, new_user_rank) VALUES (?,?,?,?,?,4)";
 
 	exec(
 		sql,
@@ -344,6 +373,7 @@ pub(super) async fn accept_join_req(
 	user_id: impl Into<UserId>,
 	keys_for_new_user: Vec<GroupKeysForNewMember>,
 	key_session: bool,
+	new_user_rank: i32,
 	admin_rank: i32,
 ) -> AppRes<Option<String>>
 {
@@ -402,7 +432,7 @@ pub(super) async fn accept_join_req(
 			user_id.clone(),
 			group_id.clone(),
 			time.to_string(),
-			4,
+			new_user_rank,
 			session_id.clone(),
 			user_type
 		);
@@ -796,27 +826,17 @@ async fn check_user_in_group(group_id: impl Into<GroupId>, user_id: impl Into<Us
 	}
 }
 
-async fn check_for_invite(user_id: impl Into<UserId>, group_id: impl Into<GroupId>) -> AppRes<i32>
+async fn check_for_invite(user_id: impl Into<UserId>, group_id: impl Into<GroupId>) -> AppRes<GroupUserInvitesAndJoinReq>
 {
 	//language=SQL
-	let sql = "SELECT user_type FROM sentc_group_user_invites_and_join_req WHERE user_id = ? AND group_id = ? AND type = ?";
+	let sql = "SELECT user_type, new_user_rank FROM sentc_group_user_invites_and_join_req WHERE user_id = ? AND group_id = ? AND type = ?";
 
-	let check: Option<I32Entity> = query_first(
+	query_first(
 		sql,
 		set_params!(user_id.into(), group_id.into(), GROUP_INVITE_TYPE_INVITE_REQ),
 	)
-	.await?;
-
-	match check {
-		Some(user_type) => Ok(user_type.0),
-		None => {
-			Err(SentcCoreError::new_msg(
-				400,
-				ApiErrorCodes::GroupInviteNotFound,
-				"No invite found",
-			))
-		},
-	}
+	.await?
+	.ok_or_else(|| SentcCoreError::new_msg(400, ApiErrorCodes::GroupInviteNotFound, "No invite found"))
 }
 
 /**

@@ -75,11 +75,22 @@ pub async fn invite_request(
 		));
 	}
 
+	let rank = input.rank.unwrap_or(4);
+
+	if rank < 1 {
+		return Err(SentcCoreError::new_msg(
+			400,
+			ApiErrorCodes::GroupUserRank,
+			"User group rank got the wrong format",
+		));
+	}
+
 	let session_id = group_user_model::invite_request(
 		&group_data.group_data.id,
 		invited_user,
 		input.keys,
 		input.key_session,
+		rank,
 		group_data.user_data.rank,
 		user_type,
 	)
@@ -154,6 +165,40 @@ pub async fn insert_user_keys_via_session(
 	group_user_model::insert_user_keys_via_session(group_id, key_session_id, input, insert_type).await?;
 
 	Ok(())
+}
+
+/**
+This fn can be used when there is an error with the user keys e.g. after a key rotation.
+
+The difference to auto invite is that the user must be already in the group and got the same rank etc. back.
+*/
+pub async fn re_invite_user(
+	group_data: &InternalGroupDataComplete,
+	mut input: GroupKeysForNewMemberServerInput,
+	invited_user: impl Into<UserId>,
+	user_type: NewUserType,
+) -> AppRes<Option<String>>
+{
+	let invited_user = invited_user.into();
+
+	//check first if the user or the group is in the group
+	let rank = group_user_model::check_user_in_group_direct(&group_data.group_data.id, &invited_user)
+		.await?
+		.ok_or_else(|| {
+			SentcCoreError::new_msg(
+				400,
+				ApiErrorCodes::GroupReInviteMemberNotFound,
+				"User is not in the group. Only group member can be re invited.",
+			)
+		})?;
+
+	//kick user from the group
+	kick_user_from_group(group_data, &invited_user).await?;
+
+	input.rank = Some(rank);
+
+	//and auto invite the user
+	invite_auto(group_data, input, invited_user, user_type).await
 }
 
 pub async fn leave_group(group_data: &InternalGroupDataComplete, real_user_id: Option<&str>) -> AppRes<()>

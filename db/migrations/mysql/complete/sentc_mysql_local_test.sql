@@ -456,7 +456,8 @@ CREATE TABLE `sentc_group_user_invites_and_join_req` (
   `type` int(11) NOT NULL COMMENT '0 = invite (keys needed); 1 = join req (no keys needed)',
   `time` bigint(20) NOT NULL,
   `key_upload_session_id` varchar(36) DEFAULT NULL COMMENT 'if there are too many keys used in this group -> upload the keys via session. this is only used for invite req',
-  `user_type` int(11) NOT NULL COMMENT '0 = normal user, 2 = group as member'
+  `user_type` int(11) NOT NULL COMMENT '0 = normal user, 2 = group as member',
+  `new_user_rank` int(11) NOT NULL COMMENT 'only for invite req.'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='the invite req from the group to an user';
 
 -- --------------------------------------------------------
