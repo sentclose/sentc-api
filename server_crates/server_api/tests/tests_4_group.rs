@@ -1335,7 +1335,8 @@ async fn test_30_accept_join_req()
 		group.group_id.as_str(),
 		&user.user_data.user_keys[0].private_key,
 		false,
-	);
+	)
+	.await;
 }
 
 //__________________________________________________________________________________________________
@@ -1370,8 +1371,6 @@ async fn test_31_start_key_rotation()
 		.send()
 		.await
 		.unwrap();
-
-	//assert_eq!(res.status(), StatusCode::OK);
 
 	let body = res.text().await.unwrap();
 	let out = ServerOutput::<KeyRotationStartServerOutput>::from_string(body.as_str()).unwrap();
