@@ -486,7 +486,8 @@ CREATE TABLE `sentc_group_user_key_rotation` (
   `user_id` varchar(36) NOT NULL,
   `group_id` varchar(36) NOT NULL,
   `encrypted_ephemeral_key` text NOT NULL COMMENT 'encrypted by users public key on the server',
-  `encrypted_eph_key_key_id` varchar(36) NOT NULL
+  `encrypted_eph_key_key_id` varchar(36) NOT NULL,
+  `error` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='after a key rotation, before done key rotation';
 
 -- --------------------------------------------------------
