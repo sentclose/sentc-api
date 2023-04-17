@@ -441,7 +441,13 @@ pub(super) async fn accept_join_req(
 	} else {
 		//language=SQL
 		let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
-		let params_in = set_params!(user_id.clone(), group_id.clone(), time.to_string(), 4, user_type);
+		let params_in = set_params!(
+			user_id.clone(),
+			group_id.clone(),
+			time.to_string(),
+			new_user_rank,
+			user_type
+		);
 
 		(sql_in, params_in, None)
 	};
