@@ -85,6 +85,14 @@ pub async fn invite_request(
 		));
 	}
 
+	if rank < group_data.user_data.rank {
+		return Err(SentcCoreError::new_msg(
+			400,
+			ApiErrorCodes::GroupUserRank,
+			"The set rank cannot be higher than your rank",
+		));
+	}
+
 	let session_id = group_user_model::invite_request(
 		&group_data.group_data.id,
 		invited_user,
