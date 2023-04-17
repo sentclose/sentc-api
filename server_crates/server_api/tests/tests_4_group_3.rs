@@ -307,6 +307,7 @@ async fn test_12_connect_group_to_group_one()
 			.exported_public_key,
 		&group_keys_ref,
 		false,
+		None,
 	)
 	.unwrap();
 
@@ -394,6 +395,7 @@ async fn test_20_access_connected_group_from_parent_group_directly_without_cache
 		&user_to_invite.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
+		None,
 	)
 	.unwrap();
 

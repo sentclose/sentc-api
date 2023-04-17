@@ -460,6 +460,7 @@ async fn test_14_not_send_invite_or_join_when_invite_is_disabled()
 		&user_to_invite.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
+		None,
 	)
 	.unwrap();
 
@@ -541,6 +542,7 @@ async fn test_16_invite_user()
 		&user_to_invite.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
+		None,
 	)
 	.unwrap();
 
@@ -588,6 +590,7 @@ async fn test_17_not_invite_user_without_keys()
 	//no keys -> must be an error
 	let input = GroupKeysForNewMemberServerInput {
 		keys: Vec::new(),
+		rank: None,
 		key_session: false,
 	};
 
@@ -731,6 +734,7 @@ async fn test_21_invite_user_an_reject_invite()
 		&user_to_invite.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
+		None,
 	)
 	.unwrap();
 
@@ -1232,6 +1236,7 @@ async fn test_29_no_join_req_when_user_is_in_parent_group()
 		&creator.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
+		None,
 	)
 	.unwrap();
 
@@ -1300,6 +1305,7 @@ async fn test_30_accept_join_req()
 		&user_to_accept.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
+		None,
 	)
 	.unwrap();
 
