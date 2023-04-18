@@ -315,6 +315,28 @@ async fn re_invite_user(mut req: Request, user_type: NewUserType) -> JRes<GroupI
 	echo(out)
 }
 
+pub async fn re_invite_force(mut req: Request) -> JRes<GroupInviteServerOutput>
+{
+	//the same as the other but without the restriction that a group must be a connected group
+	let body = get_raw_body(&mut req).await?;
+
+	check_endpoint_with_req(&req, Endpoint::ForceServer)?;
+
+	let group_data = get_group_user_data_from_req(&req)?;
+	let to_invite = get_name_param_from_req(&req, "invited_group")?;
+
+	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
+
+	let session_id = group_user_service::re_invite_user(group_data, input, to_invite, NewUserType::Group).await?;
+
+	let out = GroupInviteServerOutput {
+		session_id,
+		message: "Group was re invited. The user is a group member again.".to_string(),
+	};
+
+	echo(out)
+}
+
 //__________________________________________________________________________________________________
 
 pub fn join_req(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
