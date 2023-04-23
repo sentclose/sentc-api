@@ -271,9 +271,9 @@ creates a query like this:
 INSERT INTO table (fields...) VALUES (?, ?, ?), (?, ?, ?), (?, ?, ?), ...
 ```
  */
-pub async fn bulk_insert<F, P, T>(ignore: bool, table: String, cols: Vec<String>, objects: Vec<T>, fun: F) -> Result<(), SentcCoreError>
+pub async fn bulk_insert<F, P, T>(ignore: bool, table: &str, cols: &[&str], objects: Vec<T>, fun: F) -> Result<(), SentcCoreError>
 where
-	F: Fn(&T) -> P,
+	F: Fn(T) -> P,
 	P: Into<Params>,
 {
 	let ignore_string = if ignore { "IGNORE" } else { "" };
@@ -281,13 +281,7 @@ where
 	let mut stmt = format!("INSERT {} INTO {} ({}) VALUES ", ignore_string, table, cols.join(","));
 
 	// each (?,..,?) tuple for values
-	let row = format!(
-		"({}),",
-		cols.iter()
-			.map(|_| "?".to_string())
-			.collect::<Vec<_>>()
-			.join(",")
-	);
+	let row = format!("({}),", cols.iter().map(|_| "?").collect::<Vec<_>>().join(","));
 
 	stmt.reserve(objects.len() * (cols.len() * 2 + 2));
 
@@ -301,7 +295,7 @@ where
 
 	let mut params = Vec::new();
 
-	for o in objects.iter() {
+	for o in objects {
 		let new_params: Params = fun(o).into();
 
 		if let Params::Positional(new_params) = new_params {
