@@ -781,25 +781,25 @@ async fn insert_user_keys(
 	//insert the keys in the right table -> delete the keys from this table when user not accept the invite!
 	bulk_insert(
 		true,
-		"sentc_group_user_keys".to_string(),
-		vec![
-			"user_id".to_string(),
-			"k_id".to_string(),
-			"group_id".to_string(),
-			"encrypted_group_key".to_string(),
-			"encrypted_group_key_key_id".to_string(),
-			"encrypted_alg".to_string(),
-			"time".to_string(),
+		"sentc_group_user_keys",
+		&[
+			"user_id",
+			"k_id",
+			"group_id",
+			"encrypted_group_key",
+			"encrypted_group_key_key_id",
+			"encrypted_alg",
+			"time",
 		],
 		keys_for_new_user,
 		move |ob| {
 			set_params!(
 				new_user_id.clone(),
-				ob.key_id.clone(),
+				ob.key_id,
 				group_id.clone(),
-				ob.encrypted_group_key.clone(),
-				ob.user_public_key_id.clone(),
-				ob.encrypted_alg.clone(),
+				ob.encrypted_group_key,
+				ob.user_public_key_id,
+				ob.encrypted_alg,
 				time.to_string()
 			)
 		},
