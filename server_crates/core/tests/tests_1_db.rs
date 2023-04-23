@@ -171,13 +171,9 @@ async fn test_db_bulk_insert()
 		_time: get_time().unwrap(),
 	};
 
-	bulk_insert(
-		false,
-		"test".to_string(),
-		vec!["id".to_string(), "name".to_string(), "time".to_string()],
-		vec![t1, t2, t3],
-		|ob| set_params!(ob.id.to_string(), ob._name.to_string(), ob._time.to_string()),
-	)
+	bulk_insert(false, "test", &["id", "name", "time"], vec![t1, t2, t3], |ob| {
+		set_params!(ob.id, ob._name, ob._time.to_string())
+	})
 	.await
 	.unwrap();
 
