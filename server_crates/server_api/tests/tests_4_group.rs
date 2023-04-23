@@ -1449,8 +1449,12 @@ async fn test_32_done_key_rotation_for_other_user()
 	//only one new key, not for each user key!
 	assert_eq!(out.len(), 1);
 
+	let newest_key_id_to_fetch = out[0].new_group_key_id.clone();
+
 	//done it for each key
-	for key in &out {
+	for key in out {
+		let key_id = key.new_group_key_id.clone();
+
 		let rotation_out = sentc_crypto::group::done_key_rotation(
 			&user.user_data.user_keys[0].private_key,
 			&user.user_data.user_keys[0].public_key,
@@ -1464,7 +1468,7 @@ async fn test_32_done_key_rotation_for_other_user()
 		.unwrap();
 
 		//done the key rotation to save the new key
-		let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key_rotation/" + key.new_group_key_id.as_str());
+		let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key_rotation/" + key_id.as_str());
 		let client = reqwest::Client::new();
 		let res = client
 			.put(url)
@@ -1496,7 +1500,7 @@ async fn test_32_done_key_rotation_for_other_user()
 		.insert(user.user_id.to_string(), data_user_1.1);
 
 	//get the key via direct fetch
-	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key/" + out[0].new_group_key_id.as_str());
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key/" + newest_key_id_to_fetch.as_str());
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
