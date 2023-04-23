@@ -46,12 +46,12 @@ VALUES (?,?,?,?,?,?,?,?,?)";
 
 	bulk_insert(
 		true,
-		"sentc_content_searchable_item_parts".to_string(),
-		vec!["item_id".to_string(), "hash".to_string()],
+		"sentc_content_searchable_item_parts",
+		&["item_id", "hash"],
 		data.hashes,
 		move |ob| {
 			//
-			set_params!(content_id.clone(), ob.clone())
+			set_params!(content_id.clone(), ob)
 		},
 	)
 	.await?;

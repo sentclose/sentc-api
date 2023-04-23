@@ -396,29 +396,16 @@ where
 		.map_err(|e| db_exec_err(&e))?
 }
 
-fn bulk_insert_sync<F, T>(
-	conn: &mut Connection,
-	ignore: bool,
-	table: String,
-	cols: Vec<String>,
-	objects: &Vec<T>,
-	fun: F,
-) -> Result<usize, SentcCoreError>
+fn bulk_insert_sync<F, T>(conn: &mut Connection, ignore: bool, table: &str, cols: &[&str], objects: Vec<T>, fun: F) -> Result<usize, SentcCoreError>
 where
-	F: Fn(&T) -> Vec<rusqlite::types::Value>,
+	F: Fn(T) -> Vec<rusqlite::types::Value>,
 {
 	//prepare the sql
 	let ignore_string = if ignore { " OR IGNORE" } else { "" };
 
 	let mut stmt = format!("INSERT {} INTO {} ({}) VALUES ", ignore_string, table, cols.join(","));
 	// each (?,..,?) tuple for values
-	let row = format!(
-		"({}),",
-		cols.iter()
-			.map(|_| "?".to_string())
-			.collect::<Vec<_>>()
-			.join(",")
-	);
+	let row = format!("({}),", cols.iter().map(|_| "?").collect::<Vec<_>>().join(","));
 
 	stmt.reserve(objects.len() * (cols.len() * 2 + 2));
 
@@ -433,7 +420,7 @@ where
 	let mut params = Vec::new();
 
 	//using rustsqlite value https://stackoverflow.com/questions/69230495/how-to-pass-vecvalue-in-rusqlite-as-query-param
-	for o in objects.iter() {
+	for o in objects {
 		for val in fun(o) {
 			params.push(val);
 		}
@@ -470,18 +457,18 @@ INSERT INTO table (fields...) VALUES (?, ?, ?), (?, ?, ?), (?, ?, ?), ...
  */
 pub async fn bulk_insert<F: 'static + Send + Sync, T: 'static + Send + Sync>(
 	ignore: bool,
-	table: String,
-	cols: Vec<String>,
+	table: &'static str,
+	cols: &'static [&'static str],
 	objects: Vec<T>, //must be pass by value because we need static lifetime here for the deadpool interact
 	fun: F,
 ) -> Result<usize, SentcCoreError>
 where
-	F: Fn(&T) -> Vec<rusqlite::types::Value>,
+	F: Fn(T) -> Vec<rusqlite::types::Value>,
 {
 	let conn = get_conn().await?;
 
 	let res = conn
-		.interact(move |conn| bulk_insert_sync(conn, ignore, table, cols, &objects, fun))
+		.interact(move |conn| bulk_insert_sync(conn, ignore, table, cols, objects, fun))
 		.await
 		.map_err(|e| db_bulk_insert_err(&e))??;
 

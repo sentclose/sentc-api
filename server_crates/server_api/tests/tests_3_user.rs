@@ -1139,11 +1139,12 @@ async fn test_27_done_key_rotation_for_other_device()
 	let device_public_key = &user.user_data_1.as_ref().unwrap().device_keys.public_key;
 	let pre_group_key = &user.user_data_1.as_ref().unwrap().user_keys[0].group_key;
 
-	for key in &out {
+	for key in out {
+		let key_id = key.new_group_key_id.clone();
 		let rotation_out = sentc_crypto::group::done_key_rotation(device_private_key, device_public_key, pre_group_key, key).unwrap();
 
 		//done for each key
-		let url = get_url("api/v1/user/user_keys/rotation/".to_owned() + key.new_group_key_id.as_str());
+		let url = get_url("api/v1/user/user_keys/rotation/".to_owned() + key_id.as_str());
 		let client = reqwest::Client::new();
 		let res = client
 			.put(url)

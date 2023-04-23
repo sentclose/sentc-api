@@ -836,10 +836,12 @@ pub async fn done_key_rotation(
 
 	//done it for each key
 	for key in out {
-		let rotation_out = sentc_crypto::group::done_key_rotation(private_key, public_key, pre_group_key, &key).unwrap();
+		let key_id = key.new_group_key_id.clone();
+
+		let rotation_out = sentc_crypto::group::done_key_rotation(private_key, public_key, pre_group_key, key).unwrap();
 
 		//done the key rotation to save the new key
-		let url = get_url("api/v1/group/".to_owned() + group_id + "/key_rotation/" + key.new_group_key_id.as_str());
+		let url = get_url("api/v1/group/".to_owned() + group_id + "/key_rotation/" + key_id.as_str());
 		let client = reqwest::Client::new();
 		let res = client
 			.put(url)
@@ -858,7 +860,7 @@ pub async fn done_key_rotation(
 		handle_general_server_response(body.as_str()).unwrap();
 
 		//fetch just the new key
-		let url = get_url("api/v1/group/".to_owned() + group_id + "/key/" + key.new_group_key_id.as_str());
+		let url = get_url("api/v1/group/".to_owned() + group_id + "/key/" + key_id.as_str());
 
 		let client = reqwest::Client::new();
 		let res = client
