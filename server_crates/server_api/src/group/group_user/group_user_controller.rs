@@ -101,7 +101,11 @@ pub async fn invite_auto_group_force(mut req: Request) -> JRes<GroupInviteServer
 	echo(out)
 }
 
-async fn check_invited_group<'a>(req: &'a Request, group_data: &InternalGroupDataComplete, user_type: &NewUserType) -> AppRes<(&'a str, &'a str)>
+pub(crate) async fn check_invited_group<'a>(
+	req: &'a Request,
+	group_data: &InternalGroupDataComplete,
+	user_type: &NewUserType,
+) -> AppRes<(&'a str, &'a str)>
 {
 	match *user_type {
 		NewUserType::Normal => Ok((get_name_param_from_req(req, "invited_user")?, "Group")),
