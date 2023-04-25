@@ -1,12 +1,11 @@
 use rustgram::service::IntoResponse;
 use rustgram::{Request, Response};
 use sentc_crypto_common::file::{FileNameUpdate, FilePartRegisterOutput, FileRegisterInput, FileRegisterOutput};
-use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::FileId;
 use server_api_common::app::{FILE_STORAGE_OWN, FILE_STORAGE_SENTC};
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::input_helper::{bytes_to_json, get_raw_body};
-use server_core::res::{echo, AppRes, JRes};
+use server_core::res::{echo, echo_success, AppRes, JRes, ServerSuccessOutput};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 use uuid::Uuid;
 
@@ -15,7 +14,7 @@ use crate::file::file_entities::{FileMetaData, FilePartListItem};
 use crate::file::{file_model, file_service};
 use crate::group::get_group_user_data_from_req;
 use crate::user::jwt::get_jwt_data_from_param;
-use crate::util::api_res::{echo_success, ApiErrorCodes};
+use crate::util::api_res::ApiErrorCodes;
 
 pub async fn register_file(mut req: Request) -> JRes<FileRegisterOutput>
 {

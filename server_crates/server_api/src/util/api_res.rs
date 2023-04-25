@@ -1,6 +1,4 @@
-use sentc_crypto_common::server_default::ServerSuccessOutput;
 use server_core::error::{CoreErrorCodes, SentcErrorCodes};
-use server_core::res::{echo, JRes};
 
 #[derive(Debug)]
 pub enum ApiErrorCodes
@@ -210,9 +208,4 @@ impl SentcErrorCodes for ApiErrorCodes
 			ApiErrorCodes::ContentSearchableQueryMissing => 810,
 		}
 	}
-}
-
-pub fn echo_success() -> JRes<ServerSuccessOutput>
-{
-	echo(ServerSuccessOutput("Success".to_string()))
 }
