@@ -120,3 +120,11 @@ pub fn echo<T: Serialize>(obj: T) -> JRes<T>
 {
 	Ok(JsonRes(obj))
 }
+
+#[derive(Serialize)]
+pub struct ServerSuccessOutput(pub &'static str);
+
+pub fn echo_success() -> JRes<ServerSuccessOutput>
+{
+	echo(ServerSuccessOutput("Success"))
+}
