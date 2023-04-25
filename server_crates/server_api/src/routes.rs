@@ -392,6 +392,12 @@ pub(crate) fn routes(router: &mut Router)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
+	router.post(
+		"/api/v1/group/light",
+		r(crate::group::create_light)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
 	router.get(
 		"/api/v1/group/all/:last_fetched_time/:last_group_id",
 		r(crate::group::get_all_groups_for_user)
@@ -484,8 +490,22 @@ pub(crate) fn routes(router: &mut Router)
 			.add(app_token::app_token_transform),
 	);
 	router.post(
+		"/api/v1/group/:group_id/child/light",
+		r(crate::group::create_child_group_light)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.post(
 		"/api/v1/group/:group_id/connected",
 		r(crate::group::create_connected_group_from_group)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/group/:group_id/connected/light",
+		r(crate::group::create_connected_group_from_group_light)
 			.add(group::group_transform)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
