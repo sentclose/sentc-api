@@ -392,6 +392,12 @@ pub(crate) fn routes(router: &mut Router)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
+	router.post(
+		"/api/v1/group/light",
+		r(crate::group::create_light)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
 	router.get(
 		"/api/v1/group/all/:last_fetched_time/:last_group_id",
 		r(crate::group::get_all_groups_for_user)
@@ -484,8 +490,22 @@ pub(crate) fn routes(router: &mut Router)
 			.add(app_token::app_token_transform),
 	);
 	router.post(
+		"/api/v1/group/:group_id/child/light",
+		r(crate::group::create_child_group_light)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.post(
 		"/api/v1/group/:group_id/connected",
 		r(crate::group::create_connected_group_from_group)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/group/:group_id/connected/light",
+		r(crate::group::create_connected_group_from_group_light)
 			.add(group::group_transform)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
@@ -568,8 +588,22 @@ pub(crate) fn routes(router: &mut Router)
 			.add(app_token::app_token_transform),
 	);
 	router.put(
+		"/api/v1/group/:group_id/invite/:invited_user/light",
+		r(crate::group::invite_request_light)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.put(
 		"/api/v1/group/:group_id/invite_group/:invited_group",
 		r(crate::group::invite_request_to_group)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.put(
+		"/api/v1/group/:group_id/invite_group/:invited_group/light",
+		r(crate::group::invite_request_to_group_light)
 			.add(group::group_transform)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
@@ -582,6 +616,13 @@ pub(crate) fn routes(router: &mut Router)
 			.add(app_token::app_token_transform),
 	);
 	router.put(
+		"/api/v1/group/:group_id/invite_auto/:invited_user/light",
+		r(crate::group::invite_auto_light)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.put(
 		"/api/v1/group/:group_id/invite_group_auto/:invited_group",
 		r(crate::group::invite_auto_group)
 			.add(group::group_transform)
@@ -589,8 +630,22 @@ pub(crate) fn routes(router: &mut Router)
 			.add(app_token::app_token_transform),
 	);
 	router.put(
+		"/api/v1/group/:group_id/invite_group_auto/:invited_group/light",
+		r(crate::group::invite_auto_group_light)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.put(
 		"/api/v1/group/:group_id/invite_group_auto_force/:invited_group",
 		r(crate::group::invite_auto_group_force)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.put(
+		"/api/v1/group/:group_id/invite_group_auto_force/:invited_group/light",
+		r(crate::group::invite_auto_group_force_light)
 			.add(group::group_transform)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
@@ -654,6 +709,13 @@ pub(crate) fn routes(router: &mut Router)
 	router.put(
 		"/api/v1/group/:group_id/join_req/:join_user",
 		r(crate::group::accept_join_req)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.put(
+		"/api/v1/group/:group_id/join_req/:join_user/light",
+		r(crate::group::accept_join_req_light)
 			.add(group::group_transform)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),

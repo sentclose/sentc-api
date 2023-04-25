@@ -72,15 +72,8 @@ WHERE
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn invite_request(
-	group_id: impl Into<GroupId>,
-	invited_user: impl Into<UserId>,
-	keys_for_new_user: Vec<GroupKeysForNewMember>,
-	key_session: bool,
-	new_user_rank: i32,
-	admin_rank: i32,
-	user_type: NewUserType,
-) -> AppRes<Option<String>>
+#[inline(always)]
+async fn prepare_invite(group_id: impl Into<GroupId>, invited_user: impl Into<UserId>, admin_rank: i32, user_type: NewUserType) -> AppRes<i32>
 {
 	let group_id = group_id.into();
 	let invited_user = invited_user.into();
@@ -108,11 +101,7 @@ pub(super) async fn invite_request(
 	//check if there was already an invite to this user -> don't use insert ignore here because we would insert the keys again!
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ? AND type = ?";
-	let invite_exists: Option<I32Entity> = query_first(
-		sql,
-		set_params!(group_id.clone(), invited_user.clone(), GROUP_INVITE_TYPE_INVITE_REQ),
-	)
-	.await?;
+	let invite_exists: Option<I32Entity> = query_first(sql, set_params!(group_id, invited_user, GROUP_INVITE_TYPE_INVITE_REQ)).await?;
 
 	if invite_exists.is_some() {
 		return Err(SentcCoreError::new_msg(
@@ -121,6 +110,60 @@ pub(super) async fn invite_request(
 			"User was already invited",
 		));
 	}
+
+	Ok(user_type)
+}
+
+pub(super) async fn invite_request_light(
+	group_id: impl Into<GroupId>,
+	invited_user: impl Into<UserId>,
+	new_user_rank: i32,
+	admin_rank: i32,
+	user_type: NewUserType,
+) -> AppRes<()>
+{
+	let group_id = group_id.into();
+	let invited_user = invited_user.into();
+
+	let user_type = prepare_invite(&group_id, &invited_user, admin_rank, user_type).await?;
+
+	//______________________________________________________________________________________________
+
+	let time = get_time()?;
+
+	//language=SQL
+	let sql = "INSERT INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, user_type, new_user_rank) VALUES (?,?,?,?,?,?)";
+
+	exec(
+		sql,
+		set_params!(
+			invited_user.clone(),
+			group_id.clone(),
+			GROUP_INVITE_TYPE_INVITE_REQ,
+			time.to_string(),
+			user_type,
+			new_user_rank
+		),
+	)
+	.await?;
+
+	Ok(())
+}
+
+pub(super) async fn invite_request(
+	group_id: impl Into<GroupId>,
+	invited_user: impl Into<UserId>,
+	keys_for_new_user: Vec<GroupKeysForNewMember>,
+	key_session: bool,
+	new_user_rank: i32,
+	admin_rank: i32,
+	user_type: NewUserType,
+) -> AppRes<Option<String>>
+{
+	let group_id = group_id.into();
+	let invited_user = invited_user.into();
+
+	let user_type = prepare_invite(&group_id, &invited_user, admin_rank, user_type).await?;
 
 	//______________________________________________________________________________________________
 
@@ -368,14 +411,8 @@ pub(super) async fn reject_join_req(group_id: impl Into<GroupId>, user_id: impl 
 	Ok(())
 }
 
-pub(super) async fn accept_join_req(
-	group_id: impl Into<GroupId>,
-	user_id: impl Into<UserId>,
-	keys_for_new_user: Vec<GroupKeysForNewMember>,
-	key_session: bool,
-	new_user_rank: i32,
-	admin_rank: i32,
-) -> AppRes<Option<String>>
+#[inline(always)]
+async fn prepare_accept_join_req(group_id: impl Into<GroupId>, user_id: impl Into<UserId>, admin_rank: i32) -> AppRes<i32>
 {
 	let group_id = group_id.into();
 	let user_id = user_id.into();
@@ -383,7 +420,7 @@ pub(super) async fn accept_join_req(
 	check_group_rank(admin_rank, 2)?;
 
 	//this check in important (see invite user req -> check if there is an invite). we would insert the keys even if the user is already member
-	let check = check_user_in_group(group_id.clone(), user_id.clone()).await?;
+	let check = check_user_in_group(&group_id, &user_id).await?;
 
 	if check {
 		return Err(SentcCoreError::new_msg(
@@ -396,22 +433,67 @@ pub(super) async fn accept_join_req(
 	//check if the join req exists
 	//language=SQL
 	let sql = "SELECT user_type FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ? AND type = ?";
-	let check: Option<I32Entity> = query_first(
-		sql,
-		set_params!(group_id.clone(), user_id.clone(), GROUP_INVITE_TYPE_JOIN_REQ),
-	)
+	let check: I32Entity = query_first(sql, set_params!(group_id, user_id, GROUP_INVITE_TYPE_JOIN_REQ))
+		.await?
+		.ok_or_else(|| SentcCoreError::new_msg(400, ApiErrorCodes::GroupJoinReqNotFound, "Join request not found"))?;
+
+	Ok(check.0)
+}
+
+pub(crate) async fn accept_join_req_light(group_id: impl Into<GroupId>, user_id: impl Into<UserId>, new_user_rank: i32, admin_rank: i32)
+	-> AppRes<()>
+{
+	let group_id = group_id.into();
+	let user_id = user_id.into();
+
+	let user_type = prepare_accept_join_req(&group_id, &user_id, admin_rank).await?;
+
+	//______________________________________________________________________________________________
+
+	let time = get_time()?;
+
+	//language=SQL
+	let sql_del = "DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ?";
+	let params_del = set_params!(group_id.clone(), user_id.clone());
+
+	//language=SQL
+	let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
+	let params_in = set_params!(
+		user_id.clone(),
+		group_id.clone(),
+		time.to_string(),
+		new_user_rank,
+		user_type
+	);
+
+	exec_transaction(vec![
+		TransactionData {
+			sql: sql_del,
+			params: params_del,
+		},
+		TransactionData {
+			sql: sql_in,
+			params: params_in,
+		},
+	])
 	.await?;
 
-	let user_type = match check {
-		Some(c) => c.0,
-		None => {
-			return Err(SentcCoreError::new_msg(
-				400,
-				ApiErrorCodes::GroupJoinReqNotFound,
-				"Join request not found",
-			));
-		},
-	};
+	Ok(())
+}
+
+pub(super) async fn accept_join_req(
+	group_id: impl Into<GroupId>,
+	user_id: impl Into<UserId>,
+	keys_for_new_user: Vec<GroupKeysForNewMember>,
+	key_session: bool,
+	new_user_rank: i32,
+	admin_rank: i32,
+) -> AppRes<Option<String>>
+{
+	let group_id = group_id.into();
+	let user_id = user_id.into();
+
+	let user_type = prepare_accept_join_req(&group_id, &user_id, admin_rank).await?;
 
 	//______________________________________________________________________________________________
 

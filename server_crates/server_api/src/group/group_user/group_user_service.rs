@@ -1,6 +1,6 @@
 use std::future::Future;
 
-use sentc_crypto_common::group::{GroupKeysForNewMember, GroupKeysForNewMemberServerInput};
+use sentc_crypto_common::group::{GroupKeysForNewMember, GroupKeysForNewMemberServerInput, GroupNewMemberLightInput};
 use sentc_crypto_common::{AppId, GroupId, UserId};
 use server_core::cache;
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
@@ -37,6 +37,51 @@ pub fn get_invite_req<'a>(
 pub fn check_is_connected_group<'a>(group_id: impl Into<GroupId> + 'a) -> impl Future<Output = AppRes<i32>> + 'a
 {
 	group_user_model::check_is_connected_group(group_id)
+}
+
+pub async fn invite_request_light(
+	group_data: &InternalGroupDataComplete,
+	input: GroupNewMemberLightInput,
+	invited_user: impl Into<UserId>,
+	user_type: NewUserType,
+) -> AppRes<()>
+{
+	if group_data.group_data.invite == 0 {
+		return Err(SentcCoreError::new_msg(
+			400,
+			ApiErrorCodes::GroupInviteStop,
+			"No invites allowed for this group",
+		));
+	}
+
+	let rank = input.rank.unwrap_or(4);
+
+	if rank < 1 {
+		return Err(SentcCoreError::new_msg(
+			400,
+			ApiErrorCodes::GroupUserRank,
+			"User group rank got the wrong format",
+		));
+	}
+
+	if rank < group_data.user_data.rank {
+		return Err(SentcCoreError::new_msg(
+			400,
+			ApiErrorCodes::GroupUserRank,
+			"The set rank cannot be higher than your rank",
+		));
+	}
+
+	group_user_model::invite_request_light(
+		&group_data.group_data.id,
+		invited_user,
+		rank,
+		group_data.user_data.rank,
+		user_type,
+	)
+	.await?;
+
+	Ok(())
 }
 
 /**
@@ -121,6 +166,22 @@ pub async fn accept_invite(app_id: &str, group_id: impl Into<GroupId>, invited_u
 	Ok(())
 }
 
+pub async fn invite_auto_light(
+	group_data: &InternalGroupDataComplete,
+	input: GroupNewMemberLightInput,
+	invited_user: impl Into<UserId>,
+	user_type: NewUserType,
+) -> AppRes<()>
+{
+	let invited_user = invited_user.into();
+
+	invite_request_light(group_data, input, &invited_user, user_type).await?;
+
+	accept_invite(&group_data.group_data.app_id, &group_data.group_data.id, invited_user).await?;
+
+	Ok(())
+}
+
 /**
 # Invite a non group member user and accept the invite
 
@@ -137,12 +198,7 @@ pub async fn invite_auto(
 
 	let session_id = invite_request(group_data, input, &invited_user, user_type).await?;
 
-	accept_invite(
-		&group_data.group_data.app_id,
-		&group_data.group_data.id,
-		&invited_user,
-	)
-	.await?;
+	accept_invite(&group_data.group_data.app_id, &group_data.group_data.id, invited_user).await?;
 
 	Ok(session_id)
 }

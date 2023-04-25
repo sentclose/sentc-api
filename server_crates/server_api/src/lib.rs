@@ -40,6 +40,7 @@ pub use group::{
 	group_controller as sentc_group_controller,
 	group_entities as sentc_group_entities,
 	group_key_rotation_controller as sentc_group_key_rotation_controller,
+	group_light_controller as sentc_group_light_controller,
 	group_service as sentc_group_service,
 	group_user_controller as sentc_group_user_controller,
 	group_user_service as sentc_group_user_service,

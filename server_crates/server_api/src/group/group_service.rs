@@ -12,6 +12,27 @@ use crate::sentc_group_entities::GroupHmacData;
 use crate::sentc_user_entities::UserPublicKeyDataEntity;
 use crate::util::get_group_cache_key;
 
+pub fn create_group_light<'a>(
+	app_id: impl Into<AppId> + 'a,
+	user_id: impl Into<UserId> + 'a,
+	group_type: i32,
+	parent_group_id: Option<GroupId>,
+	user_rank: Option<i32>,
+	connected_group: Option<GroupId>,
+	is_connected_group: bool,
+) -> impl Future<Output = AppRes<GroupId>> + 'a
+{
+	group_model::create_light(
+		app_id,
+		user_id,
+		parent_group_id,
+		user_rank,
+		group_type,
+		connected_group,
+		is_connected_group,
+	)
+}
+
 pub fn create_group<'a>(
 	app_id: impl Into<AppId> + 'a,
 	user_id: impl Into<UserId> + 'a,

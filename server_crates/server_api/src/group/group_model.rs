@@ -274,20 +274,16 @@ LIMIT 1";
 	}
 }
 
-pub(super) async fn create(
-	app_id: impl Into<AppId>,
+#[inline(always)]
+fn prepare_create(
 	user_id: impl Into<UserId>,
-	data: CreateData,
-	parent_group_id: Option<GroupId>,
+	parent_group_id: &Option<GroupId>,
 	user_rank: Option<i32>,
-	group_type: i32,
 	connected_group: Option<GroupId>,
 	is_connected_group: bool,
-) -> AppRes<(GroupId, SymKeyId)>
+) -> AppRes<(String, u128, String, i32, bool)>
 {
-	let app_id = app_id.into();
-
-	let (insert_user_id, user_type, group_connected) = match (&parent_group_id, user_rank, connected_group) {
+	let (insert_user_id, user_type, group_connected) = match (parent_group_id, user_rank, connected_group) {
 		(Some(p), Some(r), None) => {
 			//test here if the user has access to create a child group in this group
 			check_group_rank(r, 1)?;
@@ -311,6 +307,103 @@ pub(super) async fn create(
 	let group_id = Uuid::new_v4().to_string();
 
 	let time = get_time()?;
+
+	Ok((group_id, time, insert_user_id, user_type, group_connected))
+}
+
+pub(super) async fn create_light(
+	app_id: impl Into<AppId>,
+	user_id: impl Into<UserId>,
+	parent_group_id: Option<GroupId>,
+	user_rank: Option<i32>,
+	group_type: i32,
+	connected_group: Option<GroupId>,
+	is_connected_group: bool,
+) -> AppRes<GroupId>
+{
+	let app_id = app_id.into();
+
+	let (group_id, time, insert_user_id, user_type, group_connected) = prepare_create(
+		user_id,
+		&parent_group_id,
+		user_rank,
+		connected_group,
+		is_connected_group,
+	)?;
+
+	//language=SQL
+	let sql_group = r"
+INSERT INTO sentc_group 
+    (
+     id, 
+     app_id, 
+     parent, 
+     identifier, 
+     time, 
+     type, 
+     is_connected_group, 
+     invite
+     ) VALUES (?,?,?,?,?,?,?,?)";
+
+	let group_params = set_params!(
+		group_id.clone(),
+		app_id.clone(),
+		parent_group_id,
+		"".to_string(),
+		time.to_string(),
+		group_type,
+		group_connected,
+		1
+	);
+
+	//insert he creator => rank = 0
+	//handle parent group as the creator.
+
+	//language=SQL
+	let sql_group_user = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
+	let group_user_params = set_params!(
+		insert_user_id.clone(),
+		group_id.clone(),
+		time.to_string(),
+		0,
+		user_type
+	);
+
+	exec_transaction(vec![
+		TransactionData {
+			sql: sql_group,
+			params: group_params,
+		},
+		TransactionData {
+			sql: sql_group_user,
+			params: group_user_params,
+		},
+	])
+	.await?;
+
+	Ok(group_id)
+}
+
+pub(super) async fn create(
+	app_id: impl Into<AppId>,
+	user_id: impl Into<UserId>,
+	data: CreateData,
+	parent_group_id: Option<GroupId>,
+	user_rank: Option<i32>,
+	group_type: i32,
+	connected_group: Option<GroupId>,
+	is_connected_group: bool,
+) -> AppRes<(GroupId, SymKeyId)>
+{
+	let app_id = app_id.into();
+
+	let (group_id, time, insert_user_id, user_type, group_connected) = prepare_create(
+		user_id,
+		&parent_group_id,
+		user_rank,
+		connected_group,
+		is_connected_group,
+	)?;
 
 	//language=SQL
 	let sql_group = r"
