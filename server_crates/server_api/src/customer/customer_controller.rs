@@ -1,6 +1,5 @@
 use rand::RngCore;
 use rustgram::Request;
-use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{
 	CaptchaCreateOutput,
 	ChangePasswordData,
@@ -24,7 +23,7 @@ use server_api_common::customer::{
 use server_core::email;
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::input_helper::{bytes_to_json, get_raw_body};
-use server_core::res::{echo, AppRes, JRes};
+use server_core::res::{echo, echo_success, AppRes, JRes, ServerSuccessOutput};
 
 use crate::customer::customer_model;
 #[cfg(feature = "send_mail")]
@@ -33,7 +32,7 @@ use crate::customer_app::app_util::get_app_data_from_req;
 use crate::file::file_service;
 use crate::user;
 use crate::user::jwt::get_jwt_data_from_param;
-use crate::util::api_res::{echo_success, ApiErrorCodes};
+use crate::util::api_res::ApiErrorCodes;
 
 pub async fn customer_captcha(req: Request) -> JRes<CaptchaCreateOutput>
 {

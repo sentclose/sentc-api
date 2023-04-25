@@ -6,7 +6,6 @@ use sentc_crypto_common::group::{
 	KeyRotationData,
 	KeyRotationStartServerOutput,
 };
-use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
 	DoneLoginLightServerOutput,
@@ -26,7 +25,7 @@ use sentc_crypto_common::user::{
 	UserUpdateServerInput,
 };
 use server_core::input_helper::{bytes_to_json, get_raw_body};
-use server_core::res::{echo, JRes};
+use server_core::res::{echo, echo_success, JRes, ServerSuccessOutput};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_time_from_url_param};
 
 use crate::customer_app::app_util::{check_endpoint_with_app_options, get_app_data_from_req, Endpoint};
@@ -37,7 +36,6 @@ use crate::user::jwt::get_jwt_data_from_param;
 use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
 use crate::user::user_service::UserAction;
 use crate::user::{user_model, user_service};
-use crate::util::api_res::echo_success;
 
 pub(crate) async fn exists(mut req: Request) -> JRes<UserIdentifierAvailableServerOutput>
 {
