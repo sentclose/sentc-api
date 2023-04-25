@@ -230,11 +230,19 @@ routes:
                           - patch: { p: "/invite/:group_id_to_join", s: crate::group::accept_invite_group }
                           # the normal invite to the actual group endpoints
                           - put: {p: "/invite/:invited_user", s: crate::group::invite_request}
+                          - put: {p: "/invite/:invited_user/light", s: crate::group::invite_request_light}
+
                           - put: {p: "/invite_group/:invited_group", s: crate::group::invite_request_to_group}
+                          - put: {p: "/invite_group/:invited_group/light", s: crate::group::invite_request_to_group_light}
 
                           - put: {p: "/invite_auto/:invited_user", s: crate::group::invite_auto}
+                          - put: {p: "/invite_auto/:invited_user/light", s: crate::group::invite_auto_light}
+
                           - put: {p: "/invite_group_auto/:invited_group", s: crate::group::invite_auto_group}
+                          - put: {p: "/invite_group_auto/:invited_group/light", s: crate::group::invite_auto_group_light}
+
                           - put: {p: "/invite_group_auto_force/:invited_group", s: crate::group::invite_auto_group_force}
+                          - put: {p: "/invite_group_auto_force/:invited_group/light", s: crate::group::invite_auto_group_force_light}
 
                           - put: {p: "/re_invite/:invited_user", s: crate::group::re_invite_auto}
                           - put: {p: "/re_invite_group/:invited_group", s: crate::group::re_invite_auto_group}
@@ -252,6 +260,7 @@ routes:
                                 - patch: {p: "/:group_id_to_join", s: crate::group::join_req_as_group}
                                 - get: {p: "/:last_fetched_time/:last_user_id", s: crate::group::get_join_req}
                                 - put: {p: "/:join_user", s: crate::group::accept_join_req}
+                                - put: {p: "/:join_user/light", s: crate::group::accept_join_req_light}
                                 - delete: {p: "/:join_user", s: crate::group::reject_join_req}
                                 - put: {p: "/session/:key_session_id", s: crate::group::insert_user_keys_via_session_join_req}
                           #_____________________________________________________________________________________________
