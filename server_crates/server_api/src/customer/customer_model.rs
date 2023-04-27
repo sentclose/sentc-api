@@ -1,4 +1,4 @@
-use sentc_crypto_common::CustomerId;
+use sentc_crypto_common::{CustomerId, GroupId, UserId};
 use server_api_common::customer::{CustomerData, CustomerUpdateInput};
 use server_core::db::{exec, query_first, I32Entity};
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
@@ -8,6 +8,7 @@ use server_core::{get_time, set_params};
 #[cfg(feature = "send_mail")]
 use crate::customer::customer_entities::RegisterEmailStatus;
 use crate::customer::customer_entities::{CustomerDataByEmailEntity, CustomerDataEntity, CustomerEmailByToken, CustomerEmailToken};
+use crate::sentc_group_entities::InternalUserGroupData;
 use crate::util::api_res::ApiErrorCodes;
 
 pub(super) async fn check_customer_valid(customer_id: impl Into<CustomerId>) -> AppRes<I32Entity>
@@ -264,4 +265,20 @@ pub(super) async fn update_data(id: impl Into<CustomerId>, data: CustomerData) -
 	exec(sql, set_params!(data.name, data.first_name, data.company, id.into())).await?;
 
 	Ok(())
+}
+
+//__________________________________________________________________________________________________
+
+pub(crate) async fn get_customer_group(group_id: impl Into<GroupId>, user_id: impl Into<UserId>) -> AppRes<Option<InternalUserGroupData>>
+{
+	//language=SQL
+	let sql = r"
+SELECT user_id, time, `rank` 
+FROM sentc_group_user, sentc_customer_group 
+WHERE 
+    group_id = ? AND 
+    user_id = ? AND 
+    group_id = sentc_group_id";
+
+	query_first(sql, set_params!(group_id.into(), user_id.into())).await
 }

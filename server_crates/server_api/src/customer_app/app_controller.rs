@@ -19,7 +19,7 @@ use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::res::{echo, echo_success, AppRes, JRes, ServerSuccessOutput};
 use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_time_from_url_param};
 
-use crate::customer::customer_util;
+use crate::customer::{customer_model, customer_util};
 use crate::customer_app::app_service::check_file_options;
 use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
 use crate::customer_app::{app_model, app_service, generate_tokens};
@@ -93,7 +93,17 @@ async fn create_app(mut req: Request, group: bool) -> JRes<AppRegisterOutput>
 	let group_id = if group {
 		let group_id = get_name_param_from_req(&req, "group_id")?;
 
-		//TODO check access to this group
+		let group_data = customer_model::get_customer_group(group_id, customer_id)
+			.await?
+			.ok_or_else(|| SentcCoreError::new_msg(400, ApiErrorCodes::GroupAccess, "No access to this group"))?;
+
+		if group_data.rank > 1 {
+			return Err(SentcCoreError::new_msg(
+				400,
+				ApiErrorCodes::GroupUserRank,
+				"No rights to do this action",
+			));
+		}
 
 		Some(group_id)
 	} else {
