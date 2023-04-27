@@ -296,7 +296,8 @@ WHERE
     SELECT 
         sentc_app.id 
     FROM sentc_app 
-    WHERE customer_id = ?
+    WHERE owner_id = ? AND 
+          owner_type = 0
     )";
 
 	exec(

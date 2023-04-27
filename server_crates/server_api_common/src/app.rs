@@ -1,4 +1,4 @@
-use sentc_crypto_common::{AppId, CustomerId, JwtKeyId, SignKeyPairId};
+use sentc_crypto_common::{AppId, JwtKeyId, SignKeyPairId};
 use serde::{Deserialize, Serialize};
 use serde_json::to_string;
 
@@ -394,7 +394,6 @@ Always return this for every new jwt key pair
 #[derive(Serialize, Deserialize)]
 pub struct AppJwtRegisterOutput
 {
-	pub customer_id: CustomerId,
 	pub app_id: AppId,
 	pub jwt_id: JwtKeyId,
 	pub jwt_verify_key: String,
@@ -405,7 +404,6 @@ pub struct AppJwtRegisterOutput
 #[derive(Serialize, Deserialize)]
 pub struct AppRegisterOutput
 {
-	pub customer_id: CustomerId,
 	pub app_id: AppId,
 
 	//don't show this values in te normal app data

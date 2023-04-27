@@ -79,6 +79,7 @@ pub struct CustomerAppList
 	pub id: AppId,
 	pub identifier: String,
 	pub time: u128,
+	pub group_name: Option<String>,
 }
 
 #[cfg(feature = "server")]
@@ -93,6 +94,7 @@ impl server_core::db::mysql_async_export::prelude::FromRow for CustomerAppList
 			id: server_core::take_or_err!(row, 0, String),
 			identifier: server_core::take_or_err!(row, 1, String),
 			time: server_core::take_or_err!(row, 2, u128),
+			group_name: server_core::take_or_err_opt!(row, 3, String),
 		})
 	}
 }
@@ -109,6 +111,7 @@ impl server_core::db::FromSqliteRow for CustomerAppList
 			id: server_core::take_or_err!(row, 0),
 			identifier: server_core::take_or_err!(row, 1),
 			time: server_core::take_or_err_u128!(row, 2),
+			group_name: server_core::take_or_err!(row, 3, String),
 		})
 	}
 }
