@@ -4,7 +4,7 @@ use hyper::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::SdkError;
-use sentc_crypto_common::group::{GroupCreateOutput, GroupNewMemberLightInput};
+use sentc_crypto_common::group::{GroupChangeRankServerInput, GroupCreateOutput, GroupNewMemberLightInput};
 use sentc_crypto_common::UserId;
 use serde_json::to_string;
 use server_api_common::app::{AppDetails, AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
@@ -484,6 +484,133 @@ async fn test_18_not_access_group_apps_without_access()
 			}
 		},
 	}
+}
+
+#[tokio::test]
+async fn test_19_change_user_rank()
+{
+	let users = CUSTOMER_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+	let user = &users[1];
+
+	let groups = GROUP_STATE.get().unwrap().read().await;
+	let group_id = &groups[0];
+
+	let url = get_url("api/v1/customer/group/".to_owned() + group_id + "/change_rank");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(&creator.customer_data.user_keys.jwt))
+		.body(
+			to_string(&GroupChangeRankServerInput {
+				changed_user_id: user.id.clone(),
+				new_rank: 2,
+			})
+			.unwrap(),
+		)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	handle_general_server_response(&body).unwrap();
+}
+
+#[tokio::test]
+async fn test_20_new_member_should_fetch_the_group_with_new_rank()
+{
+	let users = CUSTOMER_STATE.get().unwrap().read().await;
+	let user = &users[1];
+
+	let groups = GROUP_STATE.get().unwrap().read().await;
+	let group_id = &groups[0];
+
+	//try to fetch the group
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(get_url("api/v1/customer/group/".to_owned() + &group_id))
+		.header(AUTHORIZATION, auth_header(&user.customer_data.user_keys.jwt))
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let out: CustomerGroupView = handle_server_response(&body).unwrap();
+
+	assert_eq!(out.data.rank, 2); //default rank
+}
+
+#[tokio::test]
+async fn test_21_kick_member_from_group()
+{
+	let users = CUSTOMER_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+	let user = &users[1];
+
+	let groups = GROUP_STATE.get().unwrap().read().await;
+	let group_id = &groups[0];
+
+	let url = get_url("api/v1/customer/group/".to_owned() + group_id + "/kick/" + &user.id);
+
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(&creator.customer_data.user_keys.jwt))
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	handle_general_server_response(&body).unwrap();
+}
+
+#[tokio::test]
+async fn test_22_kicked_member_should_not_fetch_the_group()
+{
+	let users = CUSTOMER_STATE.get().unwrap().read().await;
+	let user = &users[1];
+
+	let groups = GROUP_STATE.get().unwrap().read().await;
+	let group_id = &groups[0];
+
+	//try to fetch the group
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(get_url("api/v1/customer/group/".to_owned() + &group_id))
+		.header(AUTHORIZATION, auth_header(&user.customer_data.user_keys.jwt))
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	match handle_server_response::<CustomerGroupView>(&body) {
+		Ok(_) => panic!("Should be an error"),
+		Err(e) => {
+			if let SdkError::ServerErr(s, _) = e {
+				assert_eq!(s, 310);
+			} else {
+				panic!("Should be server error")
+			}
+		},
+	}
+
+	//fetch all groups
+	let client = reqwest::Client::new();
+	let res = client
+		.get(get_url("api/v1/customer/group/all/0/none".to_owned()))
+		.header(AUTHORIZATION, auth_header(&user.customer_data.user_keys.jwt))
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let out: Vec<CustomerGroupList> = handle_server_response(&body).unwrap();
+
+	assert_eq!(out.len(), 0);
 }
 
 #[tokio::test]
