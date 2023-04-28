@@ -76,9 +76,41 @@ pub(crate) fn routes(router: &mut Router)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_base_app_transform),
 	);
+	router.post(
+		"/api/v1/customer/group",
+		r(crate::customer::create_customer_group).add(jwt::jwt_customer_app_transform),
+	);
+	router.get(
+		"/api/v1/customer/group/all/:last_fetched_time/:last_id",
+		r(crate::customer::get_groups).add(jwt::jwt_customer_app_transform),
+	);
+	router.put(
+		"/api/v1/customer/group/:group_id/invite/:invited_user",
+		r(crate::customer::invite_customer_group_member)
+			.add(group::group_app_transform)
+			.add(jwt::jwt_customer_app_transform),
+	);
+	router.get(
+		"/api/v1/customer/group/:group_id",
+		r(crate::customer::get_group)
+			.add(group::group_app_transform)
+			.add(jwt::jwt_customer_app_transform),
+	);
+	router.get(
+		"/api/v1/customer/group/:group_id/apps/:last_fetched_time/:last_app_id",
+		r(crate::customer::get_all_apps_group)
+			.add(group::group_app_transform)
+			.add(jwt::jwt_customer_app_transform),
+	);
+	router.delete(
+		"/api/v1/customer/group/:group_id",
+		r(crate::customer::delete_customer_group)
+			.add(group::group_app_transform)
+			.add(jwt::jwt_customer_app_transform),
+	);
 	router.get(
 		"/api/v1/customer/apps/:last_fetched_time/:last_app_id",
-		r(crate::customer_app::get_all_apps).add(jwt::jwt_customer_app_transform),
+		r(crate::customer::get_all_apps).add(jwt::jwt_customer_app_transform),
 	);
 	router.post(
 		"/api/v1/customer/app",

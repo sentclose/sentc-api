@@ -38,30 +38,49 @@ routes:
         #_______________________________________________________________________________________________________________
         # customer routes with the jwt check,
         # and we are only using public token for dashboard routes
-        # App routes
         - group:
             p: "/customer"
             mw:
               - jwt::jwt_customer_app_transform
             gr:
-              - get: { p: "/apps/:last_fetched_time/:last_app_id", s: crate::customer_app::get_all_apps }
-              - post: { p: "/app", s: crate::customer_app::create_app_user }
-              - post: {p: "/app/:group_id", s: crate::customer_app::create_app_group}
+              # group routes
               - group:
-                  p: "/app/:app_id"
-                  mw:
-                    - app_access::app_access_transform
+                  p: "/group"
                   gr:
-                    - get: {p: "", s: crate::customer_app::get_app_details}
-                    - put: { p: "", s: crate::customer_app::update }
-                    - put: {p: "/options", s: crate::customer_app::update_options}
-                    - put: {p: "/file_options", s: crate::customer_app::update_file_options}
-                    - delete: { p: "", s: crate::customer_app::delete }
-                    - patch: { p: "/token_renew", s: crate::customer_app::renew_tokens }
-                    # jwt keys
-                    - patch: { p: "/new_jwt_keys", s: crate::customer_app::add_jwt_keys }
-                    - get: { p: "/jwt", s: crate::customer_app::get_jwt_details }
-                    - delete: { p: "/jwt/:jwt_id", s: crate::customer_app::delete_jwt_keys }
+                    - post: { p: "", s: crate::customer::create_customer_group }
+                    - get: {p: "/all/:last_fetched_time/:last_id", s: crate::customer::get_groups}
+                    - group:
+                        p: "/:group_id"
+                        mw:
+                          - group::group_app_transform
+                        gr:
+                          - put: {p: "/invite/:invited_user", s: crate::customer::invite_customer_group_member}
+                          - get: {p: "", s: crate::customer::get_group}
+                          - get: { p: "/apps/:last_fetched_time/:last_app_id", s: crate::customer::get_all_apps_group }
+                          - delete: {p: "", s: crate::customer::delete_customer_group}
+              #_________________________________________________________________________________________________________
+              # App routes
+              - get: { p: "/apps/:last_fetched_time/:last_app_id", s: crate::customer::get_all_apps }
+              - group:
+                  p: "/app"
+                  gr:
+                    - post: { p: "", s: crate::customer_app::create_app_user }
+                    - post: { p: "/:group_id", s: crate::customer_app::create_app_group }
+                    - group:
+                        p: "/:app_id"
+                        mw:
+                          - app_access::app_access_transform
+                        gr:
+                          - get: { p: "", s: crate::customer_app::get_app_details }
+                          - put: { p: "", s: crate::customer_app::update }
+                          - put: { p: "/options", s: crate::customer_app::update_options }
+                          - put: { p: "/file_options", s: crate::customer_app::update_file_options }
+                          - delete: { p: "", s: crate::customer_app::delete }
+                          - patch: { p: "/token_renew", s: crate::customer_app::renew_tokens }
+                          # jwt keys
+                          - patch: { p: "/new_jwt_keys", s: crate::customer_app::add_jwt_keys }
+                          - get: { p: "/jwt", s: crate::customer_app::get_jwt_details }
+                          - delete: { p: "/jwt/:jwt_id", s: crate::customer_app::delete_jwt_keys }
         #_______________________________________________________________________________________________________________
         # routes don't need jwt check, but an app token
         - group:
