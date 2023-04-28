@@ -225,6 +225,12 @@ pub fn delete_file_for_customer<'a>(customer_id: impl Into<CustomerId> + 'a) -> 
 }
 
 #[allow(clippy::needless_lifetimes)]
+pub fn delete_file_for_customer_group<'a>(group_id: impl Into<GroupId> + 'a) -> impl Future<Output = AppRes<()>> + 'a
+{
+	file_model::delete_files_for_customer_group(group_id)
+}
+
+#[allow(clippy::needless_lifetimes)]
 pub fn delete_file_for_app<'a>(app_id: impl Into<AppId> + 'a) -> impl Future<Output = AppRes<()>> + 'a
 {
 	file_model::delete_files_for_app(app_id)
