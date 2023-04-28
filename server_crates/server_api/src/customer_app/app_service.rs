@@ -1,5 +1,8 @@
-use sentc_crypto_common::{CustomerId, GroupId};
+use std::future::Future;
+
+use sentc_crypto_common::{AppId, CustomerId, GroupId};
 use server_api_common::app::{AppFileOptionsInput, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, FILE_STORAGE_OWN};
+use server_api_common::customer::CustomerAppList;
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::res::AppRes;
 
@@ -88,4 +91,22 @@ pub(super) fn check_file_options(input: &AppFileOptionsInput) -> AppRes<()>
 	}
 
 	Ok(())
+}
+
+pub fn get_all_apps<'a>(
+	customer_id: impl Into<CustomerId> + 'a,
+	last_fetched_time: u128,
+	last_app_id: impl Into<AppId> + 'a,
+) -> impl Future<Output = AppRes<Vec<CustomerAppList>>> + 'a
+{
+	app_model::get_all_apps(customer_id, last_fetched_time, last_app_id)
+}
+
+pub fn get_all_apps_group<'a>(
+	group_id: impl Into<GroupId> + 'a,
+	last_fetched_time: u128,
+	last_app_id: impl Into<String> + 'a,
+) -> impl Future<Output = AppRes<Vec<CustomerAppList>>> + 'a
+{
+	app_model::get_all_apps_group(group_id, last_fetched_time, last_app_id)
 }

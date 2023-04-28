@@ -241,6 +241,44 @@ WHERE
 	Ok(list)
 }
 
+pub(super) async fn get_all_apps_group(
+	group_id: impl Into<GroupId>,
+	last_fetched_time: u128,
+	last_app_id: impl Into<AppId>,
+) -> AppRes<Vec<CustomerAppList>>
+{
+	//language=SQL
+	let sql = r"
+SELECT id, identifier, sentc_app.time, name as group_name 
+FROM sentc_app, sentc_customer_group 
+WHERE
+      owner_type = 1 AND
+      owner_id = ? AND
+      sentc_group_id = owner_id"
+		.to_string();
+
+	let (sql, params) = if last_fetched_time > 0 {
+		let sql = sql + " AND sentc_app.time >=? AND (sentc_app.time > ? OR (sentc_app.time = ? AND id > ?)) ORDER BY sentc_app.time, id LIMIT 20";
+		(
+			sql,
+			set_params!(
+				group_id.into(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_app_id.into()
+			),
+		)
+	} else {
+		let sql = sql + " ORDER BY sentc_app.time, id LIMIT 20";
+		(sql, set_params!(group_id.into()))
+	};
+
+	let list: Vec<CustomerAppList> = query_string(sql, params).await?;
+
+	Ok(list)
+}
+
 pub(super) async fn get_app_view(app_id: impl Into<AppId>, owner_type: i32) -> AppRes<CustomerAppList>
 {
 	//tanks to the app access middleware we know the owner type
@@ -248,12 +286,11 @@ pub(super) async fn get_app_view(app_id: impl Into<AppId>, owner_type: i32) -> A
 		//language=SQL
 		r"
 SELECT id, identifier, sentc_app.time, name as group_name 
-FROM sentc_app, sentc_group_user, sentc_customer_group 
+FROM sentc_app, sentc_customer_group 
 WHERE
       owner_type = 1 AND
-      user_id = ? AND
-      group_id = owner_id AND 
-      sentc_group_id = group_id 
+      id = ? AND
+      sentc_group_id = owner_id 
 		"
 	} else {
 		//language=SQL

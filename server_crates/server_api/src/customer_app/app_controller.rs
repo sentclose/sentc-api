@@ -12,12 +12,11 @@ use server_api_common::app::{
 	AppTokenRenewOutput,
 	AppUpdateInput,
 };
-use server_api_common::customer::CustomerAppList;
 use server_core::cache;
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::res::{echo, echo_success, AppRes, JRes, ServerSuccessOutput};
-use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_time_from_url_param};
+use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 
 use crate::customer::{customer_model, customer_util};
 use crate::customer_app::app_service::check_file_options;
@@ -28,20 +27,6 @@ use crate::sentc_app_entities::AppCustomerAccess;
 use crate::user::jwt::{create_jwt_keys, get_jwt_data_from_param};
 use crate::util::api_res::ApiErrorCodes;
 use crate::util::{get_app_jwt_sign_key, get_app_jwt_verify_key, APP_TOKEN_CACHE};
-
-pub(crate) async fn get_all_apps(req: Request) -> JRes<Vec<CustomerAppList>>
-{
-	let user = get_jwt_data_from_param(&req)?;
-
-	let params = get_params(&req)?;
-	let last_app_id = get_name_param_from_params(params, "last_app_id")?;
-	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
-	let last_fetched_time = get_time_from_url_param(last_fetched_time)?;
-
-	let list = app_model::get_all_apps(&user.id, last_fetched_time, last_app_id).await?;
-
-	echo(list)
-}
 
 pub(crate) async fn get_jwt_details(req: Request) -> JRes<Vec<AppJwtData>>
 {
