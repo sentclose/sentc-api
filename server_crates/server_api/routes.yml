@@ -58,6 +58,8 @@ routes:
                           - get: {p: "", s: crate::customer::get_group}
                           - get: { p: "/apps/:last_fetched_time/:last_app_id", s: crate::customer::get_all_apps_group }
                           - delete: {p: "", s: crate::customer::delete_customer_group}
+                          - put: {p: "/change_rank", s: crate::customer::update_member}
+                          - delete: {p: "/kick/:user_id", s: crate::customer::delete_group_user}
               #_________________________________________________________________________________________________________
               # App routes
               - get: { p: "/apps/:last_fetched_time/:last_app_id", s: crate::customer::get_all_apps }

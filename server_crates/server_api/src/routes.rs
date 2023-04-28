@@ -108,6 +108,18 @@ pub(crate) fn routes(router: &mut Router)
 			.add(group::group_app_transform)
 			.add(jwt::jwt_customer_app_transform),
 	);
+	router.put(
+		"/api/v1/customer/group/:group_id/change_rank",
+		r(crate::customer::update_member)
+			.add(group::group_app_transform)
+			.add(jwt::jwt_customer_app_transform),
+	);
+	router.delete(
+		"/api/v1/customer/group/:group_id/kick/:user_id",
+		r(crate::customer::delete_group_user)
+			.add(group::group_app_transform)
+			.add(jwt::jwt_customer_app_transform),
+	);
 	router.get(
 		"/api/v1/customer/apps/:last_fetched_time/:last_app_id",
 		r(crate::customer::get_all_apps).add(jwt::jwt_customer_app_transform),

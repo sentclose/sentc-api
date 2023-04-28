@@ -2,7 +2,7 @@ use std::env;
 
 use rand::RngCore;
 use rustgram::Request;
-use sentc_crypto_common::group::{GroupCreateOutput, GroupNewMemberLightInput};
+use sentc_crypto_common::group::{GroupChangeRankServerInput, GroupCreateOutput, GroupNewMemberLightInput};
 use sentc_crypto_common::user::{
 	CaptchaCreateOutput,
 	ChangePasswordData,
@@ -486,6 +486,30 @@ pub async fn delete_customer_group(req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
+pub async fn delete_group_user(req: Request) -> JRes<ServerSuccessOutput>
+{
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let user_to_kick = get_name_param_from_req(&req, "user_id")?;
+
+	group_user_service::kick_user_from_group(group_data, user_to_kick).await?;
+
+	echo_success()
+}
+
+pub async fn update_member(mut req: Request) -> JRes<ServerSuccessOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let input: GroupChangeRankServerInput = bytes_to_json(&body)?;
+
+	group_user_service::change_rank(group_data, input.changed_user_id, input.new_rank).await?;
+
+	echo_success()
+}
+
 //TODO
-// - change member rank
-// - kick member
+// - group name update
+// - group member list incl. username and rank
