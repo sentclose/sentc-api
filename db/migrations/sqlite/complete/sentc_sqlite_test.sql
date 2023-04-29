@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 12:09pm on April 17, 2023 (UTC)
+-- Exported: 2:21pm on April 29, 2023 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -41,25 +41,6 @@ CREATE TABLE "sentc_app_jwt_keys"
 -- Data dump for sentc_app_jwt_keys, a total of 1 rows
 ----
 INSERT INTO "sentc_app_jwt_keys" ("id","app_id","sign_key","verify_key","alg","time") VALUES ('174b531f-8814-42a2-94ab-3c17036183a5','1665eb92-4513-469f-81d8-b72a62e0134c','MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDAhH0kMPR68V4jaSECXKgz6hEV+7iHqyOFAAv0Y6EXf7Db3T3rwuwuIfHyD41Rgy0ihZANiAARUyndUd/523UjG1Q5cChBHuntfYiQ5wRUIbONlT78ZrU6eUbncTdaWN72pLYTVIyjmpqgCtszZYKQNMw5I1V4c0mEddOe8bMSmic0egcVxmCCjgQVau8xU4bccdyrllFI=','BFTKd1R3/nbdSMbVDlwKEEe6e19iJDnBFQhs42VPvxmtTp5RudxN1pY3vakthNUjKOamqAK2zNlgpA0zDkjVXhzSYR1057xsxKaJzR6BxXGYIKOBBVq7zFThtxx3KuWUUg==','ES384','1659606752935');
-
-----
--- Table structure for sentc_app
-----
-CREATE TABLE "sentc_app" (
-	id                  TEXT
-		constraint app_pk
-			primary key,
-	customer_id         text,'identifier' text,
-	hashed_secret_token text,
-	hashed_public_token text,
-	hash_alg            text,
-	time                text
-);
-
-----
--- Data dump for sentc_app, a total of 1 rows
-----
-INSERT INTO "sentc_app" ("id","customer_id","identifier","hashed_secret_token","hashed_public_token","hash_alg","time") VALUES ('1665eb92-4513-469f-81d8-b72a62e0134c','sentc_int',NULL,'cmzOt+BnyErJKsF2qNaiJ/YqsXJymnGQSdvJi5FpeOo=','b/t88y7h0zwqOXAtR/UqE4qsPL11PLFvo1e+8PNP8LU=','SHA256','1659606752935');
 
 ----
 -- Table structure for sentc_group_keys
@@ -331,17 +312,39 @@ CREATE TABLE 'sentc_content_searchable_item_parts' ('item_id' TEXT NOT NULL, 'ha
 ----
 
 ----
+-- Table structure for sentc_app
+----
+CREATE TABLE 'sentc_app' (
+	id                  TEXT
+		constraint app_pk
+			primary key,'owner_id' text,'identifier' text,
+	hashed_secret_token text,
+	hashed_public_token text,
+	hash_alg            text,
+	time                text
+, 'owner_type' INTEGER);
+
+----
+-- Data dump for sentc_app, a total of 1 rows
+----
+INSERT INTO "sentc_app" ("id","owner_id","identifier","hashed_secret_token","hashed_public_token","hash_alg","time","owner_type") VALUES ('1665eb92-4513-469f-81d8-b72a62e0134c','sentc_int',NULL,'cmzOt+BnyErJKsF2qNaiJ/YqsXJymnGQSdvJi5FpeOo=','b/t88y7h0zwqOXAtR/UqE4qsPL11PLFvo1e+8PNP8LU=','SHA256','1659606752935','0');
+
+----
+-- Table structure for sentc_customer_group
+----
+CREATE TABLE 'sentc_customer_group' ('sentc_group_id' TEXT PRIMARY KEY NOT NULL, 'name' TEXT, 'des' TEXT);
+
+----
+-- Data dump for sentc_customer_group, a total of 0 rows
+----
+
+----
 -- structure for index sqlite_autoindex_test_1 on table test
 ----
 ;
 
 ----
 -- structure for index sqlite_autoindex_sentc_app_jwt_keys_1 on table sentc_app_jwt_keys
-----
-;
-
-----
--- structure for index sqlite_autoindex_sentc_app_1 on table sentc_app
 ----
 ;
 
@@ -437,18 +440,6 @@ CREATE INDEX app_jwt_keys_app_id_index
 	on "sentc_app_jwt_keys" (app_id);
 
 ----
--- structure for index app_hashed_public_token_index on table sentc_app
-----
-CREATE INDEX app_hashed_public_token_index
-	on "sentc_app" (hashed_public_token);
-
-----
--- structure for index app_hashed_secret_token_index on table sentc_app
-----
-CREATE INDEX app_hashed_secret_token_index
-	on "sentc_app" (hashed_secret_token);
-
-----
 -- structure for index get_group on table sentc_group_keys
 ----
 CREATE INDEX 'get_group' ON "sentc_group_keys" ("group_id" ASC, "app_id" ASC);
@@ -541,34 +532,26 @@ CREATE INDEX 'time_index' ON "sentc_content_searchable_item" ("time");
 ;
 
 ----
--- structure for trigger delete_app on table sentc_customer
+-- structure for index sqlite_autoindex_sentc_app_1 on table sentc_app
 ----
-CREATE TRIGGER 'delete_app' AFTER DELETE ON "sentc_customer" FOR EACH ROW BEGIN DELETE FROM "sentc_app" WHERE customer_id = OLD.id; END;
+;
 
 ----
--- structure for trigger delete_app_jwt on table sentc_app
+-- structure for index app_hashed_public_token_index on table sentc_app
 ----
-CREATE TRIGGER 'delete_app_jwt' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_app_jwt_keys WHERE app_id = OLD.id; END;
+CREATE INDEX app_hashed_public_token_index
+	on "sentc_app" (hashed_public_token);
 
 ----
--- structure for trigger delete_group on table sentc_app
+-- structure for index app_hashed_secret_token_index on table sentc_app
 ----
-CREATE TRIGGER 'delete_group' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_group WHERE app_id = OLD.id; END;
+CREATE INDEX app_hashed_secret_token_index
+	on "sentc_app" (hashed_secret_token);
 
 ----
--- structure for trigger delete_options on table sentc_app
+-- structure for index sqlite_autoindex_sentc_customer_group_1 on table sentc_customer_group
 ----
-CREATE TRIGGER 'delete_options' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_app_options WHERE app_id = OLD.id; END;
-
-----
--- structure for trigger delete_user on table sentc_app
-----
-CREATE TRIGGER 'delete_user' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_user WHERE app_id = OLD.id; END;
-
-----
--- structure for trigger delete_keys on table sentc_app
-----
-CREATE TRIGGER 'delete_keys' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_sym_key_management WHERE app_id = OLD.id; END;
+;
 
 ----
 -- structure for trigger  group_user_delete_key_rotation_keys on table sentc_group_user
@@ -579,11 +562,6 @@ CREATE TRIGGER ' group_user_delete_key_rotation_keys' AFTER DELETE ON "sentc_gro
 -- structure for trigger group_user_delete_user_keys on table sentc_group_user
 ----
 CREATE TRIGGER 'group_user_delete_user_keys' AFTER DELETE ON "sentc_group_user" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_keys WHERE user_id = OLD.user_id AND group_id = OLD.group_id; END;
-
-----
--- structure for trigger delete_file_options on table sentc_app
-----
-CREATE TRIGGER 'delete_file_options' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_file_options WHERE app_id = OLD.id; END;
 
 ----
 -- structure for trigger file_delete_parts on table sentc_file
@@ -604,11 +582,6 @@ CREATE TRIGGER 'user_delete_user_device' AFTER DELETE ON "sentc_user" FOR EACH R
 -- structure for trigger user_delete_jwt_refresh on table sentc_user_device
 ----
 CREATE TRIGGER 'user_delete_jwt_refresh' AFTER DELETE ON "sentc_user_device" FOR EACH ROW BEGIN DELETE FROM sentc_user_token WHERE device_id = OLD.id; END;
-
-----
--- structure for trigger delete_app_content on table sentc_app
-----
-CREATE TRIGGER 'delete_app_content' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_content WHERE app_id = OLD.id; END;
 
 ----
 -- structure for trigger group_delete_invites on table sentc_group
@@ -636,7 +609,52 @@ CREATE TRIGGER 'group_delete_hmac_keys' AFTER DELETE ON "sentc_group" FOR EACH R
 CREATE TRIGGER ' content_searchable_delete_hash' AFTER DELETE ON "sentc_content_searchable_item" FOR EACH ROW BEGIN DELETE FROM sentc_content_searchable_item_parts WHERE item_id = OLD.id; END;
 
 ----
+-- structure for trigger delete_app on table sentc_customer
+----
+CREATE TRIGGER 'delete_app' AFTER DELETE ON "sentc_customer" FOR EACH ROW BEGIN DELETE FROM sentc_app WHERE owner_id = OLD.id AND owner_type = 0; END;
+
+----
+-- structure for trigger delete_app_jwt on table sentc_app
+----
+CREATE TRIGGER 'delete_app_jwt' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_app_jwt_keys WHERE app_id = OLD.id; END;
+
+----
+-- structure for trigger delete_group on table sentc_app
+----
+CREATE TRIGGER 'delete_group' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_group WHERE app_id = OLD.id; END;
+
+----
+-- structure for trigger delete_options on table sentc_app
+----
+CREATE TRIGGER 'delete_options' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_app_options WHERE app_id = OLD.id; END;
+
+----
+-- structure for trigger delete_user on table sentc_app
+----
+CREATE TRIGGER 'delete_user' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_user WHERE app_id = OLD.id; END;
+
+----
+-- structure for trigger delete_keys on table sentc_app
+----
+CREATE TRIGGER 'delete_keys' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_sym_key_management WHERE app_id = OLD.id; END;
+
+----
+-- structure for trigger delete_file_options on table sentc_app
+----
+CREATE TRIGGER 'delete_file_options' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_file_options WHERE app_id = OLD.id; END;
+
+----
+-- structure for trigger delete_app_content on table sentc_app
+----
+CREATE TRIGGER 'delete_app_content' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_content WHERE app_id = OLD.id; END;
+
+----
 -- structure for trigger delete_app_search on table sentc_app
 ----
 CREATE TRIGGER 'delete_app_search' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_content_searchable_item WHERE app_id = OLD.id; END;
+
+----
+-- structure for trigger  delete_customer_group_apps on table sentc_customer_group
+----
+CREATE TRIGGER ' delete_customer_group_apps' AFTER DELETE ON "sentc_customer_group" FOR EACH ROW BEGIN DELETE FROM sentc_app WHERE owner_id = OLD.sentc_group_id AND owner_type = 1; END;
 COMMIT;
