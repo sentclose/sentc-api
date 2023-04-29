@@ -1,13 +1,14 @@
 use sentc_crypto_common::{CustomerId, GroupId, UserId};
 use server_api_common::customer::{CustomerData, CustomerGroupCreateInput, CustomerGroupList, CustomerUpdateInput};
-use server_core::db::{exec, query_first, query_string, I32Entity};
+use server_core::db::{exec, get_in, query_first, query_string, I32Entity};
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::res::AppRes;
-use server_core::{get_time, set_params};
+use server_core::{get_time, set_params, set_params_vec_outer};
 
 #[cfg(feature = "send_mail")]
 use crate::customer::customer_entities::RegisterEmailStatus;
 use crate::customer::customer_entities::{CustomerDataByEmailEntity, CustomerDataEntity, CustomerEmailByToken, CustomerEmailToken};
+use crate::sentc_customer_entities::CustomerList;
 use crate::sentc_group_entities::InternalUserGroupData;
 use crate::util::api_res::ApiErrorCodes;
 
@@ -367,4 +368,19 @@ pub(super) async fn update_group(group_id: impl Into<GroupId>, input: CustomerGr
 	exec(sql, set_params!(input.name, input.des, group_id.into())).await?;
 
 	Ok(())
+}
+
+pub(super) async fn get_customers(customer: Vec<String>)->AppRes<Vec<CustomerList>>
+{
+	//only used if a list was fetched before
+
+	let ins = get_in(&customer);
+
+	//language=SQLx
+	let sql = format!(
+		"SELECT id,first_name,name,email FROM sentc_customer WHERE id IN ({})",
+		ins
+	);
+	
+	query_string(sql,set_params_vec_outer!(customer)).await
 }

@@ -1,5 +1,6 @@
+use sentc_crypto_common::group::GroupUserListItem;
 use sentc_crypto_common::user::{CaptchaInput, DoneLoginLightOutput, ResetPasswordData, UserDeviceRegisterInput};
-use sentc_crypto_common::{AppId, CustomerId, GroupId};
+use sentc_crypto_common::{AppId, CustomerId, GroupId, UserId};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -178,4 +179,22 @@ impl server_core::db::FromSqliteRow for CustomerGroupList
 			des: server_core::take_or_err_opt!(row, 4),
 		})
 	}
+}
+
+//__________________________________________________________________________________________________
+
+#[derive(Serialize, Deserialize)]
+pub struct CustomerList
+{
+	pub id: UserId,
+	pub first_name: String,
+	pub name: String,
+	pub email: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CustomerGroupMemberFetch
+{
+	pub group_member: Vec<GroupUserListItem>,
+	pub customer_data: Vec<CustomerList>,
 }

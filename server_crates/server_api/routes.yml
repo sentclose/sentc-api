@@ -57,6 +57,7 @@ routes:
                           - put: {p: "/invite/:invited_user", s: crate::customer::invite_customer_group_member}
                           - put: {p: "/update", s: crate::customer::update_group}
                           - get: {p: "", s: crate::customer::get_group}
+                          - get: {p: "/member/:last_fetched_time/:last_user_id", s: crate::customer::get_group_member_list}
                           - get: { p: "/apps/:last_fetched_time/:last_app_id", s: crate::customer::get_all_apps_group }
                           - delete: {p: "", s: crate::customer::delete_customer_group}
                           - put: {p: "/change_rank", s: crate::customer::update_member}

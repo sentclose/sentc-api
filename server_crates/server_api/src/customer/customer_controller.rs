@@ -40,6 +40,7 @@ use crate::customer_app::app_service;
 use crate::customer_app::app_util::get_app_data_from_req;
 use crate::file::file_service;
 use crate::group::{group_service, group_user_service};
+use crate::sentc_customer_entities::CustomerGroupMemberFetch;
 use crate::sentc_group_user_service::NewUserType;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::ApiErrorCodes;
@@ -521,5 +522,40 @@ pub async fn update_group(mut req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
-//TODO
-// - group member list incl. username and rank
+pub async fn get_group_member_list(req: Request) -> JRes<CustomerGroupMemberFetch>
+{
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let params = get_params(&req)?;
+	let last_user_id = get_name_param_from_params(params, "last_user_id")?;
+	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
+	let last_fetched_time = get_time_from_url_param(last_fetched_time)?;
+
+	let list_fetch = group_user_service::get_group_member(
+		&group_data.group_data.id,
+		&group_data.user_data.user_id,
+		last_fetched_time,
+		last_user_id,
+	)
+	.await?;
+
+	if list_fetch.is_empty() {
+		return echo(CustomerGroupMemberFetch {
+			group_member: vec![],
+			customer_data: vec![],
+		});
+	}
+
+	let mut customers = Vec::with_capacity(list_fetch.len());
+
+	for item in &list_fetch {
+		customers.push(item.user_id.clone());
+	}
+
+	let customer_list = customer_model::get_customers(customers).await?;
+
+	echo(CustomerGroupMemberFetch {
+		group_member: list_fetch,
+		customer_data: customer_list,
+	})
+}
