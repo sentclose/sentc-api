@@ -9,6 +9,7 @@ use server_core::res::AppRes;
 use crate::group::group_entities::{GroupInviteReq, InternalGroupDataComplete};
 use crate::group::group_model;
 use crate::group::group_user::group_user_model;
+use crate::sentc_group_entities::GroupUserListItem;
 use crate::util::api_res::ApiErrorCodes;
 use crate::util::get_group_user_cache_key;
 
@@ -22,6 +23,16 @@ pub enum NewUserType
 {
 	Normal,
 	Group,
+}
+
+pub fn get_group_member<'a>(
+	group_id: impl Into<GroupId> + 'a,
+	user_id: impl Into<UserId> + 'a,
+	last_fetched_time: u128,
+	last_user_id: impl Into<UserId> + 'a,
+) -> impl Future<Output = AppRes<Vec<GroupUserListItem>>>
+{
+	group_user_model::get_group_member(group_id, user_id, last_fetched_time, last_user_id)
 }
 
 pub fn get_invite_req<'a>(
