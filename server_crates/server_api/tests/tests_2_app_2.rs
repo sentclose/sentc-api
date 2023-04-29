@@ -614,6 +614,51 @@ async fn test_22_kicked_member_should_not_fetch_the_group()
 }
 
 #[tokio::test]
+async fn test_23_update_group()
+{
+	let users = CUSTOMER_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+
+	let groups = GROUP_STATE.get().unwrap().read().await;
+	let group_id = &groups[0];
+
+	let url = get_url("api/v1/customer/group/".to_owned() + group_id + "/update");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(&creator.customer_data.user_keys.jwt))
+		.body(
+			to_string(&CustomerGroupCreateInput {
+				des: Some("Hello".to_string()),
+				name: Some("Hi".to_string()),
+			})
+			.unwrap(),
+		)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	handle_general_server_response(&body).unwrap();
+
+	//fetch the group with new values
+	let client = reqwest::Client::new();
+	let res = client
+		.get(get_url("api/v1/customer/group/".to_owned() + &group_id))
+		.header(AUTHORIZATION, auth_header(&creator.customer_data.user_keys.jwt))
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let out: CustomerGroupView = handle_server_response(&body).unwrap();
+
+	assert_eq!(out.data.group_name, Some("Hi".to_string()));
+	assert_eq!(out.data.des, Some("Hello".to_string()));
+}
+
+#[tokio::test]
 async fn zzz_clean_up()
 {
 	let groups = GROUP_STATE.get().unwrap().read().await;
