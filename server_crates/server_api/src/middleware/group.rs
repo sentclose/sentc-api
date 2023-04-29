@@ -1,10 +1,11 @@
+use std::env;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
 use rustgram::service::{IntoResponse, Service};
 use rustgram::{Request, Response};
-use sentc_crypto_common::GroupId;
+use sentc_crypto_common::{AppId, GroupId};
 use server_core::cache;
 use server_core::cache::{CacheVariant, LONG_TTL, SHORT_TTL};
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
@@ -36,7 +37,7 @@ where
 		let next = self.inner.clone();
 
 		Box::pin(async move {
-			match get_group_from_req(&mut req).await {
+			match get_group_from_req(&mut req, None).await {
 				Ok(_) => {},
 				Err(e) => return e.into_response(),
 			}
@@ -53,9 +54,60 @@ pub fn group_transform<S>(inner: S) -> GroupMiddleware<S>
 	}
 }
 
-async fn get_group_from_req(req: &mut Request) -> AppRes<()>
+//__________________________________________________________________________________________________
+
+pub struct GroupCustomerMiddleware<S>
 {
-	let app = get_app_data_from_req(req)?;
+	inner: Arc<S>,
+	sentc_app_id: AppId,
+}
+
+impl<S> Service<Request> for GroupCustomerMiddleware<S>
+where
+	S: Service<Request, Output = Response>,
+{
+	type Output = S::Output;
+	type Future = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
+
+	fn call(&self, mut req: Request) -> Self::Future
+	{
+		let app_id = self.sentc_app_id.to_string();
+		let next = self.inner.clone();
+
+		Box::pin(async move {
+			match get_group_from_req(&mut req, Some(&app_id)).await {
+				Ok(_) => {},
+				Err(e) => return e.into_response(),
+			}
+
+			next.call(req).await
+		})
+	}
+}
+
+pub fn group_app_transform<S>(inner: S) -> GroupCustomerMiddleware<S>
+{
+	let sentc_app_id = env::var("SENTC_APP_ID").unwrap();
+
+	GroupCustomerMiddleware {
+		inner: Arc::new(inner),
+		sentc_app_id,
+	}
+}
+
+//__________________________________________________________________________________________________
+
+async fn get_group_from_req(req: &mut Request, app_id: Option<&AppId>) -> AppRes<()>
+{
+	let app_id = match app_id {
+		Some(a) => a,
+		None => {
+			let app = get_app_data_from_req(req)?;
+
+			&app.app_data.app_id
+		},
+	};
+
 	let user = get_jwt_data_from_param(req)?;
 	let group_id = get_name_param_from_req(req, "group_id")?;
 
@@ -73,13 +125,7 @@ async fn get_group_from_req(req: &mut Request) -> AppRes<()>
 		None => None,
 	};
 
-	let group_data = get_group(
-		app.app_data.app_id.as_str(),
-		group_id,
-		user.id.as_str(),
-		group_as_member_id,
-	)
-	.await?;
+	let group_data = get_group(app_id, group_id, user.id.as_str(), group_as_member_id).await?;
 
 	req.extensions_mut().insert(group_data);
 

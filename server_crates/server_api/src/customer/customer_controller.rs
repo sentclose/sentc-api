@@ -1,5 +1,8 @@
+use std::env;
+
 use rand::RngCore;
 use rustgram::Request;
+use sentc_crypto_common::group::{GroupChangeRankServerInput, GroupCreateOutput, GroupNewMemberLightInput};
 use sentc_crypto_common::user::{
 	CaptchaCreateOutput,
 	ChangePasswordData,
@@ -11,10 +14,14 @@ use sentc_crypto_common::user::{
 	UserUpdateServerInput,
 };
 use server_api_common::customer::{
+	CustomerAppList,
 	CustomerData,
 	CustomerDoneLoginOutput,
 	CustomerDonePasswordResetInput,
 	CustomerDoneRegistrationInput,
+	CustomerGroupCreateInput,
+	CustomerGroupList,
+	CustomerGroupView,
 	CustomerRegisterData,
 	CustomerRegisterOutput,
 	CustomerResetPasswordInput,
@@ -24,15 +31,20 @@ use server_core::email;
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::input_helper::{bytes_to_json, get_raw_body};
 use server_core::res::{echo, echo_success, AppRes, JRes, ServerSuccessOutput};
+use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_time_from_url_param};
 
-use crate::customer::customer_model;
+use crate::customer::{customer_model, customer_util};
 #[cfg(feature = "send_mail")]
 use crate::customer::{send_mail, EmailTopic};
+use crate::customer_app::app_service;
 use crate::customer_app::app_util::get_app_data_from_req;
 use crate::file::file_service;
-use crate::user;
+use crate::group::{group_service, group_user_service};
+use crate::sentc_customer_entities::CustomerGroupMemberFetch;
+use crate::sentc_group_user_service::NewUserType;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::ApiErrorCodes;
+use crate::{get_group_user_data_from_req, user, GROUP_TYPE_NORMAL};
 
 pub async fn customer_captcha(req: Request) -> JRes<CaptchaCreateOutput>
 {
@@ -353,4 +365,197 @@ fn generate_email_validate_token() -> AppRes<String>
 	let token_string = base64::encode_config(token, base64::URL_SAFE_NO_PAD);
 
 	Ok(token_string)
+}
+
+//__________________________________________________________________________________________________
+
+pub(crate) async fn get_all_apps(req: Request) -> JRes<Vec<CustomerAppList>>
+{
+	let user = get_jwt_data_from_param(&req)?;
+
+	let params = get_params(&req)?;
+	let last_app_id = get_name_param_from_params(params, "last_app_id")?;
+	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
+	let last_fetched_time = get_time_from_url_param(last_fetched_time)?;
+
+	let list = app_service::get_all_apps(&user.id, last_fetched_time, last_app_id).await?;
+
+	echo(list)
+}
+
+//__________________________________________________________________________________________________
+
+//customer group
+
+pub async fn create_customer_group(mut req: Request) -> JRes<GroupCreateOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+
+	let user = get_jwt_data_from_param(&req)?;
+
+	customer_util::check_customer_valid(&user.id).await?;
+
+	let sentc_app_id = env::var("SENTC_APP_ID").unwrap();
+
+	let group_id = group_service::create_group_light(&sentc_app_id, &user.id, GROUP_TYPE_NORMAL, None, None, None, false).await?;
+
+	let input: CustomerGroupCreateInput = bytes_to_json(&body)?;
+
+	//insert it into the customer table
+	customer_model::create_customer_group(&group_id, input).await?;
+
+	echo(GroupCreateOutput {
+		group_id,
+	})
+}
+
+pub async fn get_groups(req: Request) -> JRes<Vec<CustomerGroupList>>
+{
+	let user = get_jwt_data_from_param(&req)?;
+
+	let params = get_params(&req)?;
+	let last_id = get_name_param_from_params(params, "last_id")?;
+	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
+	let last_fetched_time = get_time_from_url_param(last_fetched_time)?;
+
+	let list = customer_model::get_customer_groups(&user.id, last_fetched_time, last_id).await?;
+
+	echo(list)
+}
+
+pub async fn get_group(req: Request) -> JRes<CustomerGroupView>
+{
+	let user = get_jwt_data_from_param(&req)?;
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let details = customer_model::get_customer_group_details(&user.id, &group_data.group_data.id).await?;
+
+	//fetch the first page of the apps
+	let list = app_service::get_all_apps_group(&group_data.group_data.id, 0, "none").await?;
+
+	echo(CustomerGroupView {
+		data: details,
+		apps: list,
+	})
+}
+
+pub(crate) async fn get_all_apps_group(req: Request) -> JRes<Vec<CustomerAppList>>
+{
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let params = get_params(&req)?;
+	let last_app_id = get_name_param_from_params(params, "last_app_id")?;
+	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
+	let last_fetched_time = get_time_from_url_param(last_fetched_time)?;
+
+	let list = app_service::get_all_apps_group(&group_data.group_data.id, last_fetched_time, last_app_id).await?;
+
+	echo(list)
+}
+
+pub async fn invite_customer_group_member(mut req: Request) -> JRes<ServerSuccessOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+
+	let user_to_invite = get_name_param_from_req(&req, "invited_user")?;
+
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let input: GroupNewMemberLightInput = bytes_to_json(&body)?;
+
+	group_user_service::invite_auto_light(group_data, input, user_to_invite, NewUserType::Normal).await?;
+
+	echo_success()
+}
+
+pub async fn delete_customer_group(req: Request) -> JRes<ServerSuccessOutput>
+{
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	group_service::delete_group(
+		&group_data.group_data.app_id,
+		&group_data.group_data.id,
+		group_data.user_data.rank,
+	)
+	.await?;
+
+	file_service::delete_file_for_customer(&group_data.group_data.app_id).await?;
+
+	//all apps are deleted via trigger
+	customer_model::delete_customer_group(&group_data.group_data.id).await?;
+
+	echo_success()
+}
+
+pub async fn delete_group_user(req: Request) -> JRes<ServerSuccessOutput>
+{
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let user_to_kick = get_name_param_from_req(&req, "user_id")?;
+
+	group_user_service::kick_user_from_group(group_data, user_to_kick).await?;
+
+	echo_success()
+}
+
+pub async fn update_member(mut req: Request) -> JRes<ServerSuccessOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let input: GroupChangeRankServerInput = bytes_to_json(&body)?;
+
+	group_user_service::change_rank(group_data, input.changed_user_id, input.new_rank).await?;
+
+	echo_success()
+}
+
+pub async fn update_group(mut req: Request) -> JRes<ServerSuccessOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+	let group_data = get_group_user_data_from_req(&req)?;
+	let input: CustomerGroupCreateInput = bytes_to_json(&body)?;
+
+	customer_model::update_group(&group_data.group_data.id, input).await?;
+
+	echo_success()
+}
+
+pub async fn get_group_member_list(req: Request) -> JRes<CustomerGroupMemberFetch>
+{
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let params = get_params(&req)?;
+	let last_user_id = get_name_param_from_params(params, "last_user_id")?;
+	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
+	let last_fetched_time = get_time_from_url_param(last_fetched_time)?;
+
+	let list_fetch = group_user_service::get_group_member(
+		&group_data.group_data.id,
+		&group_data.user_data.user_id,
+		last_fetched_time,
+		last_user_id,
+	)
+	.await?;
+
+	if list_fetch.is_empty() {
+		return echo(CustomerGroupMemberFetch {
+			group_member: vec![],
+			customer_data: vec![],
+		});
+	}
+
+	let mut customers = Vec::with_capacity(list_fetch.len());
+
+	for item in &list_fetch {
+		customers.push(item.user_id.clone());
+	}
+
+	let customer_list = customer_model::get_customers(customers).await?;
+
+	echo(CustomerGroupMemberFetch {
+		group_member: list_fetch,
+		customer_data: customer_list,
+	})
 }

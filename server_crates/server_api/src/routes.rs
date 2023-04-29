@@ -76,49 +76,127 @@ pub(crate) fn routes(router: &mut Router)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_base_app_transform),
 	);
+	router.post(
+		"/api/v1/customer/group",
+		r(crate::customer::create_customer_group).add(jwt::jwt_customer_app_transform),
+	);
+	router.get(
+		"/api/v1/customer/group/all/:last_fetched_time/:last_id",
+		r(crate::customer::get_groups).add(jwt::jwt_customer_app_transform),
+	);
+	router.put(
+		"/api/v1/customer/group/:group_id/invite/:invited_user",
+		r(crate::customer::invite_customer_group_member)
+			.add(group::group_app_transform)
+			.add(jwt::jwt_customer_app_transform),
+	);
+	router.put(
+		"/api/v1/customer/group/:group_id/update",
+		r(crate::customer::update_group)
+			.add(group::group_app_transform)
+			.add(jwt::jwt_customer_app_transform),
+	);
+	router.get(
+		"/api/v1/customer/group/:group_id",
+		r(crate::customer::get_group)
+			.add(group::group_app_transform)
+			.add(jwt::jwt_customer_app_transform),
+	);
+	router.get(
+		"/api/v1/customer/group/:group_id/member/:last_fetched_time/:last_user_id",
+		r(crate::customer::get_group_member_list)
+			.add(group::group_app_transform)
+			.add(jwt::jwt_customer_app_transform),
+	);
+	router.get(
+		"/api/v1/customer/group/:group_id/apps/:last_fetched_time/:last_app_id",
+		r(crate::customer::get_all_apps_group)
+			.add(group::group_app_transform)
+			.add(jwt::jwt_customer_app_transform),
+	);
+	router.delete(
+		"/api/v1/customer/group/:group_id",
+		r(crate::customer::delete_customer_group)
+			.add(group::group_app_transform)
+			.add(jwt::jwt_customer_app_transform),
+	);
+	router.put(
+		"/api/v1/customer/group/:group_id/change_rank",
+		r(crate::customer::update_member)
+			.add(group::group_app_transform)
+			.add(jwt::jwt_customer_app_transform),
+	);
+	router.delete(
+		"/api/v1/customer/group/:group_id/kick/:user_id",
+		r(crate::customer::delete_group_user)
+			.add(group::group_app_transform)
+			.add(jwt::jwt_customer_app_transform),
+	);
 	router.get(
 		"/api/v1/customer/apps/:last_fetched_time/:last_app_id",
-		r(crate::customer_app::get_all_apps).add(jwt::jwt_customer_app_transform),
+		r(crate::customer::get_all_apps).add(jwt::jwt_customer_app_transform),
 	);
 	router.post(
 		"/api/v1/customer/app",
-		r(crate::customer_app::create_app).add(jwt::jwt_customer_app_transform),
+		r(crate::customer_app::create_app_user).add(jwt::jwt_customer_app_transform),
+	);
+	router.post(
+		"/api/v1/customer/app/:group_id",
+		r(crate::customer_app::create_app_group).add(jwt::jwt_customer_app_transform),
 	);
 	router.get(
 		"/api/v1/customer/app/:app_id",
-		r(crate::customer_app::get_app_details).add(jwt::jwt_customer_app_transform),
+		r(crate::customer_app::get_app_details)
+			.add(app_access::app_access_transform)
+			.add(jwt::jwt_customer_app_transform),
 	);
 	router.put(
 		"/api/v1/customer/app/:app_id",
-		r(crate::customer_app::update).add(jwt::jwt_customer_app_transform),
+		r(crate::customer_app::update)
+			.add(app_access::app_access_transform)
+			.add(jwt::jwt_customer_app_transform),
 	);
 	router.put(
 		"/api/v1/customer/app/:app_id/options",
-		r(crate::customer_app::update_options).add(jwt::jwt_customer_app_transform),
+		r(crate::customer_app::update_options)
+			.add(app_access::app_access_transform)
+			.add(jwt::jwt_customer_app_transform),
 	);
 	router.put(
 		"/api/v1/customer/app/:app_id/file_options",
-		r(crate::customer_app::update_file_options).add(jwt::jwt_customer_app_transform),
+		r(crate::customer_app::update_file_options)
+			.add(app_access::app_access_transform)
+			.add(jwt::jwt_customer_app_transform),
 	);
 	router.delete(
 		"/api/v1/customer/app/:app_id",
-		r(crate::customer_app::delete).add(jwt::jwt_customer_app_transform),
+		r(crate::customer_app::delete)
+			.add(app_access::app_access_transform)
+			.add(jwt::jwt_customer_app_transform),
 	);
 	router.patch(
 		"/api/v1/customer/app/:app_id/token_renew",
-		r(crate::customer_app::renew_tokens).add(jwt::jwt_customer_app_transform),
+		r(crate::customer_app::renew_tokens)
+			.add(app_access::app_access_transform)
+			.add(jwt::jwt_customer_app_transform),
 	);
 	router.patch(
 		"/api/v1/customer/app/:app_id/new_jwt_keys",
-		r(crate::customer_app::add_jwt_keys).add(jwt::jwt_customer_app_transform),
+		r(crate::customer_app::add_jwt_keys)
+			.add(app_access::app_access_transform)
+			.add(jwt::jwt_customer_app_transform),
 	);
 	router.get(
 		"/api/v1/customer/app/:app_id/jwt",
-		r(crate::customer_app::get_jwt_details).add(jwt::jwt_customer_app_transform),
+		r(crate::customer_app::get_jwt_details)
+			.add(app_access::app_access_transform)
+			.add(jwt::jwt_customer_app_transform),
 	);
 	router.delete(
 		"/api/v1/customer/app/:app_id/jwt/:jwt_id",
-		r(crate::customer_app::delete_jwt_keys).add(jwt::jwt_customer_app_transform),
+		r(crate::customer_app::delete_jwt_keys)
+			.add(app_access::app_access_transform)
+			.add(jwt::jwt_customer_app_transform),
 	);
 	router.get(
 		"/api/v1/user/:user_id/public_key",

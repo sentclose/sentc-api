@@ -1,7 +1,8 @@
 use std::future::Future;
 
-use sentc_crypto_common::{AppId, CustomerId};
+use sentc_crypto_common::{AppId, CustomerId, GroupId};
 use server_api_common::app::{AppFileOptionsInput, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, FILE_STORAGE_OWN};
+use server_api_common::customer::CustomerAppList;
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::res::AppRes;
 
@@ -10,7 +11,11 @@ use crate::customer_app::{app_model, generate_tokens};
 use crate::user::jwt::create_jwt_keys;
 use crate::util::api_res::ApiErrorCodes;
 
-pub async fn create_app(input: AppRegisterInput, customer_id: impl Into<CustomerId>) -> AppRes<AppRegisterOutput>
+pub async fn create_app(
+	input: AppRegisterInput,
+	customer_id: impl Into<CustomerId>,
+	group_id: Option<impl Into<GroupId>>,
+) -> AppRes<AppRegisterOutput>
 {
 	//1. create and hash tokens
 	let (secret_token, public_token) = generate_tokens()?;
@@ -36,16 +41,15 @@ pub async fn create_app(input: AppRegisterInput, customer_id: impl Into<Customer
 		&jwt_sign_key,
 		&jwt_verify_key,
 		alg,
+		group_id,
 	)
 	.await?;
 
 	let customer_app_data = AppRegisterOutput {
-		customer_id: customer_id.clone(),
 		app_id: app_id.to_string(),
 		secret_token: base64::encode(secret_token),
 		public_token: base64::encode(public_token),
 		jwt_data: AppJwtRegisterOutput {
-			customer_id,
 			app_id,
 			jwt_id,
 			jwt_verify_key,
@@ -89,7 +93,20 @@ pub(super) fn check_file_options(input: &AppFileOptionsInput) -> AppRes<()>
 	Ok(())
 }
 
-pub fn check_app_exists<'a>(customer_id: impl Into<CustomerId> + 'a, app_id: impl Into<AppId> + 'a) -> impl Future<Output = AppRes<()>> + 'a
+pub fn get_all_apps<'a>(
+	customer_id: impl Into<CustomerId> + 'a,
+	last_fetched_time: u128,
+	last_app_id: impl Into<AppId> + 'a,
+) -> impl Future<Output = AppRes<Vec<CustomerAppList>>> + 'a
 {
-	app_model::check_app_exists(customer_id, app_id)
+	app_model::get_all_apps(customer_id, last_fetched_time, last_app_id)
+}
+
+pub fn get_all_apps_group<'a>(
+	group_id: impl Into<GroupId> + 'a,
+	last_fetched_time: u128,
+	last_app_id: impl Into<String> + 'a,
+) -> impl Future<Output = AppRes<Vec<CustomerAppList>>> + 'a
+{
+	app_model::get_all_apps_group(group_id, last_fetched_time, last_app_id)
 }

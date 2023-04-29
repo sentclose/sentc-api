@@ -33,7 +33,7 @@ pub async fn get_group_member(req: Request) -> JRes<Vec<GroupUserListItem>>
 	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
 	let last_fetched_time = get_time_from_url_param(last_fetched_time)?;
 
-	let list_fetch = group_user_model::get_group_member(
+	let list_fetch = group_user_service::get_group_member(
 		&group_data.group_data.id,
 		&group_data.user_data.user_id,
 		last_fetched_time,

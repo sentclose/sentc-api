@@ -1,6 +1,9 @@
-use sentc_crypto_common::{AppId, CustomerId, SignKeyPairId};
+use sentc_crypto_common::{AppId, CustomerId, GroupId, SignKeyPairId};
 use serde::{Deserialize, Serialize};
 use server_api_common::app::AppOptions;
+
+pub const CUSTOMER_OWNER_TYPE_USER: i32 = 0;
+pub const CUSTOMER_OWNER_TYPE_GROUP: i32 = 1;
 
 /**
 Data which is used to identify the customers app requests.
@@ -53,7 +56,8 @@ Only internal values from the db
 pub struct AppDataGeneral
 {
 	pub app_id: AppId,
-	pub customer_id: CustomerId,
+	pub owner_id: CustomerId,
+	pub owner_type: i32,
 	pub hashed_secret_token: String,
 	pub hashed_public_token: String,
 	pub hash_alg: String,
@@ -81,3 +85,17 @@ pub struct AppJwt
 }
 
 //__________________________________________________________________________________________________
+
+#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
+pub struct AppCustomerAccess
+{
+	pub app_id: AppId,
+	pub owner_id: CustomerId,
+	pub owner_type: i32,
+	pub hashed_secret_token: String,
+	pub hashed_public_token: String,
+	pub hash_alg: String,
+	pub group_id: GroupId,
+	pub rank: i32,
+}

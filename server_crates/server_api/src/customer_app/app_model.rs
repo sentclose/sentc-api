@@ -1,14 +1,14 @@
-use sentc_crypto_common::{AppId, CustomerId, JwtKeyId};
+use sentc_crypto_common::{AppId, CustomerId, GroupId, JwtKeyId, UserId};
 use server_api_common::app::{AppFileOptionsInput, AppJwtData, AppOptions, AppRegisterInput};
 use server_api_common::customer::CustomerAppList;
-use server_core::db::{exec, exec_transaction, query, query_first, query_string, I64Entity, Params, TransactionData};
+use server_core::db::{exec, exec_transaction, query, query_first, query_string, Params, TransactionData};
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::res::AppRes;
 use server_core::{get_time, set_params};
 use uuid::Uuid;
 
 use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppJwt, AuthWithToken};
-use crate::sentc_app_entities::AppFileOptions;
+use crate::sentc_app_entities::{AppCustomerAccess, AppFileOptions, CUSTOMER_OWNER_TYPE_GROUP, CUSTOMER_OWNER_TYPE_USER};
 use crate::util::api_res::ApiErrorCodes;
 
 pub(super) async fn get_app_options(app_id: impl Into<AppId>) -> AppRes<AppOptions>
@@ -88,22 +88,13 @@ pub(crate) async fn get_app_data(hashed_token: impl Into<String>) -> AppRes<AppD
 
 	//language=SQL
 	let sql = r"
-SELECT id as app_id, customer_id, hashed_secret_token, hashed_public_token, hash_alg 
+SELECT id as app_id, owner_id, owner_type, hashed_secret_token, hashed_public_token, hash_alg 
 FROM sentc_app 
 WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 
-	let app_data: Option<AppDataGeneral> = query_first(sql, set_params!(hashed_token.clone(), hashed_token.clone())).await?;
-
-	let app_data = match app_data {
-		Some(d) => d,
-		None => {
-			return Err(SentcCoreError::new_msg(
-				401,
-				ApiErrorCodes::AppTokenNotFound,
-				"App token not found",
-			))
-		},
-	};
+	let app_data: AppDataGeneral = query_first(sql, set_params!(hashed_token.clone(), hashed_token.clone()))
+		.await?
+		.ok_or_else(|| SentcCoreError::new_msg(401, ApiErrorCodes::AppTokenNotFound, "App token not found"))?;
 
 	//language=SQL
 	let sql = "SELECT id, alg, time FROM sentc_app_jwt_keys WHERE app_id = ? ORDER BY time DESC LIMIT 10";
@@ -127,18 +118,9 @@ WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 	//get app file options but without the auth token for external storage
 	//language=SQL
 	let sql = "SELECT file_storage,storage_url FROM sentc_file_options WHERE app_id = ?";
-	let file_options: Option<AppFileOptions> = query_first(sql, set_params!(app_data.app_id.clone())).await?;
-
-	let file_options = match file_options {
-		Some(o) => o,
-		None => {
-			return Err(SentcCoreError::new_msg(
-				401,
-				ApiErrorCodes::AppNotFound,
-				"App not found",
-			))
-		},
-	};
+	let file_options: AppFileOptions = query_first(sql, set_params!(app_data.app_id.clone()))
+		.await?
+		.ok_or_else(|| SentcCoreError::new_msg(401, ApiErrorCodes::AppNotFound, "App not found"))?;
 
 	Ok(AppData {
 		app_data,
@@ -155,27 +137,35 @@ Get general app data like internal get app data
 but this time with check on app id und customer id
 
 only used internally
-*/
-pub(super) async fn get_app_general_data(customer_id: impl Into<CustomerId>, app_id: impl Into<AppId>) -> AppRes<AppDataGeneral>
+ */
+pub(crate) async fn get_app_general(app_id: impl Into<AppId>, user_id: impl Into<UserId>) -> AppRes<AppCustomerAccess>
 {
 	//language=SQL
 	let sql = r"
-SELECT id as app_id, customer_id, hashed_secret_token, hashed_public_token, hash_alg 
-FROM sentc_app 
-WHERE customer_id = ? AND id = ? LIMIT 1";
+SELECT id as app_id, owner_id, owner_type, hashed_secret_token, hashed_public_token, hash_alg, 'none', 0
+FROM sentc_app
+WHERE
+    id = ? AND
+    owner_id = ? AND
+    owner_type = 0
 
-	let app_data: Option<AppDataGeneral> = query_first(sql, set_params!(customer_id.into(), app_id.into())).await?;
+UNION
 
-	match app_data {
-		Some(d) => Ok(d),
-		None => {
-			Err(SentcCoreError::new_msg(
-				401,
-				ApiErrorCodes::AppTokenNotFound,
-				"App token not found",
-			))
-		},
-	}
+SELECT id as app_id, owner_id, owner_type, hashed_secret_token, hashed_public_token, hash_alg, group_id, `rank` 
+FROM sentc_app, sentc_group_user 
+WHERE 
+    id = ? AND
+    owner_type = 1 AND
+    user_id = ? AND 
+    group_id = owner_id
+";
+
+	let user_id = user_id.into();
+	let app_id = app_id.into();
+
+	query_first(sql, set_params!(app_id.clone(), user_id.clone(), app_id, user_id))
+		.await?
+		.ok_or_else(|| SentcCoreError::new_msg(401, ApiErrorCodes::AppTokenNotFound, "App token not found"))
 }
 
 /**
@@ -183,7 +173,7 @@ Get jwt data like internal get app data
 
 but this time check with customer and app id and not limited
 */
-pub(super) async fn get_jwt_data(customer_id: impl Into<CustomerId>, app_id: impl Into<AppId>) -> AppRes<Vec<AppJwtData>>
+pub(super) async fn get_jwt_data(app_id: impl Into<AppId>) -> AppRes<Vec<AppJwtData>>
 {
 	//language=SQL
 	let sql = r"
@@ -191,11 +181,10 @@ SELECT ak.id, alg, ak.time, sign_key, verify_key
 FROM sentc_app a, sentc_app_jwt_keys ak 
 WHERE 
     app_id = ? AND 
-    customer_id = ? AND 
-    app_id = a.id 
+    app_id = a.id
 ORDER BY ak.time DESC";
 
-	let jwt_data: Vec<AppJwtData> = query(sql, set_params!(app_id.into(), customer_id.into())).await?;
+	let jwt_data: Vec<AppJwtData> = query(sql, set_params!(app_id.into())).await?;
 
 	Ok(jwt_data)
 }
@@ -207,14 +196,35 @@ pub(super) async fn get_all_apps(
 ) -> AppRes<Vec<CustomerAppList>>
 {
 	//language=SQL
-	let sql = "SELECT id,identifier, time FROM sentc_app WHERE customer_id = ?".to_string();
+	let sql = r"
+SELECT * FROM (
+SELECT id, identifier, time, null as group_name
+FROM sentc_app 
+WHERE 
+    owner_id = ? AND 
+    owner_type = 0
+
+UNION 
+
+SELECT id, identifier, sentc_app.time, name as group_name 
+FROM sentc_app, sentc_group_user, sentc_customer_group 
+WHERE
+      owner_type = 1 AND
+      user_id = ? AND
+      group_id = owner_id AND 
+      sentc_group_id = group_id 
+) as apps"
+		.to_string();
+
+	let customer_id = customer_id.into();
 
 	let (sql, params) = if last_fetched_time > 0 {
-		let sql = sql + " AND time >=? AND (time > ? OR (time = ? AND id > ?)) ORDER BY time, id LIMIT 20";
+		let sql = sql + " WHERE time >=? AND (time > ? OR (time = ? AND id > ?)) ORDER BY time, id LIMIT 20";
 		(
 			sql,
 			set_params!(
-				customer_id.into(),
+				customer_id.clone(),
+				customer_id,
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
 				last_fetched_time.to_string(),
@@ -223,7 +233,7 @@ pub(super) async fn get_all_apps(
 		)
 	} else {
 		let sql = sql + " ORDER BY time, id LIMIT 20";
-		(sql, set_params!(customer_id.into()))
+		(sql, set_params!(customer_id.clone(), customer_id,))
 	};
 
 	let list: Vec<CustomerAppList> = query_string(sql, params).await?;
@@ -231,23 +241,65 @@ pub(super) async fn get_all_apps(
 	Ok(list)
 }
 
-pub(super) async fn get_app_view(customer_id: impl Into<CustomerId>, app_id: impl Into<AppId>) -> AppRes<CustomerAppList>
+pub(super) async fn get_all_apps_group(
+	group_id: impl Into<GroupId>,
+	last_fetched_time: u128,
+	last_app_id: impl Into<AppId>,
+) -> AppRes<Vec<CustomerAppList>>
 {
 	//language=SQL
-	let sql = "SELECT id,identifier, time FROM sentc_app WHERE customer_id = ? AND id = ?";
+	let sql = r"
+SELECT id, identifier, sentc_app.time, name as group_name 
+FROM sentc_app, sentc_customer_group 
+WHERE
+      owner_type = 1 AND
+      owner_id = ? AND
+      sentc_group_id = owner_id"
+		.to_string();
 
-	let out: Option<CustomerAppList> = query_first(sql, set_params!(customer_id.into(), app_id.into())).await?;
+	let (sql, params) = if last_fetched_time > 0 {
+		let sql = sql + " AND sentc_app.time >=? AND (sentc_app.time > ? OR (sentc_app.time = ? AND id > ?)) ORDER BY sentc_app.time, id LIMIT 20";
+		(
+			sql,
+			set_params!(
+				group_id.into(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_app_id.into()
+			),
+		)
+	} else {
+		let sql = sql + " ORDER BY sentc_app.time, id LIMIT 20";
+		(sql, set_params!(group_id.into()))
+	};
 
-	match out {
-		Some(o) => Ok(o),
-		None => {
-			Err(SentcCoreError::new_msg(
-				400,
-				ApiErrorCodes::AppNotFound,
-				"App not found",
-			))
-		},
-	}
+	let list: Vec<CustomerAppList> = query_string(sql, params).await?;
+
+	Ok(list)
+}
+
+pub(super) async fn get_app_view(app_id: impl Into<AppId>, owner_type: i32) -> AppRes<CustomerAppList>
+{
+	//tanks to the app access middleware we know the owner type
+	let sql = if owner_type == CUSTOMER_OWNER_TYPE_GROUP {
+		//language=SQL
+		r"
+SELECT id, identifier, sentc_app.time, name as group_name 
+FROM sentc_app, sentc_customer_group 
+WHERE
+      owner_type = 1 AND
+      id = ? AND
+      sentc_group_id = owner_id 
+		"
+	} else {
+		//language=SQL
+		r"SELECT id, identifier, time, null as group_name FROM sentc_app WHERE id = ?"
+	};
+
+	query_first(sql, set_params!(app_id.into()))
+		.await?
+		.ok_or_else(|| SentcCoreError::new_msg(400, ApiErrorCodes::AppNotFound, "App not found"))
 }
 
 pub(super) async fn get_app_file_options(app_id: impl Into<AppId>) -> AppRes<AppFileOptionsInput>
@@ -280,6 +332,7 @@ pub(super) async fn create_app(
 	first_jwt_sign_key: impl Into<String>,
 	first_jwt_verify_key: impl Into<String>,
 	first_jwt_alg: impl Into<String>,
+	group_id: Option<impl Into<GroupId>>,
 ) -> AppRes<(AppId, JwtKeyId)>
 {
 	let app_id = Uuid::new_v4().to_string();
@@ -289,23 +342,27 @@ pub(super) async fn create_app(
 	let sql_app = r"
 INSERT INTO sentc_app 
     (id, 
-     customer_id, 
+     owner_id, 
+     owner_type,
      identifier, 
      hashed_secret_token, 
      hashed_public_token, 
      hash_alg,
      time
      ) 
-VALUES (?,?,?,?,?,?,?)";
+VALUES (?,?,?,?,?,?,?,?)";
 
-	let identifier = match input.identifier {
-		Some(i) => i,
-		None => "".to_string(),
+	let identifier = input.identifier.unwrap_or_default();
+
+	let (owner_id, owner_type) = match group_id {
+		Some(id) => (id.into(), CUSTOMER_OWNER_TYPE_GROUP),
+		None => (customer_id.into(), CUSTOMER_OWNER_TYPE_USER),
 	};
 
 	let params_app = set_params!(
 		app_id.clone(),
-		customer_id.into(),
+		owner_id,
+		owner_type,
 		identifier,
 		hashed_secret_token,
 		hashed_public_token,
@@ -362,24 +419,17 @@ VALUES (?,?,?,?,?,?,?)";
 
 pub(super) async fn token_renew(
 	app_id: impl Into<AppId>,
-	customer_id: impl Into<CustomerId>,
 	hashed_secret_token: String,
 	hashed_public_token: String,
 	alg: impl Into<String>,
 ) -> AppRes<()>
 {
 	//language=SQL
-	let sql = "UPDATE sentc_app SET hashed_secret_token = ?, hashed_public_token = ?, hash_alg = ? WHERE id = ? AND customer_id = ?";
+	let sql = "UPDATE sentc_app SET hashed_secret_token = ?, hashed_public_token = ?, hash_alg = ? WHERE id = ?";
 
 	exec(
 		sql,
-		set_params!(
-			hashed_secret_token,
-			hashed_public_token,
-			alg.into(),
-			app_id.into(),
-			customer_id.into()
-		),
+		set_params!(hashed_secret_token, hashed_public_token, alg.into(), app_id.into()),
 	)
 	.await?;
 
@@ -387,17 +437,12 @@ pub(super) async fn token_renew(
 }
 
 pub(super) async fn add_jwt_keys(
-	customer_id: impl Into<CustomerId>,
 	app_id: impl Into<AppId>,
 	new_jwt_sign_key: impl Into<String>,
 	new_jwt_verify_key: impl Into<String>,
 	new_jwt_alg: impl Into<String>,
 ) -> AppRes<JwtKeyId>
 {
-	let app_id = app_id.into();
-
-	check_app_exists(customer_id, &app_id).await?;
-
 	let time = get_time()?;
 	let jwt_key_id = Uuid::new_v4().to_string();
 
@@ -408,7 +453,7 @@ pub(super) async fn add_jwt_keys(
 		sql,
 		set_params!(
 			jwt_key_id.clone(),
-			app_id,
+			app_id.into(),
 			new_jwt_sign_key.into(),
 			new_jwt_verify_key.into(),
 			new_jwt_alg.into(),
@@ -420,40 +465,31 @@ pub(super) async fn add_jwt_keys(
 	Ok(jwt_key_id)
 }
 
-pub(super) async fn delete_jwt_keys(customer_id: impl Into<CustomerId>, app_id: impl Into<AppId>, jwt_key_id: impl Into<JwtKeyId>) -> AppRes<()>
+pub(super) async fn delete_jwt_keys(app_id: impl Into<AppId>, jwt_key_id: impl Into<JwtKeyId>) -> AppRes<()>
 {
-	let app_id = app_id.into();
-
-	check_app_exists(customer_id, &app_id).await?;
-
 	//language=SQL
 	let sql = "DELETE FROM sentc_app_jwt_keys WHERE id = ? AND app_id = ?";
 
-	exec(sql, set_params!(jwt_key_id.into(), app_id)).await?;
+	exec(sql, set_params!(jwt_key_id.into(), app_id.into())).await?;
 
 	Ok(())
 }
 
-pub(super) async fn update(customer_id: impl Into<CustomerId>, app_id: impl Into<AppId>, identifier: Option<String>) -> AppRes<()>
+pub(super) async fn update(app_id: impl Into<AppId>, identifier: Option<String>) -> AppRes<()>
 {
 	//language=SQL
-	let sql = "UPDATE sentc_app SET identifier = ? WHERE customer_id = ? AND id = ?";
+	let sql = "UPDATE sentc_app SET identifier = ? WHERE id = ?";
 
-	let identifier = match identifier {
-		Some(i) => i,
-		None => "".to_string(),
-	};
+	let identifier = identifier.unwrap_or_default();
 
-	exec(sql, set_params!(identifier, customer_id.into(), app_id.into())).await?;
+	exec(sql, set_params!(identifier, app_id.into())).await?;
 
 	Ok(())
 }
 
-pub(super) async fn update_options(customer_id: impl Into<CustomerId>, app_id: impl Into<AppId>, app_options: AppOptions) -> AppRes<()>
+pub(super) async fn update_options(app_id: impl Into<AppId>, app_options: AppOptions) -> AppRes<()>
 {
 	let app_id = app_id.into();
-
-	check_app_exists(customer_id, &app_id).await?;
 
 	//delete the old options
 
@@ -469,11 +505,9 @@ pub(super) async fn update_options(customer_id: impl Into<CustomerId>, app_id: i
 	Ok(())
 }
 
-pub(super) async fn update_file_options(customer_id: impl Into<CustomerId>, app_id: impl Into<AppId>, options: AppFileOptionsInput) -> AppRes<()>
+pub(super) async fn update_file_options(app_id: impl Into<AppId>, options: AppFileOptionsInput) -> AppRes<()>
 {
 	let app_id = app_id.into();
-
-	check_app_exists(customer_id, &app_id).await?;
 
 	//language=SQL
 	let sql = "UPDATE sentc_file_options SET storage_url = ?, file_storage = ?, auth_token = ? WHERE app_id = ?";
@@ -487,40 +521,19 @@ pub(super) async fn update_file_options(customer_id: impl Into<CustomerId>, app_
 	Ok(())
 }
 
-pub(super) async fn delete(customer_id: impl Into<CustomerId>, app_id: impl Into<AppId>) -> AppRes<()>
+pub(super) async fn delete(app_id: impl Into<AppId>) -> AppRes<()>
 {
-	//use the double check with the customer id to check if this app really belongs to the customer!
+	let app_id = app_id.into();
 
 	//language=SQL
-	let sql = "DELETE FROM sentc_app WHERE customer_id = ? AND id = ?";
+	let sql = "DELETE FROM sentc_app WHERE id = ?";
 
-	exec(sql, set_params!(customer_id.into(), app_id.into())).await?;
+	exec(sql, set_params!(app_id)).await?;
 
 	Ok(())
 }
 
 //__________________________________________________________________________________________________
-
-pub(super) async fn check_app_exists(customer_id: impl Into<CustomerId>, app_id: impl Into<AppId>) -> AppRes<()>
-{
-	//check if this app belongs to this customer
-	//language=SQL
-	let sql = "SELECT 1 FROM sentc_app WHERE id = ? AND customer_id = ?";
-	let app_exists: Option<I64Entity> = query_first(sql, set_params!(app_id.into(), customer_id.into())).await?;
-
-	match app_exists {
-		Some(_) => {},
-		None => {
-			return Err(SentcCoreError::new_msg(
-				400,
-				ApiErrorCodes::AppNotFound,
-				"App not found in this user space",
-			))
-		},
-	}
-
-	Ok(())
-}
 
 fn prepare_options_insert(app_id: impl Into<AppId>, app_options: AppOptions) -> (&'static str, Params)
 {

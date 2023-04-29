@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 17. Apr 2023 um 12:09
+-- Erstellungszeit: 29. Apr 2023 um 13:55
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -30,7 +30,8 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `sentc_app` (
   `id` varchar(36) NOT NULL,
-  `customer_id` varchar(36) NOT NULL,
+  `owner_id` varchar(36) NOT NULL COMMENT 'the customer group',
+  `owner_type` int(11) NOT NULL,
   `identifier` text NOT NULL,
   `hashed_secret_token` varchar(100) NOT NULL COMMENT 'only one per app, when updating the token -> delete the old',
   `hashed_public_token` varchar(100) NOT NULL,
@@ -229,7 +230,27 @@ CREATE TABLE `sentc_customer` (
 -- Trigger `sentc_customer`
 --
 DELIMITER $$
-CREATE TRIGGER `delete_app` AFTER DELETE ON `sentc_customer` FOR EACH ROW DELETE FROM sentc_app WHERE customer_id = OLD.id
+CREATE TRIGGER `delete_app` AFTER DELETE ON `sentc_customer` FOR EACH ROW DELETE FROM sentc_app WHERE owner_id = OLD.id AND owner_type = 0
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_customer_group`
+--
+
+CREATE TABLE `sentc_customer_group` (
+  `sentc_group_id` varchar(36) NOT NULL,
+  `name` text DEFAULT NULL,
+  `des` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Trigger `sentc_customer_group`
+--
+DELIMITER $$
+CREATE TRIGGER `delete_customer_group_apps` AFTER DELETE ON `sentc_customer_group` FOR EACH ROW DELETE FROM sentc_app WHERE owner_id = OLD.sentc_group_id AND owner_type = 1
 $$
 DELIMITER ;
 
@@ -642,6 +663,12 @@ ALTER TABLE `sentc_content_searchable_item_parts`
 --
 ALTER TABLE `sentc_customer`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indizes für die Tabelle `sentc_customer_group`
+--
+ALTER TABLE `sentc_customer_group`
+  ADD PRIMARY KEY (`sentc_group_id`);
 
 --
 -- Indizes für die Tabelle `sentc_file`

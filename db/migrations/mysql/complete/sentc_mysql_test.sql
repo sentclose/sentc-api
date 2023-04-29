@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 10. Sep 2022 um 21:12
+-- Erstellungszeit: 29. Apr 2023 um 13:55
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -30,7 +30,8 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `sentc_app` (
   `id` varchar(36) NOT NULL,
-  `customer_id` varchar(36) NOT NULL,
+  `owner_id` varchar(36) NOT NULL COMMENT 'the customer group',
+  `owner_type` int(11) NOT NULL,
   `identifier` text NOT NULL,
   `hashed_secret_token` varchar(100) NOT NULL COMMENT 'only one per app, when updating the token -> delete the old',
   `hashed_public_token` varchar(100) NOT NULL,
@@ -42,14 +43,22 @@ CREATE TABLE `sentc_app` (
 -- Daten für Tabelle `sentc_app`
 --
 
-INSERT INTO `sentc_app` (`id`, `customer_id`, `identifier`, `hashed_secret_token`, `hashed_public_token`, `hash_alg`, `time`) VALUES
-('1665eb92-4513-469f-81d8-b72a62e0134c', 'sentc_int', '', 'cmzOt+BnyErJKsF2qNaiJ/YqsXJymnGQSdvJi5FpeOo=', 'b/t88y7h0zwqOXAtR/UqE4qsPL11PLFvo1e+8PNP8LU=', 'SHA256', 1659606752935);
+INSERT INTO `sentc_app` (`id`, `owner_id`, `owner_type`, `identifier`, `hashed_secret_token`, `hashed_public_token`, `hash_alg`, `time`) VALUES
+('1665eb92-4513-469f-81d8-b72a62e0134c', 'sentc_int', 0, '', 'cmzOt+BnyErJKsF2qNaiJ/YqsXJymnGQSdvJi5FpeOo=', 'b/t88y7h0zwqOXAtR/UqE4qsPL11PLFvo1e+8PNP8LU=', 'SHA256', 1659606752935);
 
 --
 -- Trigger `sentc_app`
 --
 DELIMITER $$
+CREATE TRIGGER `delete_app_content` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_content WHERE app_id = OLD.id
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `delete_app_jwt` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_app_jwt_keys WHERE app_id = OLD.id
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `delete_app_search` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_content_searchable_item WHERE app_id = OLD.id
 $$
 DELIMITER ;
 DELIMITER $$
@@ -149,8 +158,8 @@ CREATE TABLE `sentc_app_options` (
 -- Daten für Tabelle `sentc_app_options`
 --
 
-INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_user_keys`, `group_user_update_check`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`, `key_register`, `key_get`, `group_auto_invite`, `group_list`, `file_register`, `file_part_upload`, `file_get`, `file_part_download`, `user_device_register`, `user_device_delete`, `user_device_list`,  `group_invite_stop`, `user_key_update`) VALUES
-('1665eb92-4513-469f-81d8-b72a62e0134c', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_user_keys`, `group_user_update_check`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`, `key_register`, `key_get`, `group_auto_invite`, `group_list`, `file_register`, `file_part_upload`, `file_get`, `file_part_download`, `user_device_register`, `user_device_delete`, `user_device_list`, `group_invite_stop`, `user_key_update`, `content_search`, `file_delete`) VALUES
+('1665eb92-4513-469f-81d8-b72a62e0134c', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -159,10 +168,64 @@ INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_u
 --
 
 CREATE TABLE `sentc_captcha` (
- `id` varchar(36) NOT NULL,
- `app_id` varchar(36) NOT NULL,
- `solution` text NOT NULL,
- `time` bigint(20) NOT NULL
+  `id` varchar(36) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
+  `solution` text NOT NULL,
+  `time` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_content`
+--
+
+CREATE TABLE `sentc_content` (
+  `id` varchar(36) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
+  `item` varchar(50) NOT NULL,
+  `time` bigint(20) NOT NULL,
+  `belongs_to_group` varchar(36) DEFAULT NULL,
+  `belongs_to_user` varchar(36) DEFAULT NULL,
+  `creator` varchar(36) NOT NULL,
+  `category` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_content_searchable_item`
+--
+
+CREATE TABLE `sentc_content_searchable_item` (
+  `id` varchar(36) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
+  `belongs_to_group` varchar(36) DEFAULT NULL,
+  `belongs_to_user` varchar(36) DEFAULT NULL,
+  `category` varchar(50) DEFAULT NULL,
+  `item_ref` varchar(50) NOT NULL COMMENT 'a ref to the backend of the customer where the item is stored',
+  `alg` text NOT NULL COMMENT 'the hash alg',
+  `key_id` varchar(36) NOT NULL COMMENT 'the key which was used to hash the hashes',
+  `time` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Trigger `sentc_content_searchable_item`
+--
+DELIMITER $$
+CREATE TRIGGER `content_searchable_delete_hash` AFTER DELETE ON `sentc_content_searchable_item` FOR EACH ROW DELETE FROM sentc_content_searchable_item_parts WHERE item_id = OLD.id
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_content_searchable_item_parts`
+--
+
+CREATE TABLE `sentc_content_searchable_item_parts` (
+  `item_id` varchar(36) NOT NULL,
+  `hash` varchar(44) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -188,7 +251,27 @@ CREATE TABLE `sentc_customer` (
 -- Trigger `sentc_customer`
 --
 DELIMITER $$
-CREATE TRIGGER `delete_app` AFTER DELETE ON `sentc_customer` FOR EACH ROW DELETE FROM sentc_app WHERE customer_id = OLD.id
+CREATE TRIGGER `delete_app` AFTER DELETE ON `sentc_customer` FOR EACH ROW DELETE FROM sentc_app WHERE owner_id = OLD.id AND owner_type = 0
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_customer_group`
+--
+
+CREATE TABLE `sentc_customer_group` (
+  `sentc_group_id` varchar(36) NOT NULL,
+  `name` text DEFAULT NULL,
+  `des` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Trigger `sentc_customer_group`
+--
+DELIMITER $$
+CREATE TRIGGER `delete_customer_group_apps` AFTER DELETE ON `sentc_customer_group` FOR EACH ROW DELETE FROM sentc_app WHERE owner_id = OLD.sentc_group_id AND owner_type = 1
 $$
 DELIMITER ;
 
@@ -286,6 +369,7 @@ CREATE TABLE `sentc_group` (
   `parent` varchar(36) DEFAULT NULL,
   `identifier` text DEFAULT NULL,
   `type` int(11) NOT NULL COMMENT '0 0 normal group, 1 = user group',
+  `is_connected_group` tinyint(1) NOT NULL,
   `invite` tinyint(1) NOT NULL,
   `time` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -293,6 +377,10 @@ CREATE TABLE `sentc_group` (
 --
 -- Trigger `sentc_group`
 --
+DELIMITER $$
+CREATE TRIGGER `group_delete_hmac_keys` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_hmac_keys WHERE group_id = OLD.id
+$$
+DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `group_delete_invites` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = OLD.id
 $$
@@ -305,6 +393,22 @@ DELIMITER $$
 CREATE TRIGGER `group_delete_user` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_user WHERE group_id = OLD.id
 $$
 DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_group_hmac_keys`
+--
+
+CREATE TABLE `sentc_group_hmac_keys` (
+  `id` varchar(36) NOT NULL,
+  `group_id` varchar(36) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
+  `encrypted_hmac_key` text NOT NULL,
+  `encrypted_hmac_alg` text NOT NULL,
+  `encrypted_hmac_encryption_key_id` varchar(36) NOT NULL COMMENT 'the key id which encrypted this key',
+  `time` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='the hmac keys are the keys for searchable encryption hashes.';
 
 -- --------------------------------------------------------
 
@@ -342,7 +446,7 @@ CREATE TABLE `sentc_group_user` (
   `time` bigint(20) NOT NULL COMMENT 'joined time',
   `rank` int(11) NOT NULL,
   `key_upload_session_id` varchar(36) DEFAULT NULL COMMENT 'this is used when there are many keys used in this group. then upload the keys via pagination. this is only used for accept join req',
-  `type` tinyint(4) NOT NULL DEFAULT 0 COMMENT '0 = normal user, 1 = group from parent group'
+  `type` tinyint(4) NOT NULL DEFAULT 0 COMMENT '0 = normal user, 1 = group from parent group, 2 = a group as member'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
@@ -555,13 +659,44 @@ ALTER TABLE `sentc_app_options`
 -- Indizes für die Tabelle `sentc_captcha`
 --
 ALTER TABLE `sentc_captcha`
-	ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indizes für die Tabelle `sentc_content`
+--
+ALTER TABLE `sentc_content`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `app_id` (`app_id`),
+  ADD KEY `time` (`time`),
+  ADD KEY `item` (`item`) USING BTREE,
+  ADD KEY `cat_id` (`category`);
+
+--
+-- Indizes für die Tabelle `sentc_content_searchable_item`
+--
+ALTER TABLE `sentc_content_searchable_item`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `app_id` (`app_id`),
+  ADD KEY `category` (`category`),
+  ADD KEY `time` (`time`);
+
+--
+-- Indizes für die Tabelle `sentc_content_searchable_item_parts`
+--
+ALTER TABLE `sentc_content_searchable_item_parts`
+  ADD PRIMARY KEY (`item_id`,`hash`);
 
 --
 -- Indizes für die Tabelle `sentc_customer`
 --
 ALTER TABLE `sentc_customer`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indizes für die Tabelle `sentc_customer_group`
+--
+ALTER TABLE `sentc_customer_group`
+  ADD PRIMARY KEY (`sentc_group_id`);
 
 --
 -- Indizes für die Tabelle `sentc_file`
@@ -597,6 +732,13 @@ ALTER TABLE `sentc_group`
   ADD PRIMARY KEY (`id`),
   ADD KEY `app_id` (`app_id`),
   ADD KEY `parent` (`parent`);
+
+--
+-- Indizes für die Tabelle `sentc_group_hmac_keys`
+--
+ALTER TABLE `sentc_group_hmac_keys`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `app_id` (`app_id`,`group_id`);
 
 --
 -- Indizes für die Tabelle `sentc_group_keys`
@@ -660,10 +802,11 @@ ALTER TABLE `sentc_user_action_log`
 -- Indizes für die Tabelle `sentc_user_device`
 --
 ALTER TABLE `sentc_user_device`
-	ADD PRIMARY KEY (`id`),
-	ADD KEY `user_id` (`user_id`,`app_id`) USING BTREE,
-	ADD KEY `app_id` (`app_id`,`token`),
-	ADD KEY `device_identifier` (`device_identifier`) USING BTREE;
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`,`app_id`) USING BTREE,
+  ADD KEY `app_id` (`app_id`,`token`),
+  ADD KEY `device_identifier` (`device_identifier`) USING BTREE;
+
 --
 -- Indizes für die Tabelle `sentc_user_token`
 --

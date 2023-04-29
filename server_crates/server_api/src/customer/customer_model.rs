@@ -1,13 +1,15 @@
-use sentc_crypto_common::CustomerId;
-use server_api_common::customer::{CustomerData, CustomerUpdateInput};
-use server_core::db::{exec, query_first, I32Entity};
+use sentc_crypto_common::{CustomerId, GroupId, UserId};
+use server_api_common::customer::{CustomerData, CustomerGroupCreateInput, CustomerGroupList, CustomerUpdateInput};
+use server_core::db::{exec, get_in, query_first, query_string, I32Entity};
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 use server_core::res::AppRes;
-use server_core::{get_time, set_params};
+use server_core::{get_time, set_params, set_params_vec_outer};
 
 #[cfg(feature = "send_mail")]
 use crate::customer::customer_entities::RegisterEmailStatus;
 use crate::customer::customer_entities::{CustomerDataByEmailEntity, CustomerDataEntity, CustomerEmailByToken, CustomerEmailToken};
+use crate::sentc_customer_entities::CustomerList;
+use crate::sentc_group_entities::InternalUserGroupData;
 use crate::util::api_res::ApiErrorCodes;
 
 pub(super) async fn check_customer_valid(customer_id: impl Into<CustomerId>) -> AppRes<I32Entity>
@@ -264,4 +266,121 @@ pub(super) async fn update_data(id: impl Into<CustomerId>, data: CustomerData) -
 	exec(sql, set_params!(data.name, data.first_name, data.company, id.into())).await?;
 
 	Ok(())
+}
+
+//__________________________________________________________________________________________________
+
+pub(crate) async fn get_customer_group(group_id: impl Into<GroupId>, user_id: impl Into<UserId>) -> AppRes<Option<InternalUserGroupData>>
+{
+	//language=SQL
+	let sql = r"
+SELECT user_id, time, `rank` 
+FROM sentc_group_user, sentc_customer_group 
+WHERE 
+    group_id = ? AND 
+    user_id = ? AND 
+    group_id = sentc_group_id";
+
+	query_first(sql, set_params!(group_id.into(), user_id.into())).await
+}
+
+pub(super) async fn get_customer_group_details(user_id: impl Into<UserId>, group_id: impl Into<GroupId>) -> AppRes<CustomerGroupList>
+{
+	//language=SQL
+	let sql = r"
+SELECT id, sentc_group.time, `rank`, name as group_name, des 
+FROM sentc_group_user, sentc_customer_group, sentc_group 
+WHERE 
+    user_id = ? AND 
+    group_id = ? AND 
+    group_id = sentc_group_id AND 
+    group_id = id";
+
+	query_first(sql, set_params!(user_id.into(), group_id.into()))
+		.await?
+		.ok_or_else(|| SentcCoreError::new_msg(400, ApiErrorCodes::GroupAccess, "Group not found"))
+}
+
+pub(super) async fn get_customer_groups(
+	user_id: impl Into<UserId>,
+	last_fetched_time: u128,
+	last_id: impl Into<GroupId>,
+) -> AppRes<Vec<CustomerGroupList>>
+{
+	//language=SQL
+	let sql = r"
+SELECT id, sentc_group.time, `rank`, name as group_name, des 
+FROM sentc_group_user, sentc_customer_group, sentc_group 
+WHERE 
+    user_id = ? AND 
+    group_id = sentc_group_id AND 
+    group_id = id"
+		.to_string();
+
+	let (sql, params) = if last_fetched_time > 0 {
+		let sql =
+			sql + " AND sentc_group.time >=? AND (sentc_group.time > ? OR (sentc_group.time = ? AND id > ?)) ORDER BY sentc_group.time, id LIMIT 20";
+
+		(
+			sql,
+			set_params!(
+				user_id.into(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_id.into()
+			),
+		)
+	} else {
+		let sql = sql + " ORDER BY sentc_group.time, id LIMIT 20";
+
+		(sql, set_params!(user_id.into()))
+	};
+
+	query_string(sql, params).await
+}
+
+pub(super) async fn create_customer_group(group_id: impl Into<GroupId>, input: CustomerGroupCreateInput) -> AppRes<()>
+{
+	//language=SQL
+	let sql = "INSERT INTO sentc_customer_group (sentc_group_id, name, des) VALUES (?,?,?)";
+
+	exec(sql, set_params!(group_id.into(), input.name, input.des)).await?;
+
+	Ok(())
+}
+
+pub(super) async fn delete_customer_group(group_id: impl Into<GroupId>) -> AppRes<()>
+{
+	//language=SQL
+	let sql = "DELETE FROM sentc_customer_group WHERE sentc_group_id = ?";
+
+	exec(sql, set_params!(group_id.into())).await?;
+
+	Ok(())
+}
+
+pub(super) async fn update_group(group_id: impl Into<GroupId>, input: CustomerGroupCreateInput) -> AppRes<()>
+{
+	//language=SQL
+	let sql = "UPDATE sentc_customer_group SET name = ?, des = ? WHERE sentc_group_id = ?";
+
+	exec(sql, set_params!(input.name, input.des, group_id.into())).await?;
+
+	Ok(())
+}
+
+pub(super) async fn get_customers(customer: Vec<String>)->AppRes<Vec<CustomerList>>
+{
+	//only used if a list was fetched before
+
+	let ins = get_in(&customer);
+
+	//language=SQLx
+	let sql = format!(
+		"SELECT id,first_name,name,email FROM sentc_customer WHERE id IN ({})",
+		ins
+	);
+	
+	query_string(sql,set_params_vec_outer!(customer)).await
 }

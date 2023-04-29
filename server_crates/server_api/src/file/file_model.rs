@@ -280,6 +280,35 @@ pub(super) async fn delete_file(app_id: impl Into<AppId>, file_id: impl Into<Fil
 	Ok(())
 }
 
+pub(super) async fn delete_files_for_customer_group(group_id: impl Into<GroupId>) -> AppRes<()>
+{
+	let time = get_time()?;
+
+	//language=SQL
+	let sql = r"
+UPDATE 
+    sentc_file 
+SET 
+    status = ?, 
+    delete_at = ? 
+WHERE 
+    app_id IN (
+    SELECT 
+        sentc_app.id 
+    FROM sentc_app 
+    WHERE owner_id = ? AND 
+          owner_type = 1
+    )";
+
+	exec(
+		sql,
+		set_params!(FILE_STATUS_TO_DELETE, time.to_string(), group_id.into()),
+	)
+	.await?;
+
+	Ok(())
+}
+
 pub(super) async fn delete_files_for_customer(customer_id: impl Into<CustomerId>) -> AppRes<()>
 {
 	let time = get_time()?;
@@ -296,7 +325,8 @@ WHERE
     SELECT 
         sentc_app.id 
     FROM sentc_app 
-    WHERE customer_id = ?
+    WHERE owner_id = ? AND 
+          owner_type = 0
     )";
 
 	exec(
