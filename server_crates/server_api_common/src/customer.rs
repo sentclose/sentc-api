@@ -175,8 +175,8 @@ impl server_core::db::FromSqliteRow for CustomerGroupList
 			id: server_core::take_or_err!(row, 0),
 			time: server_core::take_or_err_u128!(row, 1),
 			rank: server_core::take_or_err!(row, 2),
-			group_name: server_core::take_or_err_opt!(row, 3),
-			des: server_core::take_or_err_opt!(row, 4),
+			group_name: server_core::take_or_err!(row, 3),
+			des: server_core::take_or_err!(row, 4),
 		})
 	}
 }
