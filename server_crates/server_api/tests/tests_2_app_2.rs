@@ -8,7 +8,14 @@ use sentc_crypto_common::group::{GroupChangeRankServerInput, GroupCreateOutput, 
 use sentc_crypto_common::UserId;
 use serde_json::to_string;
 use server_api_common::app::{AppDetails, AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
-use server_api_common::customer::{CustomerAppList, CustomerDoneLoginOutput, CustomerGroupCreateInput, CustomerGroupList, CustomerGroupView};
+use server_api_common::customer::{
+	CustomerAppList,
+	CustomerDoneLoginOutput,
+	CustomerGroupCreateInput,
+	CustomerGroupList,
+	CustomerGroupMemberFetch,
+	CustomerGroupView,
+};
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{auth_header, create_test_customer, customer_delete, get_url};
@@ -251,6 +258,34 @@ async fn test_13_invite_new_member_to_group()
 
 	let body = res.text().await.unwrap();
 	handle_general_server_response(&body).unwrap();
+}
+
+#[tokio::test]
+async fn test_13_z_get_group_member_list()
+{
+	let users = CUSTOMER_STATE.get().unwrap().read().await;
+	let user = &users[0];
+
+	let groups = GROUP_STATE.get().unwrap().read().await;
+	let group_id = &groups[0];
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(get_url(
+			"api/v1/customer/group/".to_owned() + group_id + "/member/0/none",
+		))
+		.header(AUTHORIZATION, auth_header(&user.customer_data.user_keys.jwt))
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let out: CustomerGroupMemberFetch = handle_server_response(&body).unwrap();
+
+	assert_eq!(out.group_member.len(), 1);
+	assert_eq!(out.customer_data.len(), 1);
+
+	assert_eq!(out.customer_data[0].id, *users[1].id);
 }
 
 #[tokio::test]
