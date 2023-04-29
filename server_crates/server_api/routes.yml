@@ -55,6 +55,7 @@ routes:
                           - group::group_app_transform
                         gr:
                           - put: {p: "/invite/:invited_user", s: crate::customer::invite_customer_group_member}
+                          - put: {p: "/update", s: crate::customer::update_group}
                           - get: {p: "", s: crate::customer::get_group}
                           - get: { p: "/apps/:last_fetched_time/:last_app_id", s: crate::customer::get_all_apps_group }
                           - delete: {p: "", s: crate::customer::delete_customer_group}

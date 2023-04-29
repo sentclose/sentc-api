@@ -90,6 +90,12 @@ pub(crate) fn routes(router: &mut Router)
 			.add(group::group_app_transform)
 			.add(jwt::jwt_customer_app_transform),
 	);
+	router.put(
+		"/api/v1/customer/group/:group_id/update",
+		r(crate::customer::update_group)
+			.add(group::group_app_transform)
+			.add(jwt::jwt_customer_app_transform),
+	);
 	router.get(
 		"/api/v1/customer/group/:group_id",
 		r(crate::customer::get_group)

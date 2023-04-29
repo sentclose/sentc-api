@@ -510,6 +510,16 @@ pub async fn update_member(mut req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
+pub async fn update_group(mut req: Request) -> JRes<ServerSuccessOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+	let group_data = get_group_user_data_from_req(&req)?;
+	let input: CustomerGroupCreateInput = bytes_to_json(&body)?;
+
+	customer_model::update_group(&group_data.group_data.id, input).await?;
+
+	echo_success()
+}
+
 //TODO
-// - group name update
 // - group member list incl. username and rank

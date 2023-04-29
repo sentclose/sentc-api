@@ -358,3 +358,13 @@ pub(super) async fn delete_customer_group(group_id: impl Into<GroupId>) -> AppRe
 
 	Ok(())
 }
+
+pub(super) async fn update_group(group_id: impl Into<GroupId>, input: CustomerGroupCreateInput) -> AppRes<()>
+{
+	//language=SQL
+	let sql = "UPDATE sentc_customer_group SET name = ?, des = ? WHERE sentc_group_id = ?";
+
+	exec(sql, set_params!(input.name, input.des, group_id.into())).await?;
+
+	Ok(())
+}
