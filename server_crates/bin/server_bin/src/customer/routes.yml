@@ -1,0 +1,85 @@
+prefix: "/api"
+routes:
+  - group:
+      p: "/v1"
+      gr:
+        #_______________________________________________________________________________________________________________
+        # customer
+        - group:
+            p: "/customer"
+            mw:
+              - server_api::sentc_app_base_mw
+            gr:
+              - post: { p: "/register", s: server_api::sentc_customer_controller::register }
+              - post: { p: "/prepare_login", s: server_api::sentc_customer_controller::prepare_login }
+              - post: { p: "/done_login", s: server_api::sentc_customer_controller::done_login }
+              - get: { p: "/captcha", s: server_api::sentc_customer_controller::customer_captcha }
+              - put: { p: "/password_reset", s: server_api::sentc_customer_controller::prepare_reset_password }
+              - put: { p: "/password_reset_validation", s: server_api::sentc_customer_controller::done_reset_password }
+              - put:
+                  p: "/refresh"
+                  s: server_api::sentc_customer_controller::refresh_jwt
+                  mw:
+                    - server_api::sentc_jwt_expire_mw
+              - group:
+                  p: ""
+                  mw:
+                    - server_api::sentc_jwt_mw
+                  gr:
+                    # customer must be logged in, in the dashboard when sending this req
+                    - post: { p: "/register_validation", s: server_api::sentc_customer_controller::done_register }
+                    - patch: { p: "/email_resend", s: server_api::sentc_customer_controller::resend_email }
+                    - put: { p: "", s: server_api::sentc_customer_controller::update }
+                    - put: { p: "/data", s: server_api::sentc_customer_controller::update_data }
+                    - put: { p: "/password", s: server_api::sentc_customer_controller::change_password }
+                    - delete: { p: "", s: server_api::sentc_customer_controller::delete }
+        #_______________________________________________________________________________________________________________
+        # customer routes with the jwt check,
+        # and we are only using public token for dashboard routes
+        - group:
+            p: "/customer"
+            mw:
+              - server_api::sentc_jwt_customer_app
+            gr:
+              # group routes
+              - group:
+                  p: "/group"
+                  gr:
+                    - post: { p: "", s: server_api::sentc_customer_controller::create_customer_group }
+                    - get: { p: "/all/:last_fetched_time/:last_id", s: server_api::sentc_customer_controller::get_groups }
+                    - group:
+                        p: "/:group_id"
+                        mw:
+                          - server_api::sentc_group_app_mw
+                        gr:
+                          - put: { p: "/invite/:invited_user", s: server_api::sentc_customer_controller::invite_customer_group_member }
+                          - put: { p: "/update", s: server_api::sentc_customer_controller::update_group }
+                          - get: { p: "", s: server_api::sentc_customer_controller::get_group }
+                          - get: { p: "/member/:last_fetched_time/:last_user_id", s: server_api::sentc_customer_controller::get_group_member_list }
+                          - get: { p: "/apps/:last_fetched_time/:last_app_id", s: server_api::sentc_customer_controller::get_all_apps_group }
+                          - delete: { p: "", s: server_api::sentc_customer_controller::delete_customer_group }
+                          - put: { p: "/change_rank", s: server_api::sentc_customer_controller::update_member }
+                          - delete: { p: "/kick/:user_id", s: server_api::sentc_customer_controller::delete_group_user }
+              #_________________________________________________________________________________________________________
+              # App routes
+              - get: { p: "/apps/:last_fetched_time/:last_app_id", s: server_api::sentc_customer_controller::get_all_apps }
+              - group:
+                  p: "/app"
+                  gr:
+                    - post: { p: "", s: server_api::sentc_app_controller::create_app_user }
+                    - post: { p: "/:group_id", s: server_api::sentc_app_controller::create_app_group }
+                    - group:
+                        p: "/:app_id"
+                        mw:
+                          - server_api::sentc_app_access_mw
+                        gr:
+                          - get: { p: "", s: server_api::sentc_app_controller::get_app_details }
+                          - put: { p: "", s: server_api::sentc_app_controller::update }
+                          - put: { p: "/options", s: server_api::sentc_app_controller::update_options }
+                          - put: { p: "/file_options", s: server_api::sentc_app_controller::update_file_options }
+                          - delete: { p: "", s: server_api::sentc_app_controller::delete }
+                          - patch: { p: "/token_renew", s: server_api::sentc_app_controller::renew_tokens }
+                          # jwt keys
+                          - patch: { p: "/new_jwt_keys", s: server_api::sentc_app_controller::add_jwt_keys }
+                          - get: { p: "/jwt", s: server_api::sentc_app_controller::get_jwt_details }
+                          - delete: { p: "/jwt/:jwt_id", s: server_api::sentc_app_controller::delete_jwt_keys }
