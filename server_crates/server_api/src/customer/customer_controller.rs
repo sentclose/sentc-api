@@ -182,7 +182,7 @@ pub async fn done_login(mut req: Request) -> JRes<CustomerDoneLoginOutput>
 	echo(out)
 }
 
-pub(crate) async fn refresh_jwt(mut req: Request) -> JRes<DoneLoginLightServerOutput>
+pub async fn refresh_jwt(mut req: Request) -> JRes<DoneLoginLightServerOutput>
 {
 	let body = get_raw_body(&mut req).await?;
 	let input: JwtRefreshInput = bytes_to_json(&body)?;
@@ -369,7 +369,7 @@ fn generate_email_validate_token() -> AppRes<String>
 
 //__________________________________________________________________________________________________
 
-pub(crate) async fn get_all_apps(req: Request) -> JRes<Vec<CustomerAppList>>
+pub async fn get_all_apps(req: Request) -> JRes<Vec<CustomerAppList>>
 {
 	let user = get_jwt_data_from_param(&req)?;
 
@@ -439,7 +439,7 @@ pub async fn get_group(req: Request) -> JRes<CustomerGroupView>
 	})
 }
 
-pub(crate) async fn get_all_apps_group(req: Request) -> JRes<Vec<CustomerAppList>>
+pub async fn get_all_apps_group(req: Request) -> JRes<Vec<CustomerAppList>>
 {
 	let group_data = get_group_user_data_from_req(&req)?;
 

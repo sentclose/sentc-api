@@ -28,7 +28,7 @@ use crate::user::jwt::{create_jwt_keys, get_jwt_data_from_param};
 use crate::util::api_res::ApiErrorCodes;
 use crate::util::{get_app_jwt_sign_key, get_app_jwt_verify_key, APP_TOKEN_CACHE};
 
-pub(crate) async fn get_jwt_details(req: Request) -> JRes<Vec<AppJwtData>>
+pub async fn get_jwt_details(req: Request) -> JRes<Vec<AppJwtData>>
 {
 	let app_general_data = get_app_general_data(&req)?;
 
@@ -37,7 +37,7 @@ pub(crate) async fn get_jwt_details(req: Request) -> JRes<Vec<AppJwtData>>
 	echo(jwt_data)
 }
 
-pub(crate) async fn get_app_details(req: Request) -> JRes<AppDetails>
+pub async fn get_app_details(req: Request) -> JRes<AppDetails>
 {
 	let app_general_data = get_app_general_data(&req)?;
 
@@ -54,12 +54,12 @@ pub(crate) async fn get_app_details(req: Request) -> JRes<AppDetails>
 	})
 }
 
-pub(crate) fn create_app_user(req: Request) -> impl Future<Output = JRes<AppRegisterOutput>>
+pub fn create_app_user(req: Request) -> impl Future<Output = JRes<AppRegisterOutput>>
 {
 	create_app(req, false)
 }
 
-pub(crate) fn create_app_group(req: Request) -> impl Future<Output = JRes<AppRegisterOutput>>
+pub fn create_app_group(req: Request) -> impl Future<Output = JRes<AppRegisterOutput>>
 {
 	create_app(req, true)
 }
@@ -100,7 +100,7 @@ async fn create_app(mut req: Request, group: bool) -> JRes<AppRegisterOutput>
 	echo(customer_app_data)
 }
 
-pub(crate) async fn renew_tokens(req: Request) -> JRes<AppTokenRenewOutput>
+pub async fn renew_tokens(req: Request) -> JRes<AppTokenRenewOutput>
 {
 	//no support for the old tokens anymore (unlike jwt)
 	//get the actual tokens (to delete them from the cache)
@@ -143,7 +143,7 @@ pub(crate) async fn renew_tokens(req: Request) -> JRes<AppTokenRenewOutput>
 	echo(out)
 }
 
-pub(crate) async fn add_jwt_keys(req: Request) -> JRes<AppJwtRegisterOutput>
+pub async fn add_jwt_keys(req: Request) -> JRes<AppJwtRegisterOutput>
 {
 	let app_general_data = get_app_general_data(&req)?;
 
@@ -189,7 +189,7 @@ pub(crate) async fn add_jwt_keys(req: Request) -> JRes<AppJwtRegisterOutput>
 	echo(out)
 }
 
-pub(crate) async fn delete_jwt_keys(req: Request) -> JRes<ServerSuccessOutput>
+pub async fn delete_jwt_keys(req: Request) -> JRes<ServerSuccessOutput>
 {
 	let app_general_data = get_app_general_data(&req)?;
 
@@ -222,7 +222,7 @@ pub(crate) async fn delete_jwt_keys(req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
-pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
+pub async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 {
 	let app_general_data = get_app_general_data(&req)?;
 
@@ -241,7 +241,7 @@ pub(crate) async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
-pub(crate) async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
+pub async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 {
 	let body = get_raw_body(&mut req).await?;
 
@@ -262,7 +262,7 @@ pub(crate) async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
-pub(crate) async fn update_options(mut req: Request) -> JRes<ServerSuccessOutput>
+pub async fn update_options(mut req: Request) -> JRes<ServerSuccessOutput>
 {
 	let body = get_raw_body(&mut req).await?;
 
@@ -291,7 +291,7 @@ pub(crate) async fn update_options(mut req: Request) -> JRes<ServerSuccessOutput
 	echo_success()
 }
 
-pub(crate) async fn update_file_options(mut req: Request) -> JRes<ServerSuccessOutput>
+pub async fn update_file_options(mut req: Request) -> JRes<ServerSuccessOutput>
 {
 	let body = get_raw_body(&mut req).await?;
 
