@@ -9,7 +9,8 @@ fn main()
 	match args[1].as_str() {
 		"main" => main_routes(),
 		"file" => file_routes(),
-		_ => panic!("Wrong args, please choose main or file"),
+		"customer" => customer_routes(),
+		_ => panic!("Wrong args, please choose main, customer or file"),
 	}
 }
 
@@ -26,5 +27,13 @@ fn file_routes()
 	route_parser::start(
 		"server_crates/bin/server_bin/src/file/routes.yml".to_string(),
 		"server_crates/bin/server_bin/src/file/routes.rs".to_string(),
+	);
+}
+
+fn customer_routes()
+{
+	route_parser::start(
+		"server_crates/bin/server_bin/src/customer/routes.yml".to_string(),
+		"server_crates/bin/server_bin/src/customer/routes.rs".to_string(),
 	);
 }
