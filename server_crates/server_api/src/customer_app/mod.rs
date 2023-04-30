@@ -7,7 +7,6 @@ pub mod app_util;
 use rand::RngCore;
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
 
-pub(crate) use self::app_controller::*;
 use crate::util::api_res::ApiErrorCodes;
 
 fn generate_tokens() -> Result<([u8; 50], [u8; 30]), SentcCoreError>

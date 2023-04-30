@@ -13,5 +13,3 @@ enum EmailTopic
 	PwReset,
 	EmailUpdate,
 }
-
-pub(crate) use self::customer_controller::*;

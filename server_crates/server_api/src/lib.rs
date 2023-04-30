@@ -48,9 +48,15 @@ pub use group::{
 	GROUP_TYPE_USER,
 };
 pub use key_management::{key_controller as sentc_key_controller, key_entity as sentc_key_entities};
-pub use middleware::app_token::app_token_transform as sentc_app_mw;
-pub use middleware::group::group_transform as sentc_group_mw;
-pub use middleware::jwt::{jwt_optional_transform as sentc_jwt_optional_mw, jwt_transform as sentc_jwt_mw};
+pub use middleware::app_access::app_access_transform as sentc_app_access_mw;
+pub use middleware::app_token::{app_token_base_app_transform as sentc_app_base_mw, app_token_transform as sentc_app_mw};
+pub use middleware::group::{group_app_transform as sentc_group_app_mw, group_transform as sentc_group_mw};
+pub use middleware::jwt::{
+	jwt_customer_app_transform as sentc_jwt_customer_app,
+	jwt_expire_transform as sentc_jwt_expire_mw,
+	jwt_optional_transform as sentc_jwt_optional_mw,
+	jwt_transform as sentc_jwt_mw,
+};
 use server_core::error::SentcErrorConstructor;
 pub use user::{
 	jwt as sentc_user_jwt_service,
