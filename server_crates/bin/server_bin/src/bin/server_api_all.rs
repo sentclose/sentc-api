@@ -1,6 +1,7 @@
 use std::env;
 
 use server_api::{rest_routes, start};
+use server_bin::customer::customer_routes;
 use server_bin::file::file_routes;
 use server_bin::server_dashboard_backend;
 
@@ -20,6 +21,7 @@ pub async fn main()
 	server_dashboard_backend::routes(&mut router);
 
 	file_routes(&mut router);
+	customer_routes(&mut router);
 
 	let addr = format!(
 		"{}:{}",
