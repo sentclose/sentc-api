@@ -30,6 +30,7 @@ use crate::group::group_entities::{GroupUserKeys, InternalGroupData, InternalGro
 use crate::group::group_user_service::NewUserType;
 use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
 use crate::sentc_app_entities::AppData;
+use crate::sentc_app_utils::hash_token_to_string;
 use crate::sentc_user_entities::{UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
 use crate::user::jwt::create_jwt;
 use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserJwtEntity, SERVER_RANDOM_VALUE};
@@ -73,7 +74,9 @@ pub fn get_user_group_id<'a>(
 
 pub async fn exists(app_id: impl Into<AppId>, data: UserIdentifierAvailableServerInput) -> AppRes<UserIdentifierAvailableServerOutput>
 {
-	let exists = user_model::check_user_exists(app_id, &data.user_identifier).await?;
+	let identifier = hash_token_to_string(data.user_identifier.as_bytes())?;
+
+	let exists = user_model::check_user_exists(app_id, &identifier).await?;
 
 	let out = UserIdentifierAvailableServerOutput {
 		user_identifier: data.user_identifier,
@@ -87,7 +90,9 @@ pub async fn register_light(app_id: impl Into<AppId>, input: UserDeviceRegisterI
 {
 	let app_id = app_id.into();
 
-	let (user_id, device_id) = user_model::register(&app_id, input).await?;
+	let identifier = hash_token_to_string(input.device_identifier.as_bytes())?;
+
+	let (user_id, device_id) = user_model::register(&app_id, identifier, input.master_key, input.derived).await?;
 
 	//delete the user in app check cache from the jwt mw
 	//it can happened that a user id was used before which doesn't exists yet
@@ -102,12 +107,13 @@ pub async fn register(app_id: impl Into<AppId>, register_input: RegisterData) ->
 	let mut group_data = register_input.group;
 	let device_data = register_input.device;
 
-	let device_identifier = device_data.device_identifier.to_string(); //save this value before because of dropping
-
 	let app_id = app_id.into();
 
 	//save the data
-	let (user_id, device_id) = user_model::register(&app_id, device_data).await?;
+
+	let identifier = hash_token_to_string(device_data.device_identifier.as_bytes())?;
+
+	let (user_id, device_id) = user_model::register(&app_id, identifier, device_data.master_key, device_data.derived).await?;
 
 	//update creator public key id in group data (with the device id), this is needed to know what public key was used to encrypt the group key
 	group_data.creator_public_key_id = device_id.to_string();
@@ -137,7 +143,7 @@ pub async fn register(app_id: impl Into<AppId>, register_input: RegisterData) ->
 	let out = RegisterServerOutput {
 		user_id,
 		device_id,
-		device_identifier,
+		device_identifier: device_data.device_identifier,
 	};
 
 	Ok(out)
@@ -171,15 +177,16 @@ pub async fn prepare_register_device(app_id: impl Into<AppId>, input: UserDevice
 	let public_key_string = input.derived.public_key.to_string();
 	let keypair_encrypt_alg = input.derived.keypair_encrypt_alg.to_string();
 
-	let device_identifier = input.device_identifier.to_string();
+	let identifier = hash_token_to_string(input.device_identifier.as_bytes())?;
+
 	let token = create_refresh_token()?;
 
-	let device_id = user_model::register_device(app_id, input, &token).await?;
+	let device_id = user_model::register_device(app_id, identifier, input.master_key, input.derived, &token).await?;
 
 	Ok(UserDeviceRegisterOutput {
 		device_id,
 		token,
-		device_identifier,
+		device_identifier: input.device_identifier,
 		public_key_string,
 		keypair_encrypt_alg,
 	})
@@ -248,29 +255,13 @@ Only the jwt and user id, no keys
 */
 pub async fn done_login_light(app_data: &AppData, done_login: DoneLoginServerInput) -> AppRes<DoneLoginLightOutput>
 {
-	auth_user(
-		&app_data.app_data.app_id,
-		done_login.device_identifier.as_str(),
-		done_login.auth_key,
-	)
-	.await?;
+	let identifier = hash_token_to_string(done_login.device_identifier.as_bytes())?;
 
-	let id = user_model::get_done_login_light_data(
-		app_data.app_data.app_id.as_str(),
-		done_login.device_identifier.as_str(),
-	)
-	.await?;
+	auth_user(&app_data.app_data.app_id, &identifier, done_login.auth_key).await?;
 
-	let id = match id {
-		Some(d) => d,
-		None => {
-			return Err(SentcCoreError::new_msg(
-				401,
-				ApiErrorCodes::Login,
-				"Wrong username or password",
-			))
-		},
-	};
+	let id = user_model::get_done_login_light_data(app_data.app_data.app_id.as_str(), identifier)
+		.await?
+		.ok_or_else(|| SentcCoreError::new_msg(401, ApiErrorCodes::Login, "Wrong username or password"))?;
 
 	let jwt = create_jwt(
 		&id.user_id,
@@ -300,26 +291,14 @@ After successful login return the user keys so they can be decrypted in the clie
 */
 pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) -> AppRes<DoneLoginServerOutput>
 {
-	auth_user(
-		&app_data.app_data.app_id,
-		done_login.device_identifier.as_str(),
-		done_login.auth_key,
-	)
-	.await?;
+	let identifier = hash_token_to_string(done_login.device_identifier.as_bytes())?;
+
+	auth_user(&app_data.app_data.app_id, &identifier, done_login.auth_key).await?;
 
 	//if correct -> fetch and return the user data
-	let device_keys = user_model::get_done_login_data(&app_data.app_data.app_id, done_login.device_identifier.as_str()).await?;
-
-	let device_keys = match device_keys {
-		Some(d) => d,
-		None => {
-			return Err(SentcCoreError::new_msg(
-				401,
-				ApiErrorCodes::Login,
-				"Wrong username or password",
-			))
-		},
-	};
+	let device_keys = user_model::get_done_login_data(&app_data.app_data.app_id, identifier)
+		.await?
+		.ok_or_else(|| SentcCoreError::new_msg(401, ApiErrorCodes::Login, "Wrong username or password"))?;
 
 	// and create the jwt
 	let jwt = create_jwt(
@@ -565,8 +544,10 @@ pub async fn update(user: &UserJwtEntity, app_id: &str, update_input: UserUpdate
 {
 	let user_id = &user.id;
 
+	let identifier = hash_token_to_string(update_input.user_identifier.as_bytes())?;
+
 	//check if the new ident exists
-	let exists = user_model::check_user_exists(app_id, update_input.user_identifier.as_str()).await?;
+	let exists = user_model::check_user_exists(app_id, &identifier).await?;
 
 	if exists {
 		return Err(SentcCoreError::new_msg(
@@ -576,7 +557,7 @@ pub async fn update(user: &UserJwtEntity, app_id: &str, update_input: UserUpdate
 		));
 	}
 
-	user_model::update(user_id, &user.device_id, app_id, update_input.user_identifier).await?;
+	user_model::update(user_id, &user.device_id, app_id, identifier).await?;
 
 	Ok(())
 }
@@ -630,8 +611,10 @@ pub fn reset_password<'a>(
 
 async fn create_salt(app_id: impl Into<AppId>, user_identifier: &str) -> AppRes<PrepareLoginSaltServerOutput>
 {
+	let identifier = hash_token_to_string(user_identifier.as_bytes())?;
+
 	//check the user id in the db
-	let login_data = user_model::get_user_login_data(app_id, user_identifier).await?;
+	let login_data = user_model::get_user_login_data(app_id, &identifier).await?;
 
 	//create the salt
 	let (client_random_value, alg, add_str) = match login_data {
@@ -672,10 +655,10 @@ fn create_refresh_token() -> AppRes<String>
 	Ok(token_string)
 }
 
-async fn auth_user(app_id: &str, user_identifier: &str, auth_key: String) -> AppRes<String>
+async fn auth_user(app_id: &str, hashed_user_identifier: impl Into<String>, auth_key: String) -> AppRes<String>
 {
 	//get the login data
-	let login_data = user_model::get_user_login_data(app_id, user_identifier).await?;
+	let login_data = user_model::get_user_login_data(app_id, hashed_user_identifier).await?;
 
 	let (hashed_user_auth_key, alg) = match login_data {
 		Some(d) => (d.hashed_authentication_key, d.derived_alg),
