@@ -1,4 +1,4 @@
-use sentc_crypto_common::user::{ChangePasswordData, KeyDerivedData, MasterKey, ResetPasswordData, UserDeviceRegisterInput};
+use sentc_crypto_common::user::{ChangePasswordData, KeyDerivedData, MasterKey, ResetPasswordData};
 use sentc_crypto_common::{AppId, DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, UserId};
 use server_core::db::{exec, exec_transaction, query_first, query_string, I64Entity, Params, StringEntity, TransactionData};
 use server_core::error::{SentcCoreError, SentcErrorConstructor};
@@ -319,12 +319,17 @@ pub(super) async fn register_update_user_group_id(app_id: impl Into<AppId>, user
 	Ok(())
 }
 
-pub(super) async fn register(app_id: impl Into<AppId>, register_data: UserDeviceRegisterInput) -> AppRes<(UserId, DeviceId)>
+pub(super) async fn register(
+	app_id: impl Into<AppId>,
+	device_identifier: String,
+	master_key: MasterKey,
+	derived: KeyDerivedData,
+) -> AppRes<(UserId, DeviceId)>
 {
 	let app_id = app_id.into();
 
 	//check first if the user identifier is available
-	let check = check_user_exists(&app_id, &register_data.device_identifier).await?;
+	let check = check_user_exists(&app_id, &device_identifier).await?;
 
 	if check {
 		//check true == user exists
@@ -344,9 +349,6 @@ pub(super) async fn register(app_id: impl Into<AppId>, register_data: UserDevice
 	//insert a fake group id for now, and update the user group id when user group was created
 	let user_params = set_params!(user_id.clone(), app_id.clone(), "none".to_string(), time.to_string());
 
-	let master_key_info = register_data.master_key;
-	let derived_data = register_data.derived;
-
 	let device_id = Uuid::new_v4().to_string();
 
 	//data for the user key table
@@ -355,9 +357,9 @@ pub(super) async fn register(app_id: impl Into<AppId>, register_data: UserDevice
 		&user_id,
 		app_id,
 		time,
-		register_data.device_identifier,
-		master_key_info,
-		derived_data,
+		device_identifier,
+		master_key,
+		derived,
 		None,
 	);
 
@@ -376,11 +378,14 @@ pub(super) async fn register(app_id: impl Into<AppId>, register_data: UserDevice
 	Ok((user_id, device_id))
 }
 
-pub(super) async fn register_device(app_id: impl Into<AppId>, input: UserDeviceRegisterInput, token: impl Into<String>) -> AppRes<DeviceId>
+pub(super) async fn register_device(
+	app_id: impl Into<AppId>,
+	device_identifier: String,
+	master_key: MasterKey,
+	derived: KeyDerivedData,
+	token: impl Into<String>,
+) -> AppRes<DeviceId>
 {
-	let master_key_info = input.master_key;
-	let derived_data = input.derived;
-
 	let device_id = Uuid::new_v4().to_string();
 	let time = get_time()?;
 
@@ -389,9 +394,9 @@ pub(super) async fn register_device(app_id: impl Into<AppId>, input: UserDeviceR
 		"not_registered",
 		app_id,
 		time,
-		input.device_identifier,
-		master_key_info,
-		derived_data,
+		device_identifier,
+		master_key,
+		derived,
 		Some(token.into()),
 	);
 
