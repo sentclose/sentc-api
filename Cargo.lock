@@ -1800,7 +1800,7 @@ dependencies = [
 [[package]]
 name = "rustgram-server-util"
 version = "0.1.8"
-source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git#431446c2de7a1cbdf832dc89fdfcf1cd5e912a62"
+source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=6cd0213aa8c89708e522a2be0c1ecd0f1aaa67a9#6cd0213aa8c89708e522a2be0c1ecd0f1aaa67a9"
 dependencies = [
  "async-trait",
  "bytes",
@@ -1810,7 +1810,6 @@ dependencies = [
  "hyper",
  "mysql_async",
  "mysql_common",
- "regex",
  "rusqlite",
  "rustgram",
  "rustgram-server-util-macros",
@@ -1823,7 +1822,7 @@ dependencies = [
 [[package]]
 name = "rustgram-server-util-macros"
 version = "0.1.8"
-source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git#431446c2de7a1cbdf832dc89fdfcf1cd5e912a62"
+source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=6cd0213aa8c89708e522a2be0c1ecd0f1aaa67a9#6cd0213aa8c89708e522a2be0c1ecd0f1aaa67a9"
 dependencies = [
  "quote",
  "syn 1.0.98",
