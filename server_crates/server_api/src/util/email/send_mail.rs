@@ -4,9 +4,8 @@ use std::future::Future;
 use lettre::message::{header, Mailbox, MultiPart, SinglePart};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
+use rustgram_server_util::error::{CoreErrorCodes, ServerCoreError, ServerErrorConstructor};
 use tokio::sync::OnceCell;
-
-use crate::error::{CoreErrorCodes, ServerCoreError, ServerErrorConstructor};
 
 static EMAIL_SENDER_REGISTER: OnceCell<Email> = OnceCell::const_new();
 

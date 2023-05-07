@@ -48,6 +48,10 @@ rand = "0.8.5"
 captcha = "0.0.9"
 
 #_______________________________________________________________________________________________________________________
+#send emails
+lettre = { version = "0.10.0-rc.6", default-features = false, features = ["smtp-transport", "tokio1-rustls-tls", "hostname", "builder"], optional = true }
+
+#_______________________________________________________________________________________________________________________
 #regex
 regex = "1.6.0"
 
@@ -72,4 +76,4 @@ mysql = ["rustgram-server-util/mysql","server_api_common/mysql"]
 sqlite = ["rustgram-server-util/sqlite","server_api_common/sqlite"]
 
 # When enabled send the custumor resgistration mail
-send_mail = []
+send_mail = ["lettre"]
