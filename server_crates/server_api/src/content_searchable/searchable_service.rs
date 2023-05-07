@@ -1,7 +1,7 @@
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::content_searchable::SearchCreateData;
 use sentc_crypto_common::{AppId, CategoryId, ContentId, GroupId, UserId};
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::res::AppRes;
 
 use crate::content_searchable::searchable_entities::ListSearchItem;
 use crate::content_searchable::searchable_model;
@@ -15,7 +15,7 @@ pub async fn create_searchable_content(
 ) -> AppRes<()>
 {
 	if data.item_ref.is_empty() {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableItemRefNotSet,
 			"Item is not set",
@@ -23,7 +23,7 @@ pub async fn create_searchable_content(
 	}
 
 	if data.item_ref.len() > 50 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableItemRefTooBig,
 			"Item ref is too big. Only 50 characters are allowed",
@@ -31,7 +31,7 @@ pub async fn create_searchable_content(
 	}
 
 	if data.hashes.is_empty() {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableNoHashes,
 			"No hashes sent",
@@ -39,7 +39,7 @@ pub async fn create_searchable_content(
 	}
 
 	if data.hashes.len() > 200 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableTooManyHashes,
 			"Item is too big. Only 200 characters are allowed",
@@ -54,7 +54,7 @@ pub async fn delete_item(app_id: impl Into<AppId>, item_ref: impl Into<String>) 
 	let item_ref = item_ref.into();
 
 	if item_ref.is_empty() {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableItemRefNotSet,
 			"Item is not set",
@@ -62,7 +62,7 @@ pub async fn delete_item(app_id: impl Into<AppId>, item_ref: impl Into<String>) 
 	}
 
 	if item_ref.len() > 50 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableItemRefTooBig,
 			"Item ref is too big. Only 50 characters are allowed",
@@ -77,7 +77,7 @@ pub async fn delete_item_by_cat(app_id: impl Into<AppId>, item_ref: impl Into<St
 	let item_ref = item_ref.into();
 
 	if item_ref.is_empty() {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableItemRefNotSet,
 			"Item is not set",
@@ -85,7 +85,7 @@ pub async fn delete_item_by_cat(app_id: impl Into<AppId>, item_ref: impl Into<St
 	}
 
 	if item_ref.len() > 50 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableItemRefTooBig,
 			"Item ref is too big. Only 50 characters are allowed",
@@ -108,7 +108,7 @@ pub async fn search_item_for_group(
 	let search_hash = search_hash.into();
 
 	if search_hash.is_empty() {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableNoHashes,
 			"No hash sent",
@@ -116,7 +116,7 @@ pub async fn search_item_for_group(
 	}
 
 	if search_hash.len() > 200 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentSearchableTooManyHashes,
 			"Hash is too big.",

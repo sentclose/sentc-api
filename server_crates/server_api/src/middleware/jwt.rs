@@ -8,11 +8,11 @@ use std::sync::Arc;
 use hyper::header::AUTHORIZATION;
 use rustgram::service::{IntoResponse, Service};
 use rustgram::{Request, Response};
+use rustgram_server_util::cache;
+use rustgram_server_util::cache::{CacheVariant, DEFAULT_TTL};
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::input_helper::{bytes_to_json, json_to_string};
 use sentc_crypto_common::AppId;
-use server_core::cache;
-use server_core::cache::{CacheVariant, DEFAULT_TTL};
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::input_helper::{bytes_to_json, json_to_string};
 
 use crate::sentc_app_utils::get_app_data_from_req;
 use crate::user::jwt::auth;
@@ -129,7 +129,7 @@ pub fn jwt_customer_app_transform<S>(inner: S) -> JwtMiddlewareApp<S>
 
 //__________________________________________________________________________________________________
 
-async fn jwt_check(req: &mut Request, optional: bool, check_exp: bool, app_id: AppId) -> Result<(), SentcCoreError>
+async fn jwt_check(req: &mut Request, optional: bool, check_exp: bool, app_id: AppId) -> Result<(), ServerCoreError>
 {
 	//get and validate the jwt. then save it in the req param.
 	//cache the jwt under with the jwt hash as key to save the validation process everytime. save false jwt too
@@ -160,13 +160,13 @@ async fn jwt_check(req: &mut Request, optional: bool, check_exp: bool, app_id: A
 	Ok(())
 }
 
-fn get_jwt_from_req(req: &Request) -> Result<String, SentcCoreError>
+fn get_jwt_from_req(req: &Request) -> Result<String, ServerCoreError>
 {
 	let headers = req.headers();
 	let header = match headers.get(AUTHORIZATION) {
 		Some(v) => v,
 		None => {
-			return Err(SentcCoreError::new_msg(
+			return Err(ServerCoreError::new_msg(
 				401,
 				ApiErrorCodes::JwtNotFound,
 				"No valid jwt",
@@ -175,10 +175,10 @@ fn get_jwt_from_req(req: &Request) -> Result<String, SentcCoreError>
 	};
 
 	let auth_header =
-		std::str::from_utf8(header.as_bytes()).map_err(|_e| SentcCoreError::new_msg(401, ApiErrorCodes::JwtWrongFormat, "Wrong format"))?;
+		std::str::from_utf8(header.as_bytes()).map_err(|_e| ServerCoreError::new_msg(401, ApiErrorCodes::JwtWrongFormat, "Wrong format"))?;
 
 	if !auth_header.starts_with(BEARER) {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			401,
 			ApiErrorCodes::JwtNotFound,
 			"No valid jwt",
@@ -188,7 +188,7 @@ fn get_jwt_from_req(req: &Request) -> Result<String, SentcCoreError>
 	Ok(auth_header.trim_start_matches(BEARER).to_string())
 }
 
-async fn validate(app_id: AppId, jwt: &str, check_exp: bool) -> Result<UserJwtEntity, SentcCoreError>
+async fn validate(app_id: AppId, jwt: &str, check_exp: bool) -> Result<UserJwtEntity, ServerCoreError>
 {
 	//hash the jwt and check if it is in the cache
 
@@ -199,7 +199,7 @@ async fn validate(app_id: AppId, jwt: &str, check_exp: bool) -> Result<UserJwtEn
 	let cache_key = cache_key.to_string();
 	let cache_key = get_user_jwt_key(&app_id, &cache_key);
 
-	let entity = match cache::get(cache_key.as_str()).await {
+	let entity = match cache::get(cache_key.as_str()).await? {
 		Some(j) => bytes_to_json(j.as_bytes())?,
 		None => {
 			//if not in the cache valid the jwt and cache it
@@ -212,7 +212,7 @@ async fn validate(app_id: AppId, jwt: &str, check_exp: bool) -> Result<UserJwtEn
 						json_to_string(&CacheVariant::<UserJwtEntity>::None)?,
 						DEFAULT_TTL,
 					)
-					.await;
+					.await?;
 
 					return Err(e);
 				},
@@ -223,7 +223,7 @@ async fn validate(app_id: AppId, jwt: &str, check_exp: bool) -> Result<UserJwtEn
 			if check_exp {
 				//only add the jwt to cache for exp able jwt's
 				//ttl should end for this cache -1 sec before the actual token exp
-				cache::add(cache_key, json_to_string(&entity)?, exp - 1).await;
+				cache::add(cache_key, json_to_string(&entity)?, exp - 1).await?;
 			}
 
 			entity
@@ -233,7 +233,7 @@ async fn validate(app_id: AppId, jwt: &str, check_exp: bool) -> Result<UserJwtEn
 	let entity = match entity {
 		CacheVariant::Some(d) => d,
 		CacheVariant::None => {
-			return Err(SentcCoreError::new_msg(
+			return Err(ServerCoreError::new_msg(
 				401,
 				ApiErrorCodes::JwtNotFound,
 				"No valid jwt",

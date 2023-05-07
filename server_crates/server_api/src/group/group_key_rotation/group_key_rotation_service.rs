@@ -1,8 +1,8 @@
 use std::future::Future;
 
+use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::group::{DoneKeyRotationData, KeyRotationData, KeyRotationStartServerOutput};
 use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
-use server_core::res::AppRes;
 
 use crate::group::group_entities::GroupKeyUpdate;
 use crate::group::group_key_rotation::group_key_rotation_model;

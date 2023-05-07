@@ -1,5 +1,6 @@
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
+use rustgram_server_util::error::ServerErrorCodes;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, KeyRotationInput};
 use sentc_crypto::sdk_common::user::UserDeviceRegisterOutput;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
@@ -26,7 +27,6 @@ use serde_json::{from_str, to_string};
 use server_api::util::api_res::ApiErrorCodes;
 use server_api_common::app::AppRegisterOutput;
 use server_api_common::customer::CustomerDoneLoginOutput;
-use server_core::error::SentcErrorCodes;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{

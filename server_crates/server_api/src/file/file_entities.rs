@@ -1,10 +1,10 @@
+use rustgram_server_util::take_or_err;
 use sentc_crypto_common::file::BelongsToType;
 use sentc_crypto_common::{AppId, FileId, PartId, SymKeyId, UserId};
 use serde::Serialize;
-use server_core::take_or_err;
 
-#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
+#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
 pub struct FileSessionCheck
 {
 	pub file_id: FileId,
@@ -52,9 +52,11 @@ impl Into<sentc_crypto_common::file::FileData> for FileMetaData
 }
 
 #[cfg(feature = "mysql")]
-impl server_core::db::mysql_async_export::prelude::FromRow for FileMetaData
+impl rustgram_server_util::db::mysql_async_export::prelude::FromRow for FileMetaData
 {
-	fn from_row_opt(mut row: server_core::db::mysql_async_export::Row) -> Result<Self, server_core::db::mysql_async_export::FromRowError>
+	fn from_row_opt(
+		mut row: rustgram_server_util::db::mysql_async_export::Row,
+	) -> Result<Self, rustgram_server_util::db::mysql_async_export::FromRowError>
 	where
 		Self: Sized,
 	{
@@ -69,21 +71,21 @@ impl server_core::db::mysql_async_export::prelude::FromRow for FileMetaData
 		Ok(Self {
 			file_id: take_or_err!(row, 0, String),
 			owner: take_or_err!(row, 1, String),
-			belongs_to: server_core::take_or_err_opt!(row, 2, String),
+			belongs_to: rustgram_server_util::take_or_err_opt!(row, 2, String),
 			belongs_to_type,
 			key_id: take_or_err!(row, 4, String),
 			time: take_or_err!(row, 5, u128),
 			part_list: Vec::new(),
-			encrypted_file_name: server_core::take_or_err_opt!(row, 6, String),
+			encrypted_file_name: rustgram_server_util::take_or_err_opt!(row, 6, String),
 			master_key_id: take_or_err!(row, 7, String),
 		})
 	}
 }
 
 #[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for FileMetaData
+impl rustgram_server_util::db::FromSqliteRow for FileMetaData
 {
-	fn from_row_opt(row: &server_core::db::rusqlite_export::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rustgram_server_util::db::rusqlite_export::Row) -> Result<Self, rustgram_server_util::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
@@ -101,7 +103,7 @@ impl server_core::db::FromSqliteRow for FileMetaData
 			belongs_to: take_or_err!(row, 2),
 			belongs_to_type,
 			key_id: take_or_err!(row, 4),
-			time: server_core::take_or_err_u128!(row, 5),
+			time: rustgram_server_util::take_or_err_u128!(row, 5),
 			encrypted_file_name: take_or_err!(row, 6),
 			part_list: Vec::new(),
 			master_key_id: take_or_err!(row, 7),
@@ -112,8 +114,8 @@ impl server_core::db::FromSqliteRow for FileMetaData
 //__________________________________________________________________________________________________
 
 #[derive(Serialize)]
-#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
+#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
 pub struct FilePartListItem
 {
 	pub part_id: PartId,
@@ -135,8 +137,8 @@ impl Into<sentc_crypto_common::file::FilePartListItem> for FilePartListItem
 
 //__________________________________________________________________________________________________
 
-#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
+#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
 pub struct FilePartListItemDelete
 {
 	pub part_id: PartId,
@@ -147,8 +149,8 @@ pub struct FilePartListItemDelete
 
 //__________________________________________________________________________________________________
 
-#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
+#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
 pub struct FileExternalStorageUrl
 {
 	pub storage_url: String,

@@ -1,8 +1,8 @@
+use rustgram_server_util::db::{exec, exec_string, exec_transaction, get_in, query_first, query_string, TransactionData, TupleEntity};
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::res::AppRes;
+use rustgram_server_util::{get_time, set_params, set_params_vec, set_params_vec_outer};
 use sentc_crypto_common::{AppId, CustomerId, FileId, FileSessionId, GroupId, PartId, SymKeyId, UserId};
-use server_core::db::{exec, exec_string, exec_transaction, get_in, query_first, query_string, TransactionData, TupleEntity};
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::res::AppRes;
-use server_core::{get_time, set_params, set_params_vec, set_params_vec_outer};
 use uuid::Uuid;
 
 use crate::file::file_entities::{FileExternalStorageUrl, FileMetaData, FilePartListItem, FilePartListItemDelete, FileSessionCheck};
@@ -100,7 +100,7 @@ WHERE
 	let check = match check {
 		Some(o) => o,
 		None => {
-			return Err(SentcCoreError::new_msg(
+			return Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::FileSessionNotFound,
 				"File upload session not found",
@@ -115,7 +115,7 @@ WHERE
 		//session exp
 		delete_session(session_id, app_id).await?;
 
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::FileSessionExpired,
 			"File upload session expired",
@@ -208,7 +208,7 @@ WHERE
 	match file {
 		Some(f) => Ok(f),
 		None => {
-			Err(SentcCoreError::new_msg(
+			Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::FileNotFound,
 				"File not found",
@@ -241,7 +241,7 @@ WHERE
 	let file_parts: Vec<FilePartListItem> = query_string(sql, params).await?;
 
 	if file_parts.is_empty() {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::FileNotFound,
 			"File not found",

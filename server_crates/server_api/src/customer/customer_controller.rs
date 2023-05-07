@@ -2,6 +2,10 @@ use std::env;
 
 use rand::RngCore;
 use rustgram::Request;
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::input_helper::{bytes_to_json, get_raw_body};
+use rustgram_server_util::res::{echo, echo_success, AppRes, JRes, ServerSuccessOutput};
+use rustgram_server_util::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_time_from_url_param};
 use sentc_crypto_common::group::{GroupChangeRankServerInput, GroupCreateOutput, GroupNewMemberLightInput};
 use sentc_crypto_common::user::{
 	CaptchaCreateOutput,
@@ -27,11 +31,6 @@ use server_api_common::customer::{
 	CustomerResetPasswordInput,
 	CustomerUpdateInput,
 };
-use server_core::email;
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::input_helper::{bytes_to_json, get_raw_body};
-use server_core::res::{echo, echo_success, AppRes, JRes, ServerSuccessOutput};
-use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_time_from_url_param};
 
 use crate::customer::{customer_model, customer_util};
 #[cfg(feature = "send_mail")]
@@ -44,6 +43,7 @@ use crate::sentc_customer_entities::CustomerGroupMemberFetch;
 use crate::sentc_group_user_service::NewUserType;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::ApiErrorCodes;
+use crate::util::email;
 use crate::{get_group_user_data_from_req, user, GROUP_TYPE_NORMAL};
 
 pub async fn customer_captcha(req: Request) -> JRes<CaptchaCreateOutput>
@@ -80,7 +80,7 @@ pub async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 	let email_check = email::check_email(email);
 
 	if !email_check {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::CustomerEmailSyntax,
 			"E-mail address is not valid",
@@ -125,7 +125,7 @@ pub async fn done_register(mut req: Request) -> JRes<ServerSuccessOutput>
 	let db_token = customer_model::get_email_token(customer_id).await?;
 
 	if input.token != db_token.email_token {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::CustomerEmailTokenValid,
 			"Email address is not valid",
@@ -226,7 +226,7 @@ pub async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 	let email_check = email::check_email(email.as_str());
 
 	if !email_check {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::CustomerEmailSyntax,
 			"E-mail address is not valid",
@@ -296,7 +296,7 @@ pub async fn prepare_reset_password(mut req: Request) -> JRes<ServerSuccessOutpu
 	let email_check = email::check_email(email);
 
 	if !email_check {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::CustomerEmailSyntax,
 			"E-mail address is not valid",
@@ -307,7 +307,7 @@ pub async fn prepare_reset_password(mut req: Request) -> JRes<ServerSuccessOutpu
 	let email_data = customer_model::get_customer_email_data_by_email(email).await?;
 
 	if email_data.email_valid == 0 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::CustomerEmailValidate,
 			"E-mail address is not active. Please validate your email first.",
@@ -360,7 +360,7 @@ fn generate_email_validate_token() -> AppRes<String>
 	let mut token = [0u8; 30];
 
 	rng.try_fill_bytes(&mut token)
-		.map_err(|_| SentcCoreError::new_msg(400, ApiErrorCodes::AppTokenWrongFormat, "Can't create email token"))?;
+		.map_err(|_| ServerCoreError::new_msg(400, ApiErrorCodes::AppTokenWrongFormat, "Can't create email token"))?;
 
 	let token_string = base64::encode_config(token, base64::URL_SAFE_NO_PAD);
 

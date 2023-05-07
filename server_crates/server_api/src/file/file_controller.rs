@@ -1,12 +1,12 @@
 use rustgram::service::IntoResponse;
 use rustgram::{Request, Response};
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::input_helper::{bytes_to_json, get_raw_body};
+use rustgram_server_util::res::{echo, echo_success, AppRes, JRes, ServerSuccessOutput};
+use rustgram_server_util::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 use sentc_crypto_common::file::{FileNameUpdate, FilePartRegisterOutput, FileRegisterInput, FileRegisterOutput};
 use sentc_crypto_common::FileId;
 use server_api_common::app::{FILE_STORAGE_OWN, FILE_STORAGE_SENTC};
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::input_helper::{bytes_to_json, get_raw_body};
-use server_core::res::{echo, echo_success, AppRes, JRes, ServerSuccessOutput};
-use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 use uuid::Uuid;
 
 use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
@@ -62,7 +62,7 @@ pub async fn delete_registered_file_part(req: Request) -> JRes<ServerSuccessOutp
 	let file_options = &app.file_options;
 
 	if file_options.file_storage != FILE_STORAGE_OWN {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::FileUploadAllowed,
 			"File upload is not allowed",
@@ -87,7 +87,7 @@ pub async fn register_file_part(req: Request) -> JRes<FilePartRegisterOutput>
 	let file_options = &app.file_options;
 
 	if file_options.file_storage != FILE_STORAGE_OWN {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::FileUploadAllowed,
 			"File upload is not allowed",
@@ -119,7 +119,7 @@ pub async fn upload_part(req: Request) -> JRes<ServerSuccessOutput>
 	let app_id = app.app_data.app_id.clone(); //must be owned because req is dropped before save part with app id
 
 	if file_options.file_storage != FILE_STORAGE_SENTC {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::FileUploadAllowed,
 			"File upload is not allowed",
@@ -131,7 +131,7 @@ pub async fn upload_part(req: Request) -> JRes<ServerSuccessOutput>
 	//create the id here to upload the right file
 	let part_id = Uuid::new_v4().to_string();
 
-	let size = server_core::file::upload_part(req, &part_id, chunk_size).await?;
+	let size = rustgram_server_util::file::upload_part(req, &part_id, chunk_size).await?;
 
 	file_model::save_part(&app_id, file_id, part_id, size, sequence, end, false).await?;
 
@@ -144,7 +144,7 @@ async fn check_session(req: &Request, app_id: &str, user_id: &str) -> AppRes<(Fi
 	let session_id = get_name_param_from_params(params, "session_id")?;
 	let sequence = get_name_param_from_params(params, "seq")?;
 	let sequence: i32 = sequence.parse().map_err(|_e| {
-		SentcCoreError::new_msg(
+		ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::UnexpectedTime,
 			"Parameter sequence has a wrong format",
@@ -153,7 +153,7 @@ async fn check_session(req: &Request, app_id: &str, user_id: &str) -> AppRes<(Fi
 	let end = get_name_param_from_params(params, "end")?;
 	let end: bool = end
 		.parse()
-		.map_err(|_e| SentcCoreError::new_msg(400, ApiErrorCodes::UnexpectedTime, "Parameter end has a wrong format"))?;
+		.map_err(|_e| ServerCoreError::new_msg(400, ApiErrorCodes::UnexpectedTime, "Parameter end has a wrong format"))?;
 
 	let (file_id, chunk_size) = file_model::check_session(app_id, session_id, user_id).await?;
 
@@ -211,7 +211,7 @@ pub async fn get_parts(req: Request) -> JRes<Vec<FilePartListItem>>
 	let last_sequence = get_name_param_from_params(params, "last_sequence")?;
 	let last_sequence: i32 = last_sequence
 		.parse()
-		.map_err(|_e| SentcCoreError::new_msg(400, ApiErrorCodes::UnexpectedTime, "last fetched sequence is wrong"))?;
+		.map_err(|_e| ServerCoreError::new_msg(400, ApiErrorCodes::UnexpectedTime, "last fetched sequence is wrong"))?;
 
 	let parts = file_model::get_file_parts(&app_data.app_data.app_id, file_id, last_sequence).await?;
 
@@ -232,7 +232,7 @@ pub async fn download_part_internally(req: Request) -> AppRes<Response>
 
 	let part_id = get_name_param_from_req(&req, "part_id")?;
 
-	server_core::file::get_part(part_id).await
+	rustgram_server_util::file::get_part(part_id).await
 }
 
 pub async fn update_file_name(mut req: Request) -> JRes<ServerSuccessOutput>

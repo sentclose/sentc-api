@@ -7,8 +7,8 @@ default-run = "server_api_all"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-server-core = {version = "*", path = "../../core", default-features = false}
 server_api = {version = "*", path = "../../server_api", default-features = false}
+rustgram-server-util = {workspace = true}
 
 rustgram = {workspace = true}
 tokio = {workspace = true}
@@ -17,7 +17,7 @@ hyper = {workspace = true}
 
 [features]
 default = ["mysql"]
-mysql = ["server_api/mysql"]
-sqlite = ["server_api/sqlite"]
+mysql = ["rustgram-server-util/mysql"]
+sqlite = ["rustgram-server-util/sqlite"]
 
 send_mail = ["server_api/send_mail"]

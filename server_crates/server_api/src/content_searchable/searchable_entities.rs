@@ -2,8 +2,8 @@ use sentc_crypto_common::ContentId;
 use serde::Serialize;
 
 #[derive(Serialize)]
-#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
+#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
 pub struct ListSearchItem
 {
 	pub id: ContentId,

@@ -1,9 +1,9 @@
+use rustgram_server_util::db::{exec, exec_transaction, query_first, query_string, I64Entity, Params, StringEntity, TransactionData};
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::res::AppRes;
+use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::user::{ChangePasswordData, KeyDerivedData, MasterKey, ResetPasswordData};
 use sentc_crypto_common::{AppId, DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, UserId};
-use server_core::db::{exec, exec_transaction, query_first, query_string, I64Entity, Params, StringEntity, TransactionData};
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::res::AppRes;
-use server_core::{get_time, set_params};
 use uuid::Uuid;
 
 use crate::user::user_entities::{
@@ -228,7 +228,7 @@ WHERE
 	match data {
 		Some(d) => Ok(d),
 		None => {
-			Err(SentcCoreError::new_msg(
+			Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::UserNotFound,
 				"Public key from this user not found",
@@ -260,7 +260,7 @@ LIMIT 1";
 	match data {
 		Some(d) => Ok(d),
 		None => {
-			Err(SentcCoreError::new_msg(
+			Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::UserNotFound,
 				"Public key from this user not found",
@@ -292,7 +292,7 @@ WHERE
 	match data {
 		Some(d) => Ok(d),
 		None => {
-			Err(SentcCoreError::new_msg(
+			Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::UserNotFound,
 				"Verify key from this user not found",
@@ -333,7 +333,7 @@ pub(super) async fn register(
 
 	if check {
 		//check true == user exists
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::UserExists,
 			"User already exists",
@@ -408,7 +408,7 @@ pub(super) async fn register_device(
 pub(super) async fn get_done_register_device(app_id: impl Into<AppId>, token: String) -> AppRes<DeviceId>
 {
 	if token.as_str() == "NULL" || token.as_str() == "null" {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::UserNotFound,
 			"Device was not found for this token",
@@ -423,7 +423,7 @@ pub(super) async fn get_done_register_device(app_id: impl Into<AppId>, token: St
 	let device_id: DeviceId = match out {
 		Some(id) => id.0,
 		None => {
-			return Err(SentcCoreError::new_msg(
+			return Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::UserNotFound,
 				"Device was not found for this token",
@@ -470,7 +470,7 @@ pub(super) async fn delete_device(user_id: impl Into<UserId>, app_id: impl Into<
 	match device_count {
 		Some(c) => {
 			if c.0 < 2 {
-				return Err(SentcCoreError::new_msg(
+				return Err(ServerCoreError::new_msg(
 					400,
 					ApiErrorCodes::UserDeviceDelete,
 					"Can't delete the last device. Use user delete instead.",
@@ -478,7 +478,7 @@ pub(super) async fn delete_device(user_id: impl Into<UserId>, app_id: impl Into<
 			}
 		},
 		None => {
-			return Err(SentcCoreError::new_msg(
+			return Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::UserDeviceNotFound,
 				"No device found",
@@ -572,7 +572,7 @@ pub(super) async fn reset_password(user_id: impl Into<UserId>, device_id: impl I
 	let row = match row {
 		Some(r) => r,
 		None => {
-			return Err(SentcCoreError::new_msg(
+			return Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::UserNotFound,
 				"No keys to update",

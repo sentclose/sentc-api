@@ -1,5 +1,7 @@
 use rand::RngCore;
 use reqwest::header::AUTHORIZATION;
+#[cfg(feature = "mysql")]
+use rustgram_server_util::db::mysql_async_export::prelude::Queryable;
 use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::sdk_common::file::FileData;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
@@ -9,8 +11,6 @@ use sentc_crypto_common::{GroupId, ServerOutput};
 use server_api::sentc_file_worker;
 use server_api_common::app::AppRegisterOutput;
 use server_api_common::customer::CustomerDoneLoginOutput;
-#[cfg(feature = "mysql")]
-use server_core::db::mysql_async_export::prelude::Queryable;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{
@@ -762,29 +762,31 @@ struct FileDeleteCheck
 }
 
 #[cfg(feature = "mysql")]
-impl server_core::db::mysql_async_export::prelude::FromRow for FileDeleteCheck
+impl rustgram_server_util::db::mysql_async_export::prelude::FromRow for FileDeleteCheck
 {
-	fn from_row_opt(mut row: server_core::db::mysql_async_export::Row) -> Result<Self, server_core::db::mysql_async_export::FromRowError>
+	fn from_row_opt(
+		mut row: rustgram_server_util::db::mysql_async_export::Row,
+	) -> Result<Self, rustgram_server_util::db::mysql_async_export::FromRowError>
 	where
 		Self: Sized,
 	{
 		Ok(Self {
-			status: server_core::take_or_err!(row, 0, i32),
-			deleted_at: server_core::take_or_err!(row, 1, u128),
+			status: rustgram_server_util::take_or_err!(row, 0, i32),
+			deleted_at: rustgram_server_util::take_or_err!(row, 1, u128),
 		})
 	}
 }
 
 #[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for FileDeleteCheck
+impl rustgram_server_util::db::FromSqliteRow for FileDeleteCheck
 {
-	fn from_row_opt(row: &server_core::db::rusqlite_export::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rustgram_server_util::db::rusqlite_export::Row) -> Result<Self, rustgram_server_util::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		Ok(Self {
-			status: server_core::take_or_err!(row, 0),
-			deleted_at: server_core::take_or_err_u128!(row, 1),
+			status: rustgram_server_util::take_or_err!(row, 0),
+			deleted_at: rustgram_server_util::take_or_err_u128!(row, 1),
 		})
 	}
 }
@@ -851,8 +853,8 @@ async fn test_20_delete_a_file()
 		let mysql_host = std::env::var("DB_HOST").unwrap();
 		let db = std::env::var("DB_NAME").unwrap();
 
-		let mut conn = server_core::db::mysql_async_export::Conn::new(
-			server_core::db::mysql_async_export::Opts::try_from(format!("mysql://{}:{}@{}/{}", user, pw, mysql_host, db).as_str()).unwrap(),
+		let mut conn = rustgram_server_util::db::mysql_async_export::Conn::new(
+			rustgram_server_util::db::mysql_async_export::Opts::try_from(format!("mysql://{}:{}@{}/{}", user, pw, mysql_host, db).as_str()).unwrap(),
 		)
 		.await
 		.unwrap();
@@ -861,13 +863,13 @@ async fn test_20_delete_a_file()
 		let sql = "SELECT status,delete_at FROM sentc_file WHERE id = ?";
 
 		let deleted_file = conn
-			.exec_first::<FileDeleteCheck, _, _>(sql, server_core::set_params!(file_id_to_delete.to_string()))
+			.exec_first::<FileDeleteCheck, _, _>(sql, rustgram_server_util::set_params!(file_id_to_delete.to_string()))
 			.await
 			.unwrap();
 
 		let deleted_file = deleted_file.unwrap();
 
-		let time = server_core::get_time().unwrap();
+		let time = rustgram_server_util::get_time().unwrap();
 
 		//the deleted time should be in the past
 		assert!(!(deleted_file.deleted_at > time));
@@ -880,7 +882,7 @@ async fn test_20_delete_a_file()
 		let sql = "SELECT status,delete_at FROM sentc_file WHERE id NOT LIKE ?";
 
 		let deleted_file = conn
-			.exec::<FileDeleteCheck, _, _>(sql, server_core::set_params!(file_id_to_delete.to_string()))
+			.exec::<FileDeleteCheck, _, _>(sql, rustgram_server_util::set_params!(file_id_to_delete.to_string()))
 			.await
 			.unwrap();
 
@@ -897,17 +899,18 @@ async fn test_20_delete_a_file()
 
 	#[cfg(feature = "sqlite")]
 	{
-		server_core::db::init_db().await;
+		rustgram_server_util::db::init_db().await;
 
 		//language=SQL
 		let sql = "SELECT status,delete_at FROM sentc_file WHERE id = ?";
 
-		let deleted_file: Option<FileDeleteCheck> = server_core::db::query_first(sql, server_core::set_params!(file_id_to_delete.to_string()))
-			.await
-			.unwrap();
+		let deleted_file: Option<FileDeleteCheck> =
+			rustgram_server_util::db::query_first(sql, rustgram_server_util::set_params!(file_id_to_delete.to_string()))
+				.await
+				.unwrap();
 		let deleted_file = deleted_file.unwrap();
 
-		let time = server_core::get_time().unwrap();
+		let time = rustgram_server_util::get_time().unwrap();
 
 		//the deleted time should be in the past
 		assert!(!(deleted_file.deleted_at > time));
@@ -919,9 +922,10 @@ async fn test_20_delete_a_file()
 		//language=SQL
 		let sql = "SELECT status,delete_at FROM sentc_file WHERE id NOT LIKE ?";
 
-		let deleted_file: Vec<FileDeleteCheck> = server_core::db::query(sql, server_core::set_params!(file_id_to_delete.to_string()))
-			.await
-			.unwrap();
+		let deleted_file: Vec<FileDeleteCheck> =
+			rustgram_server_util::db::query(sql, rustgram_server_util::set_params!(file_id_to_delete.to_string()))
+				.await
+				.unwrap();
 
 		//parent group got a file and child group
 		assert_eq!(deleted_file.len(), 2);
@@ -971,8 +975,8 @@ async fn test_21_delete_file_via_group_delete()
 		let mysql_host = std::env::var("DB_HOST").unwrap();
 		let db = std::env::var("DB_NAME").unwrap();
 
-		let mut conn = server_core::db::mysql_async_export::Conn::new(
-			server_core::db::mysql_async_export::Opts::try_from(format!("mysql://{}:{}@{}/{}", user, pw, mysql_host, db).as_str()).unwrap(),
+		let mut conn = rustgram_server_util::db::mysql_async_export::Conn::new(
+			rustgram_server_util::db::mysql_async_export::Opts::try_from(format!("mysql://{}:{}@{}/{}", user, pw, mysql_host, db).as_str()).unwrap(),
 		)
 		.await
 		.unwrap();
@@ -981,13 +985,13 @@ async fn test_21_delete_file_via_group_delete()
 		let sql = "SELECT status,delete_at FROM sentc_file WHERE id = ?";
 
 		let deleted_file = conn
-			.exec_first::<FileDeleteCheck, _, _>(sql, server_core::set_params!(file_id.to_string()))
+			.exec_first::<FileDeleteCheck, _, _>(sql, rustgram_server_util::set_params!(file_id.to_string()))
 			.await
 			.unwrap();
 
 		let deleted_file = deleted_file.unwrap();
 
-		let time = server_core::get_time().unwrap();
+		let time = rustgram_server_util::get_time().unwrap();
 
 		//the deleted time should be in the past
 		assert!(!(deleted_file.deleted_at > time));
@@ -1002,7 +1006,7 @@ async fn test_21_delete_file_via_group_delete()
 		let sql = "SELECT status,delete_at FROM sentc_file WHERE id = ?";
 
 		let deleted_file = conn
-			.exec_first::<FileDeleteCheck, _, _>(sql, server_core::set_params!(child_group_file.to_string()))
+			.exec_first::<FileDeleteCheck, _, _>(sql, rustgram_server_util::set_params!(child_group_file.to_string()))
 			.await
 			.unwrap();
 
@@ -1019,17 +1023,18 @@ async fn test_21_delete_file_via_group_delete()
 
 	#[cfg(feature = "sqlite")]
 	{
-		server_core::db::init_db().await;
+		rustgram_server_util::db::init_db().await;
 
 		//language=SQL
 		let sql = "SELECT status,delete_at FROM sentc_file WHERE id = ?";
 
-		let deleted_file: Option<FileDeleteCheck> = server_core::db::query_first(sql, server_core::set_params!(file_id.to_string()))
-			.await
-			.unwrap();
+		let deleted_file: Option<FileDeleteCheck> =
+			rustgram_server_util::db::query_first(sql, rustgram_server_util::set_params!(file_id.to_string()))
+				.await
+				.unwrap();
 		let deleted_file = deleted_file.unwrap();
 
-		let time = server_core::get_time().unwrap();
+		let time = rustgram_server_util::get_time().unwrap();
 
 		//the deleted time should be in the past
 		assert!(!(deleted_file.deleted_at > time));
@@ -1040,9 +1045,10 @@ async fn test_21_delete_file_via_group_delete()
 		//language=SQL
 		let sql = "SELECT status,delete_at FROM sentc_file WHERE id = ?";
 
-		let deleted_file: Option<FileDeleteCheck> = server_core::db::query_first(sql, server_core::set_params!(child_group_file.to_string()))
-			.await
-			.unwrap();
+		let deleted_file: Option<FileDeleteCheck> =
+			rustgram_server_util::db::query_first(sql, rustgram_server_util::set_params!(child_group_file.to_string()))
+				.await
+				.unwrap();
 
 		let deleted_file = deleted_file.unwrap();
 

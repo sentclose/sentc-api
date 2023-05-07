@@ -1,6 +1,11 @@
 use std::future::Future;
 
 use rustgram::Request;
+use rustgram_server_util::cache;
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::input_helper::{bytes_to_json, get_raw_body};
+use rustgram_server_util::res::{echo, echo_success, AppRes, JRes, ServerSuccessOutput};
+use rustgram_server_util::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 use server_api_common::app::{
 	AppDetails,
 	AppFileOptionsInput,
@@ -12,11 +17,6 @@ use server_api_common::app::{
 	AppTokenRenewOutput,
 	AppUpdateInput,
 };
-use server_core::cache;
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::input_helper::{bytes_to_json, get_raw_body};
-use server_core::res::{echo, echo_success, AppRes, JRes, ServerSuccessOutput};
-use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 
 use crate::customer::{customer_model, customer_util};
 use crate::customer_app::app_service::check_file_options;
@@ -80,10 +80,10 @@ async fn create_app(mut req: Request, group: bool) -> JRes<AppRegisterOutput>
 
 		let group_data = customer_model::get_customer_group(group_id, customer_id)
 			.await?
-			.ok_or_else(|| SentcCoreError::new_msg(400, ApiErrorCodes::GroupAccess, "No access to this group"))?;
+			.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::GroupAccess, "No access to this group"))?;
 
 		if group_data.rank > 1 {
-			return Err(SentcCoreError::new_msg(
+			return Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupUserRank,
 				"No rights to do this action",
@@ -108,7 +108,7 @@ pub async fn renew_tokens(req: Request) -> JRes<AppTokenRenewOutput>
 	let app_general_data = get_app_general_data(&req)?;
 
 	if app_general_data.rank > 2 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::AppAction,
 			"No rights to do this action",
@@ -132,8 +132,8 @@ pub async fn renew_tokens(req: Request) -> JRes<AppTokenRenewOutput>
 	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
 	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
 
-	cache::delete(old_hashed_secret.as_str()).await;
-	cache::delete(old_hashed_public_token.as_str()).await;
+	cache::delete(old_hashed_secret.as_str()).await?;
+	cache::delete(old_hashed_public_token.as_str()).await?;
 
 	let out = AppTokenRenewOutput {
 		secret_token: base64::encode(secret_token),
@@ -148,7 +148,7 @@ pub async fn add_jwt_keys(req: Request) -> JRes<AppJwtRegisterOutput>
 	let app_general_data = get_app_general_data(&req)?;
 
 	if app_general_data.rank > 2 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::AppAction,
 			"No rights to do this action",
@@ -168,8 +168,8 @@ pub async fn add_jwt_keys(req: Request) -> JRes<AppJwtRegisterOutput>
 	//delete the cache of the app because it can happened that this id was used before
 	let verify_key_cache_key = get_app_jwt_verify_key(&jwt_id);
 	let sign_key_cache_key = get_app_jwt_sign_key(&jwt_id);
-	cache::delete(&verify_key_cache_key).await;
-	cache::delete(&sign_key_cache_key).await;
+	cache::delete(&verify_key_cache_key).await?;
+	cache::delete(&sign_key_cache_key).await?;
 
 	let out = AppJwtRegisterOutput {
 		app_id: app_general_data.app_id.to_string(),
@@ -183,8 +183,8 @@ pub async fn add_jwt_keys(req: Request) -> JRes<AppJwtRegisterOutput>
 	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
 	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
 
-	cache::delete(old_hashed_secret.as_str()).await;
-	cache::delete(old_hashed_public_token.as_str()).await;
+	cache::delete(old_hashed_secret.as_str()).await?;
+	cache::delete(old_hashed_public_token.as_str()).await?;
 
 	echo(out)
 }
@@ -194,7 +194,7 @@ pub async fn delete_jwt_keys(req: Request) -> JRes<ServerSuccessOutput>
 	let app_general_data = get_app_general_data(&req)?;
 
 	if app_general_data.rank > 2 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::AppAction,
 			"No rights to do this action",
@@ -211,13 +211,13 @@ pub async fn delete_jwt_keys(req: Request) -> JRes<ServerSuccessOutput>
 	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
 	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
 
-	cache::delete(old_hashed_secret.as_str()).await;
-	cache::delete(old_hashed_public_token.as_str()).await;
+	cache::delete(old_hashed_secret.as_str()).await?;
+	cache::delete(old_hashed_public_token.as_str()).await?;
 
 	let verify_key_cache_key = get_app_jwt_verify_key(jwt_id);
 	let sign_key_cache_key = get_app_jwt_sign_key(jwt_id);
-	cache::delete(&verify_key_cache_key).await;
-	cache::delete(&sign_key_cache_key).await;
+	cache::delete(&verify_key_cache_key).await?;
+	cache::delete(&sign_key_cache_key).await?;
 
 	echo_success()
 }
@@ -227,7 +227,7 @@ pub async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 	let app_general_data = get_app_general_data(&req)?;
 
 	if app_general_data.rank > 1 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::AppAction,
 			"No rights to do this action",
@@ -248,7 +248,7 @@ pub async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 	let app_general_data = get_app_general_data(&req)?;
 
 	if app_general_data.rank > 2 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::AppAction,
 			"No rights to do this action",
@@ -269,7 +269,7 @@ pub async fn update_options(mut req: Request) -> JRes<ServerSuccessOutput>
 	let app_general_data = get_app_general_data(&req)?;
 
 	if app_general_data.rank > 2 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::AppAction,
 			"No rights to do this action",
@@ -285,8 +285,8 @@ pub async fn update_options(mut req: Request) -> JRes<ServerSuccessOutput>
 	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
 	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
 
-	cache::delete(old_hashed_secret.as_str()).await;
-	cache::delete(old_hashed_public_token.as_str()).await;
+	cache::delete(old_hashed_secret.as_str()).await?;
+	cache::delete(old_hashed_public_token.as_str()).await?;
 
 	echo_success()
 }
@@ -298,7 +298,7 @@ pub async fn update_file_options(mut req: Request) -> JRes<ServerSuccessOutput>
 	let app_general_data = get_app_general_data(&req)?;
 
 	if app_general_data.rank > 2 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::AppAction,
 			"No rights to do this action",
@@ -316,8 +316,8 @@ pub async fn update_file_options(mut req: Request) -> JRes<ServerSuccessOutput>
 	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
 	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
 
-	cache::delete(old_hashed_secret.as_str()).await;
-	cache::delete(old_hashed_public_token.as_str()).await;
+	cache::delete(old_hashed_secret.as_str()).await?;
+	cache::delete(old_hashed_public_token.as_str()).await?;
 
 	echo_success()
 }
@@ -326,5 +326,5 @@ fn get_app_general_data(req: &Request) -> AppRes<&AppCustomerAccess>
 {
 	req.extensions()
 		.get::<AppCustomerAccess>()
-		.ok_or_else(|| SentcCoreError::new_msg(400, ApiErrorCodes::AppTokenNotFound, "No app access"))
+		.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::AppTokenNotFound, "No app access"))
 }

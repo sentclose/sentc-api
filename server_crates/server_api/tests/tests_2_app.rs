@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use hyper::header::AUTHORIZATION;
 use reqwest::StatusCode;
+use rustgram_server_util::error::ServerErrorCodes;
 use sentc_crypto::util::public::handle_server_response;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::RegisterServerOutput;
@@ -18,7 +19,6 @@ use server_api_common::app::{
 	AppUpdateInput,
 };
 use server_api_common::customer::{CustomerAppList, CustomerDoneLoginOutput};
-use server_core::error::SentcErrorCodes;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{add_app_jwt_keys, auth_header, create_app, create_test_customer, customer_delete, delete_app, delete_app_jwt_key, get_url};

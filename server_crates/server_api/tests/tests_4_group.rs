@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
+use rustgram_server_util::error::ServerErrorCodes;
 use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupInviteServerOutput};
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
@@ -26,7 +27,6 @@ use sentc_crypto_common::{GroupId, ServerOutput, UserId};
 use server_api::util::api_res::ApiErrorCodes;
 use server_api_common::app::AppRegisterOutput;
 use server_api_common::customer::CustomerDoneLoginOutput;
-use server_core::error::SentcErrorCodes;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{

@@ -11,8 +11,6 @@ members = [
 
     # lib
     "sdk-common",
-    "server_crates/core",
-    "server_crates/core_macros",
     "server_crates/server_api",
     "server_crates/server_api_common",
     "server_crates/worker/worker_manual"
@@ -31,6 +29,8 @@ dotenv = "0.15.0"
 
 # for caching trait
 async-trait = "0.1.56"
+
+rustgram-server-util = {version = "0.1.8", git= "https://gitlab.com/grammm/rustgram/rustgram-server-util.git", default-features = false, features = ["derive_macro"]}
 
 #_______________________________________________________________________________________________________________________
 # json handling

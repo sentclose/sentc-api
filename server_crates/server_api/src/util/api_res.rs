@@ -1,4 +1,4 @@
-use server_core::error::{CoreErrorCodes, SentcErrorCodes};
+use rustgram_server_util::error::{CoreErrorCodes, ServerErrorCodes};
 
 #[derive(Debug)]
 pub enum ApiErrorCodes
@@ -108,7 +108,7 @@ impl From<CoreErrorCodes> for ApiErrorCodes
 	}
 }
 
-impl SentcErrorCodes for ApiErrorCodes
+impl ServerErrorCodes for ApiErrorCodes
 {
 	fn get_int_code(&self) -> u32
 	{

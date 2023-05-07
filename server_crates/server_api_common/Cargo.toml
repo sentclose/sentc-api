@@ -13,12 +13,12 @@ sentc-crypto-common = {version = "0.1.0", path = "../../sdk-common" }
 serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
 
-server-core = {version = "0.1.0", default-features = false, optional = true, path = "../core"}
+rustgram-server-util = {workspace = true, optional = true}
 
 [features]
 default=["client"]
 client = []
 
-server=["server-core"]
-mysql = ["server-core/mysql"]
-sqlite=["server-core/sqlite"]
+server=["rustgram-server-util"]
+mysql = ["rustgram-server-util/mysql"]
+sqlite=["rustgram-server-util/sqlite"]

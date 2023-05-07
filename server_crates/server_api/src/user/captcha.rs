@@ -1,9 +1,9 @@
 use base64::encode;
 use captcha::{gen, Difficulty};
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::get_time;
+use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::AppId;
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::get_time;
-use server_core::res::AppRes;
 
 use crate::user::user_model;
 use crate::util::api_res::ApiErrorCodes;
@@ -23,7 +23,7 @@ pub async fn validate_captcha(app_id: impl Into<AppId>, captcha_id: String, solu
 	let captcha = match user_model::get_captcha_solution(&captcha_id, &app_id).await? {
 		Some(c) => c,
 		None => {
-			return Err(SentcCoreError::new_msg(
+			return Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::CaptchaNotFound,
 				"Captcha not found",
@@ -35,7 +35,7 @@ pub async fn validate_captcha(app_id: impl Into<AppId>, captcha_id: String, solu
 	if captcha.time + (1000 * 20 * 60) < get_time()? {
 		user_model::delete_captcha(&app_id, captcha_id).await?;
 
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::CaptchaTooOld,
 			"Captcha is too old, please do the captcha again",
@@ -45,7 +45,7 @@ pub async fn validate_captcha(app_id: impl Into<AppId>, captcha_id: String, solu
 	if captcha.solution != solution {
 		user_model::delete_captcha(app_id, captcha_id).await?;
 
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::CaptchaWrong,
 			"Captcha is wrong",
@@ -59,7 +59,7 @@ fn create_captcha() -> AppRes<(String, String)>
 {
 	let (solution, png) = gen(Difficulty::Easy)
 		.as_tuple()
-		.ok_or_else(|| SentcCoreError::new_msg(400, ApiErrorCodes::CaptchaCreate, "Can't create a captcha"))?;
+		.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::CaptchaCreate, "Can't create a captcha"))?;
 
 	let png = encode(png);
 

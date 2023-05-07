@@ -1,4 +1,5 @@
 pub mod api_res;
+pub mod email;
 
 pub const JWT_CACHE: &str = "jwtcache_";
 pub const APP_TOKEN_CACHE: &str = "apptokencache_";

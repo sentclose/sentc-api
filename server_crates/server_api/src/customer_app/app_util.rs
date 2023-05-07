@@ -1,7 +1,7 @@
 use ring::digest::{Context, SHA256};
 use rustgram::Request;
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::res::AppRes;
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::res::AppRes;
 
 use crate::customer_app::app_entities::AppData;
 use crate::sentc_app_entities::AuthWithToken;
@@ -69,7 +69,7 @@ pub fn get_app_data_from_req(req: &Request) -> AppRes<&AppData>
 	match req.extensions().get::<AppData>() {
 		Some(e) => Ok(e),
 		None => {
-			Err(SentcCoreError::new_msg(
+			Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::AppNotFound,
 				"No app found",
@@ -87,7 +87,7 @@ pub fn hash_token(token: &[u8]) -> AppRes<[u8; 32]>
 	let hashed_token: [u8; 32] = result
 		.as_ref()
 		.try_into()
-		.map_err(|_e| SentcCoreError::new_msg(400, ApiErrorCodes::AppTokenWrongFormat, "Token can't be hashed"))?;
+		.map_err(|_e| ServerCoreError::new_msg(400, ApiErrorCodes::AppTokenWrongFormat, "Token can't be hashed"))?;
 
 	Ok(hashed_token)
 }
@@ -102,7 +102,7 @@ pub fn hash_token_to_string(token: &[u8]) -> AppRes<String>
 pub fn hash_token_from_string_to_string(token: &str) -> AppRes<String>
 {
 	//the normal token is also encoded as base64 when exporting it to user
-	let token = base64::decode(token).map_err(|_e| SentcCoreError::new_msg(401, ApiErrorCodes::AppTokenWrongFormat, "Token can't be hashed"))?;
+	let token = base64::decode(token).map_err(|_e| ServerCoreError::new_msg(401, ApiErrorCodes::AppTokenWrongFormat, "Token can't be hashed"))?;
 
 	hash_token_to_string(&token)
 }
@@ -169,7 +169,7 @@ pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endp
 		1 => AuthWithToken::Public,
 		2 => AuthWithToken::Secret,
 		_ => {
-			return Err(SentcCoreError::new_msg(
+			return Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::AppAction,
 				"No access to this action",
@@ -186,7 +186,7 @@ pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endp
 		(AuthWithToken::Secret, AuthWithToken::Secret) => Ok(()),
 		//when secret required but public token => err
 		(AuthWithToken::Secret, AuthWithToken::Public) => {
-			Err(SentcCoreError::new_msg(
+			Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::AppAction,
 				"No access to this action",

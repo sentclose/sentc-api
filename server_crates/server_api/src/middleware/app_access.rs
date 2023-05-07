@@ -4,8 +4,8 @@ use std::sync::Arc;
 
 use rustgram::service::{IntoResponse, Service};
 use rustgram::{Request, Response};
-use server_core::res::AppRes;
-use server_core::url_helper::get_name_param_from_req;
+use rustgram_server_util::res::AppRes;
+use rustgram_server_util::url_helper::get_name_param_from_req;
 
 use crate::customer_app::app_model::get_app_general;
 use crate::sentc_user_jwt_service::get_jwt_data_from_param;

@@ -92,34 +92,36 @@ pub struct CustomerAppList
 
 #[cfg(feature = "server")]
 #[cfg(feature = "mysql")]
-impl server_core::db::mysql_async_export::prelude::FromRow for CustomerAppList
+impl rustgram_server_util::db::mysql_async_export::prelude::FromRow for CustomerAppList
 {
-	fn from_row_opt(mut row: server_core::db::mysql_async_export::Row) -> Result<Self, server_core::db::mysql_async_export::FromRowError>
+	fn from_row_opt(
+		mut row: rustgram_server_util::db::mysql_async_export::Row,
+	) -> Result<Self, rustgram_server_util::db::mysql_async_export::FromRowError>
 	where
 		Self: Sized,
 	{
 		Ok(Self {
-			id: server_core::take_or_err!(row, 0, String),
-			identifier: server_core::take_or_err!(row, 1, String),
-			time: server_core::take_or_err!(row, 2, u128),
-			group_name: server_core::take_or_err_opt!(row, 3, String),
+			id: rustgram_server_util::take_or_err!(row, 0, String),
+			identifier: rustgram_server_util::take_or_err!(row, 1, String),
+			time: rustgram_server_util::take_or_err!(row, 2, u128),
+			group_name: rustgram_server_util::take_or_err_opt!(row, 3, String),
 		})
 	}
 }
 
 #[cfg(feature = "server")]
 #[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for CustomerAppList
+impl rustgram_server_util::db::FromSqliteRow for CustomerAppList
 {
-	fn from_row_opt(row: &server_core::db::rusqlite_export::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rustgram_server_util::db::rusqlite_export::Row) -> Result<Self, rustgram_server_util::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		Ok(Self {
-			id: server_core::take_or_err!(row, 0),
-			identifier: server_core::take_or_err!(row, 1),
-			time: server_core::take_or_err_u128!(row, 2),
-			group_name: server_core::take_or_err!(row, 3),
+			id: rustgram_server_util::take_or_err!(row, 0),
+			identifier: rustgram_server_util::take_or_err!(row, 1),
+			time: rustgram_server_util::take_or_err_u128!(row, 2),
+			group_name: rustgram_server_util::take_or_err!(row, 3),
 		})
 	}
 }
@@ -147,36 +149,38 @@ pub struct CustomerGroupList
 
 #[cfg(feature = "server")]
 #[cfg(feature = "mysql")]
-impl server_core::db::mysql_async_export::prelude::FromRow for CustomerGroupList
+impl rustgram_server_util::db::mysql_async_export::prelude::FromRow for CustomerGroupList
 {
-	fn from_row_opt(mut row: server_core::db::mysql_async_export::Row) -> Result<Self, server_core::db::mysql_async_export::FromRowError>
+	fn from_row_opt(
+		mut row: rustgram_server_util::db::mysql_async_export::Row,
+	) -> Result<Self, rustgram_server_util::db::mysql_async_export::FromRowError>
 	where
 		Self: Sized,
 	{
 		Ok(Self {
-			id: server_core::take_or_err!(row, 0, String),
-			time: server_core::take_or_err!(row, 1, u128),
-			rank: server_core::take_or_err!(row, 2, i32),
-			group_name: server_core::take_or_err_opt!(row, 3, String),
-			des: server_core::take_or_err_opt!(row, 4, String),
+			id: rustgram_server_util::take_or_err!(row, 0, String),
+			time: rustgram_server_util::take_or_err!(row, 1, u128),
+			rank: rustgram_server_util::take_or_err!(row, 2, i32),
+			group_name: rustgram_server_util::take_or_err_opt!(row, 3, String),
+			des: rustgram_server_util::take_or_err_opt!(row, 4, String),
 		})
 	}
 }
 
 #[cfg(feature = "server")]
 #[cfg(feature = "sqlite")]
-impl server_core::db::FromSqliteRow for CustomerGroupList
+impl rustgram_server_util::db::FromSqliteRow for CustomerGroupList
 {
-	fn from_row_opt(row: &server_core::db::rusqlite_export::Row) -> Result<Self, server_core::db::FormSqliteRowError>
+	fn from_row_opt(row: &rustgram_server_util::db::rusqlite_export::Row) -> Result<Self, rustgram_server_util::db::FormSqliteRowError>
 	where
 		Self: Sized,
 	{
 		Ok(Self {
-			id: server_core::take_or_err!(row, 0),
-			time: server_core::take_or_err_u128!(row, 1),
-			rank: server_core::take_or_err!(row, 2),
-			group_name: server_core::take_or_err!(row, 3),
-			des: server_core::take_or_err!(row, 4),
+			id: rustgram_server_util::take_or_err!(row, 0),
+			time: rustgram_server_util::take_or_err_u128!(row, 1),
+			rank: rustgram_server_util::take_or_err!(row, 2),
+			group_name: rustgram_server_util::take_or_err!(row, 3),
+			des: rustgram_server_util::take_or_err!(row, 4),
 		})
 	}
 }

@@ -5,13 +5,13 @@ use std::sync::Arc;
 
 use rustgram::service::{IntoResponse, Service};
 use rustgram::{Request, Response};
+use rustgram_server_util::cache;
+use rustgram_server_util::cache::{CacheVariant, LONG_TTL, SHORT_TTL};
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::input_helper::{bytes_to_json, json_to_string};
+use rustgram_server_util::res::AppRes;
+use rustgram_server_util::url_helper::get_name_param_from_req;
 use sentc_crypto_common::{AppId, GroupId};
-use server_core::cache;
-use server_core::cache::{CacheVariant, LONG_TTL, SHORT_TTL};
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::input_helper::{bytes_to_json, json_to_string};
-use server_core::res::AppRes;
-use server_core::url_helper::get_name_param_from_req;
 
 use crate::customer_app::app_util::get_app_data_from_req;
 use crate::group::group_entities::{InternalGroupData, InternalGroupDataComplete, InternalUserGroupData, InternalUserGroupDataFromParent};
@@ -162,7 +162,7 @@ async fn load_group(app_id: &str, group_id: &str, user_id: &str, group_as_member
 	//use to different caches, one for the group, the other for the group user.
 	//this is used because if a group gets deleted -> the cache of the user wont.
 
-	let entity = match cache::get(key_group.as_str()).await {
+	let entity = match cache::get(key_group.as_str()).await? {
 		Some(j) => bytes_to_json(j.as_bytes())?,
 		None => {
 			let data = match group_model::get_internal_group_data(app_id, group_id).await {
@@ -173,7 +173,7 @@ async fn load_group(app_id: &str, group_id: &str, user_id: &str, group_as_member
 						json_to_string(&CacheVariant::<InternalGroupData>::None)?,
 						LONG_TTL,
 					)
-					.await;
+					.await?;
 
 					return Err(e);
 				},
@@ -181,7 +181,7 @@ async fn load_group(app_id: &str, group_id: &str, user_id: &str, group_as_member
 
 			let data = CacheVariant::Some(data);
 
-			cache::add(key_group, json_to_string(&data)?, LONG_TTL).await;
+			cache::add(key_group, json_to_string(&data)?, LONG_TTL).await?;
 
 			data
 		},
@@ -190,7 +190,7 @@ async fn load_group(app_id: &str, group_id: &str, user_id: &str, group_as_member
 	let entity_group = match entity {
 		CacheVariant::Some(d) => d,
 		CacheVariant::None => {
-			return Err(SentcCoreError::new_msg(
+			return Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupAccess,
 				"No access to this group",
@@ -212,7 +212,7 @@ async fn load_group(app_id: &str, group_id: &str, user_id: &str, group_as_member
 					user_id: entity_group
 						.parent
 						.as_ref()
-						.ok_or_else(|| SentcCoreError::new_msg(400, ApiErrorCodes::GroupAccess, "Parent access not available"))?
+						.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::GroupAccess, "Parent access not available"))?
 						.clone(),
 					real_user_id: user_id.to_string(),
 					joined_time: user_data.joined_time,
@@ -277,7 +277,7 @@ async fn get_group_user(
 
 	let key_user = get_group_user_cache_key(app_id, group_id, check_user_id);
 
-	let (entity, search_again) = match cache::get(key_user.as_str()).await {
+	let (entity, search_again) = match cache::get(key_user.as_str()).await? {
 		Some(j) => (bytes_to_json(j.as_bytes())?, true),
 		None => {
 			let data = match group_model::get_internal_group_user_data(group_id, check_user_id).await? {
@@ -295,7 +295,7 @@ async fn get_group_user(
 					InternalUserGroupData {
 						user_id: parent_group_id
 							.as_ref()
-							.ok_or_else(|| SentcCoreError::new_msg(400, ApiErrorCodes::GroupAccess, "Parent access not available"))?
+							.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::GroupAccess, "Parent access not available"))?
 							.clone(), //the user id is the direct parent of the group to access
 						real_user_id: check_user_id.to_string(),
 						joined_time: parent_ref.joined_time,
@@ -314,7 +314,7 @@ async fn get_group_user(
 
 			//cache the data everytime even if the user is not a direct member of the group,
 			// if not direct member then work with reference to the parent group in get group fn
-			cache::add(key_user, json_to_string(&data)?, LONG_TTL).await;
+			cache::add(key_user, json_to_string(&data)?, LONG_TTL).await?;
 
 			//when user is direct member or we checked the parent group ref (with the real data)
 			//we don't need to look up again if this data is still valid.
@@ -325,7 +325,7 @@ async fn get_group_user(
 	let entity = match entity {
 		CacheVariant::Some(d) => d,
 		CacheVariant::None => {
-			return Err(SentcCoreError::new_msg(
+			return Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupAccess,
 				"No access to this group",
@@ -340,7 +340,7 @@ async fn get_user_from_parent(group_id: &str, user_id: &str) -> AppRes<InternalU
 {
 	let key = get_group_user_parent_ref_key(group_id, user_id);
 
-	let entity = match cache::get(key.as_str()).await {
+	let entity = match cache::get(key.as_str()).await? {
 		Some(v) => bytes_to_json(v.as_bytes())?,
 		None => {
 			//get the ref from the db
@@ -354,9 +354,9 @@ async fn get_user_from_parent(group_id: &str, user_id: &str) -> AppRes<InternalU
 						json_to_string(&CacheVariant::<InternalUserGroupDataFromParent>::None)?,
 						SHORT_TTL,
 					)
-					.await;
+					.await?;
 
-					return Err(SentcCoreError::new_msg(
+					return Err(ServerCoreError::new_msg(
 						400,
 						ApiErrorCodes::GroupAccess,
 						"No access to this group",
@@ -367,7 +367,7 @@ async fn get_user_from_parent(group_id: &str, user_id: &str) -> AppRes<InternalU
 			let data = CacheVariant::Some(user_from_parent);
 
 			//when there is a ref -> cache it long
-			cache::add(key, json_to_string(&data)?, LONG_TTL).await;
+			cache::add(key, json_to_string(&data)?, LONG_TTL).await?;
 
 			data
 		},
@@ -376,7 +376,7 @@ async fn get_user_from_parent(group_id: &str, user_id: &str) -> AppRes<InternalU
 	let entity = match entity {
 		CacheVariant::Some(d) => d,
 		CacheVariant::None => {
-			return Err(SentcCoreError::new_msg(
+			return Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupAccess,
 				"No access to this group",
