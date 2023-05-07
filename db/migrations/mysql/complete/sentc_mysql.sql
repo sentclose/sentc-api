@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 29. Apr 2023 um 13:55
+-- Erstellungszeit: 07. Mai 2023 um 21:22
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -137,7 +137,8 @@ CREATE TABLE `sentc_app_options` (
   `group_invite_stop` int(11) NOT NULL,
   `user_key_update` int(11) NOT NULL,
   `content_search` int(11) NOT NULL,
-  `file_delete` int(11) NOT NULL
+  `file_delete` int(11) NOT NULL,
+  `content` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='option: 0 = not allowed,  1 = public token, 2 = secret token';
 
 -- --------------------------------------------------------

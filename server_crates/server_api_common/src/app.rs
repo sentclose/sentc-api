@@ -68,6 +68,8 @@ pub struct AppOptions
 	pub user_key_update: i32,
 
 	pub content_search: i32,
+
+	pub content: i32,
 }
 
 impl Default for AppOptions
@@ -115,6 +117,7 @@ impl Default for AppOptions
 			group_invite_stop: 1,
 			user_key_update: 1,
 			content_search: 1,
+			content: 1,
 		}
 	}
 }
@@ -164,6 +167,7 @@ impl AppOptions
 			group_invite_stop: 0,
 			user_key_update: 0,
 			content_search: 0,
+			content: 0,
 		}
 	}
 
@@ -210,6 +214,7 @@ impl AppOptions
 			group_invite_stop: 1,
 			user_key_update: 1,
 			content_search: 1,
+			content: 1,
 		}
 	}
 }
@@ -278,6 +283,7 @@ impl rustgram_server_util::db::mysql_async_export::prelude::FromRow for AppOptio
 			content_search: rustgram_server_util::take_or_err!(row, 38, i32),
 
 			file_delete: rustgram_server_util::take_or_err!(row, 39, i32),
+			content: rustgram_server_util::take_or_err!(row, 40, i32),
 		})
 	}
 }
@@ -344,6 +350,7 @@ impl rustgram_server_util::db::FromSqliteRow for AppOptions
 			content_search: rustgram_server_util::take_or_err!(row, 38),
 
 			file_delete: rustgram_server_util::take_or_err!(row, 39),
+			content: rustgram_server_util::take_or_err!(row, 40),
 		})
 	}
 }

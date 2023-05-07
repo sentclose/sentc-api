@@ -123,8 +123,7 @@ pub(crate) async fn check_access_to_content_by_item(req: Request) -> JRes<Conten
 	let app = get_app_data_from_req(&req)?;
 	let user = get_jwt_data_from_param(&req)?;
 
-	//TODO endpoint check not force server
-	check_endpoint_with_app_options(app, Endpoint::ForceServer)?;
+	check_endpoint_with_app_options(app, Endpoint::Content)?;
 
 	let item = get_name_param_from_req(&req, "item")?;
 
@@ -168,8 +167,7 @@ async fn get_content(req: Request, content_related_type: ContentRelatedType, cat
 	let app = get_app_data_from_req(&req)?;
 	let user = get_jwt_data_from_param(&req)?;
 
-	//TODO endpoint check not force server
-	check_endpoint_with_app_options(app, Endpoint::ForceServer)?;
+	check_endpoint_with_app_options(app, Endpoint::Content)?;
 
 	let params = get_params(&req)?;
 	let last_id = get_name_param_from_params(params, "last_id")?;
