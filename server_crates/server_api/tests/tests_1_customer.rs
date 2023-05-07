@@ -1,6 +1,8 @@
 use std::env;
 
 use reqwest::header::AUTHORIZATION;
+use rustgram_server_util::db::StringEntity;
+use rustgram_server_util::error::ServerErrorCodes;
 use sentc_crypto::util::public::handle_server_response;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
@@ -13,8 +15,6 @@ use sentc_crypto_common::user::{
 use sentc_crypto_common::ServerOutput;
 use server_api::util::api_res::ApiErrorCodes;
 use server_api_common::customer::{CustomerData, CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput, CustomerUpdateInput};
-use server_core::db::StringEntity;
-use server_core::error::SentcErrorCodes;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{auth_header, get_captcha, get_url, login_customer};
@@ -771,7 +771,7 @@ async fn test_16_reset_customer_password()
 	//language=SQL
 	let sql = "SELECT email_token FROM sentc_customer WHERE id = ?";
 
-	let token: Option<StringEntity> = server_core::db::query_first(sql, server_core::set_params!(id))
+	let token: Option<StringEntity> = rustgram_server_util::db::query_first(sql, rustgram_server_util::set_params!(id))
 		.await
 		.unwrap();
 	let token = token.unwrap().0;

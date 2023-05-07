@@ -1,9 +1,9 @@
+use rustgram_server_util::db::{exec, query_first, query_string};
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::res::AppRes;
+use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerInput;
 use sentc_crypto_common::{AppId, SymKeyId, UserId};
-use server_core::db::{exec, query_first, query_string};
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::res::AppRes;
-use server_core::{get_time, set_params};
 use uuid::Uuid;
 
 use crate::key_management::key_entity::SymKeyEntity;
@@ -69,7 +69,7 @@ pub(super) async fn get_sym_key_by_id(app_id: impl Into<AppId>, key_id: impl Int
 	match key {
 		Some(k) => Ok(k),
 		None => {
-			Err(SentcCoreError::new_msg(
+			Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::KeyNotFound,
 				"Key not found",

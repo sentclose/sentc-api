@@ -5,11 +5,11 @@ use std::sync::Arc;
 
 use rustgram::service::{IntoResponse, Service};
 use rustgram::{Request, Response};
+use rustgram_server_util::cache;
+use rustgram_server_util::cache::{CacheVariant, LONG_TTL};
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::input_helper::{bytes_to_json, json_to_string};
 use sentc_crypto_common::AppId;
-use server_core::cache;
-use server_core::cache::{CacheVariant, LONG_TTL};
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::input_helper::{bytes_to_json, json_to_string};
 
 use crate::customer_app::app_entities::AppData;
 use crate::customer_app::app_model;
@@ -85,7 +85,7 @@ where
 			};
 
 			if app_data.app_data.app_id != app_id {
-				return SentcCoreError::new_msg(400, ApiErrorCodes::CustomerWrongAppToken, "Wrong app token used").into_response();
+				return ServerCoreError::new_msg(400, ApiErrorCodes::CustomerWrongAppToken, "Wrong app token used").into_response();
 			}
 
 			next.call(req).await
@@ -105,7 +105,7 @@ pub fn app_token_base_app_transform<S>(inner: S) -> AppTokenBaseAppMiddleware<S>
 
 //__________________________________________________________________________________________________
 
-async fn token_check(req: &mut Request) -> Result<(), SentcCoreError>
+async fn token_check(req: &mut Request) -> Result<(), ServerCoreError>
 {
 	let app_token = get_from_req(req)?;
 	//hash the app token
@@ -114,7 +114,7 @@ async fn token_check(req: &mut Request) -> Result<(), SentcCoreError>
 	//load the app info from cache
 	let key = APP_TOKEN_CACHE.to_string() + hashed_token.as_str();
 
-	let entity = match cache::get(key.as_str()).await {
+	let entity = match cache::get(key.as_str()).await? {
 		Some(j) => bytes_to_json(j.as_bytes())?,
 		None => {
 			//load the info from the db
@@ -122,7 +122,7 @@ async fn token_check(req: &mut Request) -> Result<(), SentcCoreError>
 				Ok(d) => d,
 				Err(e) => {
 					//save the wrong token in the cache
-					cache::add(key, json_to_string(&CacheVariant::<AppData>::None)?, LONG_TTL).await;
+					cache::add(key, json_to_string(&CacheVariant::<AppData>::None)?, LONG_TTL).await?;
 
 					return Err(e);
 				},
@@ -131,7 +131,7 @@ async fn token_check(req: &mut Request) -> Result<(), SentcCoreError>
 			let data = CacheVariant::Some(data);
 
 			//cache the info
-			cache::add(key, json_to_string(&data)?, LONG_TTL).await;
+			cache::add(key, json_to_string(&data)?, LONG_TTL).await?;
 
 			data
 		},
@@ -140,7 +140,7 @@ async fn token_check(req: &mut Request) -> Result<(), SentcCoreError>
 	let entity = match entity {
 		CacheVariant::Some(d) => d,
 		CacheVariant::None => {
-			return Err(SentcCoreError::new_msg(
+			return Err(ServerCoreError::new_msg(
 				401,
 				ApiErrorCodes::AppTokenNotFound,
 				"No valid app token",
@@ -153,13 +153,13 @@ async fn token_check(req: &mut Request) -> Result<(), SentcCoreError>
 	Ok(())
 }
 
-fn get_from_req(req: &Request) -> Result<String, SentcCoreError>
+fn get_from_req(req: &Request) -> Result<String, ServerCoreError>
 {
 	let headers = req.headers();
 	let header = match headers.get("x-sentc-app-token") {
 		Some(v) => v,
 		None => {
-			return Err(SentcCoreError::new_msg(
+			return Err(ServerCoreError::new_msg(
 				401,
 				ApiErrorCodes::AppTokenNotFound,
 				"No valid app token",
@@ -168,7 +168,7 @@ fn get_from_req(req: &Request) -> Result<String, SentcCoreError>
 	};
 
 	let app_token =
-		std::str::from_utf8(header.as_bytes()).map_err(|_e| SentcCoreError::new_msg(401, ApiErrorCodes::AppTokenWrongFormat, "Wrong format"))?;
+		std::str::from_utf8(header.as_bytes()).map_err(|_e| ServerCoreError::new_msg(401, ApiErrorCodes::AppTokenWrongFormat, "Wrong format"))?;
 
 	Ok(app_token.to_string())
 }

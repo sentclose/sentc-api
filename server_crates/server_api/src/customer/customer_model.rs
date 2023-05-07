@@ -1,9 +1,9 @@
+use rustgram_server_util::db::{exec, get_in, query_first, query_string, I32Entity};
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::res::AppRes;
+use rustgram_server_util::{get_time, set_params, set_params_vec_outer};
 use sentc_crypto_common::{CustomerId, GroupId, UserId};
 use server_api_common::customer::{CustomerData, CustomerGroupCreateInput, CustomerGroupList, CustomerUpdateInput};
-use server_core::db::{exec, get_in, query_first, query_string, I32Entity};
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::res::AppRes;
-use server_core::{get_time, set_params, set_params_vec_outer};
 
 #[cfg(feature = "send_mail")]
 use crate::customer::customer_entities::RegisterEmailStatus;
@@ -22,7 +22,7 @@ pub(super) async fn check_customer_valid(customer_id: impl Into<CustomerId>) -> 
 	let valid = match valid {
 		Some(v) => v,
 		None => {
-			return Err(SentcCoreError::new_msg(
+			return Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::CustomerNotFound,
 				"No account found for this id",
@@ -117,7 +117,7 @@ pub(super) async fn get_email_token(customer_id: impl Into<CustomerId>) -> AppRe
 	match token {
 		Some(t) => Ok(t),
 		None => {
-			Err(SentcCoreError::new_msg(
+			Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::CustomerNotFound,
 				"No token found",
@@ -143,7 +143,7 @@ WHERE
 	match token {
 		Some(t) => Ok(t),
 		None => {
-			Err(SentcCoreError::new_msg(
+			Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::CustomerNotFound,
 				"No token found",
@@ -162,7 +162,7 @@ pub(super) async fn get_customer_data(customer_id: impl Into<CustomerId>) -> App
 	match customer {
 		Some(c) => Ok(c),
 		None => {
-			Err(SentcCoreError::new_msg(
+			Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::CustomerNotFound,
 				"Customer not found",
@@ -181,7 +181,7 @@ pub(super) async fn get_customer_email_data_by_email(email: impl Into<String>) -
 	match customer {
 		Some(c) => Ok(c),
 		None => {
-			Err(SentcCoreError::new_msg(
+			Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::CustomerNotFound,
 				"Customer not found",
@@ -298,7 +298,7 @@ WHERE
 
 	query_first(sql, set_params!(user_id.into(), group_id.into()))
 		.await?
-		.ok_or_else(|| SentcCoreError::new_msg(400, ApiErrorCodes::GroupAccess, "Group not found"))
+		.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::GroupAccess, "Group not found"))
 }
 
 pub(super) async fn get_customer_groups(
@@ -370,7 +370,7 @@ pub(super) async fn update_group(group_id: impl Into<GroupId>, input: CustomerGr
 	Ok(())
 }
 
-pub(super) async fn get_customers(customer: Vec<String>)->AppRes<Vec<CustomerList>>
+pub(super) async fn get_customers(customer: Vec<String>) -> AppRes<Vec<CustomerList>>
 {
 	//only used if a list was fetched before
 
@@ -381,6 +381,6 @@ pub(super) async fn get_customers(customer: Vec<String>)->AppRes<Vec<CustomerLis
 		"SELECT id,first_name,name,email FROM sentc_customer WHERE id IN ({})",
 		ins
 	);
-	
-	query_string(sql,set_params_vec_outer!(customer)).await
+
+	query_string(sql, set_params_vec_outer!(customer)).await
 }

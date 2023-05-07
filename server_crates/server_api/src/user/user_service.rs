@@ -2,6 +2,10 @@ use std::future::Future;
 use std::ptr;
 
 use rand::RngCore;
+use rustgram_server_util::cache;
+use rustgram_server_util::db::StringEntity;
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::res::AppRes;
 use sentc_crypto::util::public::HashedAuthenticationKey;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
@@ -21,10 +25,6 @@ use sentc_crypto_common::user::{
 	UserUpdateServerInput,
 };
 use sentc_crypto_common::{AppId, DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, SymKeyId, UserId};
-use server_core::cache;
-use server_core::db::StringEntity;
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::res::AppRes;
 
 use crate::group::group_entities::{GroupUserKeys, InternalGroupData, InternalGroupDataComplete, InternalUserGroupData};
 use crate::group::group_user_service::NewUserType;
@@ -97,7 +97,7 @@ pub async fn register_light(app_id: impl Into<AppId>, input: UserDeviceRegisterI
 	//delete the user in app check cache from the jwt mw
 	//it can happened that a user id was used before which doesn't exists yet
 	let cache_key = get_user_in_app_key(&app_id, &user_id);
-	cache::delete(&cache_key).await;
+	cache::delete(&cache_key).await?;
 
 	Ok((user_id, device_id))
 }
@@ -135,7 +135,7 @@ pub async fn register(app_id: impl Into<AppId>, register_input: RegisterData) ->
 	//delete the user in app check cache from the jwt mw
 	//it can happened that a user id was used before which doesn't exists yet
 	let cache_key = get_user_in_app_key(&app_id, &user_id);
-	cache::delete(&cache_key).await;
+	cache::delete(&cache_key).await?;
 
 	//now update the user group id
 	user_model::register_update_user_group_id(app_id, &user_id, group_id).await?;
@@ -167,7 +167,7 @@ pub async fn prepare_register_device(app_id: impl Into<AppId>, input: UserDevice
 
 	if check {
 		//check true == user exists
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::UserExists,
 			"Identifier already exists",
@@ -261,7 +261,7 @@ pub async fn done_login_light(app_data: &AppData, done_login: DoneLoginServerInp
 
 	let id = user_model::get_done_login_light_data(app_data.app_data.app_id.as_str(), identifier)
 		.await?
-		.ok_or_else(|| SentcCoreError::new_msg(401, ApiErrorCodes::Login, "Wrong username or password"))?;
+		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::Login, "Wrong username or password"))?;
 
 	let jwt = create_jwt(
 		&id.user_id,
@@ -298,7 +298,7 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 	//if correct -> fetch and return the user data
 	let device_keys = user_model::get_done_login_data(&app_data.app_data.app_id, identifier)
 		.await?
-		.ok_or_else(|| SentcCoreError::new_msg(401, ApiErrorCodes::Login, "Wrong username or password"))?;
+		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::Login, "Wrong username or password"))?;
 
 	// and create the jwt
 	let jwt = create_jwt(
@@ -431,7 +431,7 @@ pub async fn refresh_jwt(app_data: &AppData, device_id: impl Into<DeviceId>, inp
 	let device_identifier = match check {
 		Some(u) => u,
 		None => {
-			return Err(SentcCoreError::new_msg(
+			return Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::RefreshToken,
 				"Refresh token not found",
@@ -462,7 +462,7 @@ pub async fn delete(user: &UserJwtEntity, app_id: impl Into<AppId>) -> AppRes<()
 
 	//the user needs a jwt which was created from login and no refreshed jwt
 	if !user.fresh {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			401,
 			ApiErrorCodes::WrongJwtAction,
 			"The jwt is not valid for this action",
@@ -476,7 +476,7 @@ pub async fn delete(user: &UserJwtEntity, app_id: impl Into<AppId>) -> AppRes<()
 
 	//delete the user in app check cache from the jwt mw
 	let cache_key = get_user_in_app_key(&app_id, user_id);
-	cache::delete(&cache_key).await;
+	cache::delete(&cache_key).await?;
 
 	//delete the user group
 	group_service::delete_user_group(app_id, group_id).await?;
@@ -495,7 +495,7 @@ pub async fn delete_device(user: &UserJwtEntity, app_id: impl Into<AppId>, devic
 
 	//this can be any device don't need to be the device to delete
 	if !user.fresh {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			401,
 			ApiErrorCodes::WrongJwtAction,
 			"The jwt is not valid for this action",
@@ -550,7 +550,7 @@ pub async fn update(user: &UserJwtEntity, app_id: &str, update_input: UserUpdate
 	let exists = user_model::check_user_exists(app_id, &identifier).await?;
 
 	if exists {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::UserExists,
 			"User identifier already exists",
@@ -566,7 +566,7 @@ pub async fn change_password(user: &UserJwtEntity, app_id: &str, input: ChangePa
 {
 	//the user needs a jwt which was created from login and no refreshed jwt
 	if !user.fresh {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			401,
 			ApiErrorCodes::WrongJwtAction,
 			"The jwt is not valid for this action",
@@ -579,7 +579,7 @@ pub async fn change_password(user: &UserJwtEntity, app_id: &str, input: ChangePa
 	let device_identifier = match user_model::get_device_identifier(app_id, &user.id, &user.device_id).await? {
 		Some(i) => i.0,
 		None => {
-			return Err(SentcCoreError::new_msg(
+			return Err(ServerCoreError::new_msg(
 				401,
 				ApiErrorCodes::WrongJwtAction,
 				"No device found for this jwt",
@@ -631,7 +631,7 @@ async fn create_salt(app_id: impl Into<AppId>, user_identifier: &str) -> AppRes<
 	};
 
 	let salt_string = sentc_crypto::util::server::generate_salt_from_base64_to_string(client_random_value.as_str(), alg.as_str(), add_str)
-		.map_err(|_e| SentcCoreError::new_msg(401, ApiErrorCodes::SaltError, "Can't create salt"))?;
+		.map_err(|_e| ServerCoreError::new_msg(401, ApiErrorCodes::SaltError, "Can't create salt"))?;
 
 	let out = PrepareLoginSaltServerOutput {
 		salt_string,
@@ -648,7 +648,7 @@ fn create_refresh_token() -> AppRes<String>
 	let mut token = [0u8; 50];
 
 	rng.try_fill_bytes(&mut token)
-		.map_err(|_| SentcCoreError::new_msg(400, ApiErrorCodes::AppTokenWrongFormat, "Can't create refresh token"))?;
+		.map_err(|_| ServerCoreError::new_msg(400, ApiErrorCodes::AppTokenWrongFormat, "Can't create refresh token"))?;
 
 	let token_string = base64::encode_config(token, base64::URL_SAFE_NO_PAD);
 
@@ -663,7 +663,7 @@ async fn auth_user(app_id: &str, hashed_user_identifier: impl Into<String>, auth
 	let (hashed_user_auth_key, alg) = match login_data {
 		Some(d) => (d.hashed_authentication_key, d.derived_alg),
 		None => {
-			return Err(SentcCoreError::new_msg(
+			return Err(ServerCoreError::new_msg(
 				401,
 				ApiErrorCodes::UserNotFound,
 				"No user found with this identifier",
@@ -674,7 +674,7 @@ async fn auth_user(app_id: &str, hashed_user_identifier: impl Into<String>, auth
 	//hash the auth key and use the first 16 bytes
 	let (server_hashed_auth_key, hashed_client_key) =
 		sentc_crypto::util::server::get_auth_keys_from_base64(auth_key.as_str(), hashed_user_auth_key.as_str(), alg.as_str()).map_err(|_e| {
-			SentcCoreError::new_msg(
+			ServerCoreError::new_msg(
 				401,
 				ApiErrorCodes::AuthKeyFormat,
 				"The authentication key has a wrong format",
@@ -686,7 +686,7 @@ async fn auth_user(app_id: &str, hashed_user_identifier: impl Into<String>, auth
 
 	//if not correct -> err msg
 	if !check {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			401,
 			ApiErrorCodes::Login,
 			"Wrong username or password",

@@ -1,9 +1,9 @@
 use std::future::Future;
 
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::content::CreateData;
 use sentc_crypto_common::{AppId, ContentId, GroupId, UserId};
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::res::AppRes;
 
 use crate::content_management::content_model_edit;
 use crate::util::api_res::ApiErrorCodes;
@@ -24,7 +24,7 @@ pub async fn create_content(
 ) -> AppRes<ContentId>
 {
 	if data.item.is_empty() {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentItemNotSet,
 			"Item is not set",
@@ -32,7 +32,7 @@ pub async fn create_content(
 	}
 
 	if data.item.len() > 50 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentItemTooBig,
 			"Item is too big. Only 50 characters are allowed",
@@ -52,7 +52,7 @@ pub async fn delete_content_by_item(app_id: impl Into<AppId>, item: impl Into<St
 	let item = item.into();
 
 	if item.is_empty() {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentItemNotSet,
 			"Item is not set",
@@ -60,7 +60,7 @@ pub async fn delete_content_by_item(app_id: impl Into<AppId>, item: impl Into<St
 	}
 
 	if item.len() > 50 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::ContentItemTooBig,
 			"Item is too big. Only 50 characters are allowed",

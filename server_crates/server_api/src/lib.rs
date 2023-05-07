@@ -57,7 +57,7 @@ pub use middleware::jwt::{
 	jwt_optional_transform as sentc_jwt_optional_mw,
 	jwt_transform as sentc_jwt_mw,
 };
-use server_core::error::SentcErrorConstructor;
+use rustgram_server_util::error::ServerErrorConstructor;
 pub use user::{
 	jwt as sentc_user_jwt_service,
 	user_controller as sentc_user_controller,
@@ -65,9 +65,9 @@ pub use user::{
 	user_service as sentc_user_service,
 };
 
-pub async fn not_found_handler(_req: Request) -> server_core::res::JRes<String>
+pub async fn not_found_handler(_req: Request) -> rustgram_server_util::res::JRes<String>
 {
-	Err(server_core::error::SentcCoreError::new_msg(
+	Err(rustgram_server_util::error::ServerCoreError::new_msg(
 		404,
 		util::api_res::ApiErrorCodes::PageNotFound,
 		"Not found",
@@ -103,13 +103,13 @@ pub async fn start()
 	//load the env
 	dotenv::dotenv().ok();
 
-	server_core::db::init_db().await;
-	server_core::cache::init_cache().await;
-	server_core::file::init_storage().await;
+	rustgram_server_util::db::init_db().await;
+	rustgram_server_util::cache::init_cache().await;
+	rustgram_server_util::file::init_storage().await;
 
-	server_core::email::init_email_checker().await;
+	util::email::init_email_checker().await;
 	#[cfg(feature = "send_mail")]
-	server_core::email::send_mail::init_email_register().await;
+	util::email::send_mail::init_email_register().await;
 }
 
 /**

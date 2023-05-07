@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
+use rustgram_server_util::get_time;
+use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::{AppId, PartId};
-use server_core::get_time;
-use server_core::res::AppRes;
 
 use crate::file::file_entities::{FileExternalStorageUrl, FilePartListItemDelete};
 use crate::file::file_model;
@@ -60,7 +60,7 @@ async fn delete_parts(parts: Vec<FilePartListItemDelete>) -> AppRes<()>
 	}
 
 	if !intern_storage.is_empty() {
-		server_core::file::delete_parts(&intern_storage).await?;
+		rustgram_server_util::file::delete_parts(&intern_storage).await?;
 	}
 
 	if !extern_storage_map.is_empty() {

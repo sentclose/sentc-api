@@ -1,10 +1,10 @@
 use std::future::Future;
 
+use rustgram_server_util::cache;
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::group::{GroupKeysForNewMember, GroupKeysForNewMemberServerInput, GroupNewMemberLightInput};
 use sentc_crypto_common::{AppId, GroupId, UserId};
-use server_core::cache;
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::res::AppRes;
 
 use crate::group::group_entities::{GroupInviteReq, InternalGroupDataComplete};
 use crate::group::group_model;
@@ -58,7 +58,7 @@ pub async fn invite_request_light(
 ) -> AppRes<()>
 {
 	if group_data.group_data.invite == 0 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupInviteStop,
 			"No invites allowed for this group",
@@ -68,7 +68,7 @@ pub async fn invite_request_light(
 	let rank = input.rank.unwrap_or(4);
 
 	if rank < 1 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupUserRank,
 			"User group rank got the wrong format",
@@ -76,7 +76,7 @@ pub async fn invite_request_light(
 	}
 
 	if rank < group_data.user_data.rank {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupUserRank,
 			"The set rank cannot be higher than your rank",
@@ -108,7 +108,7 @@ pub async fn invite_request(
 ) -> AppRes<Option<String>>
 {
 	if input.keys.is_empty() {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupNoKeys,
 			"No group keys for the user",
@@ -116,7 +116,7 @@ pub async fn invite_request(
 	}
 
 	if input.keys.len() > 100 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupTooManyKeys,
 			"Too many group keys for the user. Split the keys and use pagination",
@@ -124,7 +124,7 @@ pub async fn invite_request(
 	}
 
 	if group_data.group_data.invite == 0 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupInviteStop,
 			"No invites allowed for this group",
@@ -134,7 +134,7 @@ pub async fn invite_request(
 	let rank = input.rank.unwrap_or(4);
 
 	if rank < 1 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupUserRank,
 			"User group rank got the wrong format",
@@ -142,7 +142,7 @@ pub async fn invite_request(
 	}
 
 	if rank < group_data.user_data.rank {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupUserRank,
 			"The set rank cannot be higher than your rank",
@@ -170,7 +170,7 @@ pub async fn accept_invite(app_id: &str, group_id: impl Into<GroupId>, invited_u
 
 	//delete the cache here so the user can join the group
 	let key_user = get_group_user_cache_key(app_id, &group_id, &invited_user);
-	cache::delete(&key_user).await;
+	cache::delete(&key_user).await?;
 
 	group_user_model::accept_invite(group_id, invited_user).await?;
 
@@ -222,7 +222,7 @@ pub async fn insert_user_keys_via_session(
 ) -> AppRes<()>
 {
 	if input.is_empty() {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupNoKeys,
 			"No group keys for the user",
@@ -230,7 +230,7 @@ pub async fn insert_user_keys_via_session(
 	}
 
 	if input.len() > 100 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupTooManyKeys,
 			"Too many group keys for the user. Split the keys and use pagination",
@@ -260,7 +260,7 @@ pub async fn re_invite_user(
 	let rank = group_user_model::check_user_in_group_direct(&group_data.group_data.id, &invited_user)
 		.await?
 		.ok_or_else(|| {
-			SentcCoreError::new_msg(
+			ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupReInviteMemberNotFound,
 				"User is not in the group. Only group member can be re invited.",
@@ -291,7 +291,7 @@ pub async fn leave_group(group_data: &InternalGroupDataComplete, real_user_id: O
 				group_model::check_group_rank(data.rank, 1)?;
 			},
 			None => {
-				return Err(SentcCoreError::new_msg(
+				return Err(ServerCoreError::new_msg(
 					400,
 					ApiErrorCodes::GroupUserRank,
 					"Wrong group rank for this action",
@@ -313,7 +313,7 @@ pub async fn leave_group(group_data: &InternalGroupDataComplete, real_user_id: O
 		group_data.user_data.user_id.as_str(),
 	);
 
-	cache::delete(key_group.as_str()).await;
+	cache::delete(key_group.as_str()).await?;
 
 	Ok(())
 }
@@ -324,7 +324,7 @@ pub async fn kick_user_from_group(group_data: &InternalGroupDataComplete, user_i
 
 	//delete the user cache
 	let key_group = get_group_user_cache_key(&group_data.group_data.app_id, &group_data.group_data.id, &user_id);
-	cache::delete(&key_group).await;
+	cache::delete(&key_group).await?;
 
 	group_user_model::kick_user_from_group(&group_data.group_data.id, user_id, group_data.user_data.rank).await?;
 
@@ -353,7 +353,7 @@ pub async fn change_rank(group_data: &InternalGroupDataComplete, user_id: impl I
 	//delete user cache of the changed user
 	let key_group = get_group_user_cache_key(&group_data.group_data.app_id, &group_data.group_data.id, &user_id);
 
-	cache::delete(&key_group).await;
+	cache::delete(&key_group).await?;
 
 	Ok(())
 }

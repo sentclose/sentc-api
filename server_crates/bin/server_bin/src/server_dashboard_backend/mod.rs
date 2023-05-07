@@ -6,11 +6,11 @@ use hyper::header::ACCEPT_ENCODING;
 use hyper::http::HeaderValue;
 use rustgram::service::IntoResponse;
 use rustgram::{r, Request, Response, Router};
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::file;
+use rustgram_server_util::file::FileHandler;
+use rustgram_server_util::url_helper::get_name_param_from_req;
 use server_api::util::api_res::ApiErrorCodes;
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::file;
-use server_core::file::FileHandler;
-use server_core::url_helper::get_name_param_from_req;
 use tokio::sync::OnceCell;
 
 static LOCAL_FILE_HANDLER: OnceCell<Box<dyn FileHandler>> = OnceCell::const_new();
@@ -53,7 +53,7 @@ async fn read_file(req: Request) -> Response
 		Some(e) => {
 			match OsStr::to_str(e) {
 				Some(s) => s,
-				None => return SentcCoreError::new_msg(404, ApiErrorCodes::PageNotFound, "Page not found").into_response(),
+				None => return ServerCoreError::new_msg(404, ApiErrorCodes::PageNotFound, "Page not found").into_response(),
 			}
 		},
 		None => {
@@ -73,7 +73,7 @@ async fn read_file(req: Request) -> Response
 		"jpeg" => "image/jpeg",
 		"svg" => "image/svg+xml",
 		"woff2" => "font/woff2",
-		_ => return SentcCoreError::new_msg(404, ApiErrorCodes::PageNotFound, "Page not found").into_response(),
+		_ => return ServerCoreError::new_msg(404, ApiErrorCodes::PageNotFound, "Page not found").into_response(),
 	};
 
 	let headers = req.headers().get(ACCEPT_ENCODING);
@@ -119,7 +119,7 @@ async fn read_file(req: Request) -> Response
 			//try index
 			match handler.get_part("index.html", Some("html")).await {
 				Ok(res) => res,
-				Err(e) => Into::<SentcCoreError>::into(e).into_response(),
+				Err(e) => Into::<ServerCoreError>::into(e).into_response(),
 			}
 		},
 	}

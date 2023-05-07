@@ -1,9 +1,9 @@
 use std::future::Future;
 
+use rustgram_server_util::cache;
+use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::group::{CreateData, GroupLightServerData, GroupUserAccessBy};
 use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
-use server_core::cache;
-use server_core::res::AppRes;
 
 use crate::file::file_service;
 use crate::group::group_entities::{GroupChildrenList, GroupServerData, GroupUserKeys, InternalGroupDataComplete};
@@ -64,7 +64,7 @@ pub async fn delete_group(app_id: &str, group_id: &str, user_rank: i32) -> AppRe
 	file_service::delete_file_for_group(app_id, group_id, children).await?;
 
 	let key_group = get_group_cache_key(app_id, group_id);
-	cache::delete(key_group.as_str()).await;
+	cache::delete(key_group.as_str()).await?;
 
 	Ok(())
 }
@@ -79,7 +79,7 @@ pub async fn stop_invite(app_id: &str, group_id: &str, user_rank: i32) -> AppRes
 	group_model::stop_invite(app_id, group_id, user_rank).await?;
 
 	let key_group = get_group_cache_key(app_id, group_id);
-	cache::delete(key_group.as_str()).await;
+	cache::delete(key_group.as_str()).await?;
 
 	Ok(())
 }

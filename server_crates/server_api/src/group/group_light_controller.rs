@@ -1,13 +1,13 @@
 use std::future::Future;
 
 use rustgram::Request;
+use rustgram_server_util::cache;
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::input_helper::{bytes_to_json, get_raw_body};
+use rustgram_server_util::res::{echo, echo_success, JRes, ServerSuccessOutput};
+use rustgram_server_util::url_helper::get_name_param_from_req;
 use sentc_crypto_common::group::{GroupCreateOutput, GroupNewMemberLightInput};
 use sentc_crypto_common::GroupId;
-use server_core::cache;
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::input_helper::{bytes_to_json, get_raw_body};
-use server_core::res::{echo, echo_success, JRes, ServerSuccessOutput};
-use server_core::url_helper::get_name_param_from_req;
 
 use crate::group::group_user::group_user_model;
 use crate::group::{check_invited_group, get_group_user_data_from_req, group_service, group_user_service, GROUP_TYPE_NORMAL};
@@ -53,7 +53,7 @@ pub async fn create_connected_group_from_group_light(req: Request) -> JRes<Group
 	let user_rank = Some(group_data.user_data.rank);
 
 	if group_data.group_data.is_connected_group {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupConnectedFromConnected,
 			"Can't create a connected group from a connected group",
@@ -182,7 +182,7 @@ pub async fn accept_join_req_light(mut req: Request) -> JRes<ServerSuccessOutput
 	let rank = input.rank.unwrap_or(4);
 
 	if rank < 1 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupUserRank,
 			"User group rank got the wrong format",
@@ -190,7 +190,7 @@ pub async fn accept_join_req_light(mut req: Request) -> JRes<ServerSuccessOutput
 	}
 
 	if rank < group_data.user_data.rank {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupUserRank,
 			"The set rank cannot be higher than your rank",
@@ -203,7 +203,7 @@ pub async fn accept_join_req_light(mut req: Request) -> JRes<ServerSuccessOutput
 	// because after this fn the user is already registered
 	let key_user = get_group_user_cache_key(&group_data.group_data.app_id, &group_data.group_data.id, join_user);
 
-	cache::delete(&key_user).await;
+	cache::delete(&key_user).await?;
 
 	echo_success()
 }

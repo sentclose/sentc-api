@@ -2,8 +2,8 @@ use sentc_crypto_common::{CategoryId, ContentId, GroupId, UserId};
 use serde::Serialize;
 
 #[derive(Serialize)]
-#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
+#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
 pub struct ListContentItem
 {
 	pub id: ContentId,
@@ -36,8 +36,8 @@ impl Into<sentc_crypto_common::content::ListContentItem> for ListContentItem
 //__________________________________________________________________________________________________
 
 #[derive(Serialize)]
-#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
+#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
 pub struct ContentItemAccess
 {
 	pub access: bool,

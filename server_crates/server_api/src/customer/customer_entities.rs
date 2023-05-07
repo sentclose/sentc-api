@@ -16,8 +16,8 @@ pub(crate) enum RegisterEmailStatus
 
 //__________________________________________________________________________________________________
 
-#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
+#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
 pub(crate) struct CustomerDataEntity
 {
 	pub email: String,
@@ -53,8 +53,8 @@ impl Into<server_api_common::customer::CustomerDataOutput> for CustomerDataEntit
 
 //__________________________________________________________________________________________________
 
-#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
+#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
 pub(crate) struct CustomerDataByEmailEntity
 {
 	pub id: CustomerId,
@@ -65,8 +65,8 @@ pub(crate) struct CustomerDataByEmailEntity
 
 //__________________________________________________________________________________________________
 
-#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
+#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
 pub(crate) struct CustomerEmailToken
 {
 	pub email_token: String,
@@ -75,8 +75,8 @@ pub(crate) struct CustomerEmailToken
 
 //__________________________________________________________________________________________________
 
-#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
+#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
 pub(crate) struct CustomerEmailByToken
 {
 	pub email: String,
@@ -87,8 +87,8 @@ pub(crate) struct CustomerEmailByToken
 //__________________________________________________________________________________________________
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "mysql", derive(server_core::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(server_core::Sqlite))]
+#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
 pub struct CustomerList
 {
 	pub id: UserId,

@@ -1,6 +1,11 @@
 use std::future::Future;
 
 use rustgram::Request;
+use rustgram_server_util::cache;
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::input_helper::{bytes_to_json, get_raw_body};
+use rustgram_server_util::res::{echo, echo_success, AppRes, JRes, ServerSuccessOutput};
+use rustgram_server_util::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_time_from_url_param};
 use sentc_crypto_common::group::{
 	GroupAcceptJoinReqServerOutput,
 	GroupChangeRankServerInput,
@@ -8,11 +13,6 @@ use sentc_crypto_common::group::{
 	GroupKeysForNewMember,
 	GroupKeysForNewMemberServerInput,
 };
-use server_core::cache;
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::input_helper::{bytes_to_json, get_raw_body};
-use server_core::res::{echo, echo_success, AppRes, JRes, ServerSuccessOutput};
-use server_core::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_time_from_url_param};
 
 use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use crate::group::group_entities::{GroupInviteReq, GroupJoinReq, GroupUserListItem};
@@ -112,7 +112,7 @@ pub(crate) async fn check_invited_group<'a>(
 			//only connected groups can have other groups as member
 			//check in the model if the group to invite a non connected group
 			if !group_data.group_data.is_connected_group {
-				return Err(SentcCoreError::new_msg(
+				return Err(ServerCoreError::new_msg(
 					400,
 					ApiErrorCodes::GroupJoinAsConnectedGroup,
 					"Can't invite another group when this group is not a connected group",
@@ -126,7 +126,7 @@ pub(crate) async fn check_invited_group<'a>(
 			let cg = group_user_service::check_is_connected_group(to_invite).await?;
 
 			if cg == 1 {
-				return Err(SentcCoreError::new_msg(
+				return Err(ServerCoreError::new_msg(
 					400,
 					ApiErrorCodes::GroupJoinAsConnectedGroup,
 					"Can't invite group when the group is a connected group",
@@ -368,7 +368,7 @@ async fn join_req_pri(req: Request, user_type: NewUserType) -> JRes<ServerSucces
 			//only normal groups can be a member in connected groups but not connected groups in another group
 			//check in the model if the group to join is a connected group
 			if group_data.group_data.is_connected_group {
-				return Err(SentcCoreError::new_msg(
+				return Err(ServerCoreError::new_msg(
 					400,
 					ApiErrorCodes::GroupJoinAsConnectedGroup,
 					"Can't join another group when this group is a connected group",
@@ -468,7 +468,7 @@ pub async fn accept_join_req(mut req: Request) -> JRes<GroupAcceptJoinReqServerO
 	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
 
 	if input.keys.is_empty() {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupNoKeys,
 			"No group keys for the user",
@@ -476,7 +476,7 @@ pub async fn accept_join_req(mut req: Request) -> JRes<GroupAcceptJoinReqServerO
 	}
 
 	if input.keys.len() > 100 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupTooManyKeys,
 			"Too many group keys for the user. Split the keys and use pagination",
@@ -486,7 +486,7 @@ pub async fn accept_join_req(mut req: Request) -> JRes<GroupAcceptJoinReqServerO
 	let rank = input.rank.unwrap_or(4);
 
 	if rank < 1 {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupUserRank,
 			"User group rank got the wrong format",
@@ -494,7 +494,7 @@ pub async fn accept_join_req(mut req: Request) -> JRes<GroupAcceptJoinReqServerO
 	}
 
 	if rank < group_data.user_data.rank {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::GroupUserRank,
 			"The set rank cannot be higher than your rank",
@@ -520,7 +520,7 @@ pub async fn accept_join_req(mut req: Request) -> JRes<GroupAcceptJoinReqServerO
 	// because after this fn the user is already registered
 	let key_user = get_group_user_cache_key(&group_data.group_data.app_id, &group_data.group_data.id, join_user);
 
-	cache::delete(&key_user).await;
+	cache::delete(&key_user).await?;
 
 	echo(out)
 }

@@ -5,6 +5,9 @@ use std::time::Duration;
 
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
+#[cfg(feature = "mysql")]
+use rustgram_server_util::db::mysql_async_export::prelude::Queryable;
+use rustgram_server_util::db::StringEntity;
 use sentc_crypto::group::{DoneGettingGroupKeysOutput, GroupKeyData, GroupOutData};
 use sentc_crypto::sdk_common::file::FileData;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupHmacData, GroupInviteServerOutput};
@@ -17,9 +20,6 @@ use sentc_crypto_common::user::{CaptchaCreateOutput, CaptchaInput, RegisterData,
 use sentc_crypto_common::{CustomerId, GroupId, ServerOutput, UserId};
 use server_api_common::app::{AppFileOptionsInput, AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
 use server_api_common::customer::{CustomerData, CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput};
-#[cfg(feature = "mysql")]
-use server_core::db::mysql_async_export::prelude::Queryable;
-use server_core::db::StringEntity;
 
 pub fn get_url(path: String) -> String
 {
@@ -82,14 +82,14 @@ pub async fn get_captcha(token: &str) -> CaptchaInput
 		let mysql_host = env::var("DB_HOST").unwrap();
 		let db = env::var("DB_NAME").unwrap();
 
-		let mut conn = server_core::db::mysql_async_export::Conn::new(
-			server_core::db::mysql_async_export::Opts::try_from(format!("mysql://{}:{}@{}/{}", user, pw, mysql_host, db).as_str()).unwrap(),
+		let mut conn = rustgram_server_util::db::mysql_async_export::Conn::new(
+			rustgram_server_util::db::mysql_async_export::Opts::try_from(format!("mysql://{}:{}@{}/{}", user, pw, mysql_host, db).as_str()).unwrap(),
 		)
 		.await
 		.unwrap();
 
 		let solution: Option<StringEntity> = conn
-			.exec_first(sql, server_core::set_params!(out.captcha_id.clone()))
+			.exec_first(sql, rustgram_server_util::set_params!(out.captcha_id.clone()))
 			.await
 			.unwrap();
 
@@ -98,9 +98,9 @@ pub async fn get_captcha(token: &str) -> CaptchaInput
 
 	#[cfg(feature = "sqlite")]
 	{
-		server_core::db::init_db().await;
+		rustgram_server_util::db::init_db().await;
 
-		let solution: Option<StringEntity> = server_core::db::query_first(sql, server_core::set_params!(out.captcha_id.clone()))
+		let solution: Option<StringEntity> = rustgram_server_util::db::query_first(sql, rustgram_server_util::set_params!(out.captcha_id.clone()))
 			.await
 			.unwrap();
 

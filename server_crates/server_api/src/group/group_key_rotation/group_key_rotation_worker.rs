@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::{AppId, GroupId, SymKeyId};
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::res::AppRes;
 
 use crate::group::group_entities::{KeyRotationWorkerKey, UserEphKeyOut, UserGroupPublicKeyData};
 use crate::group::group_key_rotation::group_key_rotation_model;
@@ -41,7 +41,7 @@ pub async fn start(app_id: AppId, group_id: GroupId, key_id: SymKeyId, user_grou
 		let user_keys = tokio::task::spawn_blocking(move || encrypt(&key_arc, vec![item]))
 			.await
 			.map_err(|e| {
-				SentcCoreError::new_msg_and_debug(
+				ServerCoreError::new_msg_and_debug(
 					400,
 					ApiErrorCodes::GroupKeyRotationThread,
 					"Error in user key rotation",
@@ -115,7 +115,7 @@ async fn loop_user(
 		let user_keys = tokio::task::spawn_blocking(move || encrypt(&key_cap, users))
 			.await
 			.map_err(|e| {
-				SentcCoreError::new_msg_and_debug(
+				ServerCoreError::new_msg_and_debug(
 					400,
 					ApiErrorCodes::GroupKeyRotationThread,
 					"Error in user key rotation",

@@ -1,9 +1,9 @@
+use rustgram_server_util::db::{bulk_insert, exec, exec_transaction, query, query_first, query_string, TransactionData};
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::res::AppRes;
+use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::group::{DoneKeyRotationData, KeyRotationData};
 use sentc_crypto_common::{AppId, DeviceId, GroupId, SymKeyId, UserId};
-use server_core::db::{bulk_insert, exec, exec_transaction, query, query_first, query_string, TransactionData};
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::res::AppRes;
-use server_core::{get_time, set_params};
 use uuid::Uuid;
 
 use crate::group::group_entities::{GroupKeyUpdate, KeyRotationWorkerKey, UserEphKeyOut, UserGroupPublicKeyData};
@@ -198,7 +198,7 @@ pub(super) async fn get_new_key(group_id: impl Into<GroupId>, key_id: impl Into<
 	match key {
 		Some(k) => Ok(k),
 		None => {
-			Err(SentcCoreError::new_msg(
+			Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupKeyRotationKeysNotFound,
 				"Internal error, no group keys found, please try again",

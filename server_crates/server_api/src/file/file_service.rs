@@ -1,9 +1,9 @@
 use std::future::Future;
 
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::file::{BelongsToType, FileRegisterInput, FileRegisterOutput};
 use sentc_crypto_common::{AppId, CustomerId, FileId, GroupId};
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::res::AppRes;
 
 use crate::file::file_entities::FileMetaData;
 use crate::file::file_model;
@@ -37,7 +37,7 @@ pub async fn register_file(input: FileRegisterInput, app_id: &str, user_id: &str
 					let check = user_service::check_user_in_app_by_user_id(app_id, id).await?;
 
 					if !check {
-						return Err(SentcCoreError::new_msg(
+						return Err(ServerCoreError::new_msg(
 							400,
 							ApiErrorCodes::FileNotFound,
 							"User not found",
@@ -83,7 +83,7 @@ pub async fn get_file(app_id: &str, user_id: Option<&str>, file_id: &str, group_
 					match group_id {
 						None => {
 							//user tries to access the file outside of the group routes
-							return Err(SentcCoreError::new_msg(
+							return Err(ServerCoreError::new_msg(
 								400,
 								ApiErrorCodes::FileAccess,
 								"No access to this file",
@@ -92,7 +92,7 @@ pub async fn get_file(app_id: &str, user_id: Option<&str>, file_id: &str, group_
 						Some(g_id) => {
 							//user tires to access the file from another group (where he got access in this group)
 							if g_id != id {
-								return Err(SentcCoreError::new_msg(
+								return Err(ServerCoreError::new_msg(
 									400,
 									ApiErrorCodes::FileAccess,
 									"No access to this file",
@@ -112,7 +112,7 @@ pub async fn get_file(app_id: &str, user_id: Option<&str>, file_id: &str, group_
 					match user_id {
 						//no valid jwt to get the user id
 						None => {
-							return Err(SentcCoreError::new_msg(
+							return Err(ServerCoreError::new_msg(
 								400,
 								ApiErrorCodes::FileAccess,
 								"No access to this file",
@@ -121,7 +121,7 @@ pub async fn get_file(app_id: &str, user_id: Option<&str>, file_id: &str, group_
 						Some(user_id) => {
 							//valid jwt but user got no access
 							if *user_id != *id && user_id != file.owner {
-								return Err(SentcCoreError::new_msg(
+								return Err(ServerCoreError::new_msg(
 									400,
 									ApiErrorCodes::FileAccess,
 									"No access to this file",
@@ -149,7 +149,7 @@ pub async fn update_file_name(app_id: &str, user_id: &str, file_id: &str, file_n
 	//just check for write access, if owner == user id
 
 	if user_id != file.owner {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::FileAccess,
 			"No access to this file",
@@ -175,14 +175,14 @@ pub async fn delete_file(file_id: impl Into<FileId>, app_id: impl Into<AppId>, u
 		match file.belongs_to_type {
 			//just check if the user the file owner
 			BelongsToType::None => {
-				return Err(SentcCoreError::new_msg(
+				return Err(ServerCoreError::new_msg(
 					400,
 					ApiErrorCodes::FileAccess,
 					"No access to this file",
 				));
 			},
 			BelongsToType::User => {
-				return Err(SentcCoreError::new_msg(
+				return Err(ServerCoreError::new_msg(
 					400,
 					ApiErrorCodes::FileAccess,
 					"No access to this file",
@@ -193,7 +193,7 @@ pub async fn delete_file(file_id: impl Into<FileId>, app_id: impl Into<AppId>, u
 				match group {
 					None => {
 						//user tries to access the file outside of the group routes
-						return Err(SentcCoreError::new_msg(
+						return Err(ServerCoreError::new_msg(
 							400,
 							ApiErrorCodes::FileAccess,
 							"No access to this file",
@@ -201,7 +201,7 @@ pub async fn delete_file(file_id: impl Into<FileId>, app_id: impl Into<AppId>, u
 					},
 					Some(g) => {
 						if g.user_data.rank > 3 {
-							return Err(SentcCoreError::new_msg(
+							return Err(ServerCoreError::new_msg(
 								400,
 								ApiErrorCodes::FileAccess,
 								"No access to this file",

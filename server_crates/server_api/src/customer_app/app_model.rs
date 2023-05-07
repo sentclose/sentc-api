@@ -1,10 +1,10 @@
+use rustgram_server_util::db::{exec, exec_transaction, query, query_first, query_string, Params, TransactionData};
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::res::AppRes;
+use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::{AppId, CustomerId, GroupId, JwtKeyId, UserId};
 use server_api_common::app::{AppFileOptionsInput, AppJwtData, AppOptions, AppRegisterInput};
 use server_api_common::customer::CustomerAppList;
-use server_core::db::{exec, exec_transaction, query, query_first, query_string, Params, TransactionData};
-use server_core::error::{SentcCoreError, SentcErrorConstructor};
-use server_core::res::AppRes;
-use server_core::{get_time, set_params};
 use uuid::Uuid;
 
 use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppJwt, AuthWithToken};
@@ -66,7 +66,7 @@ WHERE
 	let options = match options {
 		Some(o) => o,
 		None => {
-			return Err(SentcCoreError::new_msg(
+			return Err(ServerCoreError::new_msg(
 				401,
 				ApiErrorCodes::AppNotFound,
 				"App not found",
@@ -94,7 +94,7 @@ WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 
 	let app_data: AppDataGeneral = query_first(sql, set_params!(hashed_token.clone(), hashed_token.clone()))
 		.await?
-		.ok_or_else(|| SentcCoreError::new_msg(401, ApiErrorCodes::AppTokenNotFound, "App token not found"))?;
+		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::AppTokenNotFound, "App token not found"))?;
 
 	//language=SQL
 	let sql = "SELECT id, alg, time FROM sentc_app_jwt_keys WHERE app_id = ? ORDER BY time DESC LIMIT 10";
@@ -106,7 +106,7 @@ WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 	} else if hashed_token == app_data.hashed_secret_token {
 		AuthWithToken::Secret
 	} else {
-		return Err(SentcCoreError::new_msg(
+		return Err(ServerCoreError::new_msg(
 			401,
 			ApiErrorCodes::AppTokenNotFound,
 			"App token not found",
@@ -120,7 +120,7 @@ WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 	let sql = "SELECT file_storage,storage_url FROM sentc_file_options WHERE app_id = ?";
 	let file_options: AppFileOptions = query_first(sql, set_params!(app_data.app_id.clone()))
 		.await?
-		.ok_or_else(|| SentcCoreError::new_msg(401, ApiErrorCodes::AppNotFound, "App not found"))?;
+		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::AppNotFound, "App not found"))?;
 
 	Ok(AppData {
 		app_data,
@@ -165,7 +165,7 @@ WHERE
 
 	query_first(sql, set_params!(app_id.clone(), user_id.clone(), app_id, user_id))
 		.await?
-		.ok_or_else(|| SentcCoreError::new_msg(401, ApiErrorCodes::AppTokenNotFound, "App token not found"))
+		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::AppTokenNotFound, "App token not found"))
 }
 
 /**
@@ -299,7 +299,7 @@ WHERE
 
 	query_first(sql, set_params!(app_id.into()))
 		.await?
-		.ok_or_else(|| SentcCoreError::new_msg(400, ApiErrorCodes::AppNotFound, "App not found"))
+		.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::AppNotFound, "App not found"))
 }
 
 pub(super) async fn get_app_file_options(app_id: impl Into<AppId>) -> AppRes<AppFileOptionsInput>
@@ -312,7 +312,7 @@ pub(super) async fn get_app_file_options(app_id: impl Into<AppId>) -> AppRes<App
 	match out {
 		Some(o) => Ok(o),
 		None => {
-			Err(SentcCoreError::new_msg(
+			Err(ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::AppNotFound,
 				"App not found",
