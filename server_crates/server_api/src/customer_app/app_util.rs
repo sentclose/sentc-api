@@ -60,6 +60,7 @@ pub enum Endpoint
 	FilePartDownload,
 	FileDelete,
 
+	Content,
 	ContentSearch,
 }
 
@@ -161,6 +162,7 @@ pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endp
 		Endpoint::FileDelete => options.file_delete,
 
 		Endpoint::ContentSearch => options.content_search,
+		Endpoint::Content => options.content,
 
 		Endpoint::ForceServer => 2,
 	};
