@@ -24,7 +24,7 @@ hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
 tokio-util = "0.7.2"
 
-rustgram = "0.1.7"
+rustgram = "0.1.8"
 
 # dotenv vars
 dotenv = "0.15.0"
