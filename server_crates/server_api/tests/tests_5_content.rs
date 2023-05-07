@@ -160,7 +160,7 @@ async fn test_10_create_non_related_content()
 #[tokio::test]
 async fn test_11_get_the_content_by_list_fetch()
 {
-	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let public_token = &APP_TEST_STATE.get().unwrap().read().await.public_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let state = CONTENT_TEST_STATE.get().unwrap().read().await;
 
@@ -171,7 +171,7 @@ async fn test_11_get_the_content_by_list_fetch()
 	let res = client
 		.get(url)
 		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
-		.header("x-sentc-app-token", secret_token)
+		.header("x-sentc-app-token", public_token)
 		.send()
 		.await
 		.unwrap();
