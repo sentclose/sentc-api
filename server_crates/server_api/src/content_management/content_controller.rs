@@ -1,6 +1,7 @@
 use std::future::Future;
 
 use rustgram::Request;
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::input_helper::{bytes_to_json, get_raw_body};
 use rustgram_server_util::res::{echo, echo_success, JRes, ServerSuccessOutput};
 use rustgram_server_util::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_time_from_url_param};
@@ -12,6 +13,7 @@ use crate::content_management::{content_model, content_service};
 use crate::customer_app::app_util::{check_endpoint_with_app_options, get_app_data_from_req, Endpoint};
 use crate::group::get_group_user_data_from_req;
 use crate::user::jwt::get_jwt_data_from_param;
+use crate::util::api_res::ApiErrorCodes;
 
 /**
 ## Category
@@ -132,42 +134,163 @@ pub(crate) async fn check_access_to_content_by_item(req: Request) -> JRes<Conten
 	echo(out)
 }
 
-pub(crate) fn get_content_all(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+//==================================================================================================
+
+const LIMIT_FETCH_SMALL: &str = "20";
+const LIMIT_FETCH_MED: &str = "50";
+const LIMIT_FETCH_LARGE: &str = "70";
+const LIMIT_FETCH_X_LARGE: &str = "100";
+
+pub(crate) fn get_content_all_small(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
 {
-	get_content(req, ContentRelatedType::None, false)
+	get_content(req, ContentRelatedType::None, false, LIMIT_FETCH_SMALL)
 }
 
-pub(crate) fn get_content_for_user(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+pub(crate) fn get_content_all_med(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
 {
-	get_content(req, ContentRelatedType::User, false)
+	get_content(req, ContentRelatedType::None, false, LIMIT_FETCH_MED)
 }
 
-pub(crate) fn get_content_for_group(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+pub(crate) fn get_content_all_large(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
 {
-	get_content(req, ContentRelatedType::Group, false)
+	get_content(req, ContentRelatedType::None, false, LIMIT_FETCH_LARGE)
 }
 
-pub(crate) fn get_content_all_from_cat(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+pub(crate) fn get_content_all_x_large(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
 {
-	get_content(req, ContentRelatedType::None, true)
+	get_content(req, ContentRelatedType::None, false, LIMIT_FETCH_X_LARGE)
 }
 
-pub(crate) fn get_content_for_user_from_cat(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+//__________________________________________________________________________________________________
+
+pub(crate) fn get_content_for_user_small(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
 {
-	get_content(req, ContentRelatedType::User, true)
+	get_content(req, ContentRelatedType::User, false, LIMIT_FETCH_SMALL)
 }
 
-pub(crate) fn get_content_for_group_from_cat(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+pub(crate) fn get_content_for_user_med(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
 {
-	get_content(req, ContentRelatedType::Group, true)
+	get_content(req, ContentRelatedType::User, false, LIMIT_FETCH_MED)
 }
 
-async fn get_content(req: Request, content_related_type: ContentRelatedType, cat: bool) -> JRes<Vec<ListContentItem>>
+pub(crate) fn get_content_for_user_large(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+{
+	get_content(req, ContentRelatedType::User, false, LIMIT_FETCH_LARGE)
+}
+
+pub(crate) fn get_content_for_user_x_large(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+{
+	get_content(req, ContentRelatedType::User, false, LIMIT_FETCH_X_LARGE)
+}
+
+//__________________________________________________________________________________________________
+
+pub(crate) fn get_content_for_group_small(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+{
+	get_content(req, ContentRelatedType::Group, false, LIMIT_FETCH_SMALL)
+}
+
+pub(crate) fn get_content_for_group_med(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+{
+	get_content(req, ContentRelatedType::Group, false, LIMIT_FETCH_MED)
+}
+
+pub(crate) fn get_content_for_group_large(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+{
+	get_content(req, ContentRelatedType::Group, false, LIMIT_FETCH_LARGE)
+}
+
+pub(crate) fn get_content_for_group_x_large(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+{
+	get_content(req, ContentRelatedType::Group, false, LIMIT_FETCH_X_LARGE)
+}
+
+//__________________________________________________________________________________________________
+
+pub(crate) fn get_content_all_from_cat_small(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+{
+	get_content(req, ContentRelatedType::None, true, LIMIT_FETCH_SMALL)
+}
+
+pub(crate) fn get_content_all_from_cat_med(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+{
+	get_content(req, ContentRelatedType::None, true, LIMIT_FETCH_MED)
+}
+
+pub(crate) fn get_content_all_from_cat_large(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+{
+	get_content(req, ContentRelatedType::None, true, LIMIT_FETCH_LARGE)
+}
+
+pub(crate) fn get_content_all_from_cat_x_large(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+{
+	get_content(req, ContentRelatedType::None, true, LIMIT_FETCH_X_LARGE)
+}
+
+//__________________________________________________________________________________________________
+
+pub(crate) fn get_content_for_user_from_cat_small(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+{
+	get_content(req, ContentRelatedType::User, true, LIMIT_FETCH_SMALL)
+}
+
+pub(crate) fn get_content_for_user_from_cat_med(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+{
+	get_content(req, ContentRelatedType::User, true, LIMIT_FETCH_MED)
+}
+
+pub(crate) fn get_content_for_user_from_cat_large(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+{
+	get_content(req, ContentRelatedType::User, true, LIMIT_FETCH_LARGE)
+}
+
+pub(crate) fn get_content_for_user_from_cat_x_large(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+{
+	get_content(req, ContentRelatedType::User, true, LIMIT_FETCH_X_LARGE)
+}
+
+//__________________________________________________________________________________________________
+
+pub(crate) fn get_content_for_group_from_cat_small(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+{
+	get_content(req, ContentRelatedType::Group, true, LIMIT_FETCH_SMALL)
+}
+
+pub(crate) fn get_content_for_group_from_cat_med(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+{
+	get_content(req, ContentRelatedType::Group, true, LIMIT_FETCH_MED)
+}
+
+pub(crate) fn get_content_for_group_from_cat_large(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+{
+	get_content(req, ContentRelatedType::Group, true, LIMIT_FETCH_LARGE)
+}
+
+pub(crate) fn get_content_for_group_from_cat_x_large(req: Request) -> impl Future<Output = JRes<Vec<ListContentItem>>>
+{
+	get_content(req, ContentRelatedType::Group, true, LIMIT_FETCH_X_LARGE)
+}
+
+//__________________________________________________________________________________________________
+
+async fn get_content(req: Request, content_related_type: ContentRelatedType, cat: bool, limit: &str) -> JRes<Vec<ListContentItem>>
 {
 	let app = get_app_data_from_req(&req)?;
 	let user = get_jwt_data_from_param(&req)?;
 
-	check_endpoint_with_app_options(app, Endpoint::Content)?;
+	match limit {
+		LIMIT_FETCH_SMALL => check_endpoint_with_app_options(app, Endpoint::ContentSmall)?,
+		LIMIT_FETCH_MED => check_endpoint_with_app_options(app, Endpoint::ContentMed)?,
+		LIMIT_FETCH_LARGE => check_endpoint_with_app_options(app, Endpoint::ContentLarge)?,
+		LIMIT_FETCH_X_LARGE => check_endpoint_with_app_options(app, Endpoint::ContentXLarge)?,
+		_ => {
+			return Err(ServerCoreError::new_msg(
+				400,
+				ApiErrorCodes::AppAction,
+				"No valid limit",
+			))
+		},
+	}
 
 	let params = get_params(&req)?;
 	let last_id = get_name_param_from_params(params, "last_id")?;
@@ -180,7 +303,17 @@ async fn get_content(req: Request, content_related_type: ContentRelatedType, cat
 	};
 
 	let list = match content_related_type {
-		ContentRelatedType::None => content_model::get_content(&app.app_data.app_id, &user.id, last_fetched_time, last_id, cat_id).await?,
+		ContentRelatedType::None => {
+			content_model::get_content(
+				&app.app_data.app_id,
+				&user.id,
+				last_fetched_time,
+				last_id,
+				cat_id,
+				limit,
+			)
+			.await?
+		},
 		ContentRelatedType::Group => {
 			let group_data = get_group_user_data_from_req(&req)?;
 
@@ -190,10 +323,21 @@ async fn get_content(req: Request, content_related_type: ContentRelatedType, cat
 				last_fetched_time,
 				last_id,
 				cat_id,
+				limit,
 			)
 			.await?
 		},
-		ContentRelatedType::User => content_model::get_content_to_user(&app.app_data.app_id, &user.id, last_fetched_time, last_id, cat_id).await?,
+		ContentRelatedType::User => {
+			content_model::get_content_to_user(
+				&app.app_data.app_id,
+				&user.id,
+				last_fetched_time,
+				last_id,
+				cat_id,
+				limit,
+			)
+			.await?
+		},
 	};
 
 	echo(list)
