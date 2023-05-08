@@ -160,18 +160,18 @@ async fn test_10_create_non_related_content()
 #[tokio::test]
 async fn test_11_get_the_content_by_list_fetch()
 {
-	let public_token = &APP_TEST_STATE.get().unwrap().read().await.public_token;
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let state = CONTENT_TEST_STATE.get().unwrap().read().await;
 
 	let creator = &users[0];
-	let url = get_url("api/v1/content/all/0/none".to_owned());
+	let url = get_url("api/v1/content/small/all/0/none".to_owned());
 
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
 		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
-		.header("x-sentc-app-token", public_token)
+		.header("x-sentc-app-token", secret_token)
 		.send()
 		.await
 		.unwrap();
@@ -192,7 +192,7 @@ async fn test_12_not_get_the_value_as_user_other()
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 
 	let creator = &users[1];
-	let url = get_url("api/v1/content/all/0/none".to_owned());
+	let url = get_url("api/v1/content/small/all/0/none".to_owned());
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -304,7 +304,7 @@ async fn test_15_test_access_to_item_from_other_user()
 	let user_1 = &users[1];
 
 	//check first for creator
-	let url = get_url("api/v1/content/all/0/none".to_owned());
+	let url = get_url("api/v1/content/small/all/0/none".to_owned());
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -325,7 +325,7 @@ async fn test_15_test_access_to_item_from_other_user()
 	assert_eq!(out[0].item, state[1].content);
 
 	//check the 2nd page for the content
-	let url = get_url("api/v1/content/all/".to_owned() + out[0].time.to_string().as_str() + "/" + out[0].id.as_str());
+	let url = get_url("api/v1/content/small/all/".to_owned() + out[0].time.to_string().as_str() + "/" + out[0].id.as_str());
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -346,7 +346,7 @@ async fn test_15_test_access_to_item_from_other_user()
 
 	//now check for the 2nd user which belongs to the content
 
-	let url = get_url("api/v1/content/all/0/none".to_owned());
+	let url = get_url("api/v1/content/small/all/0/none".to_owned());
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -517,7 +517,7 @@ async fn test_18_not_access_deleted_content()
 	let user_1 = &users[1];
 
 	//check first for creator
-	let url = get_url("api/v1/content/all/0/none".to_owned());
+	let url = get_url("api/v1/content/small/all/0/none".to_owned());
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -607,7 +607,7 @@ async fn test_20_not_access_deleted_content_by_item()
 	let creator = &users[0];
 
 	//check first for creator
-	let url = get_url("api/v1/content/all/0/none".to_owned());
+	let url = get_url("api/v1/content/small/all/0/none".to_owned());
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -898,7 +898,7 @@ async fn test_23_access_group_content()
 
 	assert!(out.access);
 
-	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id + "/all/0/none");
+	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id + "/small/all/0/none");
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -917,7 +917,7 @@ async fn test_23_access_group_content()
 	assert_eq!(out[0].belongs_to_group.as_ref().unwrap(), &group.group_id);
 
 	//fetch the 2nd page for groups
-	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id + "/all/" + out[0].time.to_string().as_str() + "/" + &out[0].id);
+	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id + "/small/all/" + out[0].time.to_string().as_str() + "/" + &out[0].id);
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -933,7 +933,7 @@ async fn test_23_access_group_content()
 	let out: Vec<ListContentItem> = handle_server_response(&body).unwrap();
 	assert_eq!(out.len(), 0);
 
-	let url = get_url("api/v1/content/all/0/none".to_owned());
+	let url = get_url("api/v1/content/small/all/0/none".to_owned());
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -983,7 +983,7 @@ async fn test_24_not_access_item_when_not_in_group()
 	assert!(!out.access);
 
 	//should not be on the list
-	let url = get_url("api/v1/content/all/0/none".to_owned());
+	let url = get_url("api/v1/content/small/all/0/none".to_owned());
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -1020,7 +1020,7 @@ async fn test_24_not_access_item_when_not_in_group()
 
 	assert!(!out.access);
 
-	let url = get_url("api/v1/content/all/0/none".to_owned());
+	let url = get_url("api/v1/content/small/all/0/none".to_owned());
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -1107,7 +1107,7 @@ async fn test_26_access_item_from_parent_group()
 	assert!(out.access);
 
 	//access only group content
-	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id + "/all/0/none");
+	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id + "/small/all/0/none");
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -1125,7 +1125,7 @@ async fn test_26_access_item_from_parent_group()
 	assert_eq!(out[0].id, content.id);
 	assert_eq!(out[0].belongs_to_group.as_ref().unwrap(), &group.group_id);
 
-	let url = get_url("api/v1/content/all/0/none".to_owned());
+	let url = get_url("api/v1/content/small/all/0/none".to_owned());
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -1175,7 +1175,7 @@ async fn test_27_access_child_group_item_directly_as_direct_member()
 
 	assert!(out.access);
 
-	let url = get_url("api/v1/content/all/0/none".to_owned());
+	let url = get_url("api/v1/content/small/all/0/none".to_owned());
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -1267,7 +1267,7 @@ async fn test_29_access_item_from_a_connected_group()
 	assert_eq!(out.access_from_group.as_ref().unwrap(), &access.group_id);
 
 	//access only group content directly from the connected group
-	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id + "/all/0/none");
+	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id + "/small/all/0/none");
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -1288,7 +1288,7 @@ async fn test_29_access_item_from_a_connected_group()
 	assert_eq!(out[0].category, None);
 
 	//access from a connected group
-	let url = get_url("api/v1/content/group/".to_owned() + &access.group_id + "/all/0/none");
+	let url = get_url("api/v1/content/group/".to_owned() + &access.group_id + "/small/all/0/none");
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -1309,7 +1309,7 @@ async fn test_29_access_item_from_a_connected_group()
 	assert_eq!(out[0].category, None);
 
 	//access global
-	let url = get_url("api/v1/content/all/0/none".to_owned());
+	let url = get_url("api/v1/content/small/all/0/none".to_owned());
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -1406,7 +1406,7 @@ async fn test_31_access_item_from_a_connected_group_and_parent()
 	assert_eq!(out.access_from_group.as_ref().unwrap(), &access.group_id);
 
 	//access only group content directly from the connected group
-	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id + "/all/0/none");
+	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id + "/small/all/0/none");
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -1427,7 +1427,7 @@ async fn test_31_access_item_from_a_connected_group_and_parent()
 	assert_eq!(out[0].category, None);
 
 	//access from a connected group
-	let url = get_url("api/v1/content/group/".to_owned() + &access.group_id + "/all/0/none");
+	let url = get_url("api/v1/content/group/".to_owned() + &access.group_id + "/small/all/0/none");
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -1447,7 +1447,7 @@ async fn test_31_access_item_from_a_connected_group_and_parent()
 	assert_eq!(out[0].access_from_group.as_ref().unwrap(), &access.group_id);
 	assert_eq!(out[0].category, None);
 
-	let url = get_url("api/v1/content/all/0/none".to_owned());
+	let url = get_url("api/v1/content/small/all/0/none".to_owned());
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -1515,7 +1515,7 @@ async fn test_33_fetch_content_with_cat()
 	let state = CONTENT_TEST_STATE.get().unwrap().read().await;
 
 	let creator = &users[0];
-	let url = get_url("api/v1/content/".to_owned() + "abc" + "/0/none");
+	let url = get_url("api/v1/content/small/".to_owned() + "abc" + "/0/none");
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -1536,7 +1536,7 @@ async fn test_33_fetch_content_with_cat()
 	assert_eq!(out[0].category, Some("abc".to_string()));
 
 	//2nd page fetch
-	let url = get_url("api/v1/content/".to_owned() + "abc" + "/" + out[0].time.to_string().as_str() + "/" + &out[0].id);
+	let url = get_url("api/v1/content/small/".to_owned() + "abc" + "/" + out[0].time.to_string().as_str() + "/" + &out[0].id);
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -1554,7 +1554,7 @@ async fn test_33_fetch_content_with_cat()
 	assert_eq!(out.len(), 0);
 
 	//fetch with wrong cat
-	let url = get_url("api/v1/content/".to_owned() + "abc1" + "/0/none");
+	let url = get_url("api/v1/content/small/".to_owned() + "abc1" + "/0/none");
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -1623,7 +1623,7 @@ async fn test_35_access_group_content_with_cat()
 
 	let content = &state[7];
 
-	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id + "/" + "abc" + "/0/none");
+	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id + "/small/" + "abc" + "/0/none");
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -1643,7 +1643,7 @@ async fn test_35_access_group_content_with_cat()
 	assert_eq!(out[0].category, Some("abc".to_string()));
 
 	//normal access too
-	let url = get_url("api/v1/content/".to_owned() + "abc" + "/0/none");
+	let url = get_url("api/v1/content/small/".to_owned() + "abc" + "/0/none");
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -1720,7 +1720,7 @@ async fn test_37_access_content_in_connected_group_with_cat()
 
 	let content = &state[8];
 
-	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id + "/" + "abc" + "/0/none");
+	let url = get_url("api/v1/content/group/".to_owned() + &group.group_id + "/small/" + "abc" + "/0/none");
 
 	let client = reqwest::Client::new();
 	let res = client
