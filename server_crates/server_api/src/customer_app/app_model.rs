@@ -57,7 +57,11 @@ SELECT
     user_key_update,
     content_search,
     file_delete,
-    content
+    content,
+    content_small,
+    content_med,
+    content_large,
+    content_x_large
 FROM sentc_app_options 
 WHERE 
     app_id = ?";
@@ -583,8 +587,12 @@ INSERT INTO sentc_app_options
      user_key_update,
      content_search,
      file_delete,
-     content
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+     content,
+     content_small,
+     content_med,
+     content_large,
+     content_x_large
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let params_options = set_params!(
 		app_id.into(),
@@ -628,7 +636,11 @@ INSERT INTO sentc_app_options
 		app_options.user_key_update,
 		app_options.content_search,
 		app_options.file_delete,
-		app_options.content
+		app_options.content,
+		app_options.content_small,
+		app_options.content_med,
+		app_options.content_large,
+		app_options.content_x_large,
 	);
 
 	(sql, params_options)

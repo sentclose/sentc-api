@@ -11,6 +11,7 @@ pub(super) async fn get_content(
 	last_fetched_time: u128,
 	last_id: impl Into<ContentId>,
 	cat_id: Option<CategoryId>,
+	limit: &str,
 ) -> AppRes<Vec<ListContentItem>>
 {
 	let app_id = app_id.into();
@@ -62,7 +63,7 @@ WHERE
 	}
 
 	let params = if last_fetched_time > 0 {
-		sql += " AND time <= ? AND (time < ? OR (time = ? AND con.id > ?)) ORDER BY time DESC, con.id LIMIT 100";
+		sql = sql + " AND time <= ? AND (time < ? OR (time = ? AND con.id > ?)) ORDER BY time DESC, con.id LIMIT " + limit;
 
 		if let Some(c_id) = cat_id {
 			set_params!(
@@ -99,7 +100,7 @@ WHERE
 			)
 		}
 	} else {
-		sql += " ORDER BY time DESC, con.id LIMIT 100";
+		sql = sql + " ORDER BY time DESC, con.id LIMIT " + limit;
 
 		if let Some(c_id) = cat_id {
 			set_params!(
@@ -138,6 +139,7 @@ pub(super) async fn get_content_for_group(
 	last_fetched_time: u128,
 	last_id: impl Into<ContentId>,
 	cat_id: Option<CategoryId>,
+	limit: &str,
 ) -> AppRes<Vec<ListContentItem>>
 {
 	let app_id = app_id.into();
@@ -185,7 +187,7 @@ WHERE
 	}
 
 	let params = if last_fetched_time > 0 {
-		sql += " AND time <= ? AND (time < ? OR (time = ? AND con.id > ?)) ORDER BY time DESC, con.id LIMIT 100";
+		sql = sql + " AND time <= ? AND (time < ? OR (time = ? AND con.id > ?)) ORDER BY time DESC, con.id LIMIT " + limit;
 
 		if let Some(c_id) = cat_id {
 			set_params!(
@@ -224,7 +226,7 @@ WHERE
 			)
 		}
 	} else {
-		sql += " ORDER BY time DESC, con.id LIMIT 100";
+		sql = sql + " ORDER BY time DESC, con.id LIMIT " + limit;
 
 		if let Some(c_id) = cat_id {
 			set_params!(
@@ -265,6 +267,7 @@ pub(super) async fn get_content_to_user(
 	last_fetched_time: u128,
 	last_id: impl Into<ContentId>,
 	cat_id: Option<CategoryId>,
+	limit: &str,
 ) -> AppRes<Vec<ListContentItem>>
 {
 	//get content which directly belongs to the actual user
@@ -280,7 +283,7 @@ WHERE belongs_to_user = ? AND app_id = ?"
 	}
 
 	let params = if last_fetched_time > 0 {
-		sql += " AND time <= ? AND (time < ? OR (time = ? AND c.id > ?)) ORDER BY time DESC, c.id LIMIT 100";
+		sql = sql + " AND time <= ? AND (time < ? OR (time = ? AND c.id > ?)) ORDER BY time DESC, c.id LIMIT " + limit;
 		if let Some(c_id) = cat_id {
 			set_params!(
 				user_id.into(),
@@ -302,7 +305,7 @@ WHERE belongs_to_user = ? AND app_id = ?"
 			)
 		}
 	} else {
-		sql += " ORDER BY time DESC, c.id LIMIT 100";
+		sql = sql + " ORDER BY time DESC, c.id LIMIT " + limit;
 
 		if let Some(c_id) = cat_id {
 			set_params!(user_id.into(), app_id.into(), c_id)

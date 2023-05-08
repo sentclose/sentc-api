@@ -70,6 +70,11 @@ pub struct AppOptions
 	pub content_search: i32,
 
 	pub content: i32,
+
+	pub content_small: i32,
+	pub content_med: i32,
+	pub content_large: i32,
+	pub content_x_large: i32,
 }
 
 impl Default for AppOptions
@@ -118,6 +123,10 @@ impl Default for AppOptions
 			user_key_update: 1,
 			content_search: 1,
 			content: 1,
+			content_small: 2,
+			content_med: 2,
+			content_large: 2,
+			content_x_large: 2,
 		}
 	}
 }
@@ -168,6 +177,10 @@ impl AppOptions
 			user_key_update: 0,
 			content_search: 0,
 			content: 0,
+			content_small: 0,
+			content_med: 0,
+			content_large: 0,
+			content_x_large: 0,
 		}
 	}
 
@@ -215,6 +228,10 @@ impl AppOptions
 			user_key_update: 1,
 			content_search: 1,
 			content: 1,
+			content_small: 1,
+			content_med: 1,
+			content_large: 1,
+			content_x_large: 1,
 		}
 	}
 }
@@ -284,6 +301,11 @@ impl rustgram_server_util::db::mysql_async_export::prelude::FromRow for AppOptio
 
 			file_delete: rustgram_server_util::take_or_err!(row, 39, i32),
 			content: rustgram_server_util::take_or_err!(row, 40, i32),
+
+			content_small: rustgram_server_util::take_or_err!(row, 41, i32),
+			content_med: rustgram_server_util::take_or_err!(row, 42, i32),
+			content_large: rustgram_server_util::take_or_err!(row, 43, i32),
+			content_x_large: rustgram_server_util::take_or_err!(row, 44, i32),
 		})
 	}
 }
@@ -351,6 +373,11 @@ impl rustgram_server_util::db::FromSqliteRow for AppOptions
 
 			file_delete: rustgram_server_util::take_or_err!(row, 39),
 			content: rustgram_server_util::take_or_err!(row, 40),
+
+			content_small: rustgram_server_util::take_or_err!(row, 41),
+			content_med: rustgram_server_util::take_or_err!(row, 42),
+			content_large: rustgram_server_util::take_or_err!(row, 43),
+			content_x_large: rustgram_server_util::take_or_err!(row, 44),
 		})
 	}
 }

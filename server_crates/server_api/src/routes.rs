@@ -191,26 +191,98 @@ pub(crate) fn routes(router: &mut Router)
 			.add(app_token::app_token_transform),
 	);
 	router.get(
-		"/api/v1/content/all/:last_fetched_time/:last_id",
-		r(crate::content_management::get_content_all)
+		"/api/v1/content/small/all/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_all_small)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
 	router.get(
-		"/api/v1/content/:cat_id/:last_fetched_time/:last_id",
-		r(crate::content_management::get_content_all_from_cat)
+		"/api/v1/content/med/all/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_all_med)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
 	router.get(
-		"/api/v1/content/user/all/:last_fetched_time/:last_id",
-		r(crate::content_management::get_content_for_user)
+		"/api/v1/content/large/all/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_all_large)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
 	router.get(
-		"/api/v1/content/user/:cat_id/:last_fetched_time/:last_id",
-		r(crate::content_management::get_content_for_user_from_cat)
+		"/api/v1/content/xlarge/all/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_all_x_large)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/small/:cat_id/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_all_from_cat_small)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/med/:cat_id/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_all_from_cat_med)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/large/:cat_id/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_all_from_cat_large)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/xlarge/:cat_id/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_all_from_cat_x_large)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/small/user/all/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_user_small)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/med/user/all/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_user_med)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/large/user/all/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_user_large)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/xlarge/user/all/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_user_x_large)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/small/user/:cat_id/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_user_from_cat_small)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/med/user/:cat_id/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_user_from_cat_med)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/large/user/:cat_id/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_user_from_cat_large)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/xlarge/user/:cat_id/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_user_from_cat_x_large)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
@@ -228,15 +300,57 @@ pub(crate) fn routes(router: &mut Router)
 			.add(app_token::app_token_transform),
 	);
 	router.get(
-		"/api/v1/content/group/:group_id/all/:last_fetched_time/:last_id",
-		r(crate::content_management::get_content_for_group)
+		"/api/v1/content/group/:group_id/small/all/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_group_small)
 			.add(group::group_transform)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
 	router.get(
-		"/api/v1/content/group/:group_id/:cat_id/:last_fetched_time/:last_id",
-		r(crate::content_management::get_content_for_group_from_cat)
+		"/api/v1/content/group/:group_id/med/all/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_group_med)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/group/:group_id/large/all/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_group_large)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/group/:group_id/xlarge/all/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_group_x_large)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/group/:group_id/small/:cat_id/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_group_from_cat_small)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/group/:group_id/med/:cat_id/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_group_from_cat_med)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/group/:group_id/large/:cat_id/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_group_from_cat_large)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/content/group/:group_id/xlarge/:cat_id/:last_fetched_time/:last_id",
+		r(crate::content_management::get_content_for_group_from_cat_x_large)
 			.add(group::group_transform)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),

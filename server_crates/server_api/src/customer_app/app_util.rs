@@ -60,8 +60,13 @@ pub enum Endpoint
 	FilePartDownload,
 	FileDelete,
 
-	Content,
 	ContentSearch,
+
+	Content,
+	ContentSmall,
+	ContentMed,
+	ContentLarge,
+	ContentXLarge,
 }
 
 pub fn get_app_data_from_req(req: &Request) -> AppRes<&AppData>
@@ -162,7 +167,13 @@ pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endp
 		Endpoint::FileDelete => options.file_delete,
 
 		Endpoint::ContentSearch => options.content_search,
+
 		Endpoint::Content => options.content,
+
+		Endpoint::ContentSmall => options.content_small,
+		Endpoint::ContentMed => options.content_med,
+		Endpoint::ContentLarge => options.content_large,
+		Endpoint::ContentXLarge => options.content_x_large,
 
 		Endpoint::ForceServer => 2,
 	};

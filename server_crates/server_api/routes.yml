@@ -94,10 +94,26 @@ routes:
                     - delete: {p: "/id/:content_id", s: crate::content_management::delete_content_by_id}
                     - delete: {p: "/item/:item", s: crate::content_management::delete_content_by_item}
                     # getting the list
-                    - get: {p: "/all/:last_fetched_time/:last_id", s: crate::content_management::get_content_all}
-                    - get: {p: "/:cat_id/:last_fetched_time/:last_id", s: crate::content_management::get_content_all_from_cat}
-                    - get: {p: "/user/all/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_user}
-                    - get: {p: "/user/:cat_id/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_user_from_cat}
+                    - get: {p: "/small/all/:last_fetched_time/:last_id", s: crate::content_management::get_content_all_small}
+                    - get: {p: "/med/all/:last_fetched_time/:last_id", s: crate::content_management::get_content_all_med}
+                    - get: {p: "/large/all/:last_fetched_time/:last_id", s: crate::content_management::get_content_all_large}
+                    - get: {p: "/xlarge/all/:last_fetched_time/:last_id", s: crate::content_management::get_content_all_x_large}
+
+                    - get: {p: "/small/:cat_id/:last_fetched_time/:last_id", s: crate::content_management::get_content_all_from_cat_small}
+                    - get: {p: "/med/:cat_id/:last_fetched_time/:last_id", s: crate::content_management::get_content_all_from_cat_med}
+                    - get: {p: "/large/:cat_id/:last_fetched_time/:last_id", s: crate::content_management::get_content_all_from_cat_large}
+                    - get: {p: "/xlarge/:cat_id/:last_fetched_time/:last_id", s: crate::content_management::get_content_all_from_cat_x_large}
+
+                    - get: {p: "/small/user/all/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_user_small}
+                    - get: {p: "/med/user/all/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_user_med}
+                    - get: {p: "/large/user/all/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_user_large}
+                    - get: {p: "/xlarge/user/all/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_user_x_large}
+
+                    - get: {p: "/small/user/:cat_id/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_user_from_cat_small}
+                    - get: {p: "/med/user/:cat_id/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_user_from_cat_med}
+                    - get: {p: "/large/user/:cat_id/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_user_from_cat_large}
+                    - get: {p: "/xlarge/user/:cat_id/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_user_from_cat_x_large}
+
                     # access check
                     - get: {p: "/access/item/:item", s: crate::content_management::check_access_to_content_by_item}
                     - group:
@@ -106,8 +122,17 @@ routes:
                           - group::group_transform
                         gr:
                           - post: { p: "", s: crate::content_management::create_group_content }
-                          - get: { p: "/all/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_group }
-                          - get: { p: "/:cat_id/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_group_from_cat }
+
+                          - get: { p: "/small/all/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_group_small }
+                          - get: { p: "/med/all/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_group_med }
+                          - get: { p: "/large/all/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_group_large }
+                          - get: { p: "/xlarge/all/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_group_x_large }
+
+                          - get: { p: "/small/:cat_id/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_group_from_cat_small }
+                          - get: { p: "/med/:cat_id/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_group_from_cat_med }
+                          - get: { p: "/large/:cat_id/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_group_from_cat_large }
+                          - get: { p: "/xlarge/:cat_id/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_group_from_cat_x_large }
+              #_________________________________________________________________________________________________________
               # encrypted search
               - group:
                   p: "/search"
