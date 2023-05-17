@@ -2,6 +2,8 @@
 
 From sentclose
 
+This is the server api which manages the user, groups and keys. It comes with mysql/mariadb or sqlite support. 
+
 ## Commands
 
 ### Default with maria db
