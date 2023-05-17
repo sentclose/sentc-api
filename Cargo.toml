@@ -33,6 +33,13 @@ async-trait = "0.1.56"
 rustgram-server-util = {version = "0.1.8", git= "https://gitlab.com/grammm/rustgram/rustgram-server-util.git", rev = "6cd0213aa8c89708e522a2be0c1ecd0f1aaa67a9", default-features = false, features = ["derive_macro"]}
 
 #_______________________________________________________________________________________________________________________
+# salt creation on server
+# to get it from ssh: write this in your ~/.cargo/config.toml:
+# [net]
+# git-fetch-with-cli = true
+sentc-crypto = {version = "0.1.0", git = "ssh://git@github.com/sentclose/sentc.git", rev="8c181a68aa8d82d1729d8895f06de4d888eb248a", default-features = false, features = ["rust", "server"]}
+
+#_______________________________________________________________________________________________________________________
 # json handling
 serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }

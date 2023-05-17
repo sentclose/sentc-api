@@ -1989,11 +1989,11 @@ dependencies = [
 [[package]]
 name = "sentc-crypto"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#f8d004902509382598fad6aadb71f2cd99b3a56b"
+source = "git+ssh://git@github.com/sentclose/sentc.git?rev=8c181a68aa8d82d1729d8895f06de4d888eb248a#8c181a68aa8d82d1729d8895f06de4d888eb248a"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
- "sentc-crypto-common 0.1.0 (git+ssh://git@gitlab.com/sentclose/sentc/sdk.git)",
+ "sentc-crypto-common 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "sentc-crypto-core",
  "serde",
  "serde_json",
@@ -2010,7 +2010,8 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-common"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#f8d004902509382598fad6aadb71f2cd99b3a56b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8de5180028779de936f64853a49ad9e43fd882a6b754323170be01008587a76"
 dependencies = [
  "serde",
  "serde_json",
@@ -2019,7 +2020,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-core"
 version = "0.1.0"
-source = "git+ssh://git@gitlab.com/sentclose/sentc/sdk.git#f8d004902509382598fad6aadb71f2cd99b3a56b"
+source = "git+ssh://git@github.com/sentclose/sentc.git?rev=8c181a68aa8d82d1729d8895f06de4d888eb248a#8c181a68aa8d82d1729d8895f06de4d888eb248a"
 dependencies = [
  "aes-gcm",
  "argon2",

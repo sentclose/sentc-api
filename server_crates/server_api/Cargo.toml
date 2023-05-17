@@ -60,15 +60,14 @@ regex = "1.6.0"
 # to get it from ssh: write this in your ~/.cargo/config.toml:
 # [net]
 # git-fetch-with-cli = true
-sentc-crypto = {version = "0.1.0", git = "ssh://git@gitlab.com/sentclose/sentc/sdk.git", default-features = false, features = ["rust", "server"]}
+sentc-crypto = {workspace=true}
 
 reqwest = {version = "0.11.11", default-features = false, features=["rustls-tls"]}
 #_______________________________________________________________________________________________________________________
 
 [dev-dependencies]
 
-sentc-crypto = {version = "0.1.0", git = "ssh://git@gitlab.com/sentclose/sentc/sdk.git", default-features = false, features = ["rust", "server", "server_test"]}
-#sentc-crypto-full = {version = "0.1.0", git = "ssh://git@gitlab.com/sentclose/sentc/sdk.git", default-features = false, features = ["rust"]}
+sentc-crypto = {workspace=true, features=["server_test"]}
 
 [features]
 default = ["mysql"]
