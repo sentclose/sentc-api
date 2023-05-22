@@ -53,6 +53,9 @@ pub async fn start(app_id: AppId, group_id: GroupId, key_id: SymKeyId, user_grou
 		group_key_rotation_model::save_user_eph_keys(&group_id, &key_id, user_keys).await?;
 	}
 
+	//delete the eph key which was encrypted by the last group key to avoid leaking the key
+	group_key_rotation_model::delete_eph_key(&group_id, &key_id).await?;
+
 	//save the user action
 	user_service::save_user_action(
 		&app_id,

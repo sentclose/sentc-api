@@ -193,18 +193,15 @@ pub(super) async fn get_new_key(group_id: impl Into<GroupId>, key_id: impl Into<
 	//language=SQL
 	let sql = "SELECT ephemeral_alg,encrypted_ephemeral_key FROM sentc_group_keys WHERE group_id = ? AND id = ?";
 
-	let key: Option<KeyRotationWorkerKey> = query_first(sql, set_params!(group_id.into(), key_id.into())).await?;
-
-	match key {
-		Some(k) => Ok(k),
-		None => {
-			Err(ServerCoreError::new_msg(
+	query_first(sql, set_params!(group_id.into(), key_id.into()))
+		.await?
+		.ok_or_else(|| {
+			ServerCoreError::new_msg(
 				400,
 				ApiErrorCodes::GroupKeyRotationKeysNotFound,
 				"Internal error, no group keys found, please try again",
-			))
-		},
-	}
+			)
+		})
 }
 
 pub(super) async fn get_user_and_public_key(
@@ -384,9 +381,7 @@ ORDER BY k.time DESC
 LIMIT 1
 ";
 
-	let keys: Option<UserGroupPublicKeyData> = query_first(sql, set_params!(group_id.into(), key_id.clone(), key_id)).await?;
-
-	Ok(keys)
+	query_first(sql, set_params!(group_id.into(), key_id.clone(), key_id)).await
 }
 
 pub(super) async fn get_device_keys(
@@ -444,9 +439,7 @@ WHERE
 		(sql, set_params!(user_id.into(), key_id.clone(), key_id))
 	};
 
-	let devices: Vec<UserGroupPublicKeyData> = query_string(sql, params).await?;
-
-	Ok(devices)
+	query_string(sql, params).await
 }
 
 pub(super) async fn save_user_eph_keys(group_id: impl Into<GroupId>, key_id: impl Into<SymKeyId>, keys: Vec<UserEphKeyOut>) -> AppRes<()>
@@ -478,6 +471,23 @@ pub(super) async fn save_user_eph_keys(group_id: impl Into<GroupId>, key_id: imp
 		},
 	)
 	.await?;
+
+	Ok(())
+}
+
+/**
+Do this after the key rotation.
+
+delete just the eph key which was encrypted by the previous group key.
+After the key rotation, this key is encrypted by every group members public key
+and can't be reconstructed by just knowing this key and the previous group key
+*/
+pub(super) async fn delete_eph_key(group_id: impl Into<GroupId>, key_id: impl Into<SymKeyId>) -> AppRes<()>
+{
+	//language=SQL
+	let sql = "UPDATE sentc_group_keys SET encrypted_ephemeral_key = NULL WHERE group_id = ? AND id = ?";
+
+	exec(sql, set_params!(group_id.into(), key_id.into())).await?;
 
 	Ok(())
 }
