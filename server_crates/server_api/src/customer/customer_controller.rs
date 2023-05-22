@@ -479,7 +479,7 @@ pub async fn delete_customer_group(req: Request) -> JRes<ServerSuccessOutput>
 	)
 	.await?;
 
-	file_service::delete_file_for_customer(&group_data.group_data.app_id).await?;
+	file_service::delete_file_for_customer(&group_data.group_data.id).await?;
 
 	//all apps are deleted via trigger
 	customer_model::delete_customer_group(&group_data.group_data.id).await?;
