@@ -387,6 +387,7 @@ pub struct AppDetails
 {
 	pub options: AppOptions,
 	pub file_options: AppFileOptionsInput,
+	pub group_options: AppGroupOption,
 	pub details: CustomerAppList,
 }
 
