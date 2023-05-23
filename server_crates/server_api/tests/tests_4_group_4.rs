@@ -1,12 +1,16 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
 use reqwest::header::AUTHORIZATION;
+use rustgram_server_util::error::ServerErrorCodes;
 use sentc_crypto::group::GroupKeyData;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::{SdkError, UserData};
-use sentc_crypto_common::group::{GroupAcceptJoinReqServerOutput, GroupInviteServerOutput};
+use sentc_crypto_common::group::{GroupAcceptJoinReqServerOutput, GroupInviteServerOutput, KeyRotationStartServerOutput};
 use sentc_crypto_common::{GroupId, UserId};
-use server_api_common::app::AppRegisterOutput;
+use serde_json::to_string;
+use server_api::util::api_res::ApiErrorCodes;
+use server_api_common::app::{AppGroupOption, AppRegisterOutput};
 use server_api_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
 
@@ -21,6 +25,7 @@ use crate::test_fn::{
 	delete_user,
 	get_group,
 	get_url,
+	key_rotation,
 };
 
 mod test_fn;
@@ -533,7 +538,7 @@ async fn test_16_accept_join_with_rank()
 	//not send join req again
 
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
-	let group = &GROUP_TEST_STATE.get().unwrap().read().await[0];
+	let group = &mut GROUP_TEST_STATE.get().unwrap().write().await[0];
 
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let creator = &users[1];
@@ -576,7 +581,7 @@ async fn test_16_accept_join_with_rank()
 	let join_res: GroupAcceptJoinReqServerOutput = handle_server_response(body.as_str()).unwrap();
 	assert_eq!(join_res.session_id, None);
 
-	let (data, _) = get_group(
+	let (data, group_data_for_creator) = get_group(
 		secret_token,
 		user_to_invite.user_data.jwt.as_str(),
 		group.group_id.as_str(),
@@ -586,6 +591,10 @@ async fn test_16_accept_join_with_rank()
 	.await;
 
 	assert_eq!(data.rank, 2);
+
+	group
+		.decrypted_group_keys
+		.insert(user_to_invite.user_id.clone(), group_data_for_creator);
 }
 
 //__________________________________________________________________________________________________
@@ -650,6 +659,154 @@ async fn test_20_re_invite_user()
 	.await;
 
 	assert_eq!(data.rank, 2);
+}
+
+//__________________________________________________________________________________________________
+
+//key rotation with limits from app options
+
+#[tokio::test]
+async fn test_30_change_app_group_options()
+{
+	let customer = &CUSTOMER_TEST_STATE.get().unwrap().read().await;
+	let app = &APP_TEST_STATE.get().unwrap().read().await;
+
+	let url = get_url("api/v1/customer/app/".to_owned() + &app.app_id + "/group_options");
+
+	let input = AppGroupOption {
+		max_key_rotation_month: 2,
+		min_rank_key_rotation: 1,
+	};
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(customer.user_keys.jwt.as_str()))
+		.body(to_string(&input).unwrap())
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(&body).unwrap();
+}
+
+#[tokio::test]
+async fn test_31_no_key_rotation_with_wrong_rank()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = &GROUP_TEST_STATE.get().unwrap().read().await[0];
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let user = &users[2];
+
+	let group_keys = &group.decrypted_group_keys.get(&user.user_id).unwrap()[0];
+	let pre_group_key = &group_keys.group_key;
+	let invoker_public_key = &user.user_data.user_keys[0].public_key;
+
+	let input = sentc_crypto::group::key_rotation(pre_group_key, invoker_public_key, false).unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key_rotation");
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	match handle_server_response::<KeyRotationStartServerOutput>(&body) {
+		Ok(_) => panic!("Should be an error"),
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(s, _) => {
+					assert_eq!(s, ApiErrorCodes::GroupUserRank.get_int_code());
+				},
+				_ => panic!("Should be server error"),
+			}
+		},
+	}
+
+	tokio::time::sleep(Duration::from_millis(50)).await;
+}
+
+#[tokio::test]
+async fn test_32_key_rotation_limit()
+{
+	//Do two key rotations (should be in the limit)
+	//the 3rd must be an error
+
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = &mut GROUP_TEST_STATE.get().unwrap().write().await[0];
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let user = &users[0];
+
+	let group_keys = &group.decrypted_group_keys.get(&user.user_id).unwrap()[0];
+	let pre_group_key = &group_keys.group_key;
+	let invoker_public_key = &user.user_data.user_keys[0].public_key;
+	let invoker_private_key = &user.user_data.user_keys[0].private_key;
+
+	let mut keys = vec![];
+
+	for _ in 0..2 {
+		// this way is not correct because the old pre group key is used for each rotation.
+		// this should be avoid in prod but for the test it is ok
+		let (_, mut new_keys) = key_rotation(
+			secret_token,
+			user.user_data.jwt.as_str(),
+			&group.group_id,
+			pre_group_key,
+			invoker_public_key,
+			invoker_private_key,
+			None,
+		)
+		.await;
+
+		keys.append(&mut new_keys);
+		tokio::time::sleep(Duration::from_millis(50)).await;
+	}
+
+	//now test the 3rd rotation which should be fail
+	let input = sentc_crypto::group::key_rotation(pre_group_key, invoker_public_key, false).unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key_rotation");
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	match handle_server_response::<KeyRotationStartServerOutput>(&body) {
+		Ok(_) => panic!("Should be an error"),
+		Err(e) => {
+			match e {
+				SdkError::ServerErr(s, _) => {
+					assert_eq!(s, ApiErrorCodes::GroupKeyRotationLimit.get_int_code());
+				},
+				_ => panic!("Should be server error"),
+			}
+		},
+	}
+
+	tokio::time::sleep(Duration::from_millis(50)).await;
+
+	group
+		.decrypted_group_keys
+		.get_mut(&user.user_id)
+		.unwrap()
+		.append(&mut keys);
 }
 
 //__________________________________________________________________________________________________
