@@ -105,19 +105,17 @@ pub async fn get_user_group_data(group_data: &InternalGroupDataComplete) -> AppR
 	let group_id = &group_data.group_data.id;
 	let user_id = &group_data.user_data.user_id;
 
-	let keys = get_user_group_keys(
-		app_id, group_id, user_id, 0, //fetch the first page
-		"",
-	)
-	.await?;
-
-	let hmac_keys = get_group_hmac(
-		app_id, group_id, 0, //fetch the first page
-		"",
-	)
-	.await?;
-
-	let key_update = group_model::check_for_key_update(app_id, user_id, group_id).await?;
+	let (keys, hmac_keys, key_update) = tokio::try_join!(
+		get_user_group_keys(
+			app_id, group_id, user_id, 0, //fetch the first page
+			"",
+		),
+		get_group_hmac(
+			app_id, group_id, 0, //fetch the first page
+			"",
+		),
+		group_model::check_for_key_update(app_id, user_id, group_id)
+	)?;
 
 	let (parent, access_by) = extract_parent_and_access_by(group_data);
 

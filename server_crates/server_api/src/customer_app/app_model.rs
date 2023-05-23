@@ -7,8 +7,8 @@ use server_api_common::app::{AppFileOptionsInput, AppJwtData, AppOptions, AppReg
 use server_api_common::customer::CustomerAppList;
 use uuid::Uuid;
 
-use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppJwt, AuthWithToken};
-use crate::sentc_app_entities::{AppCustomerAccess, AppFileOptions, CUSTOMER_OWNER_TYPE_GROUP, CUSTOMER_OWNER_TYPE_USER};
+use crate::customer_app::app_entities::{AppData, AppDataGeneral, AuthWithToken};
+use crate::sentc_app_entities::{AppCustomerAccess, CUSTOMER_OWNER_TYPE_GROUP, CUSTOMER_OWNER_TYPE_USER};
 use crate::util::api_res::ApiErrorCodes;
 
 pub(super) async fn get_app_options(app_id: impl Into<AppId>) -> AppRes<AppOptions>
@@ -101,11 +101,6 @@ WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 		.await?
 		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::AppTokenNotFound, "App token not found"))?;
 
-	//language=SQL
-	let sql = "SELECT id, alg, time FROM sentc_app_jwt_keys WHERE app_id = ? ORDER BY time DESC LIMIT 10";
-
-	let jwt_data: Vec<AppJwt> = query(sql, set_params!(app_data.app_id.clone())).await?;
-
 	let auth_with_token = if hashed_token == app_data.hashed_public_token {
 		AuthWithToken::Public
 	} else if hashed_token == app_data.hashed_secret_token {
@@ -118,21 +113,25 @@ WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 		));
 	};
 
-	let options = get_app_options(&app_data.app_id).await?;
+	//language=SQL
+	let sql_jwt = "SELECT id, alg, time FROM sentc_app_jwt_keys WHERE app_id = ? ORDER BY time DESC LIMIT 10";
 
 	//get app file options but without the auth token for external storage
 	//language=SQL
-	let sql = "SELECT file_storage,storage_url FROM sentc_file_options WHERE app_id = ?";
-	let file_options: AppFileOptions = query_first(sql, set_params!(app_data.app_id.clone()))
-		.await?
-		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::AppNotFound, "App not found"))?;
+	let sql_file_opt = "SELECT file_storage,storage_url FROM sentc_file_options WHERE app_id = ?";
+
+	let (jwt_data, options, file_options) = tokio::try_join!(
+		query(sql_jwt, set_params!(app_data.app_id.clone())),
+		get_app_options(&app_data.app_id),
+		query_first(sql_file_opt, set_params!(app_data.app_id.clone()))
+	)?;
 
 	Ok(AppData {
 		app_data,
 		jwt_data,
 		auth_with_token,
 		options,
-		file_options,
+		file_options: file_options.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::AppNotFound, "App not found"))?,
 	})
 }
 
