@@ -53,6 +53,7 @@ async fn init_app()
 			storage_url: Some(format!("http://127.0.0.1:{}/file_part/delete", 3003)),
 			auth_token: Some("abc".to_string()),
 		},
+		group_options: Default::default(),
 	};
 
 	let client = reqwest::Client::new();

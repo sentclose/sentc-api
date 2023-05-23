@@ -157,6 +157,7 @@ async fn test_11_create_app_in_group()
 		identifier: Some("My app".to_string()),
 		options: AppOptions::default(),
 		file_options: Default::default(),
+		group_options: Default::default(),
 	};
 
 	let client = reqwest::Client::new();
@@ -301,7 +302,7 @@ async fn test_14_new_member_should_fetch_the_group()
 
 	let client = reqwest::Client::new();
 	let res = client
-		.get(get_url("api/v1/customer/group/".to_owned() + &group_id))
+		.get(get_url("api/v1/customer/group/".to_owned() + group_id))
 		.header(AUTHORIZATION, auth_header(&user.customer_data.user_keys.jwt))
 		.send()
 		.await
@@ -428,7 +429,7 @@ async fn test_17_not_access_group_without_access()
 
 	let client = reqwest::Client::new();
 	let res = client
-		.get(get_url("api/v1/customer/group/".to_owned() + &group_id))
+		.get(get_url("api/v1/customer/group/".to_owned() + group_id))
 		.header(AUTHORIZATION, auth_header(&user.customer_data.user_keys.jwt))
 		.send()
 		.await
@@ -565,7 +566,7 @@ async fn test_20_new_member_should_fetch_the_group_with_new_rank()
 
 	let client = reqwest::Client::new();
 	let res = client
-		.get(get_url("api/v1/customer/group/".to_owned() + &group_id))
+		.get(get_url("api/v1/customer/group/".to_owned() + group_id))
 		.header(AUTHORIZATION, auth_header(&user.customer_data.user_keys.jwt))
 		.send()
 		.await
@@ -614,7 +615,7 @@ async fn test_22_kicked_member_should_not_fetch_the_group()
 
 	let client = reqwest::Client::new();
 	let res = client
-		.get(get_url("api/v1/customer/group/".to_owned() + &group_id))
+		.get(get_url("api/v1/customer/group/".to_owned() + group_id))
 		.header(AUTHORIZATION, auth_header(&user.customer_data.user_keys.jwt))
 		.send()
 		.await
@@ -680,7 +681,7 @@ async fn test_23_update_group()
 	//fetch the group with new values
 	let client = reqwest::Client::new();
 	let res = client
-		.get(get_url("api/v1/customer/group/".to_owned() + &group_id))
+		.get(get_url("api/v1/customer/group/".to_owned() + group_id))
 		.header(AUTHORIZATION, auth_header(&creator.customer_data.user_keys.jwt))
 		.send()
 		.await
