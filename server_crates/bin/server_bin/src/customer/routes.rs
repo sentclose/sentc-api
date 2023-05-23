@@ -166,6 +166,12 @@ pub(crate) fn routes(router: &mut Router)
 			.add(server_api::sentc_app_access_mw)
 			.add(server_api::sentc_jwt_customer_app),
 	);
+	router.put(
+		"/api/v1/customer/app/:app_id/group_options",
+		r(server_api::sentc_app_controller::update_group_options)
+			.add(server_api::sentc_app_access_mw)
+			.add(server_api::sentc_jwt_customer_app),
+	);
 	router.delete(
 		"/api/v1/customer/app/:app_id",
 		r(server_api::sentc_app_controller::delete)
