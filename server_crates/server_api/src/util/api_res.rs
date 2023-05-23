@@ -68,6 +68,7 @@ pub enum ApiErrorCodes
 	GroupKeyRotationKeysNotFound,
 	GroupKeyRotationThread,
 	GroupKeyRotationUserEncrypt,
+	GroupKeyRotationLimit,
 	GroupUserRankUpdate,
 	GroupUserKick,
 	GroupUserKickRank,
@@ -183,6 +184,7 @@ impl ServerErrorCodes for ApiErrorCodes
 			ApiErrorCodes::GroupConnectedFromConnected => 318,
 			ApiErrorCodes::GroupJoinAsConnectedGroup => 319,
 			ApiErrorCodes::GroupReInviteMemberNotFound => 320,
+			ApiErrorCodes::GroupKeyRotationLimit => 321,
 
 			ApiErrorCodes::KeyNotFound => 400,
 
