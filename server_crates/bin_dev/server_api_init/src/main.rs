@@ -29,9 +29,10 @@ async fn main_app()
 		identifier: None,
 		options: AppOptions::default_closed(),
 		file_options: AppFileOptionsInput::default_closed(),
+		group_options: Default::default(),
 	};
 
-	let app_data = server_api::sentc_customer_app_service::create_app(input, "sentc_init".to_string())
+	let app_data = server_api::sentc_customer_app_service::create_app(input, "sentc_init".to_string(), None)
 		.await
 		.unwrap();
 
@@ -46,9 +47,10 @@ async fn test_app()
 		identifier: Some("test_app".to_string()),
 		options: AppOptions::default_lax(),
 		file_options: Default::default(),
+		group_options: Default::default(),
 	};
 
-	let app_data = server_api::sentc_customer_app_service::create_app(input, "sentc_test".to_string())
+	let app_data = server_api::sentc_customer_app_service::create_app(input, "sentc_test".to_string(), None)
 		.await
 		.unwrap();
 
