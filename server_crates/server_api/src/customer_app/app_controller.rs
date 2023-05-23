@@ -24,6 +24,7 @@ use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
 use crate::customer_app::{app_model, app_service, generate_tokens};
 use crate::file::file_service;
 use crate::sentc_app_entities::AppCustomerAccess;
+use crate::sentc_customer_app_service::check_group_options;
 use crate::user::jwt::{create_jwt_keys, get_jwt_data_from_param};
 use crate::util::api_res::ApiErrorCodes;
 use crate::util::{get_app_jwt_sign_key, get_app_jwt_verify_key, APP_TOKEN_CACHE};
@@ -312,6 +313,35 @@ pub async fn update_file_options(mut req: Request) -> JRes<ServerSuccessOutput>
 	app_model::update_file_options(&app_general_data.app_id, input).await?;
 
 	//get the public and secret token and delete the app cache because in the cache there are still the old options
+
+	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
+	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
+
+	cache::delete(old_hashed_secret.as_str()).await?;
+	cache::delete(old_hashed_public_token.as_str()).await?;
+
+	echo_success()
+}
+
+pub async fn update_group_options(mut req: Request) -> JRes<ServerSuccessOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+
+	let app_general_data = get_app_general_data(&req)?;
+
+	if app_general_data.rank > 2 {
+		return Err(ServerCoreError::new_msg(
+			400,
+			ApiErrorCodes::AppAction,
+			"No rights to do this action",
+		));
+	}
+
+	let input = bytes_to_json(&body)?;
+
+	check_group_options(&input)?;
+
+	app_model::update_group_options(&app_general_data.app_id, input).await?;
 
 	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
 	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;

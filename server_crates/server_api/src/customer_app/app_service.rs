@@ -3,7 +3,7 @@ use std::future::Future;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::{AppId, CustomerId, GroupId};
-use server_api_common::app::{AppFileOptionsInput, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, FILE_STORAGE_OWN};
+use server_api_common::app::{AppFileOptionsInput, AppGroupOption, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, FILE_STORAGE_OWN};
 use server_api_common::customer::CustomerAppList;
 
 use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
@@ -27,6 +27,7 @@ pub async fn create_app(
 	let (jwt_sign_key, jwt_verify_key, alg) = create_jwt_keys()?;
 
 	check_file_options(&input.file_options)?;
+	check_group_options(&input.group_options)?;
 
 	let customer_id = customer_id.into();
 
@@ -88,6 +89,27 @@ pub(super) fn check_file_options(input: &AppFileOptionsInput) -> AppRes<()>
 				"Auth token for external storage is too long. Max 50 characters",
 			));
 		}
+	}
+
+	Ok(())
+}
+
+pub(super) fn check_group_options(input: &AppGroupOption) -> AppRes<()>
+{
+	if input.min_rank_key_rotation < 0 {
+		return Err(ServerCoreError::new_msg(
+			400,
+			ApiErrorCodes::AppAction,
+			"Wrong rank for the min key rotation rank. Min value is 0.",
+		));
+	}
+
+	if input.max_key_rotation_month < 0 {
+		return Err(ServerCoreError::new_msg(
+			400,
+			ApiErrorCodes::AppAction,
+			"Negative values for max monthly key rotations are not allowed.",
+		));
 	}
 
 	Ok(())
