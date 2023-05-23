@@ -398,6 +398,7 @@ pub struct AppRegisterInput
 	pub identifier: Option<String>,
 	pub options: AppOptions, //if no options then use the defaults
 	pub file_options: AppFileOptionsInput,
+	pub group_options: AppGroupOption,
 }
 
 impl AppRegisterInput
@@ -582,3 +583,53 @@ impl rustgram_server_util::db::FromSqliteRow for AppFileOptionsInput
 }
 
 //__________________________________________________________________________________________________
+
+#[derive(Serialize, Deserialize)]
+pub struct AppGroupOption
+{
+	pub max_key_rotation_month: i32,
+	pub min_rank_key_rotation: i32,
+}
+
+impl Default for AppGroupOption
+{
+	fn default() -> Self
+	{
+		Self {
+			max_key_rotation_month: 100,
+			min_rank_key_rotation: 4,
+		}
+	}
+}
+
+#[cfg(feature = "server")]
+#[cfg(feature = "mysql")]
+impl rustgram_server_util::db::mysql_async_export::prelude::FromRow for AppGroupOption
+{
+	fn from_row_opt(
+		mut row: rustgram_server_util::db::mysql_async_export::Row,
+	) -> Result<Self, rustgram_server_util::db::mysql_async_export::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			max_key_rotation_month: rustgram_server_util::take_or_err!(row, 0, i32),
+			min_rank_key_rotation: rustgram_server_util::take_or_err!(row, 1, i32),
+		})
+	}
+}
+
+#[cfg(feature = "server")]
+#[cfg(feature = "sqlite")]
+impl rustgram_server_util::db::FromSqliteRow for AppGroupOption
+{
+	fn from_row_opt(row: &rustgram_server_util::db::rusqlite_export::Row) -> Result<Self, rustgram_server_util::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			max_key_rotation_month: rustgram_server_util::take_or_err!(row, 0),
+			min_rank_key_rotation: rustgram_server_util::take_or_err!(row, 1),
+		})
+	}
+}
