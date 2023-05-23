@@ -77,6 +77,7 @@ routes:
                           - put: { p: "", s: server_api::sentc_app_controller::update }
                           - put: { p: "/options", s: server_api::sentc_app_controller::update_options }
                           - put: { p: "/file_options", s: server_api::sentc_app_controller::update_file_options }
+                          - put: { p: "/group_options", s: server_api::sentc_app_controller::update_group_options }
                           - delete: { p: "", s: server_api::sentc_app_controller::delete }
                           - patch: { p: "/token_renew", s: server_api::sentc_app_controller::renew_tokens }
                           # jwt keys

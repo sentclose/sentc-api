@@ -1,4 +1,15 @@
-use rustgram_server_util::db::{exec, exec_transaction, query_first, query_string, I64Entity, Params, StringEntity, TransactionData};
+use rustgram_server_util::db::{
+	exec,
+	exec_transaction,
+	query_first,
+	query_string,
+	I32Entity,
+	I64Entity,
+	Params,
+	StringEntity,
+	TransactionData,
+	TupleEntity,
+};
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params};
@@ -18,6 +29,7 @@ use crate::user::user_entities::{
 };
 use crate::user::user_service::UserAction;
 use crate::util::api_res::ApiErrorCodes;
+use crate::util::get_begin_of_month;
 
 pub(super) async fn get_jwt_sign_key(kid: impl Into<String>) -> AppRes<Option<StringEntity>>
 {
@@ -680,23 +692,41 @@ pub(super) async fn save_user_action(app_id: impl Into<AppId>, user_id: impl Int
 	//language=SQL
 	let sql = "INSERT INTO sentc_user_action_log (user_id, time, action_id, app_id, amount) VALUES (?,?,?,?,?)";
 
-	let action = match action {
-		UserAction::Login => 0,
-		UserAction::Refresh => 1,
-		UserAction::ChangePassword => 2,
-		UserAction::ResetPassword => 3,
-		UserAction::Delete => 4,
-		UserAction::Init => 5,
-		UserAction::KeyRotation => 6,
-	};
-
 	exec(
 		sql,
-		set_params!(user_id.into(), time.to_string(), action, app_id.into(), amount),
+		set_params!(
+			user_id.into(),
+			time.to_string(),
+			action.get_int_code(),
+			app_id.into(),
+			amount
+		),
 	)
 	.await?;
 
 	Ok(())
+}
+
+pub(super) async fn get_group_key_rotations_in_actual_month(app_id: impl Into<AppId>, group_id: impl Into<GroupId>) -> AppRes<i32>
+{
+	let begin = get_begin_of_month()?;
+
+	//language=SQL
+	let sql = "SELECT COUNT(user_id) FROM sentc_user_action_log WHERE app_id = ? AND user_id = ? AND action_id = ? AND time >= ?";
+
+	let out: I32Entity = query_first(
+		sql,
+		set_params!(
+			app_id.into(),
+			group_id.into(),
+			UserAction::KeyRotation.get_int_code(),
+			begin
+		),
+	)
+	.await?
+	.unwrap_or(TupleEntity(0));
+
+	Ok(out.0)
 }
 
 //__________________________________________________________________________________________________

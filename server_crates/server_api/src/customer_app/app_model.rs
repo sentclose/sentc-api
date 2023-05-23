@@ -3,12 +3,12 @@ use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::{AppId, CustomerId, GroupId, JwtKeyId, UserId};
-use server_api_common::app::{AppFileOptionsInput, AppJwtData, AppOptions, AppRegisterInput};
+use server_api_common::app::{AppFileOptionsInput, AppGroupOption, AppJwtData, AppOptions, AppRegisterInput};
 use server_api_common::customer::CustomerAppList;
 use uuid::Uuid;
 
-use crate::customer_app::app_entities::{AppData, AppDataGeneral, AppJwt, AuthWithToken};
-use crate::sentc_app_entities::{AppCustomerAccess, AppFileOptions, CUSTOMER_OWNER_TYPE_GROUP, CUSTOMER_OWNER_TYPE_USER};
+use crate::customer_app::app_entities::{AppData, AppDataGeneral, AuthWithToken};
+use crate::sentc_app_entities::{AppCustomerAccess, CUSTOMER_OWNER_TYPE_GROUP, CUSTOMER_OWNER_TYPE_USER};
 use crate::util::api_res::ApiErrorCodes;
 
 pub(super) async fn get_app_options(app_id: impl Into<AppId>) -> AppRes<AppOptions>
@@ -101,11 +101,6 @@ WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 		.await?
 		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::AppTokenNotFound, "App token not found"))?;
 
-	//language=SQL
-	let sql = "SELECT id, alg, time FROM sentc_app_jwt_keys WHERE app_id = ? ORDER BY time DESC LIMIT 10";
-
-	let jwt_data: Vec<AppJwt> = query(sql, set_params!(app_data.app_id.clone())).await?;
-
 	let auth_with_token = if hashed_token == app_data.hashed_public_token {
 		AuthWithToken::Public
 	} else if hashed_token == app_data.hashed_secret_token {
@@ -118,21 +113,31 @@ WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 		));
 	};
 
-	let options = get_app_options(&app_data.app_id).await?;
+	//language=SQL
+	let sql_jwt = "SELECT id, alg, time FROM sentc_app_jwt_keys WHERE app_id = ? ORDER BY time DESC LIMIT 10";
 
 	//get app file options but without the auth token for external storage
 	//language=SQL
-	let sql = "SELECT file_storage,storage_url FROM sentc_file_options WHERE app_id = ?";
-	let file_options: AppFileOptions = query_first(sql, set_params!(app_data.app_id.clone()))
-		.await?
-		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::AppNotFound, "App not found"))?;
+	let sql_file_opt = "SELECT file_storage,storage_url FROM sentc_file_options WHERE app_id = ?";
+
+	//get the group options
+	//language=SQL
+	let sql_group = "SELECT max_key_rotation_month,min_rank_key_rotation FROM sentc_app_group_options WHERE app_id = ?";
+
+	let (jwt_data, options, file_options, group_options) = tokio::try_join!(
+		query(sql_jwt, set_params!(app_data.app_id.clone())),
+		get_app_options(&app_data.app_id),
+		query_first(sql_file_opt, set_params!(app_data.app_id.clone())),
+		query_first(sql_group, set_params!(app_data.app_id.clone())),
+	)?;
 
 	Ok(AppData {
 		app_data,
 		jwt_data,
 		auth_with_token,
 		options,
-		file_options,
+		file_options: file_options.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::AppNotFound, "App not found"))?,
+		group_options: group_options.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::AppNotFound, "App not found"))?,
 	})
 }
 
@@ -399,6 +404,14 @@ VALUES (?,?,?,?,?,?,?,?)";
 		input.file_options.auth_token
 	);
 
+	//language=SQL
+	let sql_group_options = "INSERT INTO sentc_app_group_options (app_id, max_key_rotation_month, min_rank_key_rotation) VALUES (?,?,?)";
+	let params_group_options = set_params!(
+		app_id.clone(),
+		input.group_options.max_key_rotation_month,
+		input.group_options.min_rank_key_rotation
+	);
+
 	exec_transaction(vec![
 		TransactionData {
 			sql: sql_app,
@@ -415,6 +428,10 @@ VALUES (?,?,?,?,?,?,?,?)";
 		TransactionData {
 			sql: sql_file_options,
 			params: params_file_options,
+		},
+		TransactionData {
+			sql: sql_group_options,
+			params: params_group_options,
 		},
 	])
 	.await?;
@@ -520,6 +537,24 @@ pub(super) async fn update_file_options(app_id: impl Into<AppId>, options: AppFi
 	exec(
 		sql,
 		set_params!(options.storage_url, options.file_storage, options.auth_token, app_id),
+	)
+	.await?;
+
+	Ok(())
+}
+
+pub(super) async fn update_group_options(app_id: impl Into<AppId>, options: AppGroupOption) -> AppRes<()>
+{
+	//language=SQL
+	let sql = "UPDATE sentc_app_group_options SET max_key_rotation_month = ?, min_rank_key_rotation = ? WHERE app_id = ?";
+
+	exec(
+		sql,
+		set_params!(
+			options.max_key_rotation_month,
+			options.min_rank_key_rotation,
+			app_id.into()
+		),
 	)
 	.await?;
 

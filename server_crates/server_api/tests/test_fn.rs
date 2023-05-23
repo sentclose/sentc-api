@@ -238,6 +238,7 @@ pub async fn create_app(customer_jwt: &str) -> AppRegisterOutput
 		identifier: None,
 		options: AppOptions::default(),
 		file_options: AppFileOptionsInput::default(),
+		group_options: Default::default(),
 	};
 
 	let client = reqwest::Client::new();

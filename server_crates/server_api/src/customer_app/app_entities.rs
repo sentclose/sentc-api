@@ -1,6 +1,6 @@
 use sentc_crypto_common::{AppId, CustomerId, GroupId, SignKeyPairId};
 use serde::{Deserialize, Serialize};
-use server_api_common::app::AppOptions;
+use server_api_common::app::{AppGroupOption, AppOptions};
 
 pub const CUSTOMER_OWNER_TYPE_USER: i32 = 0;
 pub const CUSTOMER_OWNER_TYPE_GROUP: i32 = 1;
@@ -22,6 +22,7 @@ pub struct AppData
 	pub auth_with_token: AuthWithToken,
 	pub options: AppOptions,
 	pub file_options: AppFileOptions,
+	pub group_options: AppGroupOption,
 }
 
 #[derive(Serialize, Deserialize)]

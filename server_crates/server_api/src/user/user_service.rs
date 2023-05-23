@@ -49,6 +49,22 @@ pub enum UserAction
 	KeyRotation,
 }
 
+impl UserAction
+{
+	pub fn get_int_code(&self) -> u32
+	{
+		match self {
+			UserAction::Login => 0,
+			UserAction::Refresh => 1,
+			UserAction::ChangePassword => 2,
+			UserAction::ResetPassword => 3,
+			UserAction::Delete => 4,
+			UserAction::Init => 5,
+			UserAction::KeyRotation => 6,
+		}
+	}
+}
+
 pub fn save_user_action<'a>(
 	app_id: impl Into<String> + 'a,
 	user_id: impl Into<String> + 'a,
@@ -57,6 +73,14 @@ pub fn save_user_action<'a>(
 ) -> impl Future<Output = AppRes<()>> + 'a
 {
 	user_model::save_user_action(app_id, user_id, action, amount)
+}
+
+pub fn get_group_key_rotations_in_actual_month<'a>(
+	app_id: impl Into<AppId> + 'a,
+	group_id: impl Into<GroupId> + 'a,
+) -> impl Future<Output = AppRes<i32>> + 'a
+{
+	user_model::get_group_key_rotations_in_actual_month(app_id, group_id)
 }
 
 pub fn check_user_in_app_by_user_id<'a>(app_id: impl Into<AppId> + 'a, user_id: impl Into<UserId> + 'a) -> impl Future<Output = AppRes<bool>> + 'a
