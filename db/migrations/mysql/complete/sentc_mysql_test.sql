@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 08. Mai 2023 um 21:17
+-- Erstellungszeit: 23. Mai 2023 um 11:12
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -70,6 +70,10 @@ CREATE TRIGGER `delete_group` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FR
 $$
 DELIMITER ;
 DELIMITER $$
+CREATE TRIGGER `delete_group_options` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_app_group_options WHERE app_id = OLD.id
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `delete_keys` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_sym_key_management WHERE app_id = OLD.id
 $$
 DELIMITER ;
@@ -81,6 +85,25 @@ DELIMITER $$
 CREATE TRIGGER `delete_user` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_user WHERE app_id = OLD.id
 $$
 DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_app_group_options`
+--
+
+CREATE TABLE `sentc_app_group_options` (
+  `app_id` varchar(36) NOT NULL,
+  `max_key_rotation_month` int(11) NOT NULL,
+  `min_rank_key_rotation` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Daten für Tabelle `sentc_app_group_options`
+--
+
+INSERT INTO `sentc_app_group_options` (`app_id`, `max_key_rotation_month`, `min_rank_key_rotation`) VALUES
+('1665eb92-4513-469f-81d8-b72a62e0134c', 100, 4);
 
 -- --------------------------------------------------------
 
@@ -646,6 +669,12 @@ ALTER TABLE `sentc_app`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `hashed_secret_token` (`hashed_secret_token`),
   ADD UNIQUE KEY `hashed_public_token` (`hashed_public_token`);
+
+--
+-- Indizes für die Tabelle `sentc_app_group_options`
+--
+ALTER TABLE `sentc_app_group_options`
+  ADD PRIMARY KEY (`app_id`);
 
 --
 -- Indizes für die Tabelle `sentc_app_jwt_keys`

@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 9:18pm on May 8, 2023 (UTC)
+-- Exported: 11:18am on May 23, 2023 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -339,6 +339,16 @@ CREATE TABLE 'sentc_customer_group' ('sentc_group_id' TEXT PRIMARY KEY NOT NULL,
 ----
 
 ----
+-- Table structure for sentc_app_group_options
+----
+CREATE TABLE 'sentc_app_group_options' ('app_id' TEXT PRIMARY KEY NOT NULL, 'max_key_rotation_month' INTEGER, 'min_rank_key_rotation' INTEGER);
+
+----
+-- Data dump for sentc_app_group_options, a total of 1 rows
+----
+INSERT INTO "sentc_app_group_options" ("app_id","max_key_rotation_month","min_rank_key_rotation") VALUES ('1665eb92-4513-469f-81d8-b72a62e0134c','100','4');
+
+----
 -- structure for index sqlite_autoindex_test_1 on table test
 ----
 ;
@@ -554,6 +564,11 @@ CREATE INDEX app_hashed_secret_token_index
 ;
 
 ----
+-- structure for index sqlite_autoindex_sentc_app_group_options_1 on table sentc_app_group_options
+----
+;
+
+----
 -- structure for trigger  group_user_delete_key_rotation_keys on table sentc_group_user
 ----
 CREATE TRIGGER ' group_user_delete_key_rotation_keys' AFTER DELETE ON "sentc_group_user" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_key_rotation WHERE user_id = OLD.user_id AND group_id = OLD.group_id; END;
@@ -657,4 +672,9 @@ CREATE TRIGGER 'delete_app_search' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGI
 -- structure for trigger  delete_customer_group_apps on table sentc_customer_group
 ----
 CREATE TRIGGER ' delete_customer_group_apps' AFTER DELETE ON "sentc_customer_group" FOR EACH ROW BEGIN DELETE FROM sentc_app WHERE owner_id = OLD.sentc_group_id AND owner_type = 1; END;
+
+----
+-- structure for trigger delete_group_options on table sentc_app_group_options
+----
+CREATE TRIGGER 'delete_group_options' AFTER DELETE ON "sentc_app_group_options" FOR EACH ROW BEGIN DELETE FROM sentc_app_group_options WHERE app_id = OLD.id; END;
 COMMIT;
