@@ -41,8 +41,11 @@ INSERT INTO sentc_group_keys
      time,
      encrypted_sign_key,
      verify_key,
-     keypair_sign_alg
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+     keypair_sign_alg,
+     signed_by_user_id,
+     signed_by_user_sign_key_id,
+     signed_by_user_sign_key_alg
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let params = set_params!(
 		key_id.clone(),
@@ -59,7 +62,10 @@ INSERT INTO sentc_group_keys
 		time.to_string(),
 		input.encrypted_sign_key,
 		input.verify_key,
-		input.keypair_sign_alg
+		input.keypair_sign_alg,
+		input.signed_by_user_id,
+		input.signed_by_user_sign_key_id,
+		input.signed_by_user_sign_key_alg
 	);
 
 	//insert the rotated keys (from the starter) into the group user keys
@@ -121,7 +127,10 @@ SELECT
     encrypted_group_key_by_eph_key,
     previous_group_key_id,
     ephemeral_alg,
-    gk.time
+    gk.time,
+    signed_by_user_id,
+    signed_by_user_sign_key_id,
+    signed_by_user_sign_key_alg
 FROM 
     sentc_group_keys gk, 
     sentc_group_user_key_rotation gkr
