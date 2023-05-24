@@ -458,9 +458,12 @@ INSERT INTO sentc_group_keys
      time,
      encrypted_sign_key,
      verify_key,
-     keypair_sign_alg
+     keypair_sign_alg,
+     signed_by_user_id,
+     signed_by_user_sign_key_id,
+     signed_by_user_sign_key_alg
      ) 
-VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL,NULL)";
 
 	let group_key_id = Uuid::new_v4().to_string(); //use the first group key id for the encrypted_hmac_encryption_key_id too
 
