@@ -317,18 +317,19 @@ pub(super) async fn get_app_file_options(app_id: impl Into<AppId>) -> AppRes<App
 	//language=SQL
 	let sql = "SELECT file_storage,storage_url,auth_token FROM sentc_file_options WHERE app_id = ?";
 
-	let out: Option<AppFileOptionsInput> = query_first(sql, set_params!(app_id.into())).await?;
+	query_first(sql, set_params!(app_id.into()))
+		.await?
+		.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::AppNotFound, "App not found"))
+}
 
-	match out {
-		Some(o) => Ok(o),
-		None => {
-			Err(ServerCoreError::new_msg(
-				400,
-				ApiErrorCodes::AppNotFound,
-				"App not found",
-			))
-		},
-	}
+pub(super) async fn get_app_group_options(app_id: impl Into<AppId>) -> AppRes<AppGroupOption>
+{
+	//language=SQL
+	let sql = "SELECT max_key_rotation_month,min_rank_key_rotation FROM sentc_app_group_options WHERE app_id = ?";
+
+	query_first(sql, set_params!(app_id.into()))
+		.await?
+		.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::AppNotFound, "App not found"))
 }
 
 //__________________________________________________________________________________________________

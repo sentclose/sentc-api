@@ -42,16 +42,18 @@ pub async fn get_app_details(req: Request) -> JRes<AppDetails>
 {
 	let app_general_data = get_app_general_data(&req)?;
 
-	let details = app_model::get_app_view(&app_general_data.app_id, app_general_data.owner_type).await?;
-
-	let options = app_model::get_app_options(&app_general_data.app_id).await?;
-
-	let file_options = app_model::get_app_file_options(&app_general_data.app_id).await?;
+	let (details, options, file_options, group_options) = tokio::try_join!(
+		app_model::get_app_view(&app_general_data.app_id, app_general_data.owner_type),
+		app_model::get_app_options(&app_general_data.app_id),
+		app_model::get_app_file_options(&app_general_data.app_id),
+		app_model::get_app_group_options(&app_general_data.app_id)
+	)?;
 
 	echo(AppDetails {
 		options,
 		file_options,
 		details,
+		group_options,
 	})
 }
 
