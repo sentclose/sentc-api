@@ -761,7 +761,7 @@ pub async fn key_rotation(
 	group_as_member_id: Option<&str>,
 ) -> (GroupOutData, Vec<DoneGettingGroupKeysOutput>)
 {
-	let input = sentc_crypto::group::key_rotation(pre_group_key, invoker_public_key, false).unwrap();
+	let input = sentc_crypto::group::key_rotation(pre_group_key, invoker_public_key, false, None, "test".to_string()).unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group_id + "/key_rotation");
 	let client = reqwest::Client::new();
@@ -839,7 +839,7 @@ pub async fn done_key_rotation(
 	for key in out {
 		let key_id = key.new_group_key_id.clone();
 
-		let rotation_out = sentc_crypto::group::done_key_rotation(private_key, public_key, pre_group_key, key).unwrap();
+		let rotation_out = sentc_crypto::group::done_key_rotation(private_key, public_key, pre_group_key, key, None).unwrap();
 
 		//done the key rotation to save the new key
 		let url = get_url("api/v1/group/".to_owned() + group_id + "/key_rotation/" + key_id.as_str());
@@ -896,7 +896,14 @@ pub async fn user_key_rotation(
 	device_invoker_private_key: &PrivateKeyFormat,
 ) -> UserKeyDataInt
 {
-	let input = sentc_crypto::group::key_rotation(pre_group_key, device_invoker_public_key, true).unwrap();
+	let input = sentc_crypto::group::key_rotation(
+		pre_group_key,
+		device_invoker_public_key,
+		true,
+		None,
+		"test".to_string(),
+	)
+	.unwrap();
 
 	let url = get_url("api/v1/user/user_keys/rotation".to_string());
 	let client = reqwest::Client::new();

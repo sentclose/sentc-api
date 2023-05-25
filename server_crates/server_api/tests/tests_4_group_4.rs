@@ -705,7 +705,7 @@ async fn test_31_no_key_rotation_with_wrong_rank()
 	let pre_group_key = &group_keys.group_key;
 	let invoker_public_key = &user.user_data.user_keys[0].public_key;
 
-	let input = sentc_crypto::group::key_rotation(pre_group_key, invoker_public_key, false).unwrap();
+	let input = sentc_crypto::group::key_rotation(pre_group_key, invoker_public_key, false, None, "test".to_string()).unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key_rotation");
 	let client = reqwest::Client::new();
@@ -773,7 +773,7 @@ async fn test_32_key_rotation_limit()
 	}
 
 	//now test the 3rd rotation which should be fail
-	let input = sentc_crypto::group::key_rotation(pre_group_key, invoker_public_key, false).unwrap();
+	let input = sentc_crypto::group::key_rotation(pre_group_key, invoker_public_key, false, None, "test".to_string()).unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key_rotation");
 	let client = reqwest::Client::new();
