@@ -1,0 +1,1 @@
+ALTER TABLE `sentc_group_keys` ADD `signed_by_user_id` VARCHAR(36) NULL AFTER `time`, ADD `signed_by_user_sign_key_id` VARCHAR(36) NULL AFTER `signed_by_user_id`, ADD `signed_by_user_sign_key_alg` TEXT NULL AFTER `signed_by_user_sign_key_id`;

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 23. Mai 2023 um 11:12
+-- Erstellungszeit: 25. Mai 2023 um 20:59
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -459,7 +459,10 @@ CREATE TABLE `sentc_group_keys` (
   `encrypted_group_key_by_eph_key` text DEFAULT NULL COMMENT 'encrypted group master key, encrypted by the eph key. this key needs to distribute to all group member',
   `ephemeral_alg` text DEFAULT NULL COMMENT 'the alg of the eph key',
   `previous_group_key_id` varchar(36) DEFAULT NULL COMMENT 'the key which was used to encrypt the eph key',
-  `time` bigint(20) NOT NULL
+  `time` bigint(20) NOT NULL,
+  `signed_by_user_id` varchar(36) DEFAULT NULL,
+  `signed_by_user_sign_key_id` varchar(36) DEFAULT NULL,
+  `signed_by_user_sign_key_alg` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
