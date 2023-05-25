@@ -8,6 +8,7 @@ use uuid::Uuid;
 
 use crate::group::group_entities::{GroupKeyUpdate, KeyRotationWorkerKey, UserEphKeyOut, UserGroupPublicKeyData};
 use crate::util::api_res::ApiErrorCodes;
+use crate::util::check_id_format;
 
 pub(super) async fn start_key_rotation(
 	app_id: impl Into<AppId>,
@@ -16,6 +17,14 @@ pub(super) async fn start_key_rotation(
 	input: KeyRotationData,
 ) -> AppRes<SymKeyId>
 {
+	check_id_format(&input.previous_group_key_id)?;
+	check_id_format(&input.invoker_public_key_id)?;
+
+	if let (Some(s_id), Some(s_sign_id)) = (&input.signed_by_user_id, &input.signed_by_user_sign_key_id) {
+		check_id_format(s_id)?;
+		check_id_format(s_sign_id)?;
+	}
+
 	let group_id = group_id.into();
 
 	//insert the new group key
