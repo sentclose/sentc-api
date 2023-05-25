@@ -9,6 +9,7 @@ use rustgram_server_util::url_helper::get_name_param_from_req;
 
 use crate::customer_app::app_model::get_app_general;
 use crate::sentc_user_jwt_service::get_jwt_data_from_param;
+use crate::util::check_id_format;
 
 pub struct AppAccess<S>
 {
@@ -47,6 +48,8 @@ async fn access_check(req: &mut Request) -> AppRes<()>
 {
 	let user = get_jwt_data_from_param(req)?;
 	let app_id = get_name_param_from_req(req, "app_id")?;
+
+	check_id_format(app_id)?;
 
 	let data = get_app_general(app_id, &user.id).await?;
 

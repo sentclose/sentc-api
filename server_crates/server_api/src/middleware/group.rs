@@ -18,7 +18,7 @@ use crate::group::group_entities::{InternalGroupData, InternalGroupDataComplete,
 use crate::group::group_model;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::ApiErrorCodes;
-use crate::util::{get_group_cache_key, get_group_user_cache_key, get_group_user_parent_ref_key};
+use crate::util::{check_id_format, get_group_cache_key, get_group_user_cache_key, get_group_user_parent_ref_key};
 
 pub struct GroupMiddleware<S>
 {
@@ -111,12 +111,17 @@ async fn get_group_from_req(req: &mut Request, app_id: Option<&AppId>) -> AppRes
 	let user = get_jwt_data_from_param(req)?;
 	let group_id = get_name_param_from_req(req, "group_id")?;
 
+	check_id_format(group_id)?;
+
 	//when access a group as group member not normal member
 	let headers = req.headers();
 	let group_as_member_id = match headers.get("x-sentc-group-access-id") {
 		Some(v) => {
 			let v = match std::str::from_utf8(v.as_bytes()) {
-				Ok(v) => Some(v),
+				Ok(v) => {
+					check_id_format(v)?;
+					Some(v)
+				},
 				Err(_e) => None,
 			};
 
