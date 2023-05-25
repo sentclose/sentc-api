@@ -1,5 +1,9 @@
 use chrono::{Datelike, TimeZone, Utc};
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
+use uuid::{Uuid, Version};
+
+use crate::util::api_res::ApiErrorCodes;
 
 pub mod api_res;
 pub mod email;
@@ -56,4 +60,26 @@ pub(crate) fn get_begin_of_month() -> AppRes<i64>
 	let beginning_of_month = Utc.with_ymd_and_hms(current_date.year(), current_date.month(), 1, 0, 0, 0);
 
 	Ok(beginning_of_month.unwrap().timestamp_millis())
+}
+
+pub(crate) fn check_id_format(id: &str) -> AppRes<()>
+{
+	let uuid = Uuid::try_parse(id).map_err(|_e| {
+		ServerCoreError::new_msg(
+			400,
+			ApiErrorCodes::UserNotFound,
+			"Id has a wrong format. Make sure to follow the uuid v4 format.",
+		)
+	})?;
+
+	//uuid v4
+	if let Some(Version::Random) = uuid.get_version() {
+		return Ok(());
+	}
+
+	Err(ServerCoreError::new_msg(
+		400,
+		ApiErrorCodes::UserNotFound,
+		"Id has a wrong format. Make sure to follow the uuid v4 format.",
+	))
 }
