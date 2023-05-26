@@ -1,10 +1,10 @@
+use rustgram_server_util::db::id_handling::create_id;
 use rustgram_server_util::db::{bulk_insert, exec, exec_transaction, query_first, query_string, I32Entity, I64Entity, StringEntity, TransactionData};
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::group::GroupKeysForNewMember;
 use sentc_crypto_common::{AppId, GroupId, UserId};
-use uuid::Uuid;
 
 use crate::group::group_entities::{GroupInviteReq, GroupJoinReq, GroupUserListItem, GROUP_INVITE_TYPE_INVITE_REQ, GROUP_INVITE_TYPE_JOIN_REQ};
 use crate::group::group_model;
@@ -172,7 +172,7 @@ pub(super) async fn invite_request(
 	let (sql, params, session_id) = if key_session && keys_for_new_user.len() == 100 {
 		//if there are more keys than 100 -> use a session,
 		// the client will know if there are more keys than 100 and asks the server for a session
-		let session_id = Uuid::new_v4().to_string();
+		let session_id = create_id();
 
 		//language=SQL
 		let sql_in = "INSERT INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, key_upload_session_id, user_type, new_user_rank) VALUES (?,?,?,?,?,?,?)";
@@ -506,7 +506,7 @@ pub(super) async fn accept_join_req(
 	let (sql_in, params_in, session_id) = if key_session && keys_for_new_user.len() == 100 {
 		//if there are more keys than 100 -> use a session,
 		// the client will know if there are more keys than 100 and asks the server for a session
-		let session_id = Uuid::new_v4().to_string();
+		let session_id = create_id();
 
 		//language=SQL
 		let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, key_upload_session_id, type) VALUES (?,?,?,?,?,?)";

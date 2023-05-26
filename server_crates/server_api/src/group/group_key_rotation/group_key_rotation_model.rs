@@ -1,10 +1,10 @@
+use rustgram_server_util::db::id_handling::{check_id_format, create_id};
 use rustgram_server_util::db::{bulk_insert, exec, exec_transaction, query, query_first, query_string, TransactionData};
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::group::{DoneKeyRotationData, KeyRotationData};
 use sentc_crypto_common::{AppId, DeviceId, GroupId, SymKeyId, UserId};
-use uuid::Uuid;
 
 use crate::group::group_entities::{GroupKeyUpdate, KeyRotationWorkerKey, UserEphKeyOut, UserGroupPublicKeyData};
 use crate::util::api_res::ApiErrorCodes;
@@ -16,11 +16,19 @@ pub(super) async fn start_key_rotation(
 	input: KeyRotationData,
 ) -> AppRes<SymKeyId>
 {
+	check_id_format(&input.previous_group_key_id)?;
+	check_id_format(&input.invoker_public_key_id)?;
+
+	if let (Some(s_id), Some(s_sign_id)) = (&input.signed_by_user_id, &input.signed_by_user_sign_key_id) {
+		check_id_format(s_id)?;
+		check_id_format(s_sign_id)?;
+	}
+
 	let group_id = group_id.into();
 
 	//insert the new group key
 
-	let key_id = Uuid::new_v4().to_string();
+	let key_id = create_id();
 	let time = get_time()?;
 
 	//language=SQL
@@ -41,8 +49,11 @@ INSERT INTO sentc_group_keys
      time,
      encrypted_sign_key,
      verify_key,
-     keypair_sign_alg
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+     keypair_sign_alg,
+     signed_by_user_id,
+     signed_by_user_sign_key_id,
+     signed_by_user_sign_key_alg
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let params = set_params!(
 		key_id.clone(),
@@ -59,7 +70,10 @@ INSERT INTO sentc_group_keys
 		time.to_string(),
 		input.encrypted_sign_key,
 		input.verify_key,
-		input.keypair_sign_alg
+		input.keypair_sign_alg,
+		input.signed_by_user_id,
+		input.signed_by_user_sign_key_id,
+		input.signed_by_user_sign_key_alg
 	);
 
 	//insert the rotated keys (from the starter) into the group user keys
@@ -121,7 +135,10 @@ SELECT
     encrypted_group_key_by_eph_key,
     previous_group_key_id,
     ephemeral_alg,
-    gk.time
+    gk.time,
+    signed_by_user_id,
+    signed_by_user_sign_key_id,
+    signed_by_user_sign_key_alg
 FROM 
     sentc_group_keys gk, 
     sentc_group_user_key_rotation gkr

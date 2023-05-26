@@ -30,14 +30,14 @@ dotenv = "0.15.0"
 # for caching trait
 async-trait = "0.1.56"
 
-rustgram-server-util = {version = "0.1.8", git= "https://gitlab.com/grammm/rustgram/rustgram-server-util.git", rev = "6cd0213aa8c89708e522a2be0c1ecd0f1aaa67a9", default-features = false, features = ["derive_macro"]}
+rustgram-server-util = {version = "0.1.8", git= "https://gitlab.com/grammm/rustgram/rustgram-server-util.git", rev = "9016f78ba0865e7fd35fb8ac004c3a9bff5315eb", default-features = false, features = ["derive_macro"]}
 
 #_______________________________________________________________________________________________________________________
 # salt creation on server
 # to get it from ssh: write this in your ~/.cargo/config.toml:
 # [net]
 # git-fetch-with-cli = true
-sentc-crypto = {version = "0.1.0", git = "ssh://git@github.com/sentclose/sentc.git", rev="8c181a68aa8d82d1729d8895f06de4d888eb248a", default-features = false, features = ["rust", "server"]}
+sentc-crypto = {version = "0.1.0", git = "ssh://git@github.com/sentclose/sentc.git", rev="363db7136a6e3497cab0066bbbab5c26b74ba8c8", default-features = false, features = ["rust", "server"]}
 
 #_______________________________________________________________________________________________________________________
 # json handling

@@ -1,5 +1,6 @@
 use rustgram::service::IntoResponse;
 use rustgram::{Request, Response};
+use rustgram_server_util::db::id_handling::create_id;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::input_helper::{bytes_to_json, get_raw_body};
 use rustgram_server_util::res::{echo, echo_success, AppRes, JRes, ServerSuccessOutput};
@@ -7,7 +8,6 @@ use rustgram_server_util::url_helper::{get_name_param_from_params, get_name_para
 use sentc_crypto_common::file::{FileNameUpdate, FilePartRegisterOutput, FileRegisterInput, FileRegisterOutput};
 use sentc_crypto_common::FileId;
 use server_api_common::app::{FILE_STORAGE_OWN, FILE_STORAGE_SENTC};
-use uuid::Uuid;
 
 use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use crate::file::file_entities::{FileMetaData, FilePartListItem};
@@ -99,7 +99,7 @@ pub async fn register_file_part(req: Request) -> JRes<FilePartRegisterOutput>
 
 	let (file_id, _chunk_size, sequence, end) = check_session(&req, app_id, &user.id).await?;
 
-	let part_id = Uuid::new_v4().to_string();
+	let part_id = create_id();
 
 	file_model::save_part(app_id, file_id, part_id.clone(), 0, sequence, end, true).await?;
 
@@ -129,7 +129,7 @@ pub async fn upload_part(req: Request) -> JRes<ServerSuccessOutput>
 	let (file_id, chunk_size, sequence, end) = check_session(&req, &app_id, &user.id).await?;
 
 	//create the id here to upload the right file
-	let part_id = Uuid::new_v4().to_string();
+	let part_id = create_id();
 
 	let size = rustgram_server_util::file::upload_part(req, &part_id, chunk_size).await?;
 

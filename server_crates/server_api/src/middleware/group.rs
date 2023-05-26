@@ -7,6 +7,7 @@ use rustgram::service::{IntoResponse, Service};
 use rustgram::{Request, Response};
 use rustgram_server_util::cache;
 use rustgram_server_util::cache::{CacheVariant, LONG_TTL, SHORT_TTL};
+use rustgram_server_util::db::id_handling::check_id_format;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::input_helper::{bytes_to_json, json_to_string};
 use rustgram_server_util::res::AppRes;
@@ -111,12 +112,17 @@ async fn get_group_from_req(req: &mut Request, app_id: Option<&AppId>) -> AppRes
 	let user = get_jwt_data_from_param(req)?;
 	let group_id = get_name_param_from_req(req, "group_id")?;
 
+	check_id_format(group_id)?;
+
 	//when access a group as group member not normal member
 	let headers = req.headers();
 	let group_as_member_id = match headers.get("x-sentc-group-access-id") {
 		Some(v) => {
 			let v = match std::str::from_utf8(v.as_bytes()) {
-				Ok(v) => Some(v),
+				Ok(v) => {
+					check_id_format(v)?;
+					Some(v)
+				},
 				Err(_e) => None,
 			};
 

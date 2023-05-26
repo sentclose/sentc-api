@@ -7,9 +7,9 @@ edition = "2021"
 
 [dependencies]
 # the server outputs for the frontend to handle
-sentc-crypto-common = {version = "0.1.0", path = "../../sdk-common" }
+sentc-crypto-common = {path = "../../sdk-common" }
 
-server_api_common = {version = "0.1.0", path = "../server_api_common", default-features = false, features = ["server"]}
+server_api_common = {path = "../server_api_common", default-features = false, features = ["server"]}
 
 rustgram-server-util = {workspace = true}
 
@@ -29,9 +29,6 @@ async-trait = {workspace = true}
 # json handling
 serde_json = {workspace = true}
 serde = {workspace = true}
-
-# id
-uuid = {version="1.1.2", features = ["v4", "fast-rng"]}
 
 chrono = "0.4"
 

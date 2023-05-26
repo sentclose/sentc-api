@@ -6,6 +6,7 @@ use ring::rand;
 use ring::signature::{self, KeyPair};
 use rustgram::Request;
 use rustgram_server_util::cache::{CacheVariant, LONG_TTL};
+use rustgram_server_util::db::id_handling::check_id_format;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::input_helper::{bytes_to_json, json_to_string};
 use rustgram_server_util::res::AppRes;
@@ -115,15 +116,22 @@ pub async fn auth(app_id: impl Into<AppId>, jwt: &str, check_exp: bool) -> Resul
 	let decoded = decode::<Claims>(jwt, &DecodingKey::from_ec_der(&verify_key), &validation)
 		.map_err(|_e| ServerCoreError::new_msg(401, ApiErrorCodes::JwtValidation, "Wrong jwt"))?;
 
+	let id = decoded.claims.aud;
+	let device_id = decoded.claims.sub;
+
+	//check the user and device id format
+	check_id_format(&id)?;
+	check_id_format(&device_id)?;
+
 	//now check if the user is in the app
 	//this is necessary because now we check if the values inside the jwt are correct.
 	//fetch the device group id too, this id can not be faked and is safe to use internally
-	let group_id = get_user_in_app(app_id, &decoded.claims.aud).await?;
+	let group_id = get_user_in_app(app_id, &id).await?;
 
 	Ok((
 		UserJwtEntity {
-			id: decoded.claims.aud,
-			device_id: decoded.claims.sub,
+			id,
+			device_id,
 			group_id,
 			fresh: decoded.claims.fresh,
 		},

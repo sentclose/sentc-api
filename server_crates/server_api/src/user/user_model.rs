@@ -1,3 +1,4 @@
+use rustgram_server_util::db::id_handling::create_id;
 use rustgram_server_util::db::{
 	exec,
 	exec_transaction,
@@ -15,7 +16,6 @@ use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::user::{ChangePasswordData, KeyDerivedData, MasterKey, ResetPasswordData};
 use sentc_crypto_common::{AppId, DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, UserId};
-use uuid::Uuid;
 
 use crate::user::user_entities::{
 	CaptchaEntity,
@@ -355,13 +355,13 @@ pub(super) async fn register(
 	//data for the user table
 	//language=SQL
 	let sql_user = "INSERT INTO sentc_user (id, app_id, user_group_id, time) VALUES (?,?,?,?)";
-	let user_id = Uuid::new_v4().to_string();
+	let user_id = create_id();
 	let time = get_time()?;
 
 	//insert a fake group id for now, and update the user group id when user group was created
 	let user_params = set_params!(user_id.clone(), app_id.clone(), "none".to_string(), time.to_string());
 
-	let device_id = Uuid::new_v4().to_string();
+	let device_id = create_id();
 
 	//data for the user key table
 	let (sql_keys, key_params) = prepare_register_device(
@@ -398,7 +398,7 @@ pub(super) async fn register_device(
 	token: impl Into<String>,
 ) -> AppRes<DeviceId>
 {
-	let device_id = Uuid::new_v4().to_string();
+	let device_id = create_id();
 	let time = get_time()?;
 
 	let (sql_keys, key_params) = prepare_register_device(
@@ -734,7 +734,7 @@ pub(super) async fn get_group_key_rotations_in_actual_month(app_id: impl Into<Ap
 pub(super) async fn save_captcha_solution(app_id: impl Into<AppId>, solution: String) -> AppRes<String>
 {
 	let time = get_time()?;
-	let captcha_id = Uuid::new_v4().to_string();
+	let captcha_id = create_id();
 
 	//language=SQL
 	let sql = "INSERT INTO sentc_captcha (id, app_id, solution, time) VALUES (?,?,?,?)";

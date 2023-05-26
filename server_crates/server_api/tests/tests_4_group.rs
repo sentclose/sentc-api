@@ -1359,7 +1359,7 @@ async fn test_31_start_key_rotation()
 		.group_key;
 	let invoker_public_key = &user.user_data.user_keys[0].public_key;
 
-	let input = sentc_crypto::group::key_rotation(pre_group_key, invoker_public_key, false).unwrap();
+	let input = sentc_crypto::group::key_rotation(pre_group_key, invoker_public_key, false, None, "test".to_string()).unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key_rotation");
 	let client = reqwest::Client::new();
@@ -1464,6 +1464,7 @@ async fn test_32_done_key_rotation_for_other_user()
 				.unwrap()[0]
 				.group_key,
 			key,
+			None,
 		)
 		.unwrap();
 

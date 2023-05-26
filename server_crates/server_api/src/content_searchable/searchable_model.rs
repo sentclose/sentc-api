@@ -1,15 +1,15 @@
+use rustgram_server_util::db::id_handling::create_id;
 use rustgram_server_util::db::{bulk_insert, exec, query_string};
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::content_searchable::SearchCreateData;
 use sentc_crypto_common::{AppId, CategoryId, ContentId, GroupId, UserId};
-use uuid::Uuid;
 
 use crate::content_searchable::searchable_entities::ListSearchItem;
 
 pub(super) async fn create(app_id: impl Into<AppId>, data: SearchCreateData, group_id: Option<GroupId>, user_id: Option<UserId>) -> AppRes<()>
 {
-	let content_id = Uuid::new_v4().to_string();
+	let content_id = create_id();
 	let time = get_time()?;
 
 	//language=SQL

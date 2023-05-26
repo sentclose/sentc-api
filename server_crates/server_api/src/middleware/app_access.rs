@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use rustgram::service::{IntoResponse, Service};
 use rustgram::{Request, Response};
+use rustgram_server_util::db::id_handling::check_id_format;
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::url_helper::get_name_param_from_req;
 
@@ -47,6 +48,8 @@ async fn access_check(req: &mut Request) -> AppRes<()>
 {
 	let user = get_jwt_data_from_param(req)?;
 	let app_id = get_name_param_from_req(req, "app_id")?;
+
+	check_id_format(app_id)?;
 
 	let data = get_app_general(app_id, &user.id).await?;
 

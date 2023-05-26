@@ -364,6 +364,13 @@ pub struct GroupKeyUpdate
 	pub previous_group_key_id: SymKeyId,
 	pub ephemeral_alg: String,
 	pub time: u128,
+
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub signed_by_user_id: Option<UserId>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub signed_by_user_sign_key_id: Option<SignKeyPairId>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub signed_by_user_sign_key_alg: Option<String>,
 }
 
 impl Into<KeyRotationInput> for GroupKeyUpdate
@@ -379,6 +386,10 @@ impl Into<KeyRotationInput> for GroupKeyUpdate
 			encrypted_eph_key_key_id: self.encrypted_eph_key_key_id,
 			time: self.time,
 			new_group_key_id: self.new_group_key_id,
+
+			signed_by_user_id: self.signed_by_user_id,
+			signed_by_user_sign_key_id: self.signed_by_user_sign_key_id,
+			signed_by_user_sign_key_alg: self.signed_by_user_sign_key_alg,
 		}
 	}
 }

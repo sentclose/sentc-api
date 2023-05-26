@@ -1,9 +1,9 @@
+use rustgram_server_util::db::id_handling::create_id;
 use rustgram_server_util::db::{exec, exec_string, exec_transaction, get_in, query_first, query_string, TransactionData, TupleEntity};
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params, set_params_vec, set_params_vec_outer};
 use sentc_crypto_common::{AppId, CustomerId, FileId, FileSessionId, GroupId, PartId, SymKeyId, UserId};
-use uuid::Uuid;
 
 use crate::file::file_entities::{FileExternalStorageUrl, FileMetaData, FilePartListItem, FilePartListItemDelete, FileSessionCheck};
 use crate::file::file_service::FILE_BELONGS_TO_TYPE_GROUP;
@@ -27,8 +27,8 @@ pub(super) async fn register_file(
 {
 	let app_id = app_id.into();
 
-	let file_id = Uuid::new_v4().to_string();
-	let session_id = Uuid::new_v4().to_string();
+	let file_id = create_id();
+	let session_id = create_id();
 
 	let time = get_time()?;
 

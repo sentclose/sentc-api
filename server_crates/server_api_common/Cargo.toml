@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 # the server outputs for the frontend to handle
-sentc-crypto-common = {version = "0.1.0", path = "../../sdk-common" }
+sentc-crypto-common = {path = "../../sdk-common"}
 
 # json handling
 serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}
