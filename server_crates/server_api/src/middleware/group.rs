@@ -7,6 +7,7 @@ use rustgram::service::{IntoResponse, Service};
 use rustgram::{Request, Response};
 use rustgram_server_util::cache;
 use rustgram_server_util::cache::{CacheVariant, LONG_TTL, SHORT_TTL};
+use rustgram_server_util::db::id_handling::check_id_format;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::input_helper::{bytes_to_json, json_to_string};
 use rustgram_server_util::res::AppRes;
@@ -18,7 +19,7 @@ use crate::group::group_entities::{InternalGroupData, InternalGroupDataComplete,
 use crate::group::group_model;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::ApiErrorCodes;
-use crate::util::{check_id_format, get_group_cache_key, get_group_user_cache_key, get_group_user_parent_ref_key};
+use crate::util::{get_group_cache_key, get_group_user_cache_key, get_group_user_parent_ref_key};
 
 pub struct GroupMiddleware<S>
 {

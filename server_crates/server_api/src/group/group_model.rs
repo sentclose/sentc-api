@@ -1,3 +1,4 @@
+use rustgram_server_util::db::id_handling::create_id;
 use rustgram_server_util::db::{
 	exec,
 	exec_string,
@@ -15,7 +16,6 @@ use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params, set_params_vec};
 use sentc_crypto_common::group::CreateData;
 use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
-use uuid::Uuid;
 
 use crate::group::group_entities::{
 	GroupChildrenList,
@@ -315,7 +315,7 @@ fn prepare_create(
 		_ => (user_id.into(), 0, false),
 	};
 
-	let group_id = Uuid::new_v4().to_string();
+	let group_id = create_id();
 
 	let time = get_time()?;
 
@@ -465,7 +465,7 @@ INSERT INTO sentc_group_keys
      ) 
 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL,NULL)";
 
-	let group_key_id = Uuid::new_v4().to_string(); //use the first group key id for the encrypted_hmac_encryption_key_id too
+	let group_key_id = create_id(); //use the first group key id for the encrypted_hmac_encryption_key_id too
 
 	let encrypted_ephemeral_key: Option<String> = None;
 	let encrypted_group_key_by_eph_key: Option<String> = None;
@@ -502,7 +502,7 @@ INSERT INTO sentc_group_hmac_keys
      ) 
 VALUES (?,?,?,?,?,?,?)";
 
-	let group_hmac_key_id = Uuid::new_v4().to_string();
+	let group_hmac_key_id = create_id();
 
 	let group_hmac_params = set_params!(
 		group_hmac_key_id,

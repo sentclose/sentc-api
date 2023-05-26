@@ -1,14 +1,13 @@
+use rustgram_server_util::db::id_handling::{check_id_format, create_id};
 use rustgram_server_util::db::{bulk_insert, exec, exec_transaction, query, query_first, query_string, TransactionData};
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::group::{DoneKeyRotationData, KeyRotationData};
 use sentc_crypto_common::{AppId, DeviceId, GroupId, SymKeyId, UserId};
-use uuid::Uuid;
 
 use crate::group::group_entities::{GroupKeyUpdate, KeyRotationWorkerKey, UserEphKeyOut, UserGroupPublicKeyData};
 use crate::util::api_res::ApiErrorCodes;
-use crate::util::check_id_format;
 
 pub(super) async fn start_key_rotation(
 	app_id: impl Into<AppId>,
@@ -29,7 +28,7 @@ pub(super) async fn start_key_rotation(
 
 	//insert the new group key
 
-	let key_id = Uuid::new_v4().to_string();
+	let key_id = create_id();
 	let time = get_time()?;
 
 	//language=SQL

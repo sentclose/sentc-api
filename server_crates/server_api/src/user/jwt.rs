@@ -6,6 +6,7 @@ use ring::rand;
 use ring::signature::{self, KeyPair};
 use rustgram::Request;
 use rustgram_server_util::cache::{CacheVariant, LONG_TTL};
+use rustgram_server_util::db::id_handling::check_id_format;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::input_helper::{bytes_to_json, json_to_string};
 use rustgram_server_util::res::AppRes;
@@ -17,7 +18,7 @@ use crate::customer_app::app_entities::AppJwt;
 use crate::user::user_entities::UserJwtEntity;
 use crate::user::{user_model, user_service};
 use crate::util::api_res::ApiErrorCodes;
-use crate::util::{check_id_format, get_app_jwt_sign_key, get_app_jwt_verify_key, get_user_in_app_key};
+use crate::util::{get_app_jwt_sign_key, get_app_jwt_verify_key, get_user_in_app_key};
 
 pub const JWT_ALG: &str = "ES384";
 

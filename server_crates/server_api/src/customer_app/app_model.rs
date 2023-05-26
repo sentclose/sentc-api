@@ -1,3 +1,4 @@
+use rustgram_server_util::db::id_handling::create_id;
 use rustgram_server_util::db::{exec, exec_transaction, query, query_first, query_string, Params, TransactionData};
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
@@ -5,7 +6,6 @@ use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::{AppId, CustomerId, GroupId, JwtKeyId, UserId};
 use server_api_common::app::{AppFileOptionsInput, AppGroupOption, AppJwtData, AppOptions, AppRegisterInput};
 use server_api_common::customer::CustomerAppList;
-use uuid::Uuid;
 
 use crate::customer_app::app_entities::{AppData, AppDataGeneral, AuthWithToken};
 use crate::sentc_app_entities::{AppCustomerAccess, CUSTOMER_OWNER_TYPE_GROUP, CUSTOMER_OWNER_TYPE_USER};
@@ -346,7 +346,7 @@ pub(super) async fn create_app(
 	group_id: Option<impl Into<GroupId>>,
 ) -> AppRes<(AppId, JwtKeyId)>
 {
-	let app_id = Uuid::new_v4().to_string();
+	let app_id = create_id();
 	let time = get_time()?;
 
 	//language=SQL
@@ -381,7 +381,7 @@ VALUES (?,?,?,?,?,?,?,?)";
 		time.to_string()
 	);
 
-	let jwt_key_id = Uuid::new_v4().to_string();
+	let jwt_key_id = create_id();
 
 	//language=SQL
 	let sql_jwt = "INSERT INTO sentc_app_jwt_keys (id, app_id, sign_key, verify_key, alg, time) VALUES (?,?,?,?,?,?)";
@@ -467,7 +467,7 @@ pub(super) async fn add_jwt_keys(
 ) -> AppRes<JwtKeyId>
 {
 	let time = get_time()?;
-	let jwt_key_id = Uuid::new_v4().to_string();
+	let jwt_key_id = create_id();
 
 	//language=SQL
 	let sql = "INSERT INTO sentc_app_jwt_keys (id, app_id, sign_key, verify_key, alg, time) VALUES (?,?,?,?,?,?)";

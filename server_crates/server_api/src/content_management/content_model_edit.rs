@@ -1,9 +1,9 @@
 use rustgram_server_util::db::exec;
+use rustgram_server_util::db::id_handling::create_id;
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::content::CreateData;
 use sentc_crypto_common::{AppId, ContentId, GroupId, UserId};
-use uuid::Uuid;
 
 pub(super) async fn create_content(
 	app_id: impl Into<AppId>,
@@ -13,7 +13,7 @@ pub(super) async fn create_content(
 	user_id: Option<UserId>,
 ) -> AppRes<ContentId>
 {
-	let content_id = Uuid::new_v4().to_string();
+	let content_id = create_id();
 	let time = get_time()?;
 
 	//language=SQL

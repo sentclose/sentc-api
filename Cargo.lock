@@ -2004,7 +2004,7 @@ dependencies = [
 [[package]]
 name = "rustgram-server-util"
 version = "0.1.8"
-source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=6cd0213aa8c89708e522a2be0c1ecd0f1aaa67a9#6cd0213aa8c89708e522a2be0c1ecd0f1aaa67a9"
+source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=9016f78ba0865e7fd35fb8ac004c3a9bff5315eb#9016f78ba0865e7fd35fb8ac004c3a9bff5315eb"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2021,15 +2021,16 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-util",
+ "uuid",
 ]
 
 [[package]]
 name = "rustgram-server-util-macros"
 version = "0.1.8"
-source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=6cd0213aa8c89708e522a2be0c1ecd0f1aaa67a9#6cd0213aa8c89708e522a2be0c1ecd0f1aaa67a9"
+source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=9016f78ba0865e7fd35fb8ac004c3a9bff5315eb#9016f78ba0865e7fd35fb8ac004c3a9bff5315eb"
 dependencies = [
  "quote",
- "syn 2.0.15",
+ "syn 1.0.98",
 ]
 
 [[package]]
@@ -2235,7 +2236,6 @@ dependencies = [
  "serde_json",
  "server_api_common",
  "tokio",
- "uuid",
 ]
 
 [[package]]

@@ -1,10 +1,10 @@
+use rustgram_server_util::db::id_handling::create_id;
 use rustgram_server_util::db::{exec, query_first, query_string};
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerInput;
 use sentc_crypto_common::{AppId, SymKeyId, UserId};
-use uuid::Uuid;
 
 use crate::key_management::key_entity::SymKeyEntity;
 use crate::util::api_res::ApiErrorCodes;
@@ -15,7 +15,7 @@ pub(super) async fn register_sym_key(
 	input: GeneratedSymKeyHeadServerInput,
 ) -> AppRes<SymKeyId>
 {
-	let key_id = Uuid::new_v4().to_string();
+	let key_id = create_id();
 	let time = get_time()?;
 
 	//language=SQL
