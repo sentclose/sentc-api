@@ -601,7 +601,7 @@ async fn test_16_accept_join_with_rank()
 //re invite
 
 #[tokio::test]
-async fn test_20_re_invite_user()
+async fn test_17_re_invite_user()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = &GROUP_TEST_STATE.get().unwrap().read().await[0];
@@ -662,11 +662,237 @@ async fn test_20_re_invite_user()
 }
 
 //__________________________________________________________________________________________________
+//signed key rotation
+
+#[tokio::test]
+async fn test_20_do_signed_key_rotation()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = &mut GROUP_TEST_STATE.get().unwrap().write().await[0];
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let user = &users[0];
+
+	let group_keys_list = group.decrypted_group_keys.get_mut(&user.user_id).unwrap();
+	let group_keys = &group_keys_list[0];
+	let pre_group_key = &group_keys.group_key;
+	let invoker_public_key = &user.user_data.user_keys[0].public_key;
+	let invoker_private_key = &user.user_data.user_keys[0].private_key;
+	let invoker_sign_key = &user.user_data.user_keys[0].sign_key;
+
+	let input = sentc_crypto::group::key_rotation(
+		pre_group_key,
+		invoker_public_key,
+		false,
+		Some(invoker_sign_key),
+		user.user_id.clone(),
+	)
+	.unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key_rotation");
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: KeyRotationStartServerOutput = handle_server_response(&body).unwrap();
+
+	let (_, mut new_keys) = get_group(
+		secret_token,
+		user.user_data.jwt.as_str(),
+		out.group_id.as_str(),
+		invoker_private_key,
+		false,
+	)
+	.await;
+
+	//the newest group key is first because of order by time
+	group_keys_list.push(new_keys.swap_remove(0));
+
+	tokio::time::sleep(Duration::from_millis(50)).await;
+}
+
+#[tokio::test]
+async fn test_21_finished_signed_key_rotation_without_verify()
+{
+	//do this with user 1
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = &GROUP_TEST_STATE.get().unwrap().read().await[0];
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let user = &users[1];
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key_rotation");
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let mut out: Vec<sentc_crypto::sdk_common::group::KeyRotationInput> = handle_server_response(&body).unwrap();
+
+	assert_eq!(out.len(), 1);
+
+	let newest_key = out.swap_remove(0);
+	let newest_key_id_to_fetch = newest_key.new_group_key_id.clone();
+
+	//this should be the newest key
+	assert_eq!(
+		group.decrypted_group_keys.get(&users[0].user_id).unwrap()[1]
+			.group_key
+			.key_id,
+		newest_key.new_group_key_id
+	);
+
+	assert_eq!(newest_key.signed_by_user_id, Some(users[0].user_id.clone()));
+	assert_eq!(
+		newest_key.signed_by_user_sign_key_id,
+		Some(users[0].user_data.user_keys[0].sign_key.key_id.clone())
+	);
+
+	//not verify the keys
+	let rotation_out = sentc_crypto::group::done_key_rotation(
+		&user.user_data.user_keys[0].private_key,
+		&user.user_data.user_keys[0].public_key,
+		&group
+			.decrypted_group_keys
+			.get(user.user_id.as_str())
+			.unwrap()[0]
+			.group_key,
+		newest_key,
+		None,
+	)
+	.unwrap();
+
+	//done the key rotation to save the new key
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key_rotation/" + &newest_key_id_to_fetch);
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(rotation_out)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
+
+	let data_user_1 = get_group(
+		secret_token,
+		user.user_data.jwt.as_str(),
+		group.group_id.as_str(),
+		&user.user_data.user_keys[0].private_key,
+		false,
+	)
+	.await;
+
+	assert_eq!(data_user_1.0.keys.len(), 2);
+	assert_eq!(data_user_1.1.len(), 2);
+}
+
+#[tokio::test]
+async fn test_22_finished_signed_key_rotation_wit_verify()
+{
+	//do this with user 2
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = &GROUP_TEST_STATE.get().unwrap().read().await[0];
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let user = &users[2];
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key_rotation");
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let mut out: Vec<sentc_crypto::sdk_common::group::KeyRotationInput> = handle_server_response(&body).unwrap();
+
+	assert_eq!(out.len(), 1);
+
+	let newest_key = out.swap_remove(0);
+	let newest_key_id_to_fetch = newest_key.new_group_key_id.clone();
+
+	//this should be the newest key
+	assert_eq!(
+		group.decrypted_group_keys.get(&users[0].user_id).unwrap()[1]
+			.group_key
+			.key_id,
+		newest_key.new_group_key_id
+	);
+
+	assert_eq!(newest_key.signed_by_user_id, Some(users[0].user_id.clone()));
+	assert_eq!(
+		newest_key.signed_by_user_sign_key_id,
+		Some(users[0].user_data.user_keys[0].sign_key.key_id.clone())
+	);
+
+	//this time verify the keys
+	let rotation_out = sentc_crypto::group::done_key_rotation(
+		&user.user_data.user_keys[0].private_key,
+		&user.user_data.user_keys[0].public_key,
+		&group
+			.decrypted_group_keys
+			.get(user.user_id.as_str())
+			.unwrap()[0]
+			.group_key,
+		newest_key,
+		Some(&users[0].user_data.user_keys[0].exported_verify_key),
+	)
+	.unwrap();
+
+	//done the key rotation to save the new key
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key_rotation/" + &newest_key_id_to_fetch);
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(user.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(rotation_out)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
+
+	let data_user_1 = get_group(
+		secret_token,
+		user.user_data.jwt.as_str(),
+		group.group_id.as_str(),
+		&user.user_data.user_keys[0].private_key,
+		false,
+	)
+	.await;
+
+	assert_eq!(data_user_1.0.keys.len(), 2);
+	assert_eq!(data_user_1.1.len(), 2);
+}
+
+//__________________________________________________________________________________________________
 
 //key rotation with limits from app options
 
 #[tokio::test]
-async fn test_30_change_app_group_options()
+async fn test_40_change_app_group_options()
 {
 	let customer = &CUSTOMER_TEST_STATE.get().unwrap().read().await;
 	let app = &APP_TEST_STATE.get().unwrap().read().await;
@@ -674,7 +900,7 @@ async fn test_30_change_app_group_options()
 	let url = get_url("api/v1/customer/app/".to_owned() + &app.app_id + "/group_options");
 
 	let input = AppGroupOption {
-		max_key_rotation_month: 2,
+		max_key_rotation_month: 3, //set to 3 because we already did a rotation for the signed key rotation test
 		min_rank_key_rotation: 1,
 	};
 
@@ -693,7 +919,7 @@ async fn test_30_change_app_group_options()
 }
 
 #[tokio::test]
-async fn test_31_no_key_rotation_with_wrong_rank()
+async fn test_41_no_key_rotation_with_wrong_rank()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = &GROUP_TEST_STATE.get().unwrap().read().await[0];
@@ -736,13 +962,13 @@ async fn test_31_no_key_rotation_with_wrong_rank()
 }
 
 #[tokio::test]
-async fn test_32_key_rotation_limit()
+async fn test_42_key_rotation_limit()
 {
 	//Do two key rotations (should be in the limit)
 	//the 3rd must be an error
 
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
-	let group = &mut GROUP_TEST_STATE.get().unwrap().write().await[0];
+	let group = &GROUP_TEST_STATE.get().unwrap().read().await[0];
 
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let user = &users[0];
@@ -752,12 +978,10 @@ async fn test_32_key_rotation_limit()
 	let invoker_public_key = &user.user_data.user_keys[0].public_key;
 	let invoker_private_key = &user.user_data.user_keys[0].private_key;
 
-	let mut keys = vec![];
-
 	for _ in 0..2 {
 		// this way is not correct because the old pre group key is used for each rotation.
 		// this should be avoid in prod but for the test it is ok
-		let (_, mut new_keys) = key_rotation(
+		let (_, _new_keys) = key_rotation(
 			secret_token,
 			user.user_data.jwt.as_str(),
 			&group.group_id,
@@ -768,7 +992,6 @@ async fn test_32_key_rotation_limit()
 		)
 		.await;
 
-		keys.append(&mut new_keys);
 		tokio::time::sleep(Duration::from_millis(50)).await;
 	}
 
@@ -801,12 +1024,6 @@ async fn test_32_key_rotation_limit()
 	}
 
 	tokio::time::sleep(Duration::from_millis(50)).await;
-
-	group
-		.decrypted_group_keys
-		.get_mut(&user.user_id)
-		.unwrap()
-		.append(&mut keys);
 }
 
 //__________________________________________________________________________________________________
