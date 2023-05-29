@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 25. Mai 2023 um 20:59
+-- Erstellungszeit: 29. Mai 2023 um 16:38
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -462,7 +462,9 @@ CREATE TABLE `sentc_group_keys` (
   `time` bigint(20) NOT NULL,
   `signed_by_user_id` varchar(36) DEFAULT NULL,
   `signed_by_user_sign_key_id` varchar(36) DEFAULT NULL,
-  `signed_by_user_sign_key_alg` text DEFAULT NULL
+  `signed_by_user_sign_key_alg` text DEFAULT NULL,
+  `public_key_sig` text DEFAULT NULL,
+  `public_key_sig_key_id` varchar(36) DEFAULT NULL COMMENT 'the key id which was used to create the sig'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
