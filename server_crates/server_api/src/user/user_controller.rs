@@ -1,4 +1,5 @@
 use rustgram::Request;
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::input_helper::{bytes_to_json, get_raw_body};
 use rustgram_server_util::res::{echo, echo_success, JRes, ServerSuccessOutput};
 use rustgram_server_util::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_time_from_url_param};
@@ -36,6 +37,7 @@ use crate::user::jwt::get_jwt_data_from_param;
 use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
 use crate::user::user_service::UserAction;
 use crate::user::{user_model, user_service};
+use crate::util::api_res::ApiErrorCodes;
 
 pub(crate) async fn exists(mut req: Request) -> JRes<UserIdentifierAvailableServerOutput>
 {
@@ -374,6 +376,14 @@ pub(crate) async fn user_group_key_rotation(mut req: Request) -> JRes<KeyRotatio
 	check_endpoint_with_app_options(app_data, Endpoint::UserKeyRotation)?;
 
 	let input: KeyRotationData = bytes_to_json(&body)?;
+
+	if input.public_key_sig.is_none() || input.verify_key.is_none() || input.encrypted_sign_key.is_none() || input.keypair_sign_alg.is_none() {
+		return Err(ServerCoreError::new_msg(
+			400,
+			ApiErrorCodes::UserKeysNotFound,
+			"User keys not found. Make sure to create the user group.",
+		));
+	}
 
 	let out = group_key_rotation_service::start_key_rotation(
 		&app_data.app_data.app_id,

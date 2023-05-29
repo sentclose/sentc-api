@@ -223,6 +223,10 @@ pub struct GroupUserKeys
 	pub keypair_sign_alg: Option<String>,
 	#[serde(skip_serializing_if = "Option::is_none")]
 	pub keypair_sign_id: Option<SignKeyPairId>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub public_key_sig: Option<String>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub public_key_sig_key_id: Option<String>,
 }
 
 impl Into<GroupKeyServerOutput> for GroupUserKeys
@@ -243,6 +247,8 @@ impl Into<GroupKeyServerOutput> for GroupUserKeys
 			verify_key: self.verify_key,
 			keypair_sign_alg: self.keypair_sign_alg,
 			keypair_sign_id: self.keypair_sign_id,
+			public_key_sig: self.public_key_sig,
+			public_key_sig_key_id: self.public_key_sig_key_id,
 		}
 	}
 }
@@ -272,6 +278,8 @@ impl rustgram_server_util::db::mysql_async_export::prelude::FromRow for GroupUse
 			verify_key: rustgram_server_util::take_or_err_opt!(row, 9, String),
 			keypair_sign_alg: rustgram_server_util::take_or_err_opt!(row, 10, String),
 			keypair_sign_id: Some(k_id),
+			public_key_sig: rustgram_server_util::take_or_err_opt!(row, 11, String),
+			public_key_sig_key_id: rustgram_server_util::take_or_err_opt!(row, 12, String),
 		})
 	}
 }
@@ -299,6 +307,8 @@ impl rustgram_server_util::db::FromSqliteRow for GroupUserKeys
 			verify_key: take_or_err!(row, 9),
 			keypair_sign_alg: take_or_err!(row, 10),
 			keypair_sign_id: Some(k_id),
+			public_key_sig: take_or_err!(row, 11),
+			public_key_sig_key_id: take_or_err!(row, 12),
 		})
 	}
 }

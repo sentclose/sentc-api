@@ -225,7 +225,7 @@ pub(super) async fn get_public_key_by_id(
 {
 	//language=SQL
 	let sql = r"
-SELECT gk.id, public_key, private_key_pair_alg 
+SELECT gk.id, public_key, private_key_pair_alg, public_key_sig, public_key_sig_key_id 
 FROM 
     sentc_user u, 
     sentc_group_keys gk
@@ -256,7 +256,7 @@ pub(super) async fn get_public_key_data(app_id: impl Into<AppId>, user_id: impl 
 {
 	//language=SQL
 	let sql = r"
-SELECT gk.id, public_key, private_key_pair_alg 
+SELECT gk.id, public_key, private_key_pair_alg, public_key_sig, public_key_sig_key_id
 FROM 
     sentc_user u, 
     sentc_group_keys gk

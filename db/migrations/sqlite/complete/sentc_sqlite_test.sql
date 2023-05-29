@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 9:00pm on May 25, 2023 (UTC)
+-- Exported: 4:37pm on May 29, 2023 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -58,7 +58,7 @@ CREATE TABLE sentc_group_keys
 	encrypted_ephemeral_key        text,
 	encrypted_group_key_by_eph_key text,
 	time                           text
-, 'previous_group_key_id' TEXT, 'ephemeral_alg' TEXT, 'app_id' TEXT, 'encrypted_sign_key' TEXT, 'verify_key' TEXT, 'keypair_sign_alg' TEXT, 'signed_by_user_id' TEXT, 'signed_by_user_sign_key_id' TEXT, 'signed_by_user_sign_key_alg' TEXT);
+, 'previous_group_key_id' TEXT, 'ephemeral_alg' TEXT, 'app_id' TEXT, 'encrypted_sign_key' TEXT, 'verify_key' TEXT, 'keypair_sign_alg' TEXT, 'signed_by_user_id' TEXT, 'signed_by_user_sign_key_id' TEXT, 'signed_by_user_sign_key_alg' TEXT, 'public_key_sig' TEXT, 'public_key_sig_key_id' TEXT);
 
 ----
 -- Data dump for sentc_group_keys, a total of 0 rows

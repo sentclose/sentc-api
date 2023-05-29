@@ -211,6 +211,8 @@ pub struct UserPublicKeyDataEntity
 	pub public_key_id: EncryptionKeyPairId,
 	pub public_key: String,
 	pub public_key_alg: String,
+	pub public_key_sig: Option<String>,
+	pub public_key_sig_key_id: Option<String>,
 }
 
 impl Into<UserPublicKeyDataServerOutput> for UserPublicKeyDataEntity
@@ -221,6 +223,8 @@ impl Into<UserPublicKeyDataServerOutput> for UserPublicKeyDataEntity
 			public_key_id: self.public_key_id,
 			public_key: self.public_key,
 			public_key_alg: self.public_key_alg,
+			public_key_sig: self.public_key_sig,
+			public_key_sig_key_id: self.public_key_sig_key_id,
 		}
 	}
 }

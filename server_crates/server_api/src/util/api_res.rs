@@ -41,6 +41,7 @@ pub enum ApiErrorCodes
 	UserNotFound,
 	UserDeviceDelete,
 	UserDeviceNotFound,
+	UserKeysNotFound,
 	UserExists,
 	Login,
 	WrongJwtAction,
@@ -156,6 +157,7 @@ impl ServerErrorCodes for ApiErrorCodes
 			ApiErrorCodes::RefreshToken => 114,
 			ApiErrorCodes::UserDeviceDelete => 115,
 			ApiErrorCodes::UserDeviceNotFound => 116,
+			ApiErrorCodes::UserKeysNotFound => 117,
 
 			ApiErrorCodes::AppTokenNotFound => 200,
 			ApiErrorCodes::AppTokenWrongFormat => 201,

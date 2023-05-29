@@ -799,7 +799,6 @@ async fn test_21_finished_signed_key_rotation_without_verify()
 	)
 	.await;
 
-	assert_eq!(data_user_1.0.keys.len(), 2);
 	assert_eq!(data_user_1.1.len(), 2);
 }
 
@@ -883,7 +882,6 @@ async fn test_22_finished_signed_key_rotation_wit_verify()
 	)
 	.await;
 
-	assert_eq!(data_user_1.0.keys.len(), 2);
 	assert_eq!(data_user_1.1.len(), 2);
 }
 

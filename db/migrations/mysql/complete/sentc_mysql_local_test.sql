@@ -442,7 +442,9 @@ CREATE TABLE `sentc_group_keys` (
   `time` bigint(20) NOT NULL,
   `signed_by_user_id` varchar(36) DEFAULT NULL,
   `signed_by_user_sign_key_id` varchar(36) DEFAULT NULL,
-  `signed_by_user_sign_key_alg` text DEFAULT NULL
+  `signed_by_user_sign_key_alg` text DEFAULT NULL,
+  `public_key_sig` text DEFAULT NULL,
+  `public_key_sig_key_id` varchar(36) DEFAULT NULL COMMENT 'the key id which was used to create the sig'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------

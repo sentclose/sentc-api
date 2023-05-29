@@ -52,8 +52,11 @@ INSERT INTO sentc_group_keys
      keypair_sign_alg,
      signed_by_user_id,
      signed_by_user_sign_key_id,
-     signed_by_user_sign_key_alg
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+     signed_by_user_sign_key_alg,
+     public_key_sig,
+     public_key_sig_key_id
+     ) 
+VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let params = set_params!(
 		key_id.clone(),
@@ -73,7 +76,9 @@ INSERT INTO sentc_group_keys
 		input.keypair_sign_alg,
 		input.signed_by_user_id,
 		input.signed_by_user_sign_key_id,
-		input.signed_by_user_sign_key_alg
+		input.signed_by_user_sign_key_alg,
+		input.public_key_sig,
+		key_id.clone(),
 	);
 
 	//insert the rotated keys (from the starter) into the group user keys

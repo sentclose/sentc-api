@@ -129,6 +129,19 @@ pub async fn register_light(app_id: impl Into<AppId>, input: UserDeviceRegisterI
 pub async fn register(app_id: impl Into<AppId>, register_input: RegisterData) -> AppRes<RegisterServerOutput>
 {
 	let mut group_data = register_input.group;
+
+	if group_data.public_key_sig.is_none() ||
+		group_data.verify_key.is_none() ||
+		group_data.encrypted_sign_key.is_none() ||
+		group_data.keypair_sign_alg.is_none()
+	{
+		return Err(ServerCoreError::new_msg(
+			400,
+			ApiErrorCodes::UserKeysNotFound,
+			"User keys not found. Make sure to create the user group.",
+		));
+	}
+
 	let device_data = register_input.device;
 
 	let app_id = app_id.into();

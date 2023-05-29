@@ -714,6 +714,12 @@ async fn test_21_get_user_public_data()
 			.to_string()
 	);
 
+	//convert the user public key
+	let public_key = sentc_crypto::util::public::import_public_key_from_string_into_format(&body).unwrap();
+
+	assert_ne!(public_key.public_key_sig, None);
+	assert_ne!(public_key.public_key_sig_key_id, None);
+
 	//get user verify key by id
 	let url = get_url("api/v1/user/".to_owned() + user.user_id.as_str() + "/verify_key/" + out.public_key_id.as_str());
 	let client = reqwest::Client::new();
@@ -739,6 +745,14 @@ async fn test_21_get_user_public_data()
 			.key_id
 			.to_string()
 	);
+
+	//convert the user verify key
+	let verify_key = sentc_crypto::util::public::import_verify_key_from_string_into_format(&body).unwrap();
+
+	//verify the public key
+	let verify = sentc_crypto::user::verify_user_public_key(&verify_key, &public_key).unwrap();
+
+	assert!(verify);
 }
 
 #[tokio::test]
@@ -1277,7 +1291,7 @@ async fn test_29_not_delete_the_last_device()
 //do user tests before this one!
 
 #[tokio::test]
-async fn test_30_user_delete()
+async fn test_40_user_delete()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let jwt = &user.user_data.as_ref().unwrap().jwt;
@@ -1319,7 +1333,7 @@ impl WrongRegisterData
 }
 
 #[tokio::test]
-async fn test_31_not_register_user_with_wrong_input()
+async fn test_41_not_register_user_with_wrong_input()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 
@@ -1373,7 +1387,7 @@ async fn test_31_not_register_user_with_wrong_input()
 }
 
 #[tokio::test]
-async fn test_32_register_and_login_user_via_test_fn()
+async fn test_42_register_and_login_user_via_test_fn()
 {
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let secret_token = &user.app_data.secret_token;
