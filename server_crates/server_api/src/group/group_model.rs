@@ -170,7 +170,9 @@ SELECT
     uk.time,
     encrypted_sign_key,
     verify_key,
-    keypair_sign_alg
+    keypair_sign_alg,
+    public_key_sig,
+    public_key_sig_key_id
 FROM 
     sentc_group_keys k, 
     sentc_group_user_keys uk
@@ -227,7 +229,9 @@ SELECT
     uk.time,
     encrypted_sign_key,
     verify_key,
-    keypair_sign_alg
+    keypair_sign_alg,
+    public_key_sig,
+    public_key_sig_key_id
 FROM 
     sentc_group_keys k, 
     sentc_group_user_keys uk
@@ -461,9 +465,11 @@ INSERT INTO sentc_group_keys
      keypair_sign_alg,
      signed_by_user_id,
      signed_by_user_sign_key_id,
-     signed_by_user_sign_key_alg
+     signed_by_user_sign_key_alg,
+     public_key_sig,
+     public_key_sig_key_id
      ) 
-VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL,NULL)";
+VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL,NULL,?,?)";
 
 	let group_key_id = create_id(); //use the first group key id for the encrypted_hmac_encryption_key_id too
 
@@ -485,7 +491,9 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL,NULL)";
 		time.to_string(),
 		data.encrypted_sign_key,
 		data.verify_key,
-		data.keypair_sign_alg
+		data.keypair_sign_alg,
+		data.public_key_sig,
+		group_key_id.clone(), //use here the normal key id because the sig was created by the new sign key
 	);
 
 	//language=SQL
@@ -744,7 +752,7 @@ pub(super) async fn get_public_key_data(app_id: impl Into<AppId>, group_id: impl
 {
 	//language=SQL
 	let sql = r"
-SELECT id, public_key, private_key_pair_alg 
+SELECT id, public_key, private_key_pair_alg, public_key_sig, public_key_sig_key_id 
 FROM sentc_group_keys 
 WHERE 
     app_id = ? AND 
