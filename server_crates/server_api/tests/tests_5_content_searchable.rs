@@ -130,7 +130,7 @@ async fn aaa_init_global_test()
 	)
 	.await;
 
-	let hmac_keys = decrypt_group_hmac_keys(&group_data_for_creator[0].group_key, &data.hmac_keys);
+	let hmac_keys = decrypt_group_hmac_keys(&group_data_for_creator[0].group_key, data.hmac_keys);
 
 	let mut decrypted_group_keys = HashMap::new();
 
@@ -178,7 +178,7 @@ async fn aaa_init_global_test()
 	)
 	.await;
 
-	let hmac_keys = decrypt_group_hmac_keys(&group_data_for_creator[0].group_key, &data.hmac_keys);
+	let hmac_keys = decrypt_group_hmac_keys(&group_data_for_creator[0].group_key, data.hmac_keys);
 
 	let mut decrypted_group_keys = HashMap::new();
 
@@ -234,7 +234,7 @@ async fn aaa_init_global_test()
 	)
 	.await;
 
-	let hmac_keys = decrypt_group_hmac_keys(&connected_keys[0].group_key, &connected_data.hmac_keys);
+	let hmac_keys = decrypt_group_hmac_keys(&connected_keys[0].group_key, connected_data.hmac_keys);
 
 	let mut decrypted_group_keys = HashMap::new();
 	decrypted_group_keys.insert(creator.user_id.to_string(), connected_keys);

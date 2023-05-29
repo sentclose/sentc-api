@@ -512,7 +512,7 @@ pub async fn create_child_group_from_group_as_member(
 	out.group_id
 }
 
-pub fn decrypt_group_hmac_keys(first_group_key: &SymKeyFormat, hmac_keys: &Vec<GroupHmacData>) -> Vec<HmacKeyFormat>
+pub fn decrypt_group_hmac_keys(first_group_key: &SymKeyFormat, hmac_keys: Vec<GroupHmacData>) -> Vec<HmacKeyFormat>
 {
 	//its important to use the sdk common version here and not from the api
 
@@ -549,13 +549,28 @@ pub async fn get_group(
 
 	let mut data_keys = Vec::with_capacity(data.keys.len());
 
-	for key in &data.keys {
+	for key in data.keys {
 		data_keys.push(sentc_crypto::group::decrypt_group_keys(private_key, key).unwrap());
 	}
 
 	assert_eq!(data.key_update, key_update);
 
-	(data, data_keys)
+	(
+		GroupOutData {
+			keys: vec![],
+			hmac_keys: data.hmac_keys,
+			parent_group_id: data.parent_group_id,
+			key_update: data.key_update,
+			created_time: data.created_time,
+			joined_time: data.joined_time,
+			rank: data.rank,
+			group_id: data.group_id,
+			access_by_group_as_member: data.access_by_group_as_member,
+			access_by_parent_group: data.access_by_parent_group,
+			is_connected_group: data.is_connected_group,
+		},
+		data_keys,
+	)
 }
 
 pub async fn get_group_from_group_as_member(
@@ -583,11 +598,26 @@ pub async fn get_group_from_group_as_member(
 
 	let mut data_keys = Vec::with_capacity(data.keys.len());
 
-	for key in &data.keys {
+	for key in data.keys {
 		data_keys.push(sentc_crypto::group::decrypt_group_keys(private_group_key, key).unwrap());
 	}
 
-	(data, data_keys)
+	(
+		GroupOutData {
+			keys: vec![],
+			hmac_keys: data.hmac_keys,
+			parent_group_id: data.parent_group_id,
+			key_update: data.key_update,
+			created_time: data.created_time,
+			joined_time: data.joined_time,
+			rank: data.rank,
+			group_id: data.group_id,
+			access_by_group_as_member: data.access_by_group_as_member,
+			access_by_parent_group: data.access_by_parent_group,
+			is_connected_group: data.is_connected_group,
+		},
+		data_keys,
+	)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -880,7 +910,7 @@ pub async fn done_key_rotation(
 
 		let group_key_fetch = sentc_crypto::group::get_group_key_from_server_output(body.as_str()).unwrap();
 
-		new_keys.push(sentc_crypto::group::decrypt_group_keys(private_key, &group_key_fetch).unwrap());
+		new_keys.push(sentc_crypto::group::decrypt_group_keys(private_key, group_key_fetch).unwrap());
 	}
 
 	new_keys
