@@ -167,7 +167,7 @@ SELECT
     public_key,
     private_key_pair_alg,
     uk.encrypted_group_key_key_id,
-    uk.time,
+    k.time,
     encrypted_sign_key,
     verify_key,
     keypair_sign_alg,
@@ -185,7 +185,7 @@ WHERE
 
 	let (sql1, params) = if last_fetched_time > 0 {
 		//there is a last fetched time time -> set the last fetched time to the params list
-		let sql = sql + " AND uk.time <= ? AND (uk.time < ? OR (uk.time = ? AND k_id > ?)) ORDER BY uk.time DESC, k_id LIMIT 50";
+		let sql = sql + " AND k.time <= ? AND (k.time < ? OR (k.time = ? AND k_id > ?)) ORDER BY uk.time DESC, k_id LIMIT 50";
 
 		(
 			sql,
@@ -200,7 +200,7 @@ WHERE
 			),
 		)
 	} else {
-		let sql = sql + " ORDER BY uk.time DESC, k_id LIMIT 50";
+		let sql = sql + " ORDER BY k.time DESC, k_id LIMIT 50";
 		(sql, set_params!(user_id.into(), group_id.into(), app_id.into(),))
 	};
 
@@ -226,7 +226,7 @@ SELECT
     public_key,
     private_key_pair_alg,
     uk.encrypted_group_key_key_id,
-    uk.time,
+    k.time,
     encrypted_sign_key,
     verify_key,
     keypair_sign_alg,
