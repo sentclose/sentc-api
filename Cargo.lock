@@ -2113,7 +2113,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto"
 version = "0.1.0"
-source = "git+ssh://git@github.com/sentclose/sentc.git?rev=142b27cec55387e34975fb7f10efd14e1daa15f8#142b27cec55387e34975fb7f10efd14e1daa15f8"
+source = "git+ssh://git@github.com/sentclose/sentc.git?rev=65d893554a51025cb61be0533925060d43529ae9#65d893554a51025cb61be0533925060d43529ae9"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -2144,7 +2144,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-core"
 version = "0.1.0"
-source = "git+ssh://git@github.com/sentclose/sentc.git?rev=142b27cec55387e34975fb7f10efd14e1daa15f8#142b27cec55387e34975fb7f10efd14e1daa15f8"
+source = "git+ssh://git@github.com/sentclose/sentc.git?rev=65d893554a51025cb61be0533925060d43529ae9#65d893554a51025cb61be0533925060d43529ae9"
 dependencies = [
  "aes-gcm",
  "argon2",

@@ -37,7 +37,7 @@ rustgram-server-util = {version = "0.1.8", git= "https://gitlab.com/grammm/rustg
 # to get it from ssh: write this in your ~/.cargo/config.toml:
 # [net]
 # git-fetch-with-cli = true
-sentc-crypto = {git = "ssh://git@github.com/sentclose/sentc.git", rev="142b27cec55387e34975fb7f10efd14e1daa15f8", default-features = false, features = ["rust", "server"]}
+sentc-crypto = {git = "ssh://git@github.com/sentclose/sentc.git", rev="65d893554a51025cb61be0533925060d43529ae9", default-features = false, features = ["rust", "server"]}
 
 #sentc-crypto = {path = "../../sdk/crypto", default-features = false, features = ["rust", "server"]} # for local dev
 
