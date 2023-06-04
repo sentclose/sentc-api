@@ -116,11 +116,15 @@ async fn init_app()
 async fn create_file()
 {
 	let mut state = TEST_STATE.get().unwrap().write().await;
-	let file_key = &state.keys[0].group_key;
+	let group_key = &state.keys[0].group_key;
+
+	let (file_key, encrypted_key) = sentc_crypto::crypto::generate_non_register_sym_key(group_key).unwrap();
+	let encrypted_key_str = encrypted_key.to_string().unwrap();
 
 	let (input, _) = sentc_crypto::file::prepare_register_file(
-		file_key.key_id.clone(),
-		file_key,
+		encrypted_key.master_key_id,
+		&file_key,
+		encrypted_key_str,
 		None,
 		sentc_crypto::sdk_common::file::BelongsToType::None,
 		Some("Hello".to_string()),
