@@ -295,11 +295,12 @@ CREATE TABLE `sentc_file` (
   `belongs_to` varchar(36) DEFAULT NULL,
   `belongs_to_type` int(11) NOT NULL,
   `app_id` varchar(36) NOT NULL,
-  `key_id` varchar(36) NOT NULL,
+  `encrypted_key` text NOT NULL,
   `master_key_id` varchar(36) NOT NULL,
   `status` int(11) NOT NULL COMMENT '0 = to delete, 1 = avalible, 2 = disabled',
   `delete_at` bigint(20) NOT NULL COMMENT '0 = not deleted, time when the file was deleted',
-  `time` bigint(20) NOT NULL
+  `time` bigint(20) NOT NULL,
+  `encrypted_key_alg` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
