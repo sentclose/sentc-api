@@ -3,7 +3,7 @@ use rustgram_server_util::db::{exec, exec_string, exec_transaction, get_in, quer
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params, set_params_vec, set_params_vec_outer};
-use sentc_crypto_common::{AppId, CustomerId, FileId, FileSessionId, GroupId, PartId, SymKeyId, UserId};
+use sentc_crypto_common::{AppId, CustomerId, FileId, FileSessionId, GroupId, PartId, UserId};
 
 use crate::file::file_entities::{FileExternalStorageUrl, FileMetaData, FilePartListItem, FilePartListItemDelete, FileSessionCheck};
 use crate::file::file_service::FILE_BELONGS_TO_TYPE_GROUP;
@@ -16,7 +16,8 @@ const FILE_STATUS_TO_DELETE: i32 = 0;
 //const FILE_STATUS_DISABLED: i32 = 1;
 
 pub(super) async fn register_file(
-	key_id: SymKeyId,
+	encrypted_key: String,
+	encrypted_key_alg: String,
 	master_key_id: String,
 	file_name: Option<String>,
 	belongs_to_id: Option<String>,
@@ -33,14 +34,15 @@ pub(super) async fn register_file(
 	let time = get_time()?;
 
 	//language=SQL
-	let sql = "INSERT INTO sentc_file (id, owner, belongs_to, belongs_to_type, app_id, key_id, time, status, delete_at, encrypted_file_name, master_key_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+	let sql = "INSERT INTO sentc_file (id, owner, belongs_to, belongs_to_type, app_id, encrypted_key, encrypted_key_alg, time, status, delete_at, encrypted_file_name, master_key_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
 	let params = set_params!(
 		file_id.clone(),
 		user_id.into(),
 		belongs_to_id,
 		belongs_to_type,
 		app_id.clone(),
-		key_id,
+		encrypted_key,
+		encrypted_key_alg,
 		time.to_string(),
 		FILE_STATUS_AVAILABLE,
 		0,
@@ -193,7 +195,8 @@ SELECT
     owner, 
     belongs_to, 
     belongs_to_type, 
-    key_id, 
+    encrypted_key, 
+    encrypted_key_alg,
     time, 
     encrypted_file_name,
     master_key_id

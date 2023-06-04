@@ -12,6 +12,7 @@ use sentc_crypto::group::{DoneGettingGroupKeysOutput, GroupKeyData, GroupOutData
 use sentc_crypto::sdk_common::file::FileData;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupHmacData, GroupInviteServerOutput};
 use sentc_crypto::sdk_common::user::UserPublicKeyData;
+use sentc_crypto::sdk_core::SymKey;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::util::{HmacKeyFormat, UserKeyDataInt};
 use sentc_crypto::{PrivateKeyFormat, PublicKeyFormat, SdkError, SymKeyFormat, UserData};
@@ -1017,9 +1018,16 @@ pub async fn get_file_part(part_id: &str, jwt: &str, token: &str) -> Vec<u8>
 	res.bytes().await.unwrap().to_vec()
 }
 
-pub async fn get_and_decrypt_file_part(part_id: &str, jwt: &str, token: &str, file_key: &SymKeyFormat) -> Vec<u8>
+pub async fn get_and_decrypt_file_part(part_id: &str, jwt: &str, token: &str, file_key: &SymKey) -> (Vec<u8>, SymKey)
 {
 	let buffer = get_file_part(part_id, jwt, token).await;
 
-	sentc_crypto::crypto::decrypt_symmetric(file_key, &buffer, None).unwrap()
+	sentc_crypto::file::decrypt_file_part(file_key, &buffer, None).unwrap()
+}
+
+pub async fn get_and_decrypt_file_part_start(part_id: &str, jwt: &str, token: &str, file_key: &SymKeyFormat) -> (Vec<u8>, SymKey)
+{
+	let buffer = get_file_part(part_id, jwt, token).await;
+
+	sentc_crypto::file::decrypt_file_part_start(file_key, &buffer, None).unwrap()
 }

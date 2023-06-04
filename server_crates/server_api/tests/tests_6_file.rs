@@ -22,6 +22,7 @@ use crate::test_fn::{
 	create_test_user,
 	customer_delete,
 	get_and_decrypt_file_part,
+	get_and_decrypt_file_part_start,
 	get_file,
 	get_group,
 	get_server_error_from_normal_res,
@@ -190,12 +191,14 @@ async fn test_10_upload_small_file_for_non_target()
 
 	let url = get_url("api/v1/file".to_string());
 
-	let file_key = &state.group_data.keys[0].group_key;
+	let (file_key, encrypted_key) = sentc_crypto::crypto::generate_non_register_sym_key(&state.group_data.keys[0].group_key).unwrap();
+	let encrypted_key_str = encrypted_key.to_string().unwrap();
 
 	//normally create a new sym key for a file but here it is ok
 	let (input, _) = sentc_crypto::file::prepare_register_file(
-		file_key.key_id.clone(),
-		file_key,
+		encrypted_key.master_key_id.clone(),
+		&file_key,
+		encrypted_key_str,
 		None,
 		sentc_crypto::sdk_common::file::BelongsToType::None,
 		Some("Hello".to_string()),
@@ -220,10 +223,10 @@ async fn test_10_upload_small_file_for_non_target()
 	let file = &state.test_file_small;
 
 	//no chunk needed
-	let encrypted_small_file = sentc_crypto::crypto::encrypt_symmetric(file_key, file, None).unwrap();
+	let (encrypted_small_file, next_key) = sentc_crypto::file::encrypt_file_part_start(&file_key, file, None).unwrap();
 
 	//should not upload the file from a different user
-	let encrypted_small_file_1 = sentc_crypto::crypto::encrypt_symmetric(file_key, file, None).unwrap();
+	let (encrypted_small_file_1, _) = sentc_crypto::file::encrypt_file_part_start(&file_key, file, None).unwrap();
 
 	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/1/true");
 
@@ -268,7 +271,7 @@ async fn test_10_upload_small_file_for_non_target()
 	handle_general_server_response(body.as_str()).unwrap();
 
 	//should not upload a part with finished session
-	let encrypted_small_file_2 = sentc_crypto::crypto::encrypt_symmetric(file_key, file, None).unwrap();
+	let (encrypted_small_file_2, _) = sentc_crypto::file::encrypt_file_part(&next_key, file, None).unwrap();
 
 	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/1/true");
 
@@ -298,7 +301,7 @@ async fn test_11_download_small_file_non_target()
 {
 	let mut state = TEST_STATE.get().unwrap().write().await;
 	let file_id = &state.file_ids[0];
-	let file_key = &state.group_data.keys[0].group_key;
+	let group_key = &state.group_data.keys[0].group_key;
 
 	//download the file info
 	let url = get_url("api/v1/file/".to_string() + file_id);
@@ -315,7 +318,7 @@ async fn test_11_download_small_file_non_target()
 
 	let file_data: FileData = handle_server_response(body.as_str()).unwrap();
 
-	assert_eq!(file_data.key_id, file_key.key_id);
+	let file_key = sentc_crypto::crypto::done_fetch_sym_key(group_key, &file_data.encrypted_key, true).unwrap();
 
 	//download the part
 	let url = get_url("api/v1/file/part/".to_string() + &file_data.part_list[0].part_id);
@@ -330,7 +333,7 @@ async fn test_11_download_small_file_non_target()
 
 	let buffer = res.bytes().await.unwrap().to_vec();
 
-	let decrypted_file = sentc_crypto::crypto::decrypt_symmetric(file_key, &buffer, None).unwrap();
+	let (decrypted_file, _) = sentc_crypto::file::decrypt_file_part_start(&file_key, &buffer, None).unwrap();
 
 	let file = &state.test_file_small;
 
@@ -397,12 +400,14 @@ async fn test_12_upload_small_file_for_group()
 
 	let url = get_url("api/v1/group/".to_string() + &state.group_data.id + "/file");
 
-	let file_key = &state.group_data.keys[0].group_key;
+	let (file_key, encrypted_key) = sentc_crypto::crypto::generate_non_register_sym_key(&state.group_data.keys[0].group_key).unwrap();
+	let encrypted_key_str = encrypted_key.to_string().unwrap();
 
 	//normally create a new sym key for a file but here it is ok
 	let (input, _) = sentc_crypto::file::prepare_register_file(
-		file_key.key_id.clone(),
-		file_key,
+		encrypted_key.master_key_id,
+		&file_key,
+		encrypted_key_str,
 		Some(state.group_data.id.to_string()),
 		sentc_crypto::sdk_common::file::BelongsToType::Group,
 		None,
@@ -427,7 +432,7 @@ async fn test_12_upload_small_file_for_group()
 	let file = &state.test_file_small;
 
 	//no chunk needed
-	let encrypted_small_file = sentc_crypto::crypto::encrypt_symmetric(file_key, file, None).unwrap();
+	let (encrypted_small_file, _) = sentc_crypto::file::encrypt_file_part_start(&file_key, file, None).unwrap();
 
 	//upload the file
 	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/1/true");
@@ -455,7 +460,7 @@ async fn test_13_get_file_in_group()
 {
 	let mut state = TEST_STATE.get().unwrap().write().await;
 	let file_id = &state.file_ids[1];
-	let file_key = &state.group_data.keys[0].group_key;
+	let group_key = &state.group_data.keys[0].group_key;
 
 	//download the file info
 	let url = get_url("api/v1/group/".to_string() + &state.group_data.id + "/file/" + file_id);
@@ -472,7 +477,7 @@ async fn test_13_get_file_in_group()
 
 	let file_data: FileData = handle_server_response(body.as_str()).unwrap();
 
-	assert_eq!(file_data.key_id, file_key.key_id);
+	let file_key = sentc_crypto::crypto::done_fetch_sym_key(group_key, &file_data.encrypted_key, true).unwrap();
 
 	//download the part
 	let url = get_url("api/v1/file/part/".to_string() + &file_data.part_list[0].part_id);
@@ -487,7 +492,7 @@ async fn test_13_get_file_in_group()
 
 	let buffer = res.bytes().await.unwrap().to_vec();
 
-	let decrypted_file = sentc_crypto::crypto::decrypt_symmetric(file_key, &buffer, None).unwrap();
+	let (decrypted_file, _) = sentc_crypto::file::decrypt_file_part_start(&file_key, &buffer, None).unwrap();
 
 	let file = &state.test_file_small;
 
@@ -534,12 +539,14 @@ async fn test_15_not_upload_file_in_a_group_without_access()
 
 	let url = get_url("api/v1/group/".to_string() + &state.group_data.id + "/file");
 
-	let file_key = &state.group_data.keys[0].group_key;
+	let (file_key, encrypted_key) = sentc_crypto::crypto::generate_non_register_sym_key(&state.group_data.keys[0].group_key).unwrap();
+	let encrypted_key_str = encrypted_key.to_string().unwrap();
 
 	//normally create a new sym key for a file but here it is ok
 	let (input, _) = sentc_crypto::file::prepare_register_file(
-		file_key.key_id.clone(),
-		file_key,
+		encrypted_key.master_key_id,
+		&file_key,
+		encrypted_key_str,
 		Some(state.group_data.id.to_string()),
 		sentc_crypto::sdk_common::file::BelongsToType::Group,
 		None,
@@ -630,12 +637,14 @@ async fn test_17_file_access_from_parent_to_child_group()
 
 	let url = get_url("api/v1/group/".to_string() + &state.child_group_data.id + "/file");
 
-	let file_key = &state.child_group_data.keys[0].group_key;
+	let (file_key, encrypted_key) = sentc_crypto::crypto::generate_non_register_sym_key(&state.child_group_data.keys[0].group_key).unwrap();
+	let encrypted_key_str = encrypted_key.to_string().unwrap();
 
 	//normally create a new sym key for a file but here it is ok
 	let (input, _) = sentc_crypto::file::prepare_register_file(
-		file_key.key_id.clone(),
-		file_key,
+		encrypted_key.master_key_id,
+		&file_key,
+		encrypted_key_str,
 		Some(state.child_group_data.id.to_string()),
 		sentc_crypto::sdk_common::file::BelongsToType::Group,
 		None,
@@ -660,7 +669,7 @@ async fn test_17_file_access_from_parent_to_child_group()
 	let file = &state.test_file_small;
 
 	//no chunk needed
-	let encrypted_small_file = sentc_crypto::crypto::encrypt_symmetric(file_key, file, None).unwrap();
+	let (encrypted_small_file, _) = sentc_crypto::file::encrypt_file_part_start(&file_key, file, None).unwrap();
 
 	//upload the file
 	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/1/true");
@@ -689,7 +698,7 @@ async fn test_18_access_the_child_group_file()
 	//access from the direct member
 	let mut state = TEST_STATE.get().unwrap().write().await;
 	let file_id = &state.file_ids[2];
-	let file_key = &state.child_group_data.keys[0].group_key;
+	let group_key = &state.child_group_data.keys[0].group_key;
 
 	//download the file info
 	let file_data = get_file(
@@ -700,12 +709,14 @@ async fn test_18_access_the_child_group_file()
 	)
 	.await;
 
+	let file_key = sentc_crypto::crypto::done_fetch_sym_key(group_key, &file_data.encrypted_key, true).unwrap();
+
 	//download the part
-	let decrypted_file = get_and_decrypt_file_part(
+	let (decrypted_file, _) = get_and_decrypt_file_part_start(
 		&file_data.part_list[0].part_id,
 		state.user_data_1.jwt.as_str(),
 		state.app_data.public_token.as_str(),
-		file_key,
+		&file_key,
 	)
 	.await;
 
@@ -730,11 +741,11 @@ async fn test_18_access_the_child_group_file()
 	.await;
 
 	//download the part
-	let decrypted_file = get_and_decrypt_file_part(
+	let (decrypted_file, _) = get_and_decrypt_file_part_start(
 		&file_data.part_list[0].part_id,
 		state.user_data.jwt.as_str(),
 		state.app_data.public_token.as_str(),
-		file_key,
+		&file_key,
 	)
 	.await;
 
@@ -1071,12 +1082,14 @@ async fn test_30_chunked_filed()
 
 	let url = get_url("api/v1/file".to_string());
 
-	let file_key = &state.group_data.keys[0].group_key;
+	let (file_key, encrypted_key) = sentc_crypto::crypto::generate_non_register_sym_key(&state.group_data.keys[0].group_key).unwrap();
+	let encrypted_key_str = encrypted_key.to_string().unwrap();
 
 	//normally create a new sym key for a file but here it is ok
 	let (input, _) = sentc_crypto::file::prepare_register_file(
-		file_key.key_id.clone(),
-		file_key,
+		encrypted_key.master_key_id,
+		&file_key,
+		encrypted_key_str,
 		None,
 		sentc_crypto::sdk_common::file::BelongsToType::None,
 		None,
@@ -1102,7 +1115,7 @@ async fn test_30_chunked_filed()
 
 	//should not upload a too large part
 	let too_large_part = &file[0..1024 * 1024 * 6];
-	let encrypted_part = sentc_crypto::crypto::encrypt_symmetric(file_key, too_large_part, None).unwrap();
+	let (encrypted_part, _next_key) = sentc_crypto::file::encrypt_file_part_start(&file_key, too_large_part, None).unwrap();
 	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/0/false");
 
 	let client = reqwest::Client::new();
@@ -1134,6 +1147,8 @@ async fn test_30_chunked_filed()
 	let mut end = chunk_size;
 	let mut current_chunk = 0;
 
+	let mut next_key = sentc_crypto::sdk_core::SymKey::Aes(Default::default());
+
 	while start < file.len() {
 		current_chunk += 1;
 
@@ -1146,7 +1161,14 @@ async fn test_30_chunked_filed()
 		end = start + chunk_size;
 		let is_end = start >= file.len();
 
-		let encrypted_part = sentc_crypto::crypto::encrypt_symmetric(file_key, part, None).unwrap();
+		let encrypted_res = if current_chunk == 1 {
+			sentc_crypto::file::encrypt_file_part_start(&file_key, part, None).unwrap()
+		} else {
+			sentc_crypto::file::encrypt_file_part(&next_key, part, None).unwrap()
+		};
+
+		let encrypted_part = encrypted_res.0;
+		next_key = encrypted_res.1;
 
 		let url = get_url(
 			"api/v1/file/part/".to_string() + session_id.as_str() + "/" + current_chunk.to_string().as_str() + "/" + is_end.to_string().as_str(),
@@ -1175,7 +1197,7 @@ async fn test_31_download_chunked_file()
 {
 	let mut state = TEST_STATE.get().unwrap().write().await;
 	let file_id = &state.file_ids[3];
-	let file_key = &state.group_data.keys[0].group_key;
+	let group_key = &state.group_data.keys[0].group_key;
 
 	let file_data = get_file(
 		file_id,
@@ -1185,21 +1207,38 @@ async fn test_31_download_chunked_file()
 	)
 	.await;
 
+	let file_key = sentc_crypto::crypto::done_fetch_sym_key(group_key, &file_data.encrypted_key, true).unwrap();
+
 	let parts = &file_data.part_list;
 
 	let mut file: Vec<u8> = Vec::new();
 
-	for part in parts {
+	let mut next_key = sentc_crypto::sdk_core::SymKey::Aes(Default::default());
+
+	for (i, part) in parts.iter().enumerate() {
 		let part_id = &part.part_id;
 
 		//should all internal storage
-		let mut decrypted_part = get_and_decrypt_file_part(
-			part_id,
-			state.user_data.jwt.as_str(),
-			state.app_data.public_token.as_str(),
-			file_key,
-		)
-		.await;
+		let decrypted_part = if i == 0 {
+			get_and_decrypt_file_part_start(
+				part_id,
+				state.user_data.jwt.as_str(),
+				state.app_data.public_token.as_str(),
+				&file_key,
+			)
+			.await
+		} else {
+			get_and_decrypt_file_part(
+				part_id,
+				state.user_data.jwt.as_str(),
+				state.app_data.public_token.as_str(),
+				&next_key,
+			)
+			.await
+		};
+
+		next_key = decrypted_part.1;
+		let mut decrypted_part = decrypted_part.0;
 
 		file.append(&mut decrypted_part);
 	}
@@ -1286,10 +1325,13 @@ async fn test_0_large_file()
 	//upload the file
 	let url = get_url("api/v1/file".to_string());
 
-	let file_key = &group_keys[0].group_key;
+	let (file_key, encrypted_key) = sentc_crypto::crypto::generate_non_register_sym_key(&group_keys[0].group_key).unwrap();
+	let encrypted_key_str = encrypted_key.to_string().unwrap();
+
 	let (input, _) = sentc_crypto::file::prepare_register_file(
-		file_key.key_id.clone(),
-		file_key,
+		encrypted_key.master_key_id,
+		&file_key,
+		encrypted_key_str,
 		None,
 		sentc_crypto::sdk_common::file::BelongsToType::None,
 		None,
@@ -1319,6 +1361,8 @@ async fn test_0_large_file()
 	let mut end = chunk_size;
 	let mut current_chunk = 0;
 
+	let mut next_key = sentc_crypto::sdk_core::SymKey::Aes(Default::default());
+
 	while start < file.len() {
 		current_chunk += 1;
 
@@ -1331,7 +1375,14 @@ async fn test_0_large_file()
 		end = start + chunk_size;
 		let is_end = start >= file.len();
 
-		let encrypted_part = sentc_crypto::crypto::encrypt_symmetric(file_key, part, None).unwrap();
+		let encrypted_res = if current_chunk == 1 {
+			sentc_crypto::file::encrypt_file_part_start(&file_key, part, None).unwrap()
+		} else {
+			sentc_crypto::file::encrypt_file_part(&next_key, part, None).unwrap()
+		};
+
+		let encrypted_part = encrypted_res.0;
+		next_key = encrypted_res.1;
 
 		let url = get_url(
 			"api/v1/file/part/".to_string() + session_id.as_str() + "/" + current_chunk.to_string().as_str() + "/" + is_end.to_string().as_str(),
@@ -1360,11 +1411,20 @@ async fn test_0_large_file()
 
 	let mut downloaded_file: Vec<u8> = Vec::new();
 
-	for part in parts {
+	let mut next_key = sentc_crypto::sdk_core::SymKey::Aes(Default::default());
+
+	for (i, part) in parts.iter().enumerate() {
 		let part_id = &part.part_id;
 
 		//should all internal storage
-		let mut decrypted_part = get_and_decrypt_file_part(part_id, key_data.jwt.as_str(), public_token.as_str(), file_key).await;
+		let decrypted_part = if i == 0 {
+			get_and_decrypt_file_part_start(part_id, &key_data.jwt, &public_token, &file_key).await
+		} else {
+			get_and_decrypt_file_part(part_id, &key_data.jwt, &public_token, &next_key).await
+		};
+
+		next_key = decrypted_part.1;
+		let mut decrypted_part = decrypted_part.0;
 
 		downloaded_file.append(&mut decrypted_part);
 	}

@@ -143,7 +143,7 @@ async fn test_11_get_key_by_id()
 	let out = ServerOutput::<GeneratedSymKeyHeadServerOutput>::from_string(body.as_str()).unwrap();
 	let out = out.result.unwrap();
 
-	let sym_key = sentc_crypto::crypto::done_fetch_sym_key(&state.group_keys[0].group_key, body.as_str()).unwrap();
+	let sym_key = sentc_crypto::crypto::done_fetch_sym_key(&state.group_keys[0].group_key, body.as_str(), false).unwrap();
 
 	//test the key
 	let text = "hello";

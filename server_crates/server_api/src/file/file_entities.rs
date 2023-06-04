@@ -1,6 +1,6 @@
 use rustgram_server_util::take_or_err;
 use sentc_crypto_common::file::BelongsToType;
-use sentc_crypto_common::{AppId, FileId, PartId, SymKeyId, UserId};
+use sentc_crypto_common::{AppId, FileId, PartId, UserId};
 use serde::Serialize;
 
 #[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
@@ -22,7 +22,8 @@ pub struct FileMetaData
 	pub owner: UserId,
 	pub belongs_to: Option<String>,
 	pub belongs_to_type: BelongsToType,
-	pub key_id: SymKeyId,
+	pub encrypted_key: String,
+	pub encrypted_key_alg: String,
 	pub time: u128,
 	pub encrypted_file_name: Option<String>,
 	pub part_list: Vec<FilePartListItem>,
@@ -44,7 +45,8 @@ impl Into<sentc_crypto_common::file::FileData> for FileMetaData
 			owner: self.owner,
 			belongs_to: self.belongs_to,
 			belongs_to_type: self.belongs_to_type,
-			key_id: self.key_id,
+			encrypted_key: self.encrypted_key,
+			encrypted_key_alg: self.encrypted_key_alg,
 			encrypted_file_name: self.encrypted_file_name,
 			part_list,
 		}
@@ -73,11 +75,12 @@ impl rustgram_server_util::db::mysql_async_export::prelude::FromRow for FileMeta
 			owner: take_or_err!(row, 1, String),
 			belongs_to: rustgram_server_util::take_or_err_opt!(row, 2, String),
 			belongs_to_type,
-			key_id: take_or_err!(row, 4, String),
-			time: take_or_err!(row, 5, u128),
+			encrypted_key: take_or_err!(row, 4, String),
+			encrypted_key_alg: take_or_err!(row, 5, String),
+			time: take_or_err!(row, 6, u128),
 			part_list: Vec::new(),
-			encrypted_file_name: rustgram_server_util::take_or_err_opt!(row, 6, String),
-			master_key_id: take_or_err!(row, 7, String),
+			encrypted_file_name: rustgram_server_util::take_or_err_opt!(row, 7, String),
+			master_key_id: take_or_err!(row, 8, String),
 		})
 	}
 }
@@ -102,11 +105,12 @@ impl rustgram_server_util::db::FromSqliteRow for FileMetaData
 			owner: take_or_err!(row, 1),
 			belongs_to: take_or_err!(row, 2),
 			belongs_to_type,
-			key_id: take_or_err!(row, 4),
-			time: rustgram_server_util::take_or_err_u128!(row, 5),
-			encrypted_file_name: take_or_err!(row, 6),
+			encrypted_key: take_or_err!(row, 4),
+			encrypted_key_alg: take_or_err!(row, 5),
+			time: rustgram_server_util::take_or_err_u128!(row, 6),
+			encrypted_file_name: take_or_err!(row, 7),
 			part_list: Vec::new(),
-			master_key_id: take_or_err!(row, 7),
+			master_key_id: take_or_err!(row, 8),
 		})
 	}
 }
