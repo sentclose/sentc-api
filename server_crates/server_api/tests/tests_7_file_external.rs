@@ -1,7 +1,7 @@
 use reqwest::header::AUTHORIZATION;
-use sentc_crypto::group::GroupKeyData;
+use sentc_crypto::entities::group::GroupKeyData;
+use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::UserData;
 use sentc_crypto_common::file::FilePartRegisterOutput;
 use sentc_crypto_common::{FileId, PartId};
 use server_api::sentc_file_worker;
@@ -27,7 +27,7 @@ static TEST_STATE: OnceCell<RwLock<TestData>> = OnceCell::const_new();
 pub struct TestData
 {
 	//user 1
-	pub user_data: UserData,
+	pub user_data: UserDataInt,
 	pub username: String,
 	pub user_pw: String,
 

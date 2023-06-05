@@ -1,10 +1,11 @@
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use rustgram_server_util::error::ServerErrorCodes;
+use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, KeyRotationInput};
 use sentc_crypto::sdk_common::user::UserDeviceRegisterOutput;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::{SdkError, UserData};
+use sentc_crypto::SdkError;
 use sentc_crypto_common::group::{GroupKeyServerOutput, KeyRotationStartServerOutput};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{
@@ -51,8 +52,8 @@ pub struct UserState
 	pub username: String,
 	pub pw: String,
 	pub user_id: UserId,
-	pub user_data: Option<UserData>,
-	pub user_data_1: Option<UserData>, //for the 2nd device
+	pub user_data: Option<UserDataInt>,
+	pub user_data_1: Option<UserDataInt>, //for the 2nd device
 	pub app_data: AppRegisterOutput,
 	pub customer_data: CustomerDoneLoginOutput,
 }

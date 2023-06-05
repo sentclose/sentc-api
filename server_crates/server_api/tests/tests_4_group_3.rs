@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
 use reqwest::header::AUTHORIZATION;
-use sentc_crypto::group::{GroupKeyData, GroupOutData};
+use sentc_crypto::entities::group::{GroupKeyData, GroupOutData};
+use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::sdk_common::group::GroupCreateOutput;
 use sentc_crypto::util::public::handle_server_response;
-use sentc_crypto::UserData;
 use sentc_crypto_common::group::GroupInviteServerOutput;
 use sentc_crypto_common::{GroupId, UserId};
 use server_api_common::app::AppRegisterOutput;
@@ -36,7 +36,7 @@ pub struct UserState
 	pub username: String,
 	pub pw: String,
 	pub user_id: UserId,
-	pub user_data: UserData,
+	pub user_data: UserDataInt,
 }
 
 pub struct GroupState

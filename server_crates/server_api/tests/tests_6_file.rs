@@ -2,10 +2,11 @@ use rand::RngCore;
 use reqwest::header::AUTHORIZATION;
 #[cfg(feature = "mysql")]
 use rustgram_server_util::db::mysql_async_export::prelude::Queryable;
-use sentc_crypto::group::GroupKeyData;
+use sentc_crypto::entities::group::GroupKeyData;
+use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::sdk_common::file::FileData;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::{SdkError, UserData};
+use sentc_crypto::SdkError;
 use sentc_crypto_common::file::FileRegisterOutput;
 use sentc_crypto_common::{GroupId, ServerOutput};
 use server_api::sentc_file_worker;
@@ -41,12 +42,12 @@ pub struct GroupData
 pub struct TestData
 {
 	//user 1
-	pub user_data: UserData,
+	pub user_data: UserDataInt,
 	pub username: String,
 	pub user_pw: String,
 
 	//user 2
-	pub user_data_1: UserData,
+	pub user_data_1: UserDataInt,
 	pub username_1: String,
 	pub user_pw_1: String,
 

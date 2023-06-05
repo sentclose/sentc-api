@@ -4,10 +4,11 @@ use std::time::Duration;
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use rustgram_server_util::error::ServerErrorCodes;
-use sentc_crypto::group::GroupKeyData;
+use sentc_crypto::entities::group::GroupKeyData;
+use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupInviteServerOutput};
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::{SdkError, UserData};
+use sentc_crypto::SdkError;
 use sentc_crypto_common::group::{
 	GroupChangeRankServerInput,
 	GroupChildrenList,
@@ -56,7 +57,7 @@ pub struct UserState
 	pub username: String,
 	pub pw: String,
 	pub user_id: UserId,
-	pub user_data: UserData,
+	pub user_data: UserDataInt,
 }
 
 pub struct GroupState

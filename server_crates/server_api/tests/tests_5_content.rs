@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use reqwest::header::AUTHORIZATION;
 use rustgram_server_util::input_helper::json_to_string;
-use sentc_crypto::group::GroupKeyData;
+use sentc_crypto::entities::group::GroupKeyData;
+use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::UserData;
 use sentc_crypto_common::content::{ContentCreateOutput, ContentItemAccess, ListContentItem};
 use sentc_crypto_common::group::GroupCreateOutput;
 use sentc_crypto_common::{ContentId, GroupId, UserId};
@@ -51,7 +51,7 @@ pub struct UserState
 	pub username: String,
 	pub pw: String,
 	pub user_id: UserId,
-	pub user_data: UserData,
+	pub user_data: UserDataInt,
 }
 
 pub struct GroupState

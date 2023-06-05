@@ -2,10 +2,10 @@ use std::collections::HashMap;
 
 use reqwest::header::AUTHORIZATION;
 use rustgram_server_util::error::ServerErrorCodes;
-use sentc_crypto::group::GroupKeyData;
+use sentc_crypto::entities::group::GroupKeyData;
+use sentc_crypto::entities::keys::HmacKeyFormatInt;
+use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::util::HmacKeyFormat;
-use sentc_crypto::UserData;
 use sentc_crypto_common::content_searchable::{ListSearchItem, SearchCreateData};
 use sentc_crypto_common::group::GroupCreateOutput;
 use sentc_crypto_common::{GroupId, UserId};
@@ -56,7 +56,7 @@ pub struct UserState
 	pub username: String,
 	pub pw: String,
 	pub user_id: UserId,
-	pub user_data: UserData,
+	pub user_data: UserDataInt,
 }
 
 pub struct GroupState
@@ -64,7 +64,7 @@ pub struct GroupState
 	pub group_id: GroupId,
 	pub group_member: Vec<UserId>,
 	pub decrypted_group_keys: HashMap<UserId, Vec<GroupKeyData>>,
-	pub hmac_keys: Vec<HmacKeyFormat>,
+	pub hmac_keys: Vec<HmacKeyFormatInt>,
 }
 
 #[tokio::test]

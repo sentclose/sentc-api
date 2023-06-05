@@ -1,8 +1,9 @@
 use reqwest::header::AUTHORIZATION;
-use sentc_crypto::group::GroupKeyData;
+use sentc_crypto::entities::group::GroupKeyData;
+use sentc_crypto::entities::keys::SymKeyFormatInt;
+use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::sdk_common::crypto::GeneratedSymKeyHeadServerOutput;
 use sentc_crypto::sdk_common::ServerOutput;
-use sentc_crypto::{SymKeyFormat, UserData};
 use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerRegisterOutput;
 use sentc_crypto_common::SymKeyId;
 use server_api_common::app::AppRegisterOutput;
@@ -17,12 +18,12 @@ pub struct SymKeyData
 {
 	pub id: SymKeyId,
 	pub server_out: Option<GeneratedSymKeyHeadServerOutput>,
-	pub sym_key: Option<SymKeyFormat>,
+	pub sym_key: Option<SymKeyFormatInt>,
 }
 
 pub struct KeyState
 {
-	pub user_data: UserData,
+	pub user_data: UserDataInt,
 	pub username: String,
 	pub user_pw: String,
 	pub app_data: AppRegisterOutput,
