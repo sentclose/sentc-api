@@ -4,10 +4,10 @@ members = [
     "server_crates/bin/server_bin",
 
     # bin for dev
-    "server_crates/bin_dev/server_api_route_builder",
-    #"server_crates/bin_dev/server_api_init",
-    #"server_crates/bin_dev/dummy_server",
-    #"server_crates/bin_dev/server_migration",
+    "server_crates/bin/server_dev_bin/server_api_route_builder",
+    #"server_crates/bin/server_dev_bin/server_api_init",
+    #"server_crates/bin/server_dev_bin/dummy_server",
+    #"server_crates/bin/server_dev_bin/server_migration",
 
     # lib
     "sdk-common",
@@ -31,14 +31,14 @@ dotenv = "0.15.0"
 # for caching trait
 async-trait = "0.1.56"
 
-rustgram-server-util = {version = "0.1.8", git= "https://gitlab.com/grammm/rustgram/rustgram-server-util.git", rev = "9016f78ba0865e7fd35fb8ac004c3a9bff5315eb", default-features = false, features = ["derive_macro"]}
+rustgram-server-util = {git= "https://gitlab.com/grammm/rustgram/rustgram-server-util.git", rev = "634f8d98f99f240aa270b9f64fddd4f915e749d2", default-features = false, features = ["derive_macro"]}
 
 #_______________________________________________________________________________________________________________________
 # salt creation on server
 # to get it from ssh: write this in your ~/.cargo/config.toml:
 # [net]
 # git-fetch-with-cli = true
-sentc-crypto = {git = "ssh://git@github.com/sentclose/sentc.git", rev="aec1316003eaa68a4bbfca511112a7c163b8ae4b", default-features = false, features = ["rust", "server"]}
+sentc-crypto = {git = "ssh://git@github.com/sentclose/sentc.git", rev="a1b19a5a8a2d17dc0fbceb3af3b40dfe9376400c", default-features = false, features = ["rust", "server"]}
 
 #sentc-crypto = {path = "../../sdk/crypto", default-features = false, features = ["rust", "server"]} # for local dev
 

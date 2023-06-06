@@ -135,8 +135,7 @@ pub async fn renew_tokens(req: Request) -> JRes<AppTokenRenewOutput>
 	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
 	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
 
-	cache::delete(old_hashed_secret.as_str()).await?;
-	cache::delete(old_hashed_public_token.as_str()).await?;
+	cache::delete_multiple(&[&old_hashed_secret, &old_hashed_public_token]).await?;
 
 	let out = AppTokenRenewOutput {
 		secret_token: base64::encode(secret_token),
@@ -171,25 +170,19 @@ pub async fn add_jwt_keys(req: Request) -> JRes<AppJwtRegisterOutput>
 	//delete the cache of the app because it can happened that this id was used before
 	let verify_key_cache_key = get_app_jwt_verify_key(&jwt_id);
 	let sign_key_cache_key = get_app_jwt_sign_key(&jwt_id);
-	cache::delete(&verify_key_cache_key).await?;
-	cache::delete(&sign_key_cache_key).await?;
+	//delete the app data cache
+	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
+	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
 
-	let out = AppJwtRegisterOutput {
+	cache::delete_multiple(&[&verify_key_cache_key, &sign_key_cache_key, &old_hashed_secret, &old_hashed_public_token]).await?;
+
+	echo(AppJwtRegisterOutput {
 		app_id: app_general_data.app_id.to_string(),
 		jwt_id,
 		jwt_verify_key,
 		jwt_sign_key,
 		jwt_alg: alg.to_string(),
-	};
-
-	//delete the app data cache
-	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
-	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
-
-	cache::delete(old_hashed_secret.as_str()).await?;
-	cache::delete(old_hashed_public_token.as_str()).await?;
-
-	echo(out)
+	})
 }
 
 pub async fn delete_jwt_keys(req: Request) -> JRes<ServerSuccessOutput>
@@ -213,14 +206,10 @@ pub async fn delete_jwt_keys(req: Request) -> JRes<ServerSuccessOutput>
 
 	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
 	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
-
-	cache::delete(old_hashed_secret.as_str()).await?;
-	cache::delete(old_hashed_public_token.as_str()).await?;
-
 	let verify_key_cache_key = get_app_jwt_verify_key(jwt_id);
 	let sign_key_cache_key = get_app_jwt_sign_key(jwt_id);
-	cache::delete(&verify_key_cache_key).await?;
-	cache::delete(&sign_key_cache_key).await?;
+
+	cache::delete_multiple(&[&old_hashed_secret, &old_hashed_public_token, &verify_key_cache_key, &sign_key_cache_key]).await?;
 
 	echo_success()
 }
@@ -288,8 +277,7 @@ pub async fn update_options(mut req: Request) -> JRes<ServerSuccessOutput>
 	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
 	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
 
-	cache::delete(old_hashed_secret.as_str()).await?;
-	cache::delete(old_hashed_public_token.as_str()).await?;
+	cache::delete_multiple(&[&old_hashed_secret, &old_hashed_public_token]).await?;
 
 	echo_success()
 }
@@ -319,8 +307,7 @@ pub async fn update_file_options(mut req: Request) -> JRes<ServerSuccessOutput>
 	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
 	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
 
-	cache::delete(old_hashed_secret.as_str()).await?;
-	cache::delete(old_hashed_public_token.as_str()).await?;
+	cache::delete_multiple(&[&old_hashed_secret, &old_hashed_public_token]).await?;
 
 	echo_success()
 }
@@ -348,8 +335,7 @@ pub async fn update_group_options(mut req: Request) -> JRes<ServerSuccessOutput>
 	let old_hashed_secret = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_secret_token;
 	let old_hashed_public_token = APP_TOKEN_CACHE.to_string() + &app_general_data.hashed_public_token;
 
-	cache::delete(old_hashed_secret.as_str()).await?;
-	cache::delete(old_hashed_public_token.as_str()).await?;
+	cache::delete_multiple(&[&old_hashed_secret, &old_hashed_public_token]).await?;
 
 	echo_success()
 }

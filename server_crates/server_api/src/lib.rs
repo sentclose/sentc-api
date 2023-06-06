@@ -107,6 +107,8 @@ pub async fn start()
 	rustgram_server_util::cache::init_cache().await;
 	rustgram_server_util::file::init_storage().await;
 
+	encrypted_at_rest_root::init_crypto().await;
+
 	util::email::init_email_checker().await;
 	#[cfg(feature = "send_mail")]
 	util::email::send_mail::init_email_register().await;

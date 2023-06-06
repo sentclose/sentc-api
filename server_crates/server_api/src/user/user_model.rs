@@ -31,14 +31,18 @@ use crate::user::user_service::UserAction;
 use crate::util::api_res::ApiErrorCodes;
 use crate::util::get_begin_of_month;
 
-pub(super) async fn get_jwt_sign_key(kid: impl Into<String>) -> AppRes<Option<StringEntity>>
+pub(super) async fn get_jwt_sign_key(kid: impl Into<String>) -> AppRes<Option<String>>
 {
 	//language=SQL
 	let sql = "SELECT sign_key FROM sentc_app_jwt_keys WHERE id = ?";
 
 	let sign_key: Option<StringEntity> = query_first(sql, set_params!(kid.into())).await?;
 
-	Ok(sign_key)
+	//decrypt the sign key with ear root
+	match sign_key {
+		Some(sk) => Ok(Some(encrypted_at_rest_root::decrypt(&sk.0).await?)),
+		None => Ok(None),
+	}
 }
 
 pub(super) async fn get_jwt_verify_key(kid: impl Into<String>) -> AppRes<Option<StringEntity>>
