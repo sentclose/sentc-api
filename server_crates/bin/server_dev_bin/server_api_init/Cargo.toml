@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-server_api_common = {path = "../../server_api_common", default-features = false}
-server_api = {path = "../../server_api", default-features = false}
+server_api_common = {path = "../../../server_api_common", default-features = false}
+server_api = {path = "../../../server_api", default-features = false}
 
 tokio = {workspace = true}
 
