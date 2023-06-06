@@ -11,6 +11,8 @@ sentc-crypto-common = {path = "../../sdk-common" }
 
 server_api_common = {path = "../server_api_common", default-features = false, features = ["server"]}
 
+encrypted_at_rest_root = {path = "../encrypted_at_rest_root"}
+
 rustgram-server-util = {workspace = true}
 
 # server impl
