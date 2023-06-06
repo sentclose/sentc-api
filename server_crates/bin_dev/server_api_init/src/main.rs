@@ -32,7 +32,7 @@ async fn main_app()
 		group_options: Default::default(),
 	};
 
-	let app_data = server_api::sentc_customer_app_service::create_app(input, "sentc_init".to_string(), None)
+	let app_data = server_api::sentc_customer_app_service::create_app(input, "sentc_init".to_string(), None::<String>)
 		.await
 		.unwrap();
 
@@ -50,7 +50,7 @@ async fn test_app()
 		group_options: Default::default(),
 	};
 
-	let app_data = server_api::sentc_customer_app_service::create_app(input, "sentc_test".to_string(), None)
+	let app_data = server_api::sentc_customer_app_service::create_app(input, "sentc_test".to_string(), None::<String>)
 		.await
 		.unwrap();
 
