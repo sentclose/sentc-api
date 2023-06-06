@@ -31,7 +31,7 @@ dotenv = "0.15.0"
 # for caching trait
 async-trait = "0.1.56"
 
-rustgram-server-util = {version = "0.1.8", git= "https://gitlab.com/grammm/rustgram/rustgram-server-util.git", rev = "9016f78ba0865e7fd35fb8ac004c3a9bff5315eb", default-features = false, features = ["derive_macro"]}
+rustgram-server-util = {git= "https://gitlab.com/grammm/rustgram/rustgram-server-util.git", rev = "9016f78ba0865e7fd35fb8ac004c3a9bff5315eb", default-features = false, features = ["derive_macro"]}
 
 #_______________________________________________________________________________________________________________________
 # salt creation on server
