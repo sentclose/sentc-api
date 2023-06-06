@@ -194,7 +194,13 @@ WHERE
     app_id = a.id
 ORDER BY ak.time DESC";
 
-	let jwt_data: Vec<AppJwtData> = query(sql, set_params!(app_id.into())).await?;
+	let mut jwt_data: Vec<AppJwtData> = query(sql, set_params!(app_id.into())).await?;
+
+	let keys = encrypted_at_rest_root::get_key_map().await;
+
+	for jwt_datum in &mut jwt_data {
+		jwt_datum.sign_key = encrypted_at_rest_root::decrypt_with_key_map(&keys, &jwt_datum.sign_key)?;
+	}
 
 	Ok(jwt_data)
 }
@@ -383,12 +389,14 @@ VALUES (?,?,?,?,?,?,?,?)";
 
 	let jwt_key_id = create_id();
 
+	let encrypted_sign_key = encrypted_at_rest_root::encrypt(&first_jwt_sign_key.into()).await?;
+
 	//language=SQL
 	let sql_jwt = "INSERT INTO sentc_app_jwt_keys (id, app_id, sign_key, verify_key, alg, time) VALUES (?,?,?,?,?,?)";
 	let params_jwt = set_params!(
 		jwt_key_id.clone(),
 		app_id.clone(),
-		first_jwt_sign_key.into(),
+		encrypted_sign_key,
 		first_jwt_verify_key.into(),
 		first_jwt_alg.into(),
 		time.to_string()
@@ -469,6 +477,8 @@ pub(super) async fn add_jwt_keys(
 	let time = get_time()?;
 	let jwt_key_id = create_id();
 
+	let encrypted_sign_key = encrypted_at_rest_root::encrypt(&new_jwt_sign_key.into()).await?;
+
 	//language=SQL
 	let sql = "INSERT INTO sentc_app_jwt_keys (id, app_id, sign_key, verify_key, alg, time) VALUES (?,?,?,?,?,?)";
 
@@ -477,7 +487,7 @@ pub(super) async fn add_jwt_keys(
 		set_params!(
 			jwt_key_id.clone(),
 			app_id.into(),
-			new_jwt_sign_key.into(),
+			encrypted_sign_key,
 			new_jwt_verify_key.into(),
 			new_jwt_alg.into(),
 			time.to_string()
