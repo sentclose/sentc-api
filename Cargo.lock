@@ -654,7 +654,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "encrypted_at_rest"
+name = "encrypted_at_rest_root"
 version = "0.1.0"
 dependencies = [
  "dotenv",
@@ -2017,7 +2017,7 @@ dependencies = [
 [[package]]
 name = "rustgram-server-util"
 version = "0.1.8"
-source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=9016f78ba0865e7fd35fb8ac004c3a9bff5315eb#9016f78ba0865e7fd35fb8ac004c3a9bff5315eb"
+source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=634f8d98f99f240aa270b9f64fddd4f915e749d2#634f8d98f99f240aa270b9f64fddd4f915e749d2"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2040,10 +2040,10 @@ dependencies = [
 [[package]]
 name = "rustgram-server-util-macros"
 version = "0.1.8"
-source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=9016f78ba0865e7fd35fb8ac004c3a9bff5315eb#9016f78ba0865e7fd35fb8ac004c3a9bff5315eb"
+source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=634f8d98f99f240aa270b9f64fddd4f915e749d2#634f8d98f99f240aa270b9f64fddd4f915e749d2"
 dependencies = [
  "quote",
- "syn 2.0.15",
+ "syn 1.0.98",
 ]
 
 [[package]]
@@ -2126,7 +2126,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto"
 version = "0.1.0"
-source = "git+ssh://git@github.com/sentclose/sentc.git?rev=aec1316003eaa68a4bbfca511112a7c163b8ae4b#aec1316003eaa68a4bbfca511112a7c163b8ae4b"
+source = "git+ssh://git@github.com/sentclose/sentc.git?rev=a1b19a5a8a2d17dc0fbceb3af3b40dfe9376400c#a1b19a5a8a2d17dc0fbceb3af3b40dfe9376400c"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -2157,7 +2157,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-core"
 version = "0.1.0"
-source = "git+ssh://git@github.com/sentclose/sentc.git?rev=aec1316003eaa68a4bbfca511112a7c163b8ae4b#aec1316003eaa68a4bbfca511112a7c163b8ae4b"
+source = "git+ssh://git@github.com/sentclose/sentc.git?rev=a1b19a5a8a2d17dc0fbceb3af3b40dfe9376400c#a1b19a5a8a2d17dc0fbceb3af3b40dfe9376400c"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -2234,6 +2234,7 @@ dependencies = [
  "captcha",
  "chrono",
  "dotenv",
+ "encrypted_at_rest_root",
  "hyper",
  "jsonwebtoken",
  "lettre",
