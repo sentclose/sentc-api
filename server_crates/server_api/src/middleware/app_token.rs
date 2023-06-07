@@ -9,11 +9,12 @@ use rustgram_server_util::cache;
 use rustgram_server_util::cache::{CacheVariant, LONG_TTL};
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::input_helper::{bytes_to_json, json_to_string};
+use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::AppId;
 
 use crate::customer_app::app_entities::AppData;
 use crate::customer_app::app_model;
-use crate::customer_app::app_util::{get_app_data_from_req, hash_token_from_string_to_string};
+use crate::customer_app::app_util::hash_token_from_string_to_string;
 use crate::util::api_res::ApiErrorCodes;
 use crate::util::APP_TOKEN_CACHE;
 
@@ -73,19 +74,9 @@ where
 		let next = self.inner.clone();
 
 		Box::pin(async move {
-			match token_check(&mut req).await {
+			match id_check(&mut req, app_id).await {
 				Ok(_) => {},
 				Err(e) => return e.into_response(),
-			}
-
-			//check the app id
-			let app_data = match get_app_data_from_req(&req) {
-				Ok(d) => d,
-				Err(e) => return e.into_response(),
-			};
-
-			if app_data.app_data.app_id != app_id {
-				return ServerCoreError::new_msg(400, ApiErrorCodes::CustomerWrongAppToken, "Wrong app token used").into_response();
 			}
 
 			next.call(req).await
@@ -171,4 +162,54 @@ fn get_from_req(req: &Request) -> Result<String, ServerCoreError>
 		std::str::from_utf8(header.as_bytes()).map_err(|_e| ServerCoreError::new_msg(401, ApiErrorCodes::AppTokenWrongFormat, "Wrong format"))?;
 
 	Ok(app_token.to_string())
+}
+
+//__________________________________________________________________________________________________
+
+async fn id_check(req: &mut Request, id: impl Into<AppId>) -> AppRes<()>
+{
+	//use the sentc base app id as ref not a token
+
+	let id = id.into();
+
+	//load the app info from cache
+	let key = APP_TOKEN_CACHE.to_string() + &id;
+
+	let entity = match cache::get(key.as_str()).await? {
+		Some(j) => bytes_to_json(j.as_bytes())?,
+		None => {
+			//load the info from the db
+			let data = match app_model::get_app_data_from_id(id).await {
+				Ok(d) => d,
+				Err(e) => {
+					//save the wrong token in the cache
+					cache::add(key, json_to_string(&CacheVariant::<AppData>::None)?, LONG_TTL).await?;
+
+					return Err(e);
+				},
+			};
+
+			let data = CacheVariant::Some(data);
+
+			//cache the info
+			cache::add(key, json_to_string(&data)?, LONG_TTL).await?;
+
+			data
+		},
+	};
+
+	let entity = match entity {
+		CacheVariant::Some(d) => d,
+		CacheVariant::None => {
+			return Err(ServerCoreError::new_msg(
+				401,
+				ApiErrorCodes::AppTokenNotFound,
+				"No valid app token",
+			))
+		},
+	};
+
+	req.extensions_mut().insert(entity);
+
+	Ok(())
 }
