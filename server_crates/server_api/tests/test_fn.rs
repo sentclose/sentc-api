@@ -46,18 +46,13 @@ pub fn auth_header(jwt: &str) -> String
 	format!("Bearer {}", jwt)
 }
 
-pub async fn get_captcha(token: &str) -> CaptchaInput
+pub async fn get_captcha() -> CaptchaInput
 {
 	//make the captcha req first
 	let url = get_url("api/v1/customer/captcha".to_string());
 
 	let client = reqwest::Client::new();
-	let res = client
-		.get(url)
-		.header("x-sentc-app-token", token)
-		.send()
-		.await
-		.unwrap();
+	let res = client.get(url).send().await.unwrap();
 
 	let body = res.text().await.unwrap();
 
@@ -120,14 +115,12 @@ Register customer but without the email check
 */
 pub async fn register_customer(email: String, pw: &str) -> CustomerId
 {
-	let public_token = env::var("SENTC_PUBLIC_TOKEN").unwrap();
-
 	let url = get_url("api/v1/customer/register".to_string());
 
 	let register_data = sentc_crypto::user::register(email.as_str(), pw).unwrap();
 	let register_data = RegisterData::from_string(register_data.as_str()).unwrap();
 
-	let captcha_input = get_captcha(public_token.as_str()).await;
+	let captcha_input = get_captcha().await;
 
 	let input = CustomerRegisterData {
 		customer_data: CustomerData {
@@ -143,7 +136,6 @@ pub async fn register_customer(email: String, pw: &str) -> CustomerId
 	let client = reqwest::Client::new();
 	let res = client
 		.post(url)
-		.header("x-sentc-app-token", public_token.as_str())
 		.body(serde_json::to_string(&input).unwrap())
 		.send()
 		.await
@@ -161,8 +153,6 @@ pub async fn register_customer(email: String, pw: &str) -> CustomerId
 
 pub async fn login_customer(email: &str, pw: &str) -> CustomerDoneLoginOutput
 {
-	let public_token = env::var("SENTC_PUBLIC_TOKEN").unwrap();
-
 	let url = get_url("api/v1/customer/prepare_login".to_owned());
 
 	let prep_server_input = sentc_crypto::user::prepare_login_start(email).unwrap();
@@ -170,7 +160,6 @@ pub async fn login_customer(email: &str, pw: &str) -> CustomerDoneLoginOutput
 	let client = reqwest::Client::new();
 	let res = client
 		.post(url)
-		.header("x-sentc-app-token", public_token.as_str())
 		.body(prep_server_input)
 		.send()
 		.await
@@ -184,13 +173,7 @@ pub async fn login_customer(email: &str, pw: &str) -> CustomerDoneLoginOutput
 	let url = get_url("api/v1/customer/done_login".to_owned());
 
 	let client = reqwest::Client::new();
-	let res = client
-		.post(url)
-		.header("x-sentc-app-token", public_token.as_str())
-		.body(auth_key)
-		.send()
-		.await
-		.unwrap();
+	let res = client.post(url).body(auth_key).send().await.unwrap();
 
 	let body = res.text().await.unwrap();
 
@@ -204,14 +187,11 @@ pub async fn login_customer(email: &str, pw: &str) -> CustomerDoneLoginOutput
 
 pub async fn customer_delete(customer_jwt: &str)
 {
-	let public_token = env::var("SENTC_PUBLIC_TOKEN").unwrap();
-
 	let url = get_url("api/v1/customer".to_owned());
 
 	let client = reqwest::Client::new();
 	let res = client
 		.delete(url)
-		.header("x-sentc-app-token", public_token.as_str())
 		.header(AUTHORIZATION, auth_header(customer_jwt))
 		.send()
 		.await
