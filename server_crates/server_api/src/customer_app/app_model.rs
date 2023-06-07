@@ -82,6 +82,51 @@ WHERE
 	Ok(options)
 }
 
+async fn get_app_data_private(app_data: AppDataGeneral, auth_with_token: AuthWithToken) -> AppRes<AppData>
+{
+	//language=SQL
+	let sql_jwt = "SELECT id, alg, time FROM sentc_app_jwt_keys WHERE app_id = ? ORDER BY time DESC LIMIT 10";
+
+	//get app file options but without the auth token for external storage
+	//language=SQL
+	let sql_file_opt = "SELECT file_storage,storage_url FROM sentc_file_options WHERE app_id = ?";
+
+	//get the group options
+	//language=SQL
+	let sql_group = "SELECT max_key_rotation_month,min_rank_key_rotation FROM sentc_app_group_options WHERE app_id = ?";
+
+	let (jwt_data, options, file_options, group_options) = tokio::try_join!(
+		query(sql_jwt, set_params!(app_data.app_id.clone())),
+		get_app_options(&app_data.app_id),
+		query_first(sql_file_opt, set_params!(app_data.app_id.clone())),
+		query_first(sql_group, set_params!(app_data.app_id.clone())),
+	)?;
+
+	Ok(AppData {
+		app_data,
+		jwt_data,
+		auth_with_token,
+		options,
+		file_options: file_options.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::AppNotFound, "App not found"))?,
+		group_options: group_options.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::AppNotFound, "App not found"))?,
+	})
+}
+
+pub(crate) async fn get_app_data_from_id(id: impl Into<AppId>) -> AppRes<AppData>
+{
+	//language=SQL
+	let sql = r"
+SELECT id as app_id, owner_id, owner_type, hashed_secret_token, hashed_public_token, hash_alg 
+FROM sentc_app 
+WHERE id = ? LIMIT 1";
+
+	let app_data: AppDataGeneral = query_first(sql, set_params!(id.into()))
+		.await?
+		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::AppTokenNotFound, "App token not found"))?;
+
+	get_app_data_private(app_data, AuthWithToken::Public).await
+}
+
 /**
 # Internal app data
 
@@ -113,32 +158,7 @@ WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 		));
 	};
 
-	//language=SQL
-	let sql_jwt = "SELECT id, alg, time FROM sentc_app_jwt_keys WHERE app_id = ? ORDER BY time DESC LIMIT 10";
-
-	//get app file options but without the auth token for external storage
-	//language=SQL
-	let sql_file_opt = "SELECT file_storage,storage_url FROM sentc_file_options WHERE app_id = ?";
-
-	//get the group options
-	//language=SQL
-	let sql_group = "SELECT max_key_rotation_month,min_rank_key_rotation FROM sentc_app_group_options WHERE app_id = ?";
-
-	let (jwt_data, options, file_options, group_options) = tokio::try_join!(
-		query(sql_jwt, set_params!(app_data.app_id.clone())),
-		get_app_options(&app_data.app_id),
-		query_first(sql_file_opt, set_params!(app_data.app_id.clone())),
-		query_first(sql_group, set_params!(app_data.app_id.clone())),
-	)?;
-
-	Ok(AppData {
-		app_data,
-		jwt_data,
-		auth_with_token,
-		options,
-		file_options: file_options.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::AppNotFound, "App not found"))?,
-		group_options: group_options.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::AppNotFound, "App not found"))?,
-	})
+	get_app_data_private(app_data, auth_with_token).await
 }
 
 /**
