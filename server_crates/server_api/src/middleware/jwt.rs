@@ -1,11 +1,10 @@
-use std::collections::hash_map::DefaultHasher;
 use std::env;
 use std::future::Future;
-use std::hash::{Hash, Hasher};
 use std::pin::Pin;
 use std::sync::Arc;
 
 use hyper::header::AUTHORIZATION;
+use ring::digest::{Context, SHA256};
 use rustgram::service::{IntoResponse, Service};
 use rustgram::{Request, Response};
 use rustgram_server_util::cache;
@@ -192,11 +191,9 @@ async fn validate(app_id: AppId, jwt: &str, check_exp: bool) -> Result<UserJwtEn
 {
 	//hash the jwt and check if it is in the cache
 
-	//no need for crypto hasher
-	let mut s = DefaultHasher::new();
-	jwt.hash(&mut s);
-	let cache_key = s.finish();
-	let cache_key = cache_key.to_string();
+	let mut c = Context::new(&SHA256);
+	c.update(jwt.as_bytes());
+	let cache_key = base64::encode(c.finish().as_ref());
 	let cache_key = get_user_jwt_key(&app_id, &cache_key);
 
 	let entity = match cache::get(cache_key.as_str()).await? {
