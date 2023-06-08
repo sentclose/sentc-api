@@ -660,7 +660,7 @@ dependencies = [
  "dotenv",
  "rustgram-server-util",
  "sentc-crypto",
- "sentc-crypto-common 0.1.3",
+ "sentc-crypto-common 0.8.0",
  "serde",
  "serde_json",
  "tokio",
@@ -2130,7 +2130,7 @@ source = "git+ssh://git@github.com/sentclose/sentc.git?rev=722b54e4765ab7eb8eb18
 dependencies = [
  "base64ct",
  "pem-rfc7468",
- "sentc-crypto-common 0.8.0",
+ "sentc-crypto-common 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "sentc-crypto-core",
  "serde",
  "serde_json",
@@ -2138,7 +2138,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-common"
-version = "0.1.3"
+version = "0.8.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -2245,7 +2245,7 @@ dependencies = [
  "rustgram",
  "rustgram-server-util",
  "sentc-crypto",
- "sentc-crypto-common 0.1.3",
+ "sentc-crypto-common 0.8.0",
  "serde",
  "serde_json",
  "server_api_common",
@@ -2257,7 +2257,7 @@ name = "server_api_common"
 version = "0.1.0"
 dependencies = [
  "rustgram-server-util",
- "sentc-crypto-common 0.1.3",
+ "sentc-crypto-common 0.8.0",
  "serde",
  "serde_json",
 ]
