@@ -2125,12 +2125,12 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto"
-version = "0.1.0"
-source = "git+ssh://git@github.com/sentclose/sentc.git?rev=a1b19a5a8a2d17dc0fbceb3af3b40dfe9376400c#a1b19a5a8a2d17dc0fbceb3af3b40dfe9376400c"
+version = "0.8.0"
+source = "git+ssh://git@github.com/sentclose/sentc.git?rev=722b54e4765ab7eb8eb185c6dd6a5f1826ee0005#722b54e4765ab7eb8eb185c6dd6a5f1826ee0005"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
- "sentc-crypto-common 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sentc-crypto-common 0.8.0",
  "sentc-crypto-core",
  "serde",
  "serde_json",
@@ -2146,9 +2146,9 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-common"
-version = "0.1.3"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1be707e65c41af5d6851b31b4454f08bf01a1a0ea895a9086e906d129da9cfd"
+checksum = "93914ee031b51deeabba68668e7a3a1c92ee9226a0f6e5f6ad29810e0c0c434b"
 dependencies = [
  "serde",
  "serde_json",
@@ -2156,8 +2156,8 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-core"
-version = "0.1.0"
-source = "git+ssh://git@github.com/sentclose/sentc.git?rev=a1b19a5a8a2d17dc0fbceb3af3b40dfe9376400c#a1b19a5a8a2d17dc0fbceb3af3b40dfe9376400c"
+version = "0.8.0"
+source = "git+ssh://git@github.com/sentclose/sentc.git?rev=722b54e4765ab7eb8eb185c6dd6a5f1826ee0005#722b54e4765ab7eb8eb185c6dd6a5f1826ee0005"
 dependencies = [
  "aes-gcm",
  "argon2",
