@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
 use rustgram_server_util::get_time;
 use rustgram_server_util::res::AppRes;
@@ -94,7 +95,7 @@ async fn delete_external(map: HashMap<AppId, Vec<PartId>>) -> AppRes<()>
 		let client = reqwest::Client::new();
 
 		// header token
-		let req = client.post(url).body(body);
+		let req = client.post(url).body(body).timeout(Duration::from_secs(10));
 
 		let req = match auth_token {
 			Some(at) => req.header("x-sentc-app-token", at),
