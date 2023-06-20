@@ -3016,6 +3016,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "worker_cron"
+version = "0.1.0"
+dependencies = [
+ "dotenv",
+ "rustgram-server-util",
+ "server_api",
+ "tokio",
+]
+
+[[package]]
 name = "worker_manual"
 version = "0.1.0"
 dependencies = [

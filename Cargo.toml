@@ -2,6 +2,8 @@
 members = [
     # bin
     "server_crates/bin/server_bin",
+    "server_crates/bin/worker/worker_manual",
+    "server_crates/bin/worker/worker_cron",
 
     # bin for dev
     "server_crates/bin/server_dev_bin/server_api_route_builder",
@@ -13,7 +15,6 @@ members = [
     "sdk-common",
     "server_crates/server_api",
     "server_crates/server_api_common",
-    "server_crates/worker/worker_manual",
     "server_crates/encrypted_at_rest_root"
 ]
 
