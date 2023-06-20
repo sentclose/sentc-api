@@ -1,6 +1,6 @@
 use rustgram::Request;
-use server_core::input_helper::{bytes_to_json, get_raw_body};
-use server_core::url_helper::get_name_param_from_req;
+use rustgram_server_util::input_helper::{bytes_to_json, get_raw_body};
+use rustgram_server_util::url_helper::get_name_param_from_req;
 use tokio::sync::{OnceCell, RwLock};
 
 static PART_IDS: OnceCell<RwLock<Vec<String>>> = OnceCell::const_new();
