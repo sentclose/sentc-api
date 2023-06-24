@@ -7,10 +7,7 @@ const INTERVAL_SEC: u64 = 60 * 60;
 #[tokio::main]
 async fn main()
 {
-	//load the env
-	dotenv::dotenv().ok();
-
-	rustgram_server_util::db::init_db().await;
+	server_api::start().await;
 
 	let mut interval = tokio::time::interval(Duration::from_secs(INTERVAL_SEC));
 
