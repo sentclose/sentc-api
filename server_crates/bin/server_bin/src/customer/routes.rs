@@ -178,6 +178,12 @@ pub(crate) fn routes(router: &mut Router)
 			.add(server_api::sentc_app_access_mw)
 			.add(server_api::sentc_jwt_customer_app),
 	);
+	router.delete(
+		"/api/v1/customer/app/:app_id/reset",
+		r(server_api::sentc_app_controller::reset)
+			.add(server_api::sentc_app_access_mw)
+			.add(server_api::sentc_jwt_customer_app),
+	);
 	router.patch(
 		"/api/v1/customer/app/:app_id/token_renew",
 		r(server_api::sentc_app_controller::renew_tokens)

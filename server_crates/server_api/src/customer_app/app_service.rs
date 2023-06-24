@@ -8,6 +8,7 @@ use server_api_common::customer::CustomerAppList;
 
 use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
 use crate::customer_app::{app_model, generate_tokens};
+use crate::file::file_service;
 use crate::user::jwt::create_jwt_keys;
 use crate::util::api_res::ApiErrorCodes;
 
@@ -60,6 +61,17 @@ pub async fn create_app(
 	};
 
 	Ok(customer_app_data)
+}
+
+pub async fn reset(app_id: impl Into<AppId>) -> AppRes<()>
+{
+	let app_id = app_id.into();
+
+	app_model::reset(&app_id).await?;
+
+	file_service::delete_file_for_app(app_id).await?;
+
+	Ok(())
 }
 
 pub(super) fn check_file_options(input: &AppFileOptionsInput) -> AppRes<()>

@@ -233,6 +233,23 @@ pub async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
+pub async fn reset(req: Request) -> JRes<ServerSuccessOutput>
+{
+	let app_general_data = get_app_general_data(&req)?;
+
+	if app_general_data.rank > 1 {
+		return Err(ServerCoreError::new_msg(
+			400,
+			ApiErrorCodes::AppAction,
+			"No rights to do this action",
+		));
+	}
+
+	app_service::reset(&app_general_data.app_id).await?;
+
+	echo_success()
+}
+
 pub async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 {
 	let body = get_raw_body(&mut req).await?;
