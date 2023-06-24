@@ -594,12 +594,75 @@ pub(super) async fn update_group_options(app_id: impl Into<AppId>, options: AppG
 
 pub(super) async fn delete(app_id: impl Into<AppId>) -> AppRes<()>
 {
+	//delete the rest with trigger
+
 	let app_id = app_id.into();
 
 	//language=SQL
 	let sql = "DELETE FROM sentc_app WHERE id = ?";
 
 	exec(sql, set_params!(app_id)).await?;
+
+	Ok(())
+}
+
+pub(super) async fn reset(app_id: impl Into<AppId>) -> AppRes<()>
+{
+	let app_id = app_id.into();
+
+	/*
+	1. delete all users
+	2. delete all groups
+	3. delete all keys
+	4. delete content
+	5. delete searchable
+
+	Do not delete the options.
+	 */
+
+	//language=SQL
+	let sql_user = r"DELETE FROM sentc_user WHERE app_id = ?";
+	let params_user = set_params!(app_id.clone());
+
+	//language=SQL
+	let sql_group = r"DELETE FROM sentc_group WHERE app_id = ?";
+	let params_group = set_params!(app_id.clone());
+
+	//language=SQL
+	let sql_keys = r"DELETE FROM sentc_sym_key_management WHERE app_id = ?";
+	let params_keys = set_params!(app_id.clone());
+
+	//language=SQL
+	let sql_content = r"DELETE FROM sentc_content WHERE app_id = ?";
+	let params_content = set_params!(app_id.clone());
+
+	//language=SQL
+	let sql_search = r"DELETE FROM sentc_content_searchable_item WHERE app_id = ?";
+	let params_search = set_params!(app_id);
+
+	exec_transaction(vec![
+		TransactionData {
+			sql: sql_user,
+			params: params_user,
+		},
+		TransactionData {
+			sql: sql_group,
+			params: params_group,
+		},
+		TransactionData {
+			sql: sql_keys,
+			params: params_keys,
+		},
+		TransactionData {
+			sql: sql_content,
+			params: params_content,
+		},
+		TransactionData {
+			sql: sql_search,
+			params: params_search,
+		},
+	])
+	.await?;
 
 	Ok(())
 }
