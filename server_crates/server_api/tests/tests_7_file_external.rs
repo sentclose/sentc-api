@@ -244,7 +244,7 @@ async fn clean_up()
 #[tokio::test]
 async fn file_external()
 {
-	dotenv::dotenv().ok();
+	dotenv::from_filename("sentc.env").ok();
 
 	init_app().await;
 

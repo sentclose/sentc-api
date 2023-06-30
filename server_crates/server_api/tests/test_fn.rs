@@ -61,7 +61,7 @@ pub async fn get_captcha() -> CaptchaInput
 	//get the captcha data from the db
 
 	//change the db path of sqlite
-	dotenv::dotenv().ok();
+	dotenv::from_filename("sentc.env").ok();
 	env::set_var("DB_PATH", env::var("DB_PATH_TEST").unwrap());
 
 	//language=SQL

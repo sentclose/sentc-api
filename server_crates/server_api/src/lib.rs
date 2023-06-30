@@ -106,7 +106,7 @@ pub async fn cors_handler(_req: Request) -> Response
 pub async fn start()
 {
 	//load the env
-	dotenv::dotenv().ok();
+	dotenv::from_filename("sentc.env").ok();
 
 	rustgram_server_util::db::init_db().await;
 	rustgram_server_util::cache::init_cache().await;

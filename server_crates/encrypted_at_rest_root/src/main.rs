@@ -3,7 +3,7 @@ use std::env;
 fn main()
 {
 	//load the env
-	dotenv::dotenv().ok();
+	dotenv::from_filename("sentc.env").ok();
 
 	let args: Vec<String> = env::args().collect();
 

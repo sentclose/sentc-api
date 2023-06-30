@@ -8,3 +8,4 @@ db/sqlite/db_test.sqlite3
 
 # local env files
 .env
+sentc.env
