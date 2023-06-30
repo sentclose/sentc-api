@@ -74,9 +74,14 @@ pub async fn not_found_handler(_req: Request) -> rustgram_server_util::res::JRes
 	))
 }
 
-pub async fn index_handler(_req: Request) -> &'static str
+pub async fn index_handler(_req: Request) -> Response
 {
-	"Hello there"
+	hyper::Response::builder()
+		.status(hyper::StatusCode::MOVED_PERMANENTLY)
+		.header("Location", "/dashboard")
+		.header("Access-Control-Allow-Origin", "*")
+		.body(Body::from(""))
+		.unwrap()
 }
 
 pub async fn cors_handler(_req: Request) -> Response
