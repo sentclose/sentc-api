@@ -1,5 +1,6 @@
 /target
 /target_sqlite
+/dist
 .idea/
 storage/
 .run_config/
