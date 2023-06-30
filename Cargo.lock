@@ -2126,7 +2126,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto"
 version = "0.8.0"
-source = "git+ssh://git@github.com/sentclose/sentc.git?rev=722b54e4765ab7eb8eb185c6dd6a5f1826ee0005#722b54e4765ab7eb8eb185c6dd6a5f1826ee0005"
+source = "git+https://github.com/sentclose/sentc.git?rev=2a31fcd1f1e014b60d61986dc705e000d7fc13ff#2a31fcd1f1e014b60d61986dc705e000d7fc13ff"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -2157,7 +2157,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-core"
 version = "0.8.0"
-source = "git+ssh://git@github.com/sentclose/sentc.git?rev=722b54e4765ab7eb8eb185c6dd6a5f1826ee0005#722b54e4765ab7eb8eb185c6dd6a5f1826ee0005"
+source = "git+https://github.com/sentclose/sentc.git?rev=2a31fcd1f1e014b60d61986dc705e000d7fc13ff#2a31fcd1f1e014b60d61986dc705e000d7fc13ff"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -2168,6 +2168,14 @@ dependencies = [
  "rand_core 0.6.3",
  "sha2 0.10.2",
  "x25519-dalek",
+]
+
+[[package]]
+name = "sentc_api_init"
+version = "0.1.0"
+dependencies = [
+ "server_api",
+ "tokio",
 ]
 
 [[package]]
