@@ -17,7 +17,7 @@ static LOCAL_FILE_HANDLER: OnceCell<Box<dyn FileHandler>> = OnceCell::const_new(
 
 pub async fn start()
 {
-	let path = env::var("LOCAL_FRONTED_DIR").unwrap_or_else(|| "dist".to_string());
+	let path = env::var("LOCAL_FRONTED_DIR").unwrap_or_else(|_| "dist".to_string());
 
 	LOCAL_FILE_HANDLER
 		.get_or_init(move || async { file::get_local_storage(path) })
