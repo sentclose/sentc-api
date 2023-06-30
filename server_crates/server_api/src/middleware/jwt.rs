@@ -1,4 +1,3 @@
-use std::env;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -18,6 +17,7 @@ use crate::user::jwt::auth;
 use crate::user::user_entities::UserJwtEntity;
 use crate::util::api_res::ApiErrorCodes;
 use crate::util::get_user_jwt_key;
+use crate::SENTC_ROOT_APP;
 
 const BEARER: &str = "Bearer ";
 
@@ -90,7 +90,6 @@ pub fn jwt_optional_transform<S>(inner: S) -> JwtMiddleware<S>
 pub struct JwtMiddlewareApp<S>
 {
 	inner: Arc<S>,
-	sentc_app_id: AppId,
 }
 
 impl<S> Service<Request> for JwtMiddlewareApp<S>
@@ -102,11 +101,10 @@ where
 
 	fn call(&self, mut req: Request) -> Self::Future
 	{
-		let app_id = self.sentc_app_id.to_string();
 		let next = self.inner.clone();
 
 		Box::pin(async move {
-			match jwt_check(&mut req, false, true, app_id).await {
+			match jwt_check(&mut req, false, true, SENTC_ROOT_APP.into()).await {
 				Ok(_) => {},
 				Err(e) => return e.into_response(),
 			}
@@ -118,11 +116,8 @@ where
 
 pub fn jwt_customer_app_transform<S>(inner: S) -> JwtMiddlewareApp<S>
 {
-	let sentc_app_id = env::var("SENTC_APP_ID").unwrap();
-
 	JwtMiddlewareApp {
 		inner: Arc::new(inner),
-		sentc_app_id,
 	}
 }
 

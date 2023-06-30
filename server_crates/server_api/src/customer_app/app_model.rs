@@ -1,5 +1,5 @@
 use rustgram_server_util::db::id_handling::create_id;
-use rustgram_server_util::db::{exec, exec_transaction, query, query_first, query_string, Params, TransactionData};
+use rustgram_server_util::db::{exec, exec_transaction, query, query_first, query_string, I32Entity, Params, TransactionData};
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params};
@@ -358,9 +358,20 @@ pub(super) async fn get_app_group_options(app_id: impl Into<AppId>) -> AppRes<Ap
 		.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::AppNotFound, "App not found"))
 }
 
+pub(super) async fn check_app_exists(app_id: impl Into<AppId>, customer_id: impl Into<CustomerId>) -> AppRes<bool>
+{
+	//language=SQL
+	let sql = "SELECT 1 FROM sentc_app WHERE owner_id = ? AND id = ?";
+
+	let exists: Option<I32Entity> = query_first(sql, set_params!(customer_id.into(), app_id.into())).await?;
+
+	Ok(exists.is_some())
+}
+
 //__________________________________________________________________________________________________
 
-pub(super) async fn create_app(
+pub(super) async fn create_app_with_id(
+	app_id: impl Into<AppId>,
 	customer_id: impl Into<CustomerId>,
 	input: AppRegisterInput,
 	hashed_secret_token: String,
@@ -370,9 +381,12 @@ pub(super) async fn create_app(
 	first_jwt_verify_key: impl Into<String>,
 	first_jwt_alg: impl Into<String>,
 	group_id: Option<impl Into<GroupId>>,
-) -> AppRes<(AppId, JwtKeyId)>
+) -> AppRes<JwtKeyId>
 {
-	let app_id = create_id();
+	//in another fn to also create the sentc root app with a specific id
+	//for normal apps use the create app fn
+
+	let app_id = app_id.into();
 	let time = get_time()?;
 
 	//language=SQL
@@ -436,7 +450,7 @@ VALUES (?,?,?,?,?,?,?,?)";
 	//language=SQL
 	let sql_group_options = "INSERT INTO sentc_app_group_options (app_id, max_key_rotation_month, min_rank_key_rotation) VALUES (?,?,?)";
 	let params_group_options = set_params!(
-		app_id.clone(),
+		app_id,
 		input.group_options.max_key_rotation_month,
 		input.group_options.min_rank_key_rotation
 	);
@@ -463,6 +477,37 @@ VALUES (?,?,?,?,?,?,?,?)";
 			params: params_group_options,
 		},
 	])
+	.await?;
+
+	Ok(jwt_key_id)
+}
+
+pub(super) async fn create_app(
+	customer_id: impl Into<CustomerId>,
+	input: AppRegisterInput,
+	hashed_secret_token: String,
+	hashed_public_token: String,
+	alg: impl Into<String>,
+	first_jwt_sign_key: impl Into<String>,
+	first_jwt_verify_key: impl Into<String>,
+	first_jwt_alg: impl Into<String>,
+	group_id: Option<impl Into<GroupId>>,
+) -> AppRes<(AppId, JwtKeyId)>
+{
+	let app_id = create_id();
+
+	let jwt_key_id = create_app_with_id(
+		app_id.clone(),
+		customer_id,
+		input,
+		hashed_secret_token,
+		hashed_public_token,
+		alg,
+		first_jwt_sign_key,
+		first_jwt_verify_key,
+		first_jwt_alg,
+		group_id,
+	)
 	.await?;
 
 	Ok((app_id, jwt_key_id))

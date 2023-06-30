@@ -1,4 +1,3 @@
-use std::env;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -10,13 +9,13 @@ use rustgram_server_util::cache::{CacheVariant, LONG_TTL};
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::input_helper::{bytes_to_json, json_to_string};
 use rustgram_server_util::res::AppRes;
-use sentc_crypto_common::AppId;
 
 use crate::customer_app::app_entities::AppData;
 use crate::customer_app::app_model;
 use crate::customer_app::app_util::hash_token_from_string_to_string;
 use crate::util::api_res::ApiErrorCodes;
 use crate::util::APP_TOKEN_CACHE;
+use crate::SENTC_ROOT_APP;
 
 pub struct AppTokenMiddleware<S>
 {
@@ -58,7 +57,6 @@ Middleware to check if the right sentc base app was used. Only used for internal
 pub struct AppTokenBaseAppMiddleware<S>
 {
 	inner: Arc<S>,
-	sentc_app_id: AppId,
 }
 
 impl<S> Service<Request> for AppTokenBaseAppMiddleware<S>
@@ -70,11 +68,10 @@ where
 
 	fn call(&self, mut req: Request) -> Self::Future
 	{
-		let app_id = self.sentc_app_id.to_string();
 		let next = self.inner.clone();
 
 		Box::pin(async move {
-			match id_check(&mut req, app_id).await {
+			match root_app_check(&mut req).await {
 				Ok(_) => {},
 				Err(e) => return e.into_response(),
 			}
@@ -86,11 +83,8 @@ where
 
 pub fn app_token_base_app_transform<S>(inner: S) -> AppTokenBaseAppMiddleware<S>
 {
-	let sentc_app_id = env::var("SENTC_APP_ID").unwrap();
-
 	AppTokenBaseAppMiddleware {
 		inner: Arc::new(inner),
-		sentc_app_id,
 	}
 }
 
@@ -166,20 +160,18 @@ fn get_from_req(req: &Request) -> Result<String, ServerCoreError>
 
 //__________________________________________________________________________________________________
 
-async fn id_check(req: &mut Request, id: impl Into<AppId>) -> AppRes<()>
+async fn root_app_check(req: &mut Request) -> AppRes<()>
 {
-	//use the sentc base app id as ref not a token
-
-	let id = id.into();
+	//use the sentc base app as ref not a token
 
 	//load the app info from cache
-	let key = APP_TOKEN_CACHE.to_string() + &id;
+	let key = APP_TOKEN_CACHE.to_string() + SENTC_ROOT_APP;
 
 	let entity = match cache::get(key.as_str()).await? {
 		Some(j) => bytes_to_json(j.as_bytes())?,
 		None => {
 			//load the info from the db
-			let data = match app_model::get_app_data_from_id(id).await {
+			let data = match app_model::get_app_data_from_id(SENTC_ROOT_APP).await {
 				Ok(d) => d,
 				Err(e) => {
 					//save the wrong token in the cache

@@ -65,6 +65,8 @@ pub use user::{
 	user_service as sentc_user_service,
 };
 
+pub const SENTC_ROOT_APP: &str = "sentc_int";
+
 pub async fn not_found_handler(_req: Request) -> rustgram_server_util::res::JRes<String>
 {
 	Err(rustgram_server_util::error::ServerCoreError::new_msg(
