@@ -10,7 +10,6 @@ members = [
     "server_crates/bin/server_dev_bin/server_api_route_builder",
     #"server_crates/bin/server_dev_bin/server_api_init",
     #"server_crates/bin/server_dev_bin/dummy_server",
-    #"server_crates/bin/server_dev_bin/server_migration",
 
     # lib
     "sdk-common",
