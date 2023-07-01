@@ -10,6 +10,8 @@ server_api = {path = "../../server_api", default-features = false}
 
 tokio = {workspace = true}
 
+rustgram-server-util = {workspace = true}
+
 [features]
 default = ["mysql"]
 mysql = ["server_api/mysql"]
