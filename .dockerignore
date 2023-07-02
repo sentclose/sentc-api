@@ -1,0 +1,10 @@
+/target
+/target_sqlite
+.idea/
+storage/
+.run_config/
+db/sqlite/db_test.sqlite3
+
+# local env files
+.env
+sentc.env
