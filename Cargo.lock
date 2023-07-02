@@ -660,7 +660,6 @@ dependencies = [
  "dotenv",
  "rustgram-server-util",
  "sentc-crypto",
- "sentc-crypto-common 0.8.0",
  "serde",
  "serde_json",
  "tokio",
