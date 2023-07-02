@@ -660,8 +660,6 @@ dependencies = [
  "dotenv",
  "rustgram-server-util",
  "sentc-crypto",
- "serde",
- "serde_json",
  "tokio",
 ]
 
@@ -2176,6 +2174,13 @@ dependencies = [
  "rustgram-server-util",
  "server_api",
  "tokio",
+]
+
+[[package]]
+name = "sentc_api_key_gen"
+version = "0.1.0"
+dependencies = [
+ "encrypted_at_rest_root",
 ]
 
 [[package]]

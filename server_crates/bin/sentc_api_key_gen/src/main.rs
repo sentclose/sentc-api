@@ -2,9 +2,6 @@ use std::env;
 
 fn main()
 {
-	//load the env
-	dotenv::from_filename("sentc.env").ok();
-
 	let args: Vec<String> = env::args().collect();
 
 	if let Some(a) = args.get(1) {
