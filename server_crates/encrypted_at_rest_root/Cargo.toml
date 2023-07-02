@@ -13,8 +13,4 @@ sentc-crypto = {workspace=true}
 # dotenv vars
 dotenv = {workspace = true}
 
-# json handling
-serde_json = {workspace = true}
-serde = {workspace = true}
-
 rustgram-server-util = {workspace = true}
