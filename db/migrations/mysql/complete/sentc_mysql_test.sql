@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jun 04, 2023 at 03:33 PM
+-- Generation Time: Jul 02, 2023 at 02:30 PM
 -- Server version: 10.2.6-MariaDB-log
 -- PHP Version: 7.4.5
 
@@ -44,7 +44,7 @@ CREATE TABLE `sentc_app` (
 --
 
 INSERT INTO `sentc_app` (`id`, `owner_id`, `owner_type`, `identifier`, `hashed_secret_token`, `hashed_public_token`, `hash_alg`, `time`) VALUES
-('1665eb92-4513-469f-81d8-b72a62e0134c', 'sentc_int', 0, '', 'cmzOt+BnyErJKsF2qNaiJ/YqsXJymnGQSdvJi5FpeOo=', 'b/t88y7h0zwqOXAtR/UqE4qsPL11PLFvo1e+8PNP8LU=', 'SHA256', 1659606752935);
+('sentc_int', 'sentc_int', 0, '', 'cmzOt+BnyErJKsF2qNaiJ/YqsXJymnGQSdvJi5FpeOo=', 'b/t88y7h0zwqOXAtR/UqE4qsPL11PLFvo1e+8PNP8LU=', 'SHA256', 1659606752935);
 
 --
 -- Triggers `sentc_app`
@@ -103,7 +103,7 @@ CREATE TABLE `sentc_app_group_options` (
 --
 
 INSERT INTO `sentc_app_group_options` (`app_id`, `max_key_rotation_month`, `min_rank_key_rotation`) VALUES
-('1665eb92-4513-469f-81d8-b72a62e0134c', 100, 4);
+('sentc_int', 100, 4);
 
 -- --------------------------------------------------------
 
@@ -125,7 +125,7 @@ CREATE TABLE `sentc_app_jwt_keys` (
 --
 
 INSERT INTO `sentc_app_jwt_keys` (`id`, `app_id`, `sign_key`, `verify_key`, `alg`, `time`) VALUES
-('174b531f-8814-42a2-94ab-3c17036183a5', '1665eb92-4513-469f-81d8-b72a62e0134c', 'eyJpZCI6Ijg2ZWFmZDliLWY0YzAtNDQwNS04M2YzLTk1ODdjZGU4NjdjOSIsInNpZ24iOm51bGx9AJplxfDnODBSHFsgtR8/C4o/T79CSWuDvCkAsljXyV3FZ1ttLdqWqqg4XOu0RDGIEBf7BXo06zKj+GptwSAI9ClrGdQOnVGCsAE0tCfk2p/rKFFQzeWdKb0sH1i7kB5iXph11fm0Yl6WJeUJytqAxgYfxu7scNOamBuX4LyC1AYkV5cH/DGBwmJ/0nqdaFa5cxOGJBlqoVBXkfPTY9idRBbeem32kj+cgVOUgo4+kcqbWN9lRKBDw/h0dqZX8EOFssPZw4x+pRnPzqTg6qu9Ied6kPjUw+zW0KRSESr4XZ8U8YJzimOYtuIGO1dkgxy47j6uoqsm0qnaCnyUkNVUcd3RU8m3xKNpYF7CiSPVhlNg1lFtew==', 'BFTKd1R3/nbdSMbVDlwKEEe6e19iJDnBFQhs42VPvxmtTp5RudxN1pY3vakthNUjKOamqAK2zNlgpA0zDkjVXhzSYR1057xsxKaJzR6BxXGYIKOBBVq7zFThtxx3KuWUUg==', 'ES384', 1659606752935);
+('174b531f-8814-42a2-94ab-3c17036183a5', 'sentc_int', 'eyJpZCI6Ijg2ZWFmZDliLWY0YzAtNDQwNS04M2YzLTk1ODdjZGU4NjdjOSIsInNpZ24iOm51bGx9AJplxfDnODBSHFsgtR8/C4o/T79CSWuDvCkAsljXyV3FZ1ttLdqWqqg4XOu0RDGIEBf7BXo06zKj+GptwSAI9ClrGdQOnVGCsAE0tCfk2p/rKFFQzeWdKb0sH1i7kB5iXph11fm0Yl6WJeUJytqAxgYfxu7scNOamBuX4LyC1AYkV5cH/DGBwmJ/0nqdaFa5cxOGJBlqoVBXkfPTY9idRBbeem32kj+cgVOUgo4+kcqbWN9lRKBDw/h0dqZX8EOFssPZw4x+pRnPzqTg6qu9Ied6kPjUw+zW0KRSESr4XZ8U8YJzimOYtuIGO1dkgxy47j6uoqsm0qnaCnyUkNVUcd3RU8m3xKNpYF7CiSPVhlNg1lFtew==', 'BFTKd1R3/nbdSMbVDlwKEEe6e19iJDnBFQhs42VPvxmtTp5RudxN1pY3vakthNUjKOamqAK2zNlgpA0zDkjVXhzSYR1057xsxKaJzR6BxXGYIKOBBVq7zFThtxx3KuWUUg==', 'ES384', 1659606752935);
 
 -- --------------------------------------------------------
 
@@ -187,7 +187,7 @@ CREATE TABLE `sentc_app_options` (
 --
 
 INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_user_keys`, `group_user_update_check`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`, `key_register`, `key_get`, `group_auto_invite`, `group_list`, `file_register`, `file_part_upload`, `file_get`, `file_part_download`, `user_device_register`, `user_device_delete`, `user_device_list`, `group_invite_stop`, `user_key_update`, `content_search`, `file_delete`, `content`, `content_small`, `content_med`, `content_large`, `content_x_large`) VALUES
-('1665eb92-4513-469f-81d8-b72a62e0134c', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+('sentc_int', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -354,7 +354,7 @@ CREATE TABLE `sentc_file_options` (
 --
 
 INSERT INTO `sentc_file_options` (`app_id`, `file_storage`, `storage_url`, `auth_token`) VALUES
-('1665eb92-4513-469f-81d8-b72a62e0134c', -1, NULL, NULL);
+('sentc_int', -1, NULL, NULL);
 
 -- --------------------------------------------------------
 

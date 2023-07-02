@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 7:57pm on June 6, 2023 (UTC)
+-- Exported: 2:33pm on July 2, 2023 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -40,7 +40,7 @@ CREATE TABLE "sentc_app_jwt_keys"
 ----
 -- Data dump for sentc_app_jwt_keys, a total of 1 rows
 ----
-INSERT INTO "sentc_app_jwt_keys" ("id","app_id","sign_key","verify_key","alg","time") VALUES ('174b531f-8814-42a2-94ab-3c17036183a5','1665eb92-4513-469f-81d8-b72a62e0134c','eyJpZCI6Ijg2ZWFmZDliLWY0YzAtNDQwNS04M2YzLTk1ODdjZGU4NjdjOSIsInNpZ24iOm51bGx9AJplxfDnODBSHFsgtR8/C4o/T79CSWuDvCkAsljXyV3FZ1ttLdqWqqg4XOu0RDGIEBf7BXo06zKj+GptwSAI9ClrGdQOnVGCsAE0tCfk2p/rKFFQzeWdKb0sH1i7kB5iXph11fm0Yl6WJeUJytqAxgYfxu7scNOamBuX4LyC1AYkV5cH/DGBwmJ/0nqdaFa5cxOGJBlqoVBXkfPTY9idRBbeem32kj+cgVOUgo4+kcqbWN9lRKBDw/h0dqZX8EOFssPZw4x+pRnPzqTg6qu9Ied6kPjUw+zW0KRSESr4XZ8U8YJzimOYtuIGO1dkgxy47j6uoqsm0qnaCnyUkNVUcd3RU8m3xKNpYF7CiSPVhlNg1lFtew==','BFTKd1R3/nbdSMbVDlwKEEe6e19iJDnBFQhs42VPvxmtTp5RudxN1pY3vakthNUjKOamqAK2zNlgpA0zDkjVXhzSYR1057xsxKaJzR6BxXGYIKOBBVq7zFThtxx3KuWUUg==','ES384','1659606752935');
+INSERT INTO "sentc_app_jwt_keys" ("id","app_id","sign_key","verify_key","alg","time") VALUES ('174b531f-8814-42a2-94ab-3c17036183a5','sentc_int','eyJpZCI6Ijg2ZWFmZDliLWY0YzAtNDQwNS04M2YzLTk1ODdjZGU4NjdjOSIsInNpZ24iOm51bGx9AJplxfDnODBSHFsgtR8/C4o/T79CSWuDvCkAsljXyV3FZ1ttLdqWqqg4XOu0RDGIEBf7BXo06zKj+GptwSAI9ClrGdQOnVGCsAE0tCfk2p/rKFFQzeWdKb0sH1i7kB5iXph11fm0Yl6WJeUJytqAxgYfxu7scNOamBuX4LyC1AYkV5cH/DGBwmJ/0nqdaFa5cxOGJBlqoVBXkfPTY9idRBbeem32kj+cgVOUgo4+kcqbWN9lRKBDw/h0dqZX8EOFssPZw4x+pRnPzqTg6qu9Ied6kPjUw+zW0KRSESr4XZ8U8YJzimOYtuIGO1dkgxy47j6uoqsm0qnaCnyUkNVUcd3RU8m3xKNpYF7CiSPVhlNg1lFtew==','BFTKd1R3/nbdSMbVDlwKEEe6e19iJDnBFQhs42VPvxmtTp5RudxN1pY3vakthNUjKOamqAK2zNlgpA0zDkjVXhzSYR1057xsxKaJzR6BxXGYIKOBBVq7zFThtxx3KuWUUg==','ES384','1659606752935');
 
 ----
 -- Table structure for sentc_group_keys
@@ -134,7 +134,7 @@ CREATE TABLE "sentc_app_options" ('app_id' TEXT PRIMARY KEY NOT NULL, 'group_cre
 ----
 -- Data dump for sentc_app_options, a total of 1 rows
 ----
-INSERT INTO "sentc_app_options" ("app_id","group_create","group_get","group_invite","group_reject_invite","group_accept_invite","group_join_req","group_accept_join_req","group_reject_join_req","group_key_rotation","group_user_delete","group_change_rank","group_delete","group_leave","user_exists","user_register","user_delete","user_update","user_change_password","user_reset_password","user_prepare_login","user_done_login","user_public_data","user_refresh","key_register","key_get","group_user_keys","group_user_update_check","group_auto_invite","group_list","file_register","file_part_upload","file_get","file_part_download","user_device_register","user_device_delete","user_device_list","group_invite_stop","user_key_update","content_search","file_delete","content","content_small","content_med","content_large","content_x_large") VALUES ('1665eb92-4513-469f-81d8-b72a62e0134c','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0');
+INSERT INTO "sentc_app_options" ("app_id","group_create","group_get","group_invite","group_reject_invite","group_accept_invite","group_join_req","group_accept_join_req","group_reject_join_req","group_key_rotation","group_user_delete","group_change_rank","group_delete","group_leave","user_exists","user_register","user_delete","user_update","user_change_password","user_reset_password","user_prepare_login","user_done_login","user_public_data","user_refresh","key_register","key_get","group_user_keys","group_user_update_check","group_auto_invite","group_list","file_register","file_part_upload","file_get","file_part_download","user_device_register","user_device_delete","user_device_list","group_invite_stop","user_key_update","content_search","file_delete","content","content_small","content_med","content_large","content_x_large") VALUES ('sentc_int','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0');
 
 ----
 -- Table structure for sentc_sym_key_management
@@ -203,7 +203,7 @@ CREATE TABLE 'sentc_file_options' ('app_id' TEXT PRIMARY KEY NOT NULL, 'file_sto
 ----
 -- Data dump for sentc_file_options, a total of 1 rows
 ----
-INSERT INTO "sentc_file_options" ("app_id","file_storage","storage_url","auth_token") VALUES ('1665eb92-4513-469f-81d8-b72a62e0134c','0',NULL,NULL);
+INSERT INTO "sentc_file_options" ("app_id","file_storage","storage_url","auth_token") VALUES ('sentc_int','0',NULL,NULL);
 
 ----
 -- Table structure for sentc_user
@@ -318,7 +318,7 @@ CREATE TABLE 'sentc_app' (
 ----
 -- Data dump for sentc_app, a total of 1 rows
 ----
-INSERT INTO "sentc_app" ("id","owner_id","identifier","hashed_secret_token","hashed_public_token","hash_alg","time","owner_type") VALUES ('1665eb92-4513-469f-81d8-b72a62e0134c','sentc_int',NULL,'cmzOt+BnyErJKsF2qNaiJ/YqsXJymnGQSdvJi5FpeOo=','b/t88y7h0zwqOXAtR/UqE4qsPL11PLFvo1e+8PNP8LU=','SHA256','1659606752935','0');
+INSERT INTO "sentc_app" ("id","owner_id","identifier","hashed_secret_token","hashed_public_token","hash_alg","time","owner_type") VALUES ('sentc_int','sentc_int',NULL,'cmzOt+BnyErJKsF2qNaiJ/YqsXJymnGQSdvJi5FpeOo=','b/t88y7h0zwqOXAtR/UqE4qsPL11PLFvo1e+8PNP8LU=','SHA256','1659606752935','0');
 
 ----
 -- Table structure for sentc_customer_group
@@ -337,7 +337,7 @@ CREATE TABLE 'sentc_app_group_options' ('app_id' TEXT PRIMARY KEY NOT NULL, 'max
 ----
 -- Data dump for sentc_app_group_options, a total of 1 rows
 ----
-INSERT INTO "sentc_app_group_options" ("app_id","max_key_rotation_month","min_rank_key_rotation") VALUES ('1665eb92-4513-469f-81d8-b72a62e0134c','100','4');
+INSERT INTO "sentc_app_group_options" ("app_id","max_key_rotation_month","min_rank_key_rotation") VALUES ('sentc_int','100','4');
 
 ----
 -- Table structure for sentc_file

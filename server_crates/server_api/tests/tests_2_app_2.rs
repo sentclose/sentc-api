@@ -45,7 +45,7 @@ static APP_TEST_STATE: OnceCell<RwLock<Vec<AppState>>> = OnceCell::const_new();
 #[tokio::test]
 async fn aaa_init_global_test()
 {
-	dotenv::dotenv().ok();
+	dotenv::from_filename("sentc.env").ok();
 
 	let mut customers = Vec::with_capacity(3);
 

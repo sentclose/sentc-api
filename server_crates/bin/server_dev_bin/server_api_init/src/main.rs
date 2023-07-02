@@ -24,21 +24,9 @@ async fn main()
 
 async fn main_app()
 {
-	//strict app options -> only to create the customer register app
-	let input = AppRegisterInput {
-		identifier: None,
-		options: AppOptions::default_closed(),
-		file_options: AppFileOptionsInput::default_closed(),
-		group_options: Default::default(),
-	};
-
-	let app_data = server_api::sentc_customer_app_service::create_app(input, "sentc_init".to_string(), None::<String>)
+	server_api::sentc_customer_app_service::create_sentc_root_app()
 		.await
 		.unwrap();
-
-	println!("app id: {}", app_data.app_id);
-	println!("secret_token: {}", app_data.secret_token);
-	println!("public_token: {}", app_data.public_token);
 }
 
 async fn test_app()

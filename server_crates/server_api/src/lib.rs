@@ -65,6 +65,8 @@ pub use user::{
 	user_service as sentc_user_service,
 };
 
+pub const SENTC_ROOT_APP: &str = "sentc_int";
+
 pub async fn not_found_handler(_req: Request) -> rustgram_server_util::res::JRes<String>
 {
 	Err(rustgram_server_util::error::ServerCoreError::new_msg(
@@ -74,9 +76,14 @@ pub async fn not_found_handler(_req: Request) -> rustgram_server_util::res::JRes
 	))
 }
 
-pub async fn index_handler(_req: Request) -> &'static str
+pub async fn index_handler(_req: Request) -> Response
 {
-	"Hello there"
+	hyper::Response::builder()
+		.status(hyper::StatusCode::MOVED_PERMANENTLY)
+		.header("Location", "/dashboard")
+		.header("Access-Control-Allow-Origin", "*")
+		.body(Body::from(""))
+		.unwrap()
 }
 
 pub async fn cors_handler(_req: Request) -> Response
@@ -101,7 +108,7 @@ pub async fn cors_handler(_req: Request) -> Response
 pub async fn start()
 {
 	//load the env
-	dotenv::dotenv().ok();
+	dotenv::from_filename("sentc.env").ok();
 
 	rustgram_server_util::db::init_db().await;
 	rustgram_server_util::cache::init_cache().await;

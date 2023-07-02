@@ -1,14 +1,16 @@
 [package]
-name = "server_migration"
+name = "sentc_api_init"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-server_api = {version = "0.1.0", path = "../../../server_api", default-features = false}
+server_api = {path = "../../server_api", default-features = false}
 
 tokio = {workspace = true}
+
+rustgram-server-util = {workspace = true}
 
 [features]
 default = ["mysql"]

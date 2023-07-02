@@ -1,5 +1,3 @@
-use std::env;
-
 use rand::RngCore;
 use rustgram::Request;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
@@ -44,7 +42,7 @@ use crate::sentc_group_user_service::NewUserType;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::ApiErrorCodes;
 use crate::util::email;
-use crate::{get_group_user_data_from_req, user, GROUP_TYPE_NORMAL};
+use crate::{get_group_user_data_from_req, user, GROUP_TYPE_NORMAL, SENTC_ROOT_APP};
 
 pub async fn customer_captcha(req: Request) -> JRes<CaptchaCreateOutput>
 {
@@ -395,9 +393,7 @@ pub async fn create_customer_group(mut req: Request) -> JRes<GroupCreateOutput>
 
 	customer_util::check_customer_valid(&user.id).await?;
 
-	let sentc_app_id = env::var("SENTC_APP_ID").unwrap();
-
-	let group_id = group_service::create_group_light(&sentc_app_id, &user.id, GROUP_TYPE_NORMAL, None, None, None, false).await?;
+	let group_id = group_service::create_group_light(SENTC_ROOT_APP, &user.id, GROUP_TYPE_NORMAL, None, None, None, false).await?;
 
 	let input: CustomerGroupCreateInput = bytes_to_json(&body)?;
 

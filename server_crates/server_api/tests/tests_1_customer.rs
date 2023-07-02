@@ -39,7 +39,7 @@ async fn test_0_register_customer_with_email()
 
 	let url = get_url("api/v1/customer/register".to_string());
 
-	dotenv::dotenv().ok();
+	dotenv::from_filename("sentc.env").ok();
 
 	let email = env::var("EMAIL_ADDRESS_TEST").unwrap();
 
@@ -80,7 +80,7 @@ async fn test_0_register_customer_with_email()
 #[tokio::test]
 async fn aaa_init_global()
 {
-	dotenv::dotenv().ok();
+	dotenv::from_filename("sentc.env").ok();
 
 	CUSTOMER_TEST_STATE
 		.get_or_init(|| {
@@ -697,7 +697,7 @@ async fn test_16_reset_customer_password()
 	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	//change the db path of sqlite
-	dotenv::dotenv().ok();
+	dotenv::from_filename("sentc.env").ok();
 	env::set_var("DB_PATH", env::var("DB_PATH_TEST").unwrap());
 
 	//get the token -> in real app the token gets send by email.

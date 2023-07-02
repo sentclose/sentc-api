@@ -3,20 +3,39 @@ use std::future::Future;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::{AppId, CustomerId, GroupId};
-use server_api_common::app::{AppFileOptionsInput, AppGroupOption, AppJwtRegisterOutput, AppRegisterInput, AppRegisterOutput, FILE_STORAGE_OWN};
+use server_api_common::app::{
+	AppFileOptionsInput,
+	AppGroupOption,
+	AppJwtRegisterOutput,
+	AppOptions,
+	AppRegisterInput,
+	AppRegisterOutput,
+	FILE_STORAGE_OWN,
+};
 use server_api_common::customer::CustomerAppList;
 
 use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
 use crate::customer_app::{app_model, generate_tokens};
 use crate::file::file_service;
+use crate::sentc_app_entities::AppData;
 use crate::user::jwt::create_jwt_keys;
 use crate::util::api_res::ApiErrorCodes;
+use crate::SENTC_ROOT_APP;
 
-pub async fn create_app(
-	input: AppRegisterInput,
-	customer_id: impl Into<CustomerId>,
-	group_id: Option<impl Into<GroupId>>,
-) -> AppRes<AppRegisterOutput>
+/*
+   (
+	   secret_token,
+	   public_token,
+	   hashed_secret_token,
+	   hashed_public_token,
+	   jwt_sign_key,
+	   jwt_verify_key,
+	   alg,
+   )
+*/
+type PrepareAppCreateOutput = AppRes<([u8; 50], [u8; 30], String, String, String, String, &'static str)>;
+
+fn prepare_app_create(input: &AppRegisterInput) -> PrepareAppCreateOutput
 {
 	//1. create and hash tokens
 	let (secret_token, public_token) = generate_tokens()?;
@@ -30,12 +49,57 @@ pub async fn create_app(
 	check_file_options(&input.file_options)?;
 	check_group_options(&input.group_options)?;
 
-	let customer_id = customer_id.into();
+	Ok((
+		secret_token,
+		public_token,
+		hashed_secret_token,
+		hashed_public_token,
+		jwt_sign_key,
+		jwt_verify_key,
+		alg,
+	))
+}
+
+pub async fn create_sentc_root_app() -> AppRes<()>
+{
+	let input = AppRegisterInput {
+		identifier: None,
+		options: AppOptions::default_closed(),
+		file_options: AppFileOptionsInput::default_closed(),
+		group_options: Default::default(),
+	};
+
+	let (_secret_token, _public_token, hashed_secret_token, hashed_public_token, jwt_sign_key, jwt_verify_key, alg) = prepare_app_create(&input)?;
+
+	app_model::create_app_with_id(
+		SENTC_ROOT_APP,
+		SENTC_ROOT_APP,
+		input,
+		hashed_secret_token,
+		hashed_public_token,
+		HASH_ALG,
+		&jwt_sign_key,
+		&jwt_verify_key,
+		alg,
+		None::<String>,
+	)
+	.await?;
+
+	Ok(())
+}
+
+pub async fn create_app(
+	input: AppRegisterInput,
+	customer_id: impl Into<CustomerId>,
+	group_id: Option<impl Into<GroupId>>,
+) -> AppRes<AppRegisterOutput>
+{
+	let (secret_token, public_token, hashed_secret_token, hashed_public_token, jwt_sign_key, jwt_verify_key, alg) = prepare_app_create(&input)?;
 
 	//3. create an new app (with new secret_token and public_token)
 	//	the str values are used because the real values are exported to the user
 	let (app_id, jwt_id) = app_model::create_app(
-		&customer_id,
+		customer_id,
 		input,
 		hashed_secret_token,
 		hashed_public_token,
@@ -143,4 +207,14 @@ pub fn get_all_apps_group<'a>(
 ) -> impl Future<Output = AppRes<Vec<CustomerAppList>>> + 'a
 {
 	app_model::get_all_apps_group(group_id, last_fetched_time, last_app_id)
+}
+
+pub fn get_app_data_from_id<'a>(id: impl Into<AppId> + 'a) -> impl Future<Output = AppRes<AppData>> + 'a
+{
+	app_model::get_app_data_from_id(id)
+}
+
+pub fn check_app_exists<'a>(app_id: impl Into<AppId> + 'a, customer_id: impl Into<CustomerId> + 'a) -> impl Future<Output = AppRes<bool>> + 'a
+{
+	app_model::check_app_exists(app_id, customer_id)
 }

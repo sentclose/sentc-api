@@ -76,7 +76,7 @@ static TEST_STATE: OnceCell<RwLock<TestData>> = OnceCell::const_new();
 #[tokio::test]
 async fn aaa_init_state()
 {
-	dotenv::dotenv().ok();
+	dotenv::from_filename("sentc.env").ok();
 
 	let (_, customer_data) = create_test_customer("hello@test6.com", "12345").await;
 
@@ -852,7 +852,7 @@ async fn test_20_delete_a_file()
 	handle_general_server_response(body.as_str()).unwrap();
 
 	//check if the deleted file is marked as deleted
-	dotenv::dotenv().ok();
+	dotenv::from_filename("sentc.env").ok();
 	std::env::set_var("DB_PATH", std::env::var("DB_PATH_TEST").unwrap());
 
 	/*
@@ -977,7 +977,7 @@ async fn test_21_delete_file_via_group_delete()
 	let file_id = &state.file_ids[1];
 	let child_group_file = &state.file_ids[2];
 
-	dotenv::dotenv().ok();
+	dotenv::from_filename("sentc.env").ok();
 	std::env::set_var("DB_PATH", std::env::var("DB_PATH_TEST").unwrap());
 
 	#[cfg(feature = "mysql")]
@@ -1268,7 +1268,7 @@ async fn zz_clean_up()
 #[tokio::test]
 async fn zzz_test_worker_delete()
 {
-	dotenv::dotenv().ok();
+	dotenv::from_filename("sentc.env").ok();
 
 	//override the path for this process because test files are exec in sub dir
 	std::env::set_var("LOCAL_STORAGE_PATH", "../../storage");
@@ -1283,7 +1283,7 @@ async fn zzz_test_worker_delete()
 #[tokio::test]
 async fn test_0_large_file()
 {
-	dotenv::dotenv().ok();
+	dotenv::from_filename("sentc.env").ok();
 
 	//prepare
 	let file_size = 1024 * 1024 * 104; //104 mb

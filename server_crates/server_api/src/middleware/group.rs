@@ -1,4 +1,3 @@
-use std::env;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -12,7 +11,7 @@ use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::input_helper::{bytes_to_json, json_to_string};
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::url_helper::get_name_param_from_req;
-use sentc_crypto_common::{AppId, GroupId};
+use sentc_crypto_common::GroupId;
 
 use crate::customer_app::app_util::get_app_data_from_req;
 use crate::group::group_entities::{InternalGroupData, InternalGroupDataComplete, InternalUserGroupData, InternalUserGroupDataFromParent};
@@ -20,6 +19,7 @@ use crate::group::group_model;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::ApiErrorCodes;
 use crate::util::{get_group_cache_key, get_group_user_cache_key, get_group_user_parent_ref_key};
+use crate::SENTC_ROOT_APP;
 
 pub struct GroupMiddleware<S>
 {
@@ -60,7 +60,6 @@ pub fn group_transform<S>(inner: S) -> GroupMiddleware<S>
 pub struct GroupCustomerMiddleware<S>
 {
 	inner: Arc<S>,
-	sentc_app_id: AppId,
 }
 
 impl<S> Service<Request> for GroupCustomerMiddleware<S>
@@ -72,11 +71,10 @@ where
 
 	fn call(&self, mut req: Request) -> Self::Future
 	{
-		let app_id = self.sentc_app_id.to_string();
 		let next = self.inner.clone();
 
 		Box::pin(async move {
-			match get_group_from_req(&mut req, Some(&app_id)).await {
+			match get_group_from_req(&mut req, Some(SENTC_ROOT_APP)).await {
 				Ok(_) => {},
 				Err(e) => return e.into_response(),
 			}
@@ -88,17 +86,14 @@ where
 
 pub fn group_app_transform<S>(inner: S) -> GroupCustomerMiddleware<S>
 {
-	let sentc_app_id = env::var("SENTC_APP_ID").unwrap();
-
 	GroupCustomerMiddleware {
 		inner: Arc::new(inner),
-		sentc_app_id,
 	}
 }
 
 //__________________________________________________________________________________________________
 
-async fn get_group_from_req(req: &mut Request, app_id: Option<&AppId>) -> AppRes<()>
+async fn get_group_from_req(req: &mut Request, app_id: Option<&str>) -> AppRes<()>
 {
 	let app_id = match app_id {
 		Some(a) => a,
