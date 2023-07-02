@@ -5,6 +5,7 @@ members = [
     "server_crates/bin/worker/worker_manual",
     "server_crates/bin/worker/worker_cron",
     "server_crates/bin/sentc_api_init",
+    "server_crates/bin/sentc_api_key_gen",
 
     # bin for dev
     "server_crates/bin/server_dev_bin/server_api_route_builder",

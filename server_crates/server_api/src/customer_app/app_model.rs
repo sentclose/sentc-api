@@ -216,10 +216,10 @@ ORDER BY ak.time DESC";
 
 	let mut jwt_data: Vec<AppJwtData> = query(sql, set_params!(app_id.into())).await?;
 
-	let keys = encrypted_at_rest_root::get_key_map().await;
+	let key = encrypted_at_rest_root::get_key_map().await;
 
 	for jwt_datum in &mut jwt_data {
-		jwt_datum.sign_key = encrypted_at_rest_root::decrypt_with_key_map(&keys, &jwt_datum.sign_key)?;
+		jwt_datum.sign_key = encrypted_at_rest_root::decrypt_with_key(&key, &jwt_datum.sign_key)?;
 	}
 
 	Ok(jwt_data)
