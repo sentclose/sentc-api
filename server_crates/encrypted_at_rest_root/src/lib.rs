@@ -2,24 +2,14 @@ mod encrypt;
 pub mod error;
 mod key_gen;
 
-use std::collections::HashMap;
 use std::env;
 
-pub use encrypt::{decrypt, decrypt_with_key_map, encrypt};
-pub use key_gen::{delete_key, generate_and_add_new_key};
+pub use encrypt::{decrypt, decrypt_with_key, encrypt, encrypt_with_key};
+pub use key_gen::{export_key, generate_and_export_new_key, generate_new_key};
 use sentc_crypto::entities::keys::{SymKeyFormatExport, SymKeyFormatInt};
-use sentc_crypto::SdkError;
 use tokio::sync::{OnceCell, RwLock, RwLockReadGuard};
 
-static CRYPTO_ROOT_KEY: OnceCell<RwLock<KeyData>> = OnceCell::const_new();
-
-pub struct KeyData
-{
-	newest_key_id: String,
-	map: KeyMap,
-}
-
-type KeyMap = HashMap<String, SymKeyFormatInt>;
+static CRYPTO_ROOT_KEY: OnceCell<RwLock<SymKeyFormatInt>> = OnceCell::const_new();
 
 pub async fn init_crypto()
 {
@@ -30,32 +20,28 @@ pub async fn init_crypto()
 		.await;
 }
 
-pub async fn get_key_map<'a>() -> RwLockReadGuard<'a, KeyData>
+pub async fn get_key_map<'a>() -> RwLockReadGuard<'a, SymKeyFormatInt>
 {
 	CRYPTO_ROOT_KEY.get().unwrap().read().await
 }
 
-async fn init_private_crypto() -> RwLock<KeyData>
+/**
+Get the key from the root secret key.
+
+The root key should be base64 encoded.
+
+Use a fake key id.
+*/
+async fn init_private_crypto() -> RwLock<SymKeyFormatInt>
 {
-	let key = env::var("ROOT_KEYS").unwrap();
+	let key = env::var("ROOT_KEY").unwrap();
 
-	let out: Vec<SymKeyFormatExport> = serde_json::from_str(&key).unwrap();
+	let key_export = SymKeyFormatExport::Aes {
+		key,
+		key_id: "n".to_string(),
+	};
 
-	let out: Vec<SymKeyFormatInt> = out
-		.into_iter()
-		.map(|k| k.try_into())
-		.collect::<Result<_, SdkError>>()
-		.unwrap();
+	let key = key_export.try_into().unwrap();
 
-	let newest_key_id = out[0].key_id.clone();
-
-	let map: HashMap<String, SymKeyFormatInt> = out
-		.into_iter()
-		.map(|key| (key.key_id.clone(), key))
-		.collect();
-
-	RwLock::new(KeyData {
-		newest_key_id,
-		map,
-	})
+	RwLock::new(key)
 }
