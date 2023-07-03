@@ -60,8 +60,8 @@ async fn check_db()
 	if res.is_none() {
 		println!("--------");
 		println!("Database tables not found. Running migration, please wait.");
-		migrate_db_mysql().await;
-		println!("Database migration was successfully.")
+		migrate_db().await;
+		println!("Database migration was successfully.");
 	}
 }
 
@@ -74,12 +74,15 @@ async fn check_db()
 	let res: Option<StringEntity> = query_first_non_param(sql).await.unwrap();
 
 	if res.is_none() {
-		migrate_db_mysql().await;
+		println!("--------");
+		println!("Database tables not found. Running migration, please wait.");
+		migrate_db().await;
+		println!("Database migration was successfully.");
 	}
 }
 
 #[cfg(feature = "mysql")]
-async fn migrate_db_mysql()
+async fn migrate_db()
 {
 	let mut file = File::open("db/migrations/mysql/complete/sentc_mysql.sql").unwrap();
 
@@ -91,9 +94,9 @@ async fn migrate_db_mysql()
 }
 
 #[cfg(feature = "sqlite")]
-async fn migrate_db_mysql()
+async fn migrate_db()
 {
-	let mut file = File::open("/db/migrations/sqlite/complete/sentc_sqlite.sql").unwrap();
+	let mut file = File::open("db/migrations/sqlite/complete/sentc_sqlite.sql").unwrap();
 
 	let mut sql = String::new();
 
