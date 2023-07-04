@@ -1,3 +1,5 @@
+use std::env;
+
 use rand::RngCore;
 use rustgram::Request;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
@@ -59,6 +61,16 @@ pub async fn customer_captcha(req: Request) -> JRes<CaptchaCreateOutput>
 
 pub async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 {
+	let register_enabled = env::var("CUSTOMER_REGISTER").unwrap_or_else(|_| "1".into());
+
+	if register_enabled.as_str() != "1" && register_enabled.as_str() != "true" {
+		return Err(ServerCoreError::new_msg(
+			400,
+			ApiErrorCodes::CustomerDisable,
+			"Register is disabled.",
+		));
+	}
+
 	let body = get_raw_body(&mut req).await?;
 
 	let register_data: CustomerRegisterData = bytes_to_json(&body)?;

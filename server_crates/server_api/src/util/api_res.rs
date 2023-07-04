@@ -37,6 +37,7 @@ pub enum ApiErrorCodes
 	CustomerNotFound,
 	CustomerEmailTokenValid,
 	CustomerEmailSyntax,
+	CustomerDisable,
 
 	UserNotFound,
 	UserDeviceDelete,
@@ -147,6 +148,7 @@ impl ServerErrorCodes for ApiErrorCodes
 			ApiErrorCodes::CustomerNotFound => 62,
 			ApiErrorCodes::CustomerEmailTokenValid => 63,
 			ApiErrorCodes::CustomerEmailSyntax => 64,
+			ApiErrorCodes::CustomerDisable => 65,
 
 			ApiErrorCodes::UserNotFound => 100,
 			ApiErrorCodes::UserExists => 101,
