@@ -1,10 +1,10 @@
 use rustgram_server_util::take_or_err;
-use sentc_crypto_common::user::{UserInitServerOutput, UserPublicKeyDataServerOutput, UserVerifyKeyDataServerOutput};
+use sentc_crypto_common::user::{UserDeviceRegisterInput, UserInitServerOutput, UserPublicKeyDataServerOutput, UserVerifyKeyDataServerOutput};
 use sentc_crypto_common::{DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, UserId};
 use serde::{Deserialize, Serialize};
 
 use crate::group::group_entities::{GroupInviteReq, GroupUserKeys};
-use crate::sentc_group_entities::GroupHmacData;
+use crate::sentc_group_entities::{GroupCreateData, GroupHmacData};
 
 //generated with browser console: btoa(String.fromCharCode.apply(null, window.crypto.getRandomValues(new Uint8Array(128/8))));
 //the value with the used alg
@@ -302,6 +302,29 @@ impl Into<sentc_crypto_common::user::UserDeviceList> for UserDeviceList
 			device_id: self.device_id,
 			time: self.time,
 			device_identifier: self.device_identifier,
+		}
+	}
+}
+
+//__________________________________________________________________________________________________
+
+/**
+As the same as the data from the common crate but with the internal group data
+ */
+#[derive(Deserialize)]
+pub struct UserRegisterData
+{
+	pub device: UserDeviceRegisterInput, //the first device of the user
+	pub group: GroupCreateData,
+}
+
+impl Into<sentc_crypto_common::user::RegisterData> for UserRegisterData
+{
+	fn into(self) -> sentc_crypto_common::user::RegisterData
+	{
+		sentc_crypto_common::user::RegisterData {
+			device: self.device,
+			group: self.group.into(),
 		}
 	}
 }

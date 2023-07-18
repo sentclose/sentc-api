@@ -17,7 +17,6 @@ use sentc_crypto_common::user::{
 	JwtRefreshInput,
 	PrepareLoginSaltServerOutput,
 	PrepareLoginServerInput,
-	RegisterData,
 	RegisterServerOutput,
 	ResetPasswordData,
 	UserDeviceDoneRegisterInput,
@@ -33,6 +32,7 @@ use crate::customer_app::app_util::{check_endpoint_with_app_options, get_app_dat
 use crate::group::group_entities::{GroupKeyUpdate, GroupUserKeys};
 use crate::group::{group_key_rotation_service, group_user_service};
 use crate::sentc_app_utils::check_endpoint_with_req;
+use crate::sentc_user_entities::UserRegisterData;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
 use crate::user::user_service::UserAction;
@@ -56,7 +56,7 @@ pub(crate) async fn register(mut req: Request) -> JRes<RegisterServerOutput>
 {
 	//load the register input from the req body
 	let body = get_raw_body(&mut req).await?;
-	let register_input: RegisterData = bytes_to_json(&body)?;
+	let register_input: UserRegisterData = bytes_to_json(&body)?;
 	let app_data = get_app_data_from_req(&req)?;
 
 	check_endpoint_with_app_options(app_data, Endpoint::UserRegister)?;

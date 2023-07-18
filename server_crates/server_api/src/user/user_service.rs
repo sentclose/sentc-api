@@ -14,7 +14,6 @@ use sentc_crypto_common::user::{
 	DoneLoginServerInput,
 	JwtRefreshInput,
 	PrepareLoginSaltServerOutput,
-	RegisterData,
 	RegisterServerOutput,
 	ResetPasswordData,
 	UserDeviceDoneRegisterInput,
@@ -31,7 +30,7 @@ use crate::group::group_user_service::NewUserType;
 use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
 use crate::sentc_app_entities::AppData;
 use crate::sentc_app_utils::hash_token_to_string;
-use crate::sentc_user_entities::{UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
+use crate::sentc_user_entities::{UserPublicKeyDataEntity, UserRegisterData, UserVerifyKeyDataEntity};
 use crate::user::jwt::create_jwt;
 use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserJwtEntity, SERVER_RANDOM_VALUE};
 use crate::user::user_model;
@@ -126,7 +125,7 @@ pub async fn register_light(app_id: impl Into<AppId>, input: UserDeviceRegisterI
 	Ok((user_id, device_id))
 }
 
-pub async fn register(app_id: impl Into<AppId>, register_input: RegisterData) -> AppRes<RegisterServerOutput>
+pub async fn register(app_id: impl Into<AppId>, register_input: UserRegisterData) -> AppRes<RegisterServerOutput>
 {
 	let mut group_data = register_input.group;
 
