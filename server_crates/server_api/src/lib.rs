@@ -16,6 +16,7 @@ mod middleware;
 mod routes;
 mod user;
 pub mod util;
+mod ext;
 
 pub use content_management::{
 	content_controller as sentc_content_controller,
