@@ -14,7 +14,6 @@ use rustgram_server_util::db::{
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params, set_params_vec};
-use sentc_crypto_common::group::CreateData;
 use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
 
 use crate::group::group_entities::{
@@ -26,7 +25,7 @@ use crate::group::group_entities::{
 	ListGroups,
 };
 use crate::group::{GROUP_TYPE_NORMAL, GROUP_TYPE_USER};
-use crate::sentc_group_entities::GroupHmacData;
+use crate::sentc_group_entities::{GroupCreateDataForModel, GroupHmacData};
 use crate::user::user_entities::UserPublicKeyDataEntity;
 use crate::util::api_res::ApiErrorCodes;
 
@@ -402,7 +401,7 @@ INSERT INTO sentc_group
 pub(super) async fn create(
 	app_id: impl Into<AppId>,
 	user_id: impl Into<UserId>,
-	data: CreateData,
+	data: GroupCreateDataForModel,
 	parent_group_id: Option<GroupId>,
 	user_rank: Option<i32>,
 	group_type: i32,
