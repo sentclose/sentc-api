@@ -8,7 +8,6 @@ use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::SdkError;
 use sentc_crypto_common::group::{
-	CreateData,
 	GroupAcceptJoinReqServerOutput,
 	GroupCreateOutput,
 	GroupInviteReqList,
@@ -551,7 +550,7 @@ async fn test_14_z_connect_conn_group_to_other_conn_group_by_service()
 	let (conn_group_2_id, _) = server_api::sentc_group_service::create_group(
 		app_data.app_id.to_string(),
 		"",
-		CreateData::from_string(&group_input).unwrap(),
+		serde_json::from_str(&group_input).unwrap(),
 		server_api::GROUP_TYPE_NORMAL,
 		None,
 		Some(0),
