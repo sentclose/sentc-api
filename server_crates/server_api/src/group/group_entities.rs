@@ -1,6 +1,7 @@
 use rustgram_server_util::take_or_err;
 use sentc_crypto_common::group::{GroupInviteReqList, GroupJoinReqList, GroupKeyServerOutput, GroupUserAccessBy, KeyRotationInput};
 use sentc_crypto_common::{AppId, EncryptionKeyPairId, GroupId, SignKeyPairId, SymKeyId, UserId};
+use sentc_sdk_ext_common::{GroupExtCreate, GroupExtGet};
 use serde::{Deserialize, Serialize};
 
 pub type GroupNewUserType = u16;
@@ -123,6 +124,80 @@ pub struct InternalGroupDataComplete
 
 //__________________________________________________________________________________________________
 
+pub struct GroupCreateDataForModel
+{
+	pub encrypted_group_key: String,
+	pub group_key_alg: String,
+	pub encrypted_group_key_alg: String,
+	pub encrypted_private_group_key: String,
+	pub public_group_key: String,
+	pub keypair_encrypt_alg: String,
+	pub creator_public_key_id: EncryptionKeyPairId,
+	pub encrypted_hmac_key: String,
+	pub encrypted_hmac_alg: String,
+
+	//only for user group key rotation not for normal
+	pub encrypted_sign_key: Option<String>,
+	pub verify_key: Option<String>,
+	pub keypair_sign_alg: Option<String>,
+	pub public_key_sig: Option<String>,
+}
+
+/**
+As the same as the data from the common crate but with the extra optional ext vec
+*/
+#[derive(Deserialize)]
+pub struct GroupCreateData
+{
+	pub encrypted_group_key: String,
+	pub group_key_alg: String,
+	pub encrypted_group_key_alg: String,
+	pub encrypted_private_group_key: String,
+	pub public_group_key: String,
+	pub keypair_encrypt_alg: String,
+	pub creator_public_key_id: EncryptionKeyPairId,
+	pub encrypted_hmac_key: String,
+	pub encrypted_hmac_alg: String,
+
+	//only for user group key rotation not for normal
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub encrypted_sign_key: Option<String>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub verify_key: Option<String>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub keypair_sign_alg: Option<String>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub public_key_sig: Option<String>,
+
+	//Got this as extra
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub group_ext: Option<Vec<GroupExtCreate>>,
+}
+
+impl Into<sentc_crypto_common::group::CreateData> for GroupCreateData
+{
+	fn into(self) -> sentc_crypto_common::group::CreateData
+	{
+		sentc_crypto_common::group::CreateData {
+			encrypted_group_key: self.encrypted_group_key,
+			group_key_alg: self.group_key_alg,
+			encrypted_group_key_alg: self.encrypted_group_key_alg,
+			encrypted_private_group_key: self.encrypted_private_group_key,
+			public_group_key: self.public_group_key,
+			keypair_encrypt_alg: self.keypair_encrypt_alg,
+			creator_public_key_id: self.creator_public_key_id,
+			encrypted_hmac_key: self.encrypted_hmac_key,
+			encrypted_hmac_alg: self.encrypted_hmac_alg,
+			encrypted_sign_key: self.encrypted_sign_key,
+			verify_key: self.verify_key,
+			keypair_sign_alg: self.keypair_sign_alg,
+			public_key_sig: self.public_key_sig,
+		}
+	}
+}
+
+//__________________________________________________________________________________________________
+
 /**
 Gets build by the controller
 */
@@ -139,6 +214,8 @@ pub struct GroupServerData
 	pub joined_time: u128,
 	pub access_by: GroupUserAccessBy,
 	pub is_connected_group: bool,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub ext: Option<Vec<GroupExtGet>>,
 }
 
 impl Into<sentc_crypto_common::group::GroupServerData> for GroupServerData
