@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 # the server outputs for the frontend to handle
 sentc-crypto-common = {path = "../../sdk-common" }
+sentc-sdk-ext-common = {path = "../../sdk-ext-common"}
 
 server_api_common = {path = "../server_api_common", default-features = false, features = ["server"]}
 

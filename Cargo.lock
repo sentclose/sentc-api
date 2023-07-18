@@ -2266,6 +2266,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "sentc-sdk-ext-common"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "sentc_api_init"
 version = "0.1.0"
 dependencies = [
@@ -2357,6 +2365,7 @@ dependencies = [
  "rustgram-server-util",
  "sentc-crypto",
  "sentc-crypto-common 0.8.0",
+ "sentc-sdk-ext-common",
  "serde",
  "serde_json",
  "server_api_common",
