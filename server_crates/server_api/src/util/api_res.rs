@@ -101,6 +101,8 @@ pub enum ApiErrorCodes
 	ContentSearchableNoHashes,
 	ContentSearchableTooManyHashes,
 	ContentSearchableQueryMissing,
+
+	ExtTooMany
 }
 
 impl From<CoreErrorCodes> for ApiErrorCodes
@@ -212,6 +214,8 @@ impl ServerErrorCodes for ApiErrorCodes
 			ApiErrorCodes::ContentSearchableNoHashes => 802,
 			ApiErrorCodes::ContentSearchableTooManyHashes => 803,
 			ApiErrorCodes::ContentSearchableQueryMissing => 810,
+			
+			ApiErrorCodes::ExtTooMany => 900
 		}
 	}
 }
