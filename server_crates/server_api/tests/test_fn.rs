@@ -541,6 +541,7 @@ pub async fn get_group(
 		GroupOutData {
 			keys: vec![],
 			hmac_keys: data.hmac_keys,
+			sortable_keys: data.sortable_keys,
 			parent_group_id: data.parent_group_id,
 			key_update: data.key_update,
 			created_time: data.created_time,
@@ -588,6 +589,7 @@ pub async fn get_group_from_group_as_member(
 		GroupOutData {
 			keys: vec![],
 			hmac_keys: data.hmac_keys,
+			sortable_keys: data.sortable_keys,
 			parent_group_id: data.parent_group_id,
 			key_update: data.key_update,
 			created_time: data.created_time,
