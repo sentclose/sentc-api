@@ -8,7 +8,7 @@ use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
 use crate::file::file_service;
 use crate::group::group_entities::{GroupChildrenList, GroupServerData, GroupUserKeys, InternalGroupDataComplete};
 use crate::group::group_model;
-use crate::sentc_group_entities::GroupHmacData;
+use crate::sentc_group_entities::{GroupHmacData, GroupSortableData};
 use crate::sentc_user_entities::UserPublicKeyDataEntity;
 use crate::util::get_group_cache_key;
 
@@ -105,15 +105,10 @@ pub async fn get_user_group_data(group_data: &InternalGroupDataComplete) -> AppR
 	let group_id = &group_data.group_data.id;
 	let user_id = &group_data.user_data.user_id;
 
-	let (keys, hmac_keys, key_update) = tokio::try_join!(
-		get_user_group_keys(
-			app_id, group_id, user_id, 0, //fetch the first page
-			"",
-		),
-		get_group_hmac(
-			app_id, group_id, 0, //fetch the first page
-			"",
-		),
+	let (keys, hmac_keys, sortable_keys, key_update) = tokio::try_join!(
+		get_user_group_keys(app_id, group_id, user_id, 0, "",),
+		get_group_hmac(app_id, group_id, 0, "",),
+		get_group_sortable(app_id, group_id, 0, ""),
 		group_model::check_for_key_update(app_id, user_id, group_id)
 	)?;
 
@@ -124,6 +119,7 @@ pub async fn get_user_group_data(group_data: &InternalGroupDataComplete) -> AppR
 		parent_group_id: parent,
 		keys,
 		hmac_keys,
+		sortable_keys,
 		key_update,
 		rank: group_data.user_data.rank,
 		created_time: group_data.group_data.time,
@@ -168,6 +164,16 @@ pub fn get_group_hmac<'a>(
 ) -> impl Future<Output = AppRes<Vec<GroupHmacData>>> + 'a
 {
 	group_model::get_group_hmac(app_id, group_id, last_fetched_time, last_k_id)
+}
+
+pub fn get_group_sortable<'a>(
+	app_id: impl Into<AppId> + 'a,
+	group_id: impl Into<GroupId> + 'a,
+	last_fetched_time: u128,
+	last_k_id: impl Into<SymKeyId> + 'a,
+) -> impl Future<Output = AppRes<Vec<GroupSortableData>>> + 'a
+{
+	group_model::get_group_sortable(app_id, group_id, last_fetched_time, last_k_id)
 }
 
 pub fn get_user_group_keys<'a>(
