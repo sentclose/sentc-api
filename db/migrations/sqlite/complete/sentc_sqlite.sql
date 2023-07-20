@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 2:33pm on July 2, 2023 (UTC)
+-- Exported: 2:37pm on July 20, 2023 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -236,6 +236,11 @@ CREATE TABLE 'sentc_app_group_options' ('app_id' TEXT PRIMARY KEY NOT NULL, 'max
 CREATE TABLE 'sentc_file' ('id' TEXT PRIMARY KEY NOT NULL, 'owner' TEXT, 'belongs_to' TEXT, 'belongs_to_type' INTEGER, 'app_id' TEXT,'encrypted_key' TEXT, 'time' TEXT, 'status' INTEGER, 'delete_at' TEXT, 'encrypted_file_name' TEXT DEFAULT NULL, 'master_key_id' TEXT, 'encrypted_key_alg' TEXT);
 
 ----
+-- Table structure for sentc_group_sortable_keys
+----
+CREATE TABLE 'sentc_group_sortable_keys' ('id' TEXT PRIMARY KEY NOT NULL, 'group_id' TEXT, 'app_id' TEXT, 'encrypted_sortable_key' TEXT, 'encrypted_sortable_alg' TEXT, 'encrypted_sortable_encryption_key_id' TEXT, 'time' TEXT);
+
+----
 -- structure for index sqlite_autoindex_test_1 on table test
 ----
 ;
@@ -456,6 +461,16 @@ CREATE INDEX app_hashed_secret_token_index
 ;
 
 ----
+-- structure for index sqlite_autoindex_sentc_group_sortable_keys_1 on table sentc_group_sortable_keys
+----
+;
+
+----
+-- structure for index group_id on table sentc_group_sortable_keys
+----
+CREATE INDEX 'group_id' ON "sentc_group_sortable_keys" ("group_id" ASC, "app_id" ASC);
+
+----
 -- structure for trigger  group_user_delete_key_rotation_keys on table sentc_group_user
 ----
 CREATE TRIGGER ' group_user_delete_key_rotation_keys' AFTER DELETE ON "sentc_group_user" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_key_rotation WHERE user_id = OLD.user_id AND group_id = OLD.group_id; END;
@@ -564,4 +579,9 @@ CREATE TRIGGER 'file_delete_parts' AFTER DELETE ON "sentc_file" FOR EACH ROW BEG
 -- structure for trigger file_session_delete on table sentc_file
 ----
 CREATE TRIGGER 'file_session_delete' AFTER DELETE ON "sentc_file" FOR EACH ROW BEGIN DELETE FROM sentc_file_session WHERE file_id = OLD.id; END;
+
+----
+-- structure for trigger group_delete_sortable_keys on table sentc_group
+----
+CREATE TRIGGER 'group_delete_sortable_keys' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_sortable_keys WHERE group_id = OLD.id; END;
 COMMIT;

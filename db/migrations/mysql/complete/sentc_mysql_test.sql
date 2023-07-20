@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jul 02, 2023 at 02:30 PM
--- Server version: 10.2.6-MariaDB-log
--- PHP Version: 7.4.5
+-- Erstellungszeit: 20. Jul 2023 um 14:40
+-- Server-Version: 10.2.6-MariaDB-log
+-- PHP-Version: 7.4.5
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET AUTOCOMMIT = 0;
@@ -19,13 +19,13 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `sentc`
+-- Datenbank: `sentc`
 --
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_app`
+-- Tabellenstruktur für Tabelle `sentc_app`
 --
 
 CREATE TABLE `sentc_app` (
@@ -40,14 +40,14 @@ CREATE TABLE `sentc_app` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
--- Dumping data for table `sentc_app`
+-- Daten für Tabelle `sentc_app`
 --
 
 INSERT INTO `sentc_app` (`id`, `owner_id`, `owner_type`, `identifier`, `hashed_secret_token`, `hashed_public_token`, `hash_alg`, `time`) VALUES
 ('sentc_int', 'sentc_int', 0, '', 'cmzOt+BnyErJKsF2qNaiJ/YqsXJymnGQSdvJi5FpeOo=', 'b/t88y7h0zwqOXAtR/UqE4qsPL11PLFvo1e+8PNP8LU=', 'SHA256', 1659606752935);
 
 --
--- Triggers `sentc_app`
+-- Trigger `sentc_app`
 --
 DELIMITER $$
 CREATE TRIGGER `delete_app_content` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_content WHERE app_id = OLD.id
@@ -89,7 +89,7 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_app_group_options`
+-- Tabellenstruktur für Tabelle `sentc_app_group_options`
 --
 
 CREATE TABLE `sentc_app_group_options` (
@@ -99,7 +99,7 @@ CREATE TABLE `sentc_app_group_options` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
--- Dumping data for table `sentc_app_group_options`
+-- Daten für Tabelle `sentc_app_group_options`
 --
 
 INSERT INTO `sentc_app_group_options` (`app_id`, `max_key_rotation_month`, `min_rank_key_rotation`) VALUES
@@ -108,7 +108,7 @@ INSERT INTO `sentc_app_group_options` (`app_id`, `max_key_rotation_month`, `min_
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_app_jwt_keys`
+-- Tabellenstruktur für Tabelle `sentc_app_jwt_keys`
 --
 
 CREATE TABLE `sentc_app_jwt_keys` (
@@ -121,7 +121,7 @@ CREATE TABLE `sentc_app_jwt_keys` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='multiple per app';
 
 --
--- Dumping data for table `sentc_app_jwt_keys`
+-- Daten für Tabelle `sentc_app_jwt_keys`
 --
 
 INSERT INTO `sentc_app_jwt_keys` (`id`, `app_id`, `sign_key`, `verify_key`, `alg`, `time`) VALUES
@@ -130,7 +130,7 @@ INSERT INTO `sentc_app_jwt_keys` (`id`, `app_id`, `sign_key`, `verify_key`, `alg
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_app_options`
+-- Tabellenstruktur für Tabelle `sentc_app_options`
 --
 
 CREATE TABLE `sentc_app_options` (
@@ -183,7 +183,7 @@ CREATE TABLE `sentc_app_options` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='option: 0 = not allowed,  1 = public token, 2 = secret token';
 
 --
--- Dumping data for table `sentc_app_options`
+-- Daten für Tabelle `sentc_app_options`
 --
 
 INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_user_keys`, `group_user_update_check`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`, `key_register`, `key_get`, `group_auto_invite`, `group_list`, `file_register`, `file_part_upload`, `file_get`, `file_part_download`, `user_device_register`, `user_device_delete`, `user_device_list`, `group_invite_stop`, `user_key_update`, `content_search`, `file_delete`, `content`, `content_small`, `content_med`, `content_large`, `content_x_large`) VALUES
@@ -192,7 +192,7 @@ INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_u
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_captcha`
+-- Tabellenstruktur für Tabelle `sentc_captcha`
 --
 
 CREATE TABLE `sentc_captcha` (
@@ -205,7 +205,7 @@ CREATE TABLE `sentc_captcha` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_content`
+-- Tabellenstruktur für Tabelle `sentc_content`
 --
 
 CREATE TABLE `sentc_content` (
@@ -222,7 +222,7 @@ CREATE TABLE `sentc_content` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_content_searchable_item`
+-- Tabellenstruktur für Tabelle `sentc_content_searchable_item`
 --
 
 CREATE TABLE `sentc_content_searchable_item` (
@@ -238,7 +238,7 @@ CREATE TABLE `sentc_content_searchable_item` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
--- Triggers `sentc_content_searchable_item`
+-- Trigger `sentc_content_searchable_item`
 --
 DELIMITER $$
 CREATE TRIGGER `content_searchable_delete_hash` AFTER DELETE ON `sentc_content_searchable_item` FOR EACH ROW DELETE FROM sentc_content_searchable_item_parts WHERE item_id = OLD.id
@@ -248,7 +248,7 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_content_searchable_item_parts`
+-- Tabellenstruktur für Tabelle `sentc_content_searchable_item_parts`
 --
 
 CREATE TABLE `sentc_content_searchable_item_parts` (
@@ -259,7 +259,7 @@ CREATE TABLE `sentc_content_searchable_item_parts` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_customer`
+-- Tabellenstruktur für Tabelle `sentc_customer`
 --
 
 CREATE TABLE `sentc_customer` (
@@ -276,7 +276,7 @@ CREATE TABLE `sentc_customer` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
--- Triggers `sentc_customer`
+-- Trigger `sentc_customer`
 --
 DELIMITER $$
 CREATE TRIGGER `delete_app` AFTER DELETE ON `sentc_customer` FOR EACH ROW DELETE FROM sentc_app WHERE owner_id = OLD.id AND owner_type = 0
@@ -286,7 +286,7 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_customer_group`
+-- Tabellenstruktur für Tabelle `sentc_customer_group`
 --
 
 CREATE TABLE `sentc_customer_group` (
@@ -296,7 +296,7 @@ CREATE TABLE `sentc_customer_group` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
--- Triggers `sentc_customer_group`
+-- Trigger `sentc_customer_group`
 --
 DELIMITER $$
 CREATE TRIGGER `delete_customer_group_apps` AFTER DELETE ON `sentc_customer_group` FOR EACH ROW DELETE FROM sentc_app WHERE owner_id = OLD.sentc_group_id AND owner_type = 1
@@ -306,7 +306,7 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_file`
+-- Tabellenstruktur für Tabelle `sentc_file`
 --
 
 CREATE TABLE `sentc_file` (
@@ -325,7 +325,7 @@ CREATE TABLE `sentc_file` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
--- Triggers `sentc_file`
+-- Trigger `sentc_file`
 --
 DELIMITER $$
 CREATE TRIGGER `file_delete_parts` AFTER DELETE ON `sentc_file` FOR EACH ROW DELETE FROM sentc_file_part WHERE file_id = OLD.id
@@ -339,7 +339,7 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_file_options`
+-- Tabellenstruktur für Tabelle `sentc_file_options`
 --
 
 CREATE TABLE `sentc_file_options` (
@@ -350,7 +350,7 @@ CREATE TABLE `sentc_file_options` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
--- Dumping data for table `sentc_file_options`
+-- Daten für Tabelle `sentc_file_options`
 --
 
 INSERT INTO `sentc_file_options` (`app_id`, `file_storage`, `storage_url`, `auth_token`) VALUES
@@ -359,7 +359,7 @@ INSERT INTO `sentc_file_options` (`app_id`, `file_storage`, `storage_url`, `auth
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_file_part`
+-- Tabellenstruktur für Tabelle `sentc_file_part`
 --
 
 CREATE TABLE `sentc_file_part` (
@@ -374,7 +374,7 @@ CREATE TABLE `sentc_file_part` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_file_session`
+-- Tabellenstruktur für Tabelle `sentc_file_session`
 --
 
 CREATE TABLE `sentc_file_session` (
@@ -389,7 +389,7 @@ CREATE TABLE `sentc_file_session` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_group`
+-- Tabellenstruktur für Tabelle `sentc_group`
 --
 
 CREATE TABLE `sentc_group` (
@@ -404,7 +404,7 @@ CREATE TABLE `sentc_group` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
--- Triggers `sentc_group`
+-- Trigger `sentc_group`
 --
 DELIMITER $$
 CREATE TRIGGER `group_delete_hmac_keys` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_hmac_keys WHERE group_id = OLD.id
@@ -419,6 +419,10 @@ CREATE TRIGGER `group_delete_keys` AFTER DELETE ON `sentc_group` FOR EACH ROW DE
 $$
 DELIMITER ;
 DELIMITER $$
+CREATE TRIGGER `group_delete_sortable_keys` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_sortable_keys WHERE group_id = OLD.id
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `group_delete_user` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_user WHERE group_id = OLD.id
 $$
 DELIMITER ;
@@ -426,7 +430,7 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_group_hmac_keys`
+-- Tabellenstruktur für Tabelle `sentc_group_hmac_keys`
 --
 
 CREATE TABLE `sentc_group_hmac_keys` (
@@ -442,7 +446,7 @@ CREATE TABLE `sentc_group_hmac_keys` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_group_keys`
+-- Tabellenstruktur für Tabelle `sentc_group_keys`
 --
 
 CREATE TABLE `sentc_group_keys` (
@@ -471,7 +475,23 @@ CREATE TABLE `sentc_group_keys` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_group_user`
+-- Tabellenstruktur für Tabelle `sentc_group_sortable_keys`
+--
+
+CREATE TABLE `sentc_group_sortable_keys` (
+  `id` varchar(36) NOT NULL,
+  `group_id` varchar(36) NOT NULL,
+  `app_id` varchar(36) NOT NULL,
+  `encrypted_sortable_key` text NOT NULL,
+  `encrypted_sortable_alg` text NOT NULL,
+  `encrypted_sortable_encryption_key_id` varchar(36) NOT NULL COMMENT 'the key id which encrypted this key',
+  `time` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_group_user`
 --
 
 CREATE TABLE `sentc_group_user` (
@@ -484,7 +504,7 @@ CREATE TABLE `sentc_group_user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
--- Triggers `sentc_group_user`
+-- Trigger `sentc_group_user`
 --
 DELIMITER $$
 CREATE TRIGGER `group_user_delete_key_rotation_keys` AFTER DELETE ON `sentc_group_user` FOR EACH ROW DELETE FROM sentc_group_user_key_rotation WHERE user_id = OLD.user_id AND group_id = OLD.group_id
@@ -498,7 +518,7 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_group_user_invites_and_join_req`
+-- Tabellenstruktur für Tabelle `sentc_group_user_invites_and_join_req`
 --
 
 CREATE TABLE `sentc_group_user_invites_and_join_req` (
@@ -514,7 +534,7 @@ CREATE TABLE `sentc_group_user_invites_and_join_req` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_group_user_keys`
+-- Tabellenstruktur für Tabelle `sentc_group_user_keys`
 --
 
 CREATE TABLE `sentc_group_user_keys` (
@@ -530,7 +550,7 @@ CREATE TABLE `sentc_group_user_keys` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_group_user_key_rotation`
+-- Tabellenstruktur für Tabelle `sentc_group_user_key_rotation`
 --
 
 CREATE TABLE `sentc_group_user_key_rotation` (
@@ -545,7 +565,7 @@ CREATE TABLE `sentc_group_user_key_rotation` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_internally_db_version`
+-- Tabellenstruktur für Tabelle `sentc_internally_db_version`
 --
 
 CREATE TABLE `sentc_internally_db_version` (
@@ -556,7 +576,7 @@ CREATE TABLE `sentc_internally_db_version` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_sym_key_management`
+-- Tabellenstruktur für Tabelle `sentc_sym_key_management`
 --
 
 CREATE TABLE `sentc_sym_key_management` (
@@ -572,7 +592,7 @@ CREATE TABLE `sentc_sym_key_management` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_user`
+-- Tabellenstruktur für Tabelle `sentc_user`
 --
 
 CREATE TABLE `sentc_user` (
@@ -583,7 +603,7 @@ CREATE TABLE `sentc_user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
--- Triggers `sentc_user`
+-- Trigger `sentc_user`
 --
 DELIMITER $$
 CREATE TRIGGER `user_delete_user_device` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_device WHERE user_id = OLD.id
@@ -593,7 +613,7 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_user_action_log`
+-- Tabellenstruktur für Tabelle `sentc_user_action_log`
 --
 
 CREATE TABLE `sentc_user_action_log` (
@@ -607,7 +627,7 @@ CREATE TABLE `sentc_user_action_log` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_user_device`
+-- Tabellenstruktur für Tabelle `sentc_user_device`
 --
 
 CREATE TABLE `sentc_user_device` (
@@ -632,7 +652,7 @@ CREATE TABLE `sentc_user_device` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='multiple device per user';
 
 --
--- Triggers `sentc_user_device`
+-- Trigger `sentc_user_device`
 --
 DELIMITER $$
 CREATE TRIGGER `user_delete_jwt_refresh` AFTER DELETE ON `sentc_user_device` FOR EACH ROW DELETE FROM sentc_user_token WHERE device_id = OLD.id
@@ -642,7 +662,7 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sentc_user_token`
+-- Tabellenstruktur für Tabelle `sentc_user_token`
 --
 
 CREATE TABLE `sentc_user_token` (
@@ -655,7 +675,7 @@ CREATE TABLE `sentc_user_token` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `test`
+-- Tabellenstruktur für Tabelle `test`
 --
 
 CREATE TABLE `test` (
@@ -665,11 +685,11 @@ CREATE TABLE `test` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
--- Indexes for dumped tables
+-- Indizes der exportierten Tabellen
 --
 
 --
--- Indexes for table `sentc_app`
+-- Indizes für die Tabelle `sentc_app`
 --
 ALTER TABLE `sentc_app`
   ADD PRIMARY KEY (`id`),
@@ -677,32 +697,32 @@ ALTER TABLE `sentc_app`
   ADD UNIQUE KEY `hashed_public_token` (`hashed_public_token`);
 
 --
--- Indexes for table `sentc_app_group_options`
+-- Indizes für die Tabelle `sentc_app_group_options`
 --
 ALTER TABLE `sentc_app_group_options`
   ADD PRIMARY KEY (`app_id`);
 
 --
--- Indexes for table `sentc_app_jwt_keys`
+-- Indizes für die Tabelle `sentc_app_jwt_keys`
 --
 ALTER TABLE `sentc_app_jwt_keys`
   ADD PRIMARY KEY (`id`),
   ADD KEY `app_id` (`app_id`);
 
 --
--- Indexes for table `sentc_app_options`
+-- Indizes für die Tabelle `sentc_app_options`
 --
 ALTER TABLE `sentc_app_options`
   ADD PRIMARY KEY (`app_id`);
 
 --
--- Indexes for table `sentc_captcha`
+-- Indizes für die Tabelle `sentc_captcha`
 --
 ALTER TABLE `sentc_captcha`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `sentc_content`
+-- Indizes für die Tabelle `sentc_content`
 --
 ALTER TABLE `sentc_content`
   ADD PRIMARY KEY (`id`),
@@ -712,7 +732,7 @@ ALTER TABLE `sentc_content`
   ADD KEY `cat_id` (`category`);
 
 --
--- Indexes for table `sentc_content_searchable_item`
+-- Indizes für die Tabelle `sentc_content_searchable_item`
 --
 ALTER TABLE `sentc_content_searchable_item`
   ADD PRIMARY KEY (`id`),
@@ -721,25 +741,25 @@ ALTER TABLE `sentc_content_searchable_item`
   ADD KEY `time` (`time`);
 
 --
--- Indexes for table `sentc_content_searchable_item_parts`
+-- Indizes für die Tabelle `sentc_content_searchable_item_parts`
 --
 ALTER TABLE `sentc_content_searchable_item_parts`
   ADD PRIMARY KEY (`item_id`,`hash`);
 
 --
--- Indexes for table `sentc_customer`
+-- Indizes für die Tabelle `sentc_customer`
 --
 ALTER TABLE `sentc_customer`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `sentc_customer_group`
+-- Indizes für die Tabelle `sentc_customer_group`
 --
 ALTER TABLE `sentc_customer_group`
   ADD PRIMARY KEY (`sentc_group_id`);
 
 --
--- Indexes for table `sentc_file`
+-- Indizes für die Tabelle `sentc_file`
 --
 ALTER TABLE `sentc_file`
   ADD PRIMARY KEY (`id`),
@@ -747,26 +767,26 @@ ALTER TABLE `sentc_file`
   ADD KEY `owner` (`owner`,`app_id`);
 
 --
--- Indexes for table `sentc_file_options`
+-- Indizes für die Tabelle `sentc_file_options`
 --
 ALTER TABLE `sentc_file_options`
   ADD PRIMARY KEY (`app_id`);
 
 --
--- Indexes for table `sentc_file_part`
+-- Indizes für die Tabelle `sentc_file_part`
 --
 ALTER TABLE `sentc_file_part`
   ADD PRIMARY KEY (`id`),
   ADD KEY `file` (`file_id`,`app_id`);
 
 --
--- Indexes for table `sentc_file_session`
+-- Indizes für die Tabelle `sentc_file_session`
 --
 ALTER TABLE `sentc_file_session`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `sentc_group`
+-- Indizes für die Tabelle `sentc_group`
 --
 ALTER TABLE `sentc_group`
   ADD PRIMARY KEY (`id`),
@@ -774,51 +794,58 @@ ALTER TABLE `sentc_group`
   ADD KEY `parent` (`parent`);
 
 --
--- Indexes for table `sentc_group_hmac_keys`
+-- Indizes für die Tabelle `sentc_group_hmac_keys`
 --
 ALTER TABLE `sentc_group_hmac_keys`
   ADD PRIMARY KEY (`id`),
   ADD KEY `app_id` (`app_id`,`group_id`);
 
 --
--- Indexes for table `sentc_group_keys`
+-- Indizes für die Tabelle `sentc_group_keys`
 --
 ALTER TABLE `sentc_group_keys`
   ADD PRIMARY KEY (`id`),
   ADD KEY `group_id` (`group_id`,`app_id`) USING BTREE;
 
 --
--- Indexes for table `sentc_group_user`
+-- Indizes für die Tabelle `sentc_group_sortable_keys`
+--
+ALTER TABLE `sentc_group_sortable_keys`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `group_id` (`group_id`,`app_id`);
+
+--
+-- Indizes für die Tabelle `sentc_group_user`
 --
 ALTER TABLE `sentc_group_user`
   ADD PRIMARY KEY (`user_id`,`group_id`);
 
 --
--- Indexes for table `sentc_group_user_invites_and_join_req`
+-- Indizes für die Tabelle `sentc_group_user_invites_and_join_req`
 --
 ALTER TABLE `sentc_group_user_invites_and_join_req`
   ADD PRIMARY KEY (`user_id`,`group_id`);
 
 --
--- Indexes for table `sentc_group_user_keys`
+-- Indizes für die Tabelle `sentc_group_user_keys`
 --
 ALTER TABLE `sentc_group_user_keys`
   ADD PRIMARY KEY (`k_id`,`user_id`) USING BTREE;
 
 --
--- Indexes for table `sentc_group_user_key_rotation`
+-- Indizes für die Tabelle `sentc_group_user_key_rotation`
 --
 ALTER TABLE `sentc_group_user_key_rotation`
   ADD PRIMARY KEY (`key_id`,`user_id`) USING BTREE;
 
 --
--- Indexes for table `sentc_internally_db_version`
+-- Indizes für die Tabelle `sentc_internally_db_version`
 --
 ALTER TABLE `sentc_internally_db_version`
   ADD PRIMARY KEY (`version`);
 
 --
--- Indexes for table `sentc_sym_key_management`
+-- Indizes für die Tabelle `sentc_sym_key_management`
 --
 ALTER TABLE `sentc_sym_key_management`
   ADD PRIMARY KEY (`id`),
@@ -826,20 +853,20 @@ ALTER TABLE `sentc_sym_key_management`
   ADD KEY `by_user` (`app_id`,`creator_id`);
 
 --
--- Indexes for table `sentc_user`
+-- Indizes für die Tabelle `sentc_user`
 --
 ALTER TABLE `sentc_user`
   ADD PRIMARY KEY (`id`),
   ADD KEY `app_id` (`app_id`) USING BTREE;
 
 --
--- Indexes for table `sentc_user_action_log`
+-- Indizes für die Tabelle `sentc_user_action_log`
 --
 ALTER TABLE `sentc_user_action_log`
   ADD PRIMARY KEY (`user_id`,`time`,`app_id`);
 
 --
--- Indexes for table `sentc_user_device`
+-- Indizes für die Tabelle `sentc_user_device`
 --
 ALTER TABLE `sentc_user_device`
   ADD PRIMARY KEY (`id`),
@@ -848,13 +875,13 @@ ALTER TABLE `sentc_user_device`
   ADD KEY `device_identifier` (`device_identifier`) USING BTREE;
 
 --
--- Indexes for table `sentc_user_token`
+-- Indizes für die Tabelle `sentc_user_token`
 --
 ALTER TABLE `sentc_user_token`
   ADD PRIMARY KEY (`device_id`,`token`,`app_id`) USING BTREE;
 
 --
--- Indexes for table `test`
+-- Indizes für die Tabelle `test`
 --
 ALTER TABLE `test`
   ADD PRIMARY KEY (`id`);
