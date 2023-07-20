@@ -9,10 +9,10 @@ use reqwest::StatusCode;
 use rustgram_server_util::db::mysql_async_export::prelude::Queryable;
 use rustgram_server_util::db::StringEntity;
 use sentc_crypto::entities::group::{GroupKeyData, GroupOutData};
-use sentc_crypto::entities::keys::{HmacKeyFormatInt, PrivateKeyFormatInt, PublicKeyFormatInt, SymKeyFormatInt};
+use sentc_crypto::entities::keys::{HmacKeyFormatInt, PrivateKeyFormatInt, PublicKeyFormatInt, SortableKeyFormatInt, SymKeyFormatInt};
 use sentc_crypto::entities::user::{UserDataInt, UserKeyDataInt};
 use sentc_crypto::sdk_common::file::FileData;
-use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupHmacData, GroupInviteServerOutput};
+use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupHmacData, GroupInviteServerOutput, GroupSortableData};
 use sentc_crypto::sdk_common::user::UserPublicKeyData;
 use sentc_crypto::sdk_core::SymKey;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
@@ -507,6 +507,19 @@ pub fn decrypt_group_hmac_keys(first_group_key: &SymKeyFormatInt, hmac_keys: Vec
 	decrypted_hmac_keys
 }
 
+pub fn decrypt_group_sortable_keys(first_group_key: &SymKeyFormatInt, keys: Vec<GroupSortableData>) -> Vec<SortableKeyFormatInt>
+{
+	//its important to use the sdk common version here and not from the api
+
+	let mut decrypted_keys = Vec::with_capacity(keys.len());
+
+	for key in keys {
+		decrypted_keys.push(sentc_crypto::group::decrypt_group_sortable_key(first_group_key, key).unwrap());
+	}
+
+	decrypted_keys
+}
+
 pub async fn get_group(
 	secret_token: &str,
 	jwt: &str,
@@ -541,6 +554,7 @@ pub async fn get_group(
 		GroupOutData {
 			keys: vec![],
 			hmac_keys: data.hmac_keys,
+			sortable_keys: data.sortable_keys,
 			parent_group_id: data.parent_group_id,
 			key_update: data.key_update,
 			created_time: data.created_time,
@@ -588,6 +602,7 @@ pub async fn get_group_from_group_as_member(
 		GroupOutData {
 			keys: vec![],
 			hmac_keys: data.hmac_keys,
+			sortable_keys: data.sortable_keys,
 			parent_group_id: data.parent_group_id,
 			key_update: data.key_update,
 			created_time: data.created_time,

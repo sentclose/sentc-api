@@ -133,6 +133,7 @@ pub struct GroupServerData
 	pub parent_group_id: Option<GroupId>,
 	pub keys: Vec<GroupUserKeys>,
 	pub hmac_keys: Vec<GroupHmacData>,
+	pub sortable_keys: Vec<GroupSortableData>,
 	pub key_update: bool,
 	pub rank: i32,
 	pub created_time: u128,
@@ -145,23 +146,12 @@ impl Into<sentc_crypto_common::group::GroupServerData> for GroupServerData
 {
 	fn into(self) -> sentc_crypto_common::group::GroupServerData
 	{
-		let mut keys = Vec::with_capacity(self.keys.len());
-
-		for key in self.keys {
-			keys.push(key.into());
-		}
-
-		let mut hmac_keys = Vec::with_capacity(self.hmac_keys.len());
-
-		for hmac_key in self.hmac_keys {
-			hmac_keys.push(hmac_key.into());
-		}
-
 		sentc_crypto_common::group::GroupServerData {
 			group_id: self.group_id,
 			parent_group_id: self.parent_group_id,
-			keys,
-			hmac_keys,
+			keys: self.keys.into_iter().map(|k| k.into()).collect(),
+			hmac_keys: self.hmac_keys.into_iter().map(|k| k.into()).collect(),
+			sortable_keys: self.sortable_keys.into_iter().map(|k| k.into()).collect(),
 			key_update: self.key_update,
 			rank: self.rank,
 			created_time: self.created_time,
@@ -195,6 +185,34 @@ impl Into<sentc_crypto_common::group::GroupHmacData> for GroupHmacData
 			encrypted_hmac_key: self.encrypted_hmac_key,
 			encrypted_hmac_alg: self.encrypted_hmac_alg,
 			encrypted_hmac_encryption_key_id: self.encrypted_hmac_encryption_key_id,
+			time: self.time,
+		}
+	}
+}
+
+//__________________________________________________________________________________________________
+
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
+#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+pub struct GroupSortableData
+{
+	pub id: SymKeyId,
+	pub encrypted_sortable_key: String,
+	pub encrypted_sortable_alg: String,
+	pub encrypted_sortable_encryption_key_id: SymKeyId,
+	pub time: u128,
+}
+
+impl Into<sentc_crypto_common::group::GroupSortableData> for GroupSortableData
+{
+	fn into(self) -> sentc_crypto_common::group::GroupSortableData
+	{
+		sentc_crypto_common::group::GroupSortableData {
+			id: self.id,
+			encrypted_sortable_key: self.encrypted_sortable_key,
+			encrypted_sortable_alg: self.encrypted_sortable_alg,
+			encrypted_sortable_encryption_key_id: self.encrypted_sortable_encryption_key_id,
 			time: self.time,
 		}
 	}

@@ -26,7 +26,7 @@ use crate::group::group_entities::{
 	ListGroups,
 };
 use crate::group::{GROUP_TYPE_NORMAL, GROUP_TYPE_USER};
-use crate::sentc_group_entities::GroupHmacData;
+use crate::sentc_group_entities::{GroupHmacData, GroupSortableData};
 use crate::user::user_entities::UserPublicKeyDataEntity;
 use crate::util::api_res::ApiErrorCodes;
 
@@ -136,6 +136,44 @@ WHERE group_id = ? AND app_id = ?"
 	};
 
 	let data: Vec<GroupHmacData> = query_string(sql1, params).await?;
+
+	Ok(data)
+}
+
+pub(super) async fn get_group_sortable(
+	app_id: impl Into<AppId>,
+	group_id: impl Into<GroupId>,
+	last_fetched_time: u128,
+	last_k_id: impl Into<SymKeyId>,
+) -> AppRes<Vec<GroupSortableData>>
+{
+	//language=SQL
+	let sql = r"
+SELECT id,encrypted_sortable_key,encrypted_sortable_alg,encrypted_sortable_encryption_key_id, time 
+FROM sentc_group_sortable_keys 
+WHERE group_id = ? AND app_id = ?"
+		.to_string();
+
+	let (sql1, params) = if last_fetched_time > 0 {
+		let sql = sql + " AND time <= ? AND (time < ? OR (time = ? AND id > ?)) ORDER BY time DESC, id LIMIT 50";
+
+		(
+			sql,
+			set_params!(
+				group_id.into(),
+				app_id.into(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_fetched_time.to_string(),
+				last_k_id.into()
+			),
+		)
+	} else {
+		let sql = sql + " ORDER BY time DESC, id LIMIT 50";
+		(sql, set_params!(group_id.into(), app_id.into(),))
+	};
+
+	let data: Vec<GroupSortableData> = query_string(sql1, params).await?;
 
 	Ok(data)
 }
@@ -515,9 +553,36 @@ VALUES (?,?,?,?,?,?,?)";
 	let group_hmac_params = set_params!(
 		group_hmac_key_id,
 		group_id.clone(),
-		app_id,
+		app_id.clone(),
 		data.encrypted_hmac_key,
 		data.encrypted_hmac_alg,
+		group_key_id.clone(),
+		time.to_string(),
+	);
+
+	//language=SQL
+	let sql_sortable = r"
+INSERT INTO sentc_group_sortable_keys 
+    (
+     id, 
+     group_id, 
+     app_id, 
+     encrypted_sortable_key, 
+     encrypted_sortable_alg, 
+     encrypted_sortable_encryption_key_id, 
+     time
+     ) 
+VALUES (?,?,?,?,?,?,?)
+";
+
+	let group_sortable_key_id = create_id();
+
+	let group_sortable_params = set_params!(
+		group_sortable_key_id,
+		group_id.clone(),
+		app_id,
+		data.encrypted_sortable_key,
+		data.encrypted_sortable_alg,
 		group_key_id.clone(),
 		time.to_string(),
 	);
@@ -571,6 +636,10 @@ VALUES (?,?,?,?,?,?,?)";
 		TransactionData {
 			sql: sql_group_hmac,
 			params: group_hmac_params,
+		},
+		TransactionData {
+			sql: sql_sortable,
+			params: group_sortable_params,
 		},
 		TransactionData {
 			sql: sql_group_user,
