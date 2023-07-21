@@ -189,6 +189,13 @@ pub struct UserLoginLightEntity
 {
 	pub user_id: UserId,
 	pub device_id: DeviceId,
+	pub encrypted_master_key: String,
+	pub encrypted_private_key: String,
+	pub public_key_string: String,
+	pub keypair_encrypt_alg: String,
+	pub encrypted_sign_key: String,
+	pub verify_key: String,
+	pub keypair_sign_alg: String,
 }
 
 //__________________________________________________________________________________________________

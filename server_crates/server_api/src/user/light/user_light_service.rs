@@ -154,6 +154,13 @@ pub async fn done_login_light(app_data: &AppData, done_login: DoneLoginServerInp
 		jwt,
 		device_id: id.device_id,
 		refresh_token,
+		encrypted_master_key: id.encrypted_master_key,
+		encrypted_private_key: id.encrypted_private_key,
+		public_key_string: id.public_key_string,
+		keypair_encrypt_alg: id.keypair_encrypt_alg,
+		encrypted_sign_key: id.encrypted_sign_key,
+		verify_key_string: id.verify_key,
+		keypair_sign_alg: id.keypair_sign_alg,
 	};
 
 	Ok(out)

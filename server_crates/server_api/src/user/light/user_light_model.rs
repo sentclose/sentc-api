@@ -3,7 +3,7 @@ use rustgram_server_util::db::{exec, exec_transaction, query_first, TransactionD
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params};
-use sentc_crypto_common::user::{KeyDerivedData, KeyDerivedLightData, MasterKey};
+use sentc_crypto_common::user::{KeyDerivedData, MasterKey};
 use sentc_crypto_common::{AppId, DeviceId, UserId};
 
 use crate::sentc_user_entities::UserLoginLightEntity;
@@ -14,7 +14,7 @@ pub(super) async fn register_light(
 	app_id: impl Into<AppId>,
 	device_identifier: String,
 	master_key: MasterKey,
-	derived: KeyDerivedLightData,
+	derived: KeyDerivedData,
 ) -> AppRes<(UserId, DeviceId)>
 {
 	let app_id = app_id.into();
@@ -50,7 +50,7 @@ pub(super) async fn register_light(
 		time,
 		device_identifier,
 		master_key,
-		light_derived_to(derived),
+		derived,
 		None,
 	);
 
@@ -73,7 +73,7 @@ pub(super) async fn register_device_light(
 	app_id: impl Into<AppId>,
 	device_identifier: String,
 	master_key: MasterKey,
-	derived: KeyDerivedLightData,
+	derived: KeyDerivedData,
 	token: impl Into<String>,
 ) -> AppRes<DeviceId>
 {
@@ -87,7 +87,7 @@ pub(super) async fn register_device_light(
 		time,
 		device_identifier,
 		master_key,
-		light_derived_to(derived),
+		derived,
 		Some(token.into()),
 	);
 
@@ -100,7 +100,16 @@ pub(super) async fn get_done_login_light_data(app_id: impl Into<AppId>, user_ide
 {
 	//language=SQL
 	let sql = r"
-SELECT user_id, ud.id as device_id
+SELECT 
+    user_id, 
+    ud.id as device_id,
+    encrypted_master_key,
+    encrypted_private_key,
+    public_key,
+    keypair_encrypt_alg,
+    encrypted_sign_key,
+    verify_key,
+    keypair_sign_alg
 FROM 
     sentc_user_device ud, 
     sentc_user u 
@@ -115,19 +124,3 @@ WHERE
 }
 
 //__________________________________________________________________________________________________
-
-fn light_derived_to(derived: KeyDerivedLightData) -> KeyDerivedData
-{
-	KeyDerivedData {
-		derived_alg: derived.derived_alg,
-		client_random_value: derived.client_random_value,
-		hashed_authentication_key: derived.hashed_authentication_key,
-		public_key: derived.public_key,
-		encrypted_private_key: derived.encrypted_private_key,
-		keypair_encrypt_alg: derived.keypair_encrypt_alg,
-		//no verify key
-		verify_key: "".to_string(),
-		encrypted_sign_key: "".to_string(),
-		keypair_sign_alg: "".to_string(),
-	}
-}
