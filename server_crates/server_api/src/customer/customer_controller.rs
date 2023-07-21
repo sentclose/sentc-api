@@ -97,7 +97,8 @@ pub async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 		));
 	}
 
-	let (customer_id, _) = user::user_service::register_light(&app_data.app_data.app_id, register_data.register_data).await?;
+	let out = user::light::user_light_service::register_light(&app_data.app_data.app_id, register_data.register_data, false).await?;
+	let customer_id = out.user_id;
 
 	//send the normal token via email
 	let validate_token = generate_email_validate_token()?;
