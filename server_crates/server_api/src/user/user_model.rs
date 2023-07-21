@@ -774,9 +774,7 @@ pub(super) async fn delete_captcha(app_id: impl Into<AppId>, id: String) -> AppR
 	Ok(())
 }
 
-//__________________________________________________________________________________________________
-
-fn prepare_register_device(
+pub(super) fn prepare_register_device(
 	device_id: impl Into<DeviceId>,
 	user_id: impl Into<UserId>,
 	app_id: impl Into<AppId>,

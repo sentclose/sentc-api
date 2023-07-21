@@ -110,22 +110,6 @@ pub async fn exists(app_id: impl Into<AppId>, data: UserIdentifierAvailableServe
 	Ok(out)
 }
 
-pub async fn register_light(app_id: impl Into<AppId>, input: UserDeviceRegisterInput) -> AppRes<(String, String)>
-{
-	let app_id = app_id.into();
-
-	let identifier = hash_token_to_string(input.device_identifier.as_bytes())?;
-
-	let (user_id, device_id) = user_model::register(&app_id, identifier, input.master_key, input.derived).await?;
-
-	//delete the user in app check cache from the jwt mw
-	//it can happened that a user id was used before which doesn't exists yet
-	let cache_key = get_user_in_app_key(&app_id, &user_id);
-	cache::delete(&cache_key).await?;
-
-	Ok((user_id, device_id))
-}
-
 pub async fn register(app_id: impl Into<AppId>, register_input: RegisterData) -> AppRes<RegisterServerOutput>
 {
 	let mut group_data = register_input.group;
@@ -678,7 +662,7 @@ async fn create_salt(app_id: impl Into<AppId>, user_identifier: &str) -> AppRes<
 	Ok(out)
 }
 
-fn create_refresh_token() -> AppRes<String>
+pub(super) fn create_refresh_token() -> AppRes<String>
 {
 	let mut rng = rand::thread_rng();
 
