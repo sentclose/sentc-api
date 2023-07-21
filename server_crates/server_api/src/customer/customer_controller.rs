@@ -181,7 +181,7 @@ pub async fn done_login(mut req: Request) -> JRes<CustomerDoneLoginOutput>
 	let done_login: DoneLoginServerInput = bytes_to_json(&body)?;
 	let app_data = get_app_data_from_req(&req)?;
 
-	let user_keys = user::user_service::done_login_light(app_data, done_login).await?;
+	let user_keys = user::light::user_light_service::done_login_light(app_data, done_login).await?;
 
 	let customer_data = customer_model::get_customer_data(&user_keys.user_id).await?;
 

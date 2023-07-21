@@ -1,11 +1,12 @@
 use rustgram_server_util::db::id_handling::create_id;
-use rustgram_server_util::db::{exec, exec_transaction, TransactionData};
+use rustgram_server_util::db::{exec, exec_transaction, query_first, TransactionData};
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::user::{KeyDerivedData, KeyDerivedLightData, MasterKey};
 use sentc_crypto_common::{AppId, DeviceId, UserId};
 
+use crate::sentc_user_entities::UserLoginLightEntity;
 use crate::user::user_model::{check_user_exists, prepare_register_device};
 use crate::util::api_res::ApiErrorCodes;
 
@@ -93,6 +94,24 @@ pub(super) async fn register_device_light(
 	exec(sql_keys, key_params).await?;
 
 	Ok(device_id)
+}
+
+pub(super) async fn get_done_login_light_data(app_id: impl Into<AppId>, user_identifier: impl Into<String>) -> AppRes<Option<UserLoginLightEntity>>
+{
+	//language=SQL
+	let sql = r"
+SELECT user_id, ud.id as device_id
+FROM 
+    sentc_user_device ud, 
+    sentc_user u 
+WHERE 
+    device_identifier = ? AND 
+    user_id = u.id AND 
+    u.app_id = ?";
+
+	let data: Option<UserLoginLightEntity> = query_first(sql, set_params!(user_identifier.into(), app_id.into())).await?;
+
+	Ok(data)
 }
 
 //__________________________________________________________________________________________________

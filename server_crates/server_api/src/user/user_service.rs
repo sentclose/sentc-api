@@ -9,7 +9,6 @@ use rustgram_server_util::res::AppRes;
 use sentc_crypto::util::public::HashedAuthenticationKey;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
-	DoneLoginLightOutput,
 	DoneLoginLightServerOutput,
 	DoneLoginServerInput,
 	JwtRefreshInput,
@@ -269,42 +268,6 @@ pub async fn done_register_device(
 pub fn prepare_login<'a>(app_data: &'a AppData, user_identifier: &'a str) -> impl Future<Output = AppRes<PrepareLoginSaltServerOutput>> + 'a
 {
 	create_salt(&app_data.app_data.app_id, user_identifier)
-}
-
-/**
-Only the jwt and user id, no keys
-*/
-pub async fn done_login_light(app_data: &AppData, done_login: DoneLoginServerInput) -> AppRes<DoneLoginLightOutput>
-{
-	let identifier = hash_token_to_string(done_login.device_identifier.as_bytes())?;
-
-	auth_user(&app_data.app_data.app_id, &identifier, done_login.auth_key).await?;
-
-	let id = user_model::get_done_login_light_data(app_data.app_data.app_id.as_str(), identifier)
-		.await?
-		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::Login, "Wrong username or password"))?;
-
-	let jwt = create_jwt(
-		&id.user_id,
-		&id.device_id,
-		&app_data.jwt_data[0], //use always the latest created jwt data
-		true,
-	)
-	.await?;
-
-	let refresh_token = create_refresh_token()?;
-
-	//activate refresh token
-	user_model::insert_refresh_token(&app_data.app_data.app_id, &id.device_id, &refresh_token).await?;
-
-	let out = DoneLoginLightOutput {
-		user_id: id.user_id,
-		jwt,
-		device_id: id.device_id,
-		refresh_token,
-	};
-
-	Ok(out)
 }
 
 /**
@@ -676,7 +639,7 @@ pub(super) fn create_refresh_token() -> AppRes<String>
 	Ok(token_string)
 }
 
-async fn auth_user(app_id: &str, hashed_user_identifier: impl Into<String>, auth_key: String) -> AppRes<String>
+pub(super) async fn auth_user(app_id: &str, hashed_user_identifier: impl Into<String>, auth_key: String) -> AppRes<String>
 {
 	//get the login data
 	let login_data = user_model::get_user_login_data(app_id, hashed_user_identifier).await?;

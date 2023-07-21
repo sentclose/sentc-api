@@ -47,6 +47,10 @@ pub(crate) fn routes(router: &mut Router)
 		r(crate::user::done_login).add(app_token::app_token_transform),
 	);
 	router.post(
+		"/api/v1/done_login_light",
+		r(crate::user::done_login_light).add(app_token::app_token_transform),
+	);
+	router.post(
 		"/api/v1/user/prepare_register_device",
 		r(crate::user::prepare_register_device).add(app_token::app_token_transform),
 	);

@@ -1,14 +1,23 @@
 use rustgram_server_util::cache;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
-use sentc_crypto_common::user::{RegisterServerOutput, UserDeviceDoneRegisterInputLight, UserDeviceLightRegisterInput, UserDeviceRegisterOutput};
+use sentc_crypto_common::user::{
+	DoneLoginLightOutput,
+	DoneLoginServerInput,
+	RegisterServerOutput,
+	UserDeviceDoneRegisterInputLight,
+	UserDeviceLightRegisterInput,
+	UserDeviceRegisterOutput,
+};
 use sentc_crypto_common::{AppId, GroupId, UserId};
 
 use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
+use crate::sentc_app_entities::AppData;
 use crate::sentc_app_utils::hash_token_to_string;
 use crate::sentc_group_entities::{InternalGroupData, InternalGroupDataComplete, InternalUserGroupData};
 use crate::sentc_group_user_service::NewUserType;
-use crate::sentc_user_service::create_refresh_token;
+use crate::sentc_user_jwt_service::create_jwt;
+use crate::sentc_user_service::{auth_user, create_refresh_token};
 use crate::user::light::user_light_model;
 use crate::user::user_model;
 use crate::util::api_res::ApiErrorCodes;
@@ -112,4 +121,40 @@ pub async fn done_register_device_light(
 	user_model::done_register_device(app_id, user_id, device_id).await?;
 
 	Ok(())
+}
+
+/**
+Only the jwt and user id, no keys
+ */
+pub async fn done_login_light(app_data: &AppData, done_login: DoneLoginServerInput) -> AppRes<DoneLoginLightOutput>
+{
+	let identifier = hash_token_to_string(done_login.device_identifier.as_bytes())?;
+
+	auth_user(&app_data.app_data.app_id, &identifier, done_login.auth_key).await?;
+
+	let id = user_light_model::get_done_login_light_data(app_data.app_data.app_id.as_str(), identifier)
+		.await?
+		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::Login, "Wrong username or password"))?;
+
+	let jwt = create_jwt(
+		&id.user_id,
+		&id.device_id,
+		&app_data.jwt_data[0], //use always the latest created jwt data
+		true,
+	)
+	.await?;
+
+	let refresh_token = create_refresh_token()?;
+
+	//activate refresh token
+	user_model::insert_refresh_token(&app_data.app_data.app_id, &id.device_id, &refresh_token).await?;
+
+	let out = DoneLoginLightOutput {
+		user_id: id.user_id,
+		jwt,
+		device_id: id.device_id,
+		refresh_token,
+	};
+
+	Ok(out)
 }
