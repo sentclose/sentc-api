@@ -6,7 +6,7 @@ use sentc_crypto_common::user::{
 	DoneLoginServerInput,
 	RegisterServerOutput,
 	UserDeviceDoneRegisterInputLight,
-	UserDeviceLightRegisterInput,
+	UserDeviceRegisterInput,
 	UserDeviceRegisterOutput,
 };
 use sentc_crypto_common::{AppId, GroupId, UserId};
@@ -23,7 +23,7 @@ use crate::user::user_model;
 use crate::util::api_res::ApiErrorCodes;
 use crate::util::get_user_in_app_key;
 
-pub async fn register_light(app_id: impl Into<AppId>, input: UserDeviceLightRegisterInput, user: bool) -> AppRes<RegisterServerOutput>
+pub async fn register_light(app_id: impl Into<AppId>, input: UserDeviceRegisterInput, user: bool) -> AppRes<RegisterServerOutput>
 {
 	let app_id = app_id.into();
 
@@ -50,7 +50,7 @@ pub async fn register_light(app_id: impl Into<AppId>, input: UserDeviceLightRegi
 	})
 }
 
-pub async fn prepare_register_device_light(app_id: impl Into<AppId>, input: UserDeviceLightRegisterInput) -> AppRes<UserDeviceRegisterOutput>
+pub async fn prepare_register_device_light(app_id: impl Into<AppId>, input: UserDeviceRegisterInput) -> AppRes<UserDeviceRegisterOutput>
 {
 	let app_id = app_id.into();
 	let check = user_model::check_user_exists(&app_id, &input.device_identifier).await?;

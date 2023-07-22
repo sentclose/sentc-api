@@ -1,5 +1,5 @@
 use sentc_crypto_common::group::GroupUserListItem;
-use sentc_crypto_common::user::{CaptchaInput, DoneLoginLightOutput, ResetPasswordData, UserDeviceLightRegisterInput};
+use sentc_crypto_common::user::{CaptchaInput, DoneLoginLightOutput, ResetPasswordData, UserDeviceRegisterInput};
 use sentc_crypto_common::{AppId, CustomerId, GroupId, UserId};
 use serde::{Deserialize, Serialize};
 
@@ -17,7 +17,7 @@ pub struct CustomerRegisterData
 	pub customer_data: CustomerData,
 
 	pub email: String,
-	pub register_data: UserDeviceLightRegisterInput,
+	pub register_data: UserDeviceRegisterInput,
 	pub captcha_input: CaptchaInput,
 }
 
