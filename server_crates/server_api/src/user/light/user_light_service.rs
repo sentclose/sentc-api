@@ -93,7 +93,7 @@ pub async fn done_register_device_light(
 	let device_id = user_model::get_done_register_device(&app_id, input.token).await?;
 
 	group_user_service::invite_auto_light(
-		&internal_group_data(&app_id, user_group_id),
+		&internal_group_data(&app_id, user_group_id, 0),
 		input.user_group,
 		&device_id, //invite the new device
 		NewUserType::Normal,

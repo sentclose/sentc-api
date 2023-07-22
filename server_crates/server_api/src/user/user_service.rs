@@ -234,7 +234,7 @@ pub async fn done_register_device(
 
 	//for the auto invite we only need the group id and the group user rank
 	let session_id = group_user_service::invite_auto(
-		&internal_group_data(&app_id, user_group_id),
+		&internal_group_data(&app_id, user_group_id, 0),
 		input.user_keys,
 		&device_id, //invite the new device
 		NewUserType::Normal,
@@ -473,7 +473,7 @@ pub async fn delete_device(user: &UserJwtEntity, app_id: impl Into<AppId>, devic
 
 	user_model::delete_device(user_id, &app_id, device_id).await?;
 
-	group_user_service::leave_group(&internal_group_data(&app_id, &user.group_id), None).await
+	group_user_service::leave_group(&internal_group_data(&app_id, &user.group_id, 4), None).await
 }
 
 pub fn get_devices<'a>(
@@ -555,7 +555,7 @@ pub fn reset_password<'a>(
 //__________________________________________________________________________________________________
 //internal fn
 
-pub(super) fn internal_group_data(app_id: impl Into<AppId>, user_group_id: impl Into<GroupId>) -> InternalGroupDataComplete
+pub(super) fn internal_group_data(app_id: impl Into<AppId>, user_group_id: impl Into<GroupId>, rank: i32) -> InternalGroupDataComplete
 {
 	InternalGroupDataComplete {
 		group_data: InternalGroupData {
@@ -570,7 +570,7 @@ pub(super) fn internal_group_data(app_id: impl Into<AppId>, user_group_id: impl 
 			user_id: "".to_string(),
 			real_user_id: "".to_string(),
 			joined_time: 0,
-			rank: 0, //Rank must be 0
+			rank,
 			get_values_from_parent: None,
 			get_values_from_group_as_member: None,
 		},
