@@ -72,3 +72,16 @@ pub(crate) async fn done_login_light(mut req: Request) -> JRes<DoneLoginLightOut
 
 	echo(out)
 }
+
+pub(crate) async fn reset_password_light(mut req: Request) -> JRes<ServerSuccessOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+	let input: UserDeviceRegisterInput = bytes_to_json(&body)?;
+	let app_data = get_app_data_from_req(&req)?;
+
+	check_endpoint_with_app_options(app_data, Endpoint::ForceServer)?;
+
+	user_light_service::reset_password_light(&app_data.app_data.app_id, input).await?;
+
+	echo_success()
+}

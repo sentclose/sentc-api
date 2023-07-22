@@ -147,3 +147,12 @@ pub async fn done_login_light(app_data: &AppData, done_login: DoneLoginServerInp
 
 	Ok(out)
 }
+
+pub async fn reset_password_light(app_id: impl Into<AppId>, input: UserDeviceRegisterInput) -> AppRes<()>
+{
+	let identifier = hash_token_to_string(input.device_identifier.as_bytes())?;
+
+	user_light_model::reset_password_light(app_id, identifier, input.master_key, input.derived).await?;
+
+	Ok(())
+}

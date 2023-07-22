@@ -123,4 +123,54 @@ WHERE
 	Ok(data)
 }
 
+pub(super) async fn reset_password_light(
+	app_id: impl Into<AppId>,
+	device_identifier: String,
+	master_key_info: MasterKey,
+	derived_data: KeyDerivedData,
+) -> AppRes<()>
+{
+	//change here also the public keys.
+
+	//language=SQL
+	let sql = r"
+UPDATE sentc_user_device 
+SET 
+    client_random_value = ?, 
+    public_key = ?, 
+    encrypted_private_key = ?, 
+    keypair_encrypt_alg = ?, 
+    encrypted_sign_key = ?, 
+    verify_key = ?,
+    keypair_sign_alg = ?, 
+    derived_alg = ?, 
+    encrypted_master_key = ?, 
+    master_key_alg = ?, 
+    encrypted_master_key_alg = ?, 
+    hashed_auth_key = ?
+WHERE app_id = ? AND device_identifier = ?
+";
+
+	exec(
+		sql,
+		set_params!(
+			derived_data.client_random_value,
+			derived_data.public_key,
+			derived_data.encrypted_private_key,
+			derived_data.keypair_encrypt_alg,
+			derived_data.encrypted_sign_key,
+			derived_data.verify_key,
+			derived_data.keypair_sign_alg,
+			derived_data.derived_alg,
+			master_key_info.encrypted_master_key,
+			master_key_info.master_key_alg,
+			master_key_info.encrypted_master_key_alg,
+			derived_data.hashed_authentication_key,
+			app_id.into(),
+			device_identifier
+		),
+	)
+	.await
+}
+
 //__________________________________________________________________________________________________

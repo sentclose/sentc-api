@@ -24,6 +24,7 @@ routes:
               - post: {p: "/done_login_light", s: crate::user::done_login_light}
               - post: {p: "/user/prepare_register_device", s: crate::user::prepare_register_device}
               - post: {p: "/user/prepare_register_device_light", s: crate::user::prepare_register_device_light}
+              - put: {p: "/user/reset_pw_light", s: crate::user::reset_password_light}
               - delete: {p: "/user/force/:user_id", s: crate::user::delete_user}
               #_________________________________________________________________________________________________________
               # group with exp jwt mw -> the jwt can be exp for this routes
