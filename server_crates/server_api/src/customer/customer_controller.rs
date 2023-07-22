@@ -15,6 +15,7 @@ use sentc_crypto_common::user::{
 	JwtRefreshInput,
 	PrepareLoginSaltServerOutput,
 	PrepareLoginServerInput,
+	UserDeviceRegisterInput,
 	UserUpdateServerInput,
 };
 use server_api_common::customer::{
@@ -345,7 +346,15 @@ pub async fn done_reset_password(mut req: Request) -> JRes<ServerSuccessOutput>
 
 	let token_data = customer_model::get_email_by_token(input.token).await?;
 
-	user::user_service::reset_password(&token_data.id, &token_data.device_id, input.reset_password_data).await?;
+	user::light::user_light_service::reset_password_light(
+		SENTC_ROOT_APP,
+		UserDeviceRegisterInput {
+			master_key: input.reset_password_data.master_key,
+			derived: input.reset_password_data.derived,
+			device_identifier: token_data.email,
+		},
+	)
+	.await?;
 
 	echo_success()
 }
