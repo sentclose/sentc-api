@@ -4,14 +4,7 @@ use reqwest::header::AUTHORIZATION;
 use rustgram_server_util::db::StringEntity;
 use rustgram_server_util::error::ServerErrorCodes;
 use sentc_crypto::util::public::handle_server_response;
-use sentc_crypto_common::user::{
-	ChangePasswordData,
-	DoneLoginServerInput,
-	DoneLoginServerKeysOutput,
-	DoneLoginServerOutput,
-	PrepareLoginSaltServerOutput,
-	RegisterData,
-};
+use sentc_crypto_common::user::UserDeviceRegisterInput;
 use sentc_crypto_common::ServerOutput;
 use server_api::util::api_res::ApiErrorCodes;
 use server_api_common::customer::{CustomerData, CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput, CustomerUpdateInput};
@@ -58,8 +51,8 @@ async fn test_10_register_without_valid_email()
 
 	let wrong_email = "hello@localhost".to_string();
 
-	let register_data = sentc_crypto::user::register(wrong_email.as_str(), "12345").unwrap();
-	let register_data = RegisterData::from_string(register_data.as_str()).unwrap();
+	let register_data = sentc_crypto_light::user::register(wrong_email.as_str(), "12345").unwrap();
+	let register_data: UserDeviceRegisterInput = serde_json::from_str(register_data.as_str()).unwrap();
 
 	let captcha_input = get_captcha().await;
 
@@ -70,7 +63,7 @@ async fn test_10_register_without_valid_email()
 			company: None,
 		},
 		email: wrong_email,
-		register_data: register_data.device,
+		register_data,
 		captcha_input,
 	};
 
@@ -102,8 +95,8 @@ async fn test_11_register_customer()
 
 	let email = "hello@test.com".to_string();
 
-	let register_data = sentc_crypto::user::register(email.as_str(), "12345").unwrap();
-	let register_data = RegisterData::from_string(register_data.as_str()).unwrap();
+	let register_data = sentc_crypto_light::user::register(email.as_str(), "12345").unwrap();
+	let register_data: UserDeviceRegisterInput = serde_json::from_str(register_data.as_str()).unwrap();
 
 	let captcha_input = get_captcha().await;
 
@@ -114,7 +107,7 @@ async fn test_11_register_customer()
 			company: None,
 		},
 		email: email.to_string(),
-		register_data: register_data.device,
+		register_data,
 		captcha_input,
 	};
 
@@ -152,7 +145,7 @@ async fn test_12_login_customer()
 
 	let url = get_url("api/v1/customer/prepare_login".to_owned());
 
-	let prep_server_input = sentc_crypto::user::prepare_login_start(email).unwrap();
+	let prep_server_input = sentc_crypto_light::user::prepare_login_start(email).unwrap();
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -164,7 +157,7 @@ async fn test_12_login_customer()
 
 	let body = res.text().await.unwrap();
 
-	let (auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
+	let (auth_key, _derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/customer/done_login".to_owned());
@@ -217,7 +210,7 @@ async fn test_13_aa_update_data()
 
 	let url = get_url("api/v1/customer/prepare_login".to_owned());
 
-	let prep_server_input = sentc_crypto::user::prepare_login_start(email).unwrap();
+	let prep_server_input = sentc_crypto_light::user::prepare_login_start(email).unwrap();
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -229,7 +222,7 @@ async fn test_13_aa_update_data()
 
 	let body = res.text().await.unwrap();
 
-	let (auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
+	let (auth_key, _derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/customer/done_login".to_owned());
@@ -281,7 +274,7 @@ async fn test_13_update_customer()
 
 	let url = get_url("api/v1/customer/prepare_login".to_owned());
 
-	let prep_server_input = sentc_crypto::user::prepare_login_start(email).unwrap();
+	let prep_server_input = sentc_crypto_light::user::prepare_login_start(email).unwrap();
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -293,7 +286,7 @@ async fn test_13_update_customer()
 
 	let body = res.text().await.unwrap();
 
-	let (auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
+	let (auth_key, _derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/customer/done_login".to_owned());
@@ -334,7 +327,7 @@ async fn test_14_change_password()
 
 	let url = get_url("api/v1/customer/prepare_login".to_owned());
 
-	let prep_server_input = sentc_crypto::user::prepare_login_start(email).unwrap();
+	let prep_server_input = sentc_crypto_light::user::prepare_login_start(email).unwrap();
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -346,7 +339,7 @@ async fn test_14_change_password()
 
 	let body = res.text().await.unwrap();
 
-	let (auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
+	let (auth_key, _derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/customer/done_login".to_owned());
@@ -367,7 +360,8 @@ async fn test_14_change_password()
 	let jwt = out.result.unwrap().user_keys.jwt;
 
 	//______________________________________________________________________________________________
-	let pw_change_data = get_fake_pw_change_data(auth_key.as_str(), pw, new_pw);
+
+	let input = sentc_crypto_light::user::change_password(pw, new_pw, body.as_str(), body_done_login.as_str()).unwrap();
 
 	let url = get_url("api/v1/customer/password".to_owned());
 
@@ -375,7 +369,7 @@ async fn test_14_change_password()
 	let res = client
 		.put(url)
 		.header(AUTHORIZATION, auth_header(jwt.as_str()))
-		.body(pw_change_data)
+		.body(input)
 		.send()
 		.await
 		.unwrap();
@@ -402,7 +396,7 @@ async fn test_14_change_password()
 	let body = res.text().await.unwrap();
 
 	//try login with the old pw
-	let (auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
+	let (auth_key, _derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/customer/done_login".to_owned());
@@ -474,7 +468,8 @@ async fn test_15_change_password_again_from_pw_change()
 	let jwt = out.result.unwrap().user_keys.jwt;
 
 	//______________________________________________________________________________________________
-	let pw_change_data = get_fake_pw_change_data(auth_key.as_str(), pw, new_pw);
+
+	let input = sentc_crypto_light::user::change_password(pw, new_pw, body.as_str(), body_done_login.as_str()).unwrap();
 
 	let url = get_url("api/v1/customer/password".to_owned());
 
@@ -482,7 +477,7 @@ async fn test_15_change_password_again_from_pw_change()
 	let res = client
 		.put(url)
 		.header(AUTHORIZATION, auth_header(jwt.as_str()))
-		.body(pw_change_data)
+		.body(input)
 		.send()
 		.await
 		.unwrap();
@@ -530,89 +525,6 @@ async fn test_15_change_password_again_from_pw_change()
 
 	customer.customer_data = Some(login_data);
 	customer.customer_pw = new_pw.to_string();
-}
-
-fn get_fake_login_data(old_pw: &str) -> (String, String)
-{
-	//use a fake master key to change the password,
-	// just register the user again with fake data but with the old password to decrypt the fake data!
-	let fake_key_data = sentc_crypto::user::register("abc", old_pw).unwrap();
-	let fake_key_data = RegisterData::from_string(fake_key_data.as_str()).unwrap();
-
-	//do the server prepare login again to get the salt (we need a salt to this fake register data)
-	let salt_string = sentc_crypto::util::server::generate_salt_from_base64_to_string(
-		fake_key_data.device.derived.client_random_value.as_str(),
-		fake_key_data.device.derived.derived_alg.as_str(),
-		"",
-	)
-	.unwrap();
-
-	let prepare_login_user_data = PrepareLoginSaltServerOutput {
-		salt_string,
-		derived_encryption_key_alg: fake_key_data.device.derived.derived_alg.to_string(),
-	};
-
-	let device_keys = DoneLoginServerKeysOutput {
-		encrypted_master_key: fake_key_data.device.master_key.encrypted_master_key,
-		encrypted_private_key: fake_key_data.device.derived.encrypted_private_key,
-		public_key_string: fake_key_data.device.derived.public_key,
-		keypair_encrypt_alg: fake_key_data.device.derived.keypair_encrypt_alg,
-		encrypted_sign_key: fake_key_data.device.derived.encrypted_sign_key,
-		verify_key_string: fake_key_data.device.derived.verify_key,
-		keypair_sign_alg: fake_key_data.device.derived.keypair_sign_alg,
-		keypair_encrypt_id: "abc".to_string(),
-		keypair_sign_id: "abc".to_string(),
-		user_id: "abc".to_string(),
-		device_id: "1234".to_string(),
-		user_group_id: "1234".to_string(),
-	};
-
-	let done_login_user_data = DoneLoginServerOutput {
-		device_keys,
-		jwt: "abc".to_string(),
-		refresh_token: "abc".to_string(),
-		user_keys: vec![],
-		hmac_keys: vec![],
-	};
-
-	let prepare_login_user_data = ServerOutput {
-		status: true,
-		err_msg: None,
-		err_code: None,
-		result: Some(prepare_login_user_data),
-	};
-	let prepare_login_user_data = prepare_login_user_data.to_string().unwrap();
-
-	let done_login_user_data = ServerOutput {
-		status: true,
-		err_msg: None,
-		err_code: None,
-		result: Some(done_login_user_data),
-	};
-	let done_login_user_data = done_login_user_data.to_string().unwrap();
-
-	(prepare_login_user_data, done_login_user_data)
-}
-
-fn get_fake_pw_change_data(prepare_login_auth_key_input: &str, old_pw: &str, new_pw: &str) -> String
-{
-	let (prepare_login_user_data, done_login_user_data) = get_fake_login_data(old_pw);
-
-	let pw_change_data = sentc_crypto::user::change_password(
-		old_pw,
-		new_pw,
-		prepare_login_user_data.as_str(),
-		done_login_user_data.as_str(),
-	)
-	.unwrap();
-
-	//set the old auth key from the prepare login (because we are using non registered fake data for pw change)
-	let mut pw_change_data = ChangePasswordData::from_string(pw_change_data.as_str()).unwrap();
-	//the auth key from prepare login returns the server input as string -> get here the auth key
-	let auth_key = DoneLoginServerInput::from_string(prepare_login_auth_key_input).unwrap();
-
-	pw_change_data.old_auth_key = auth_key.auth_key;
-	pw_change_data.to_string().unwrap()
 }
 
 //__________________________________________________________________________________________________
@@ -665,22 +577,7 @@ async fn test_16_reset_customer_password()
 		.unwrap();
 	let token = token.unwrap().0;
 
-	//make a fake register and login to get fake decrypted private keys, then do the pw reset like normal user
-	//use a rand pw to generate the fake keys
-	let (prepare_login_user_data, done_login_user_data) = get_fake_login_data("abc");
-
-	//use the same fake pw here
-	let (_auth_key, derived_master_key) = sentc_crypto::user::prepare_login(email, "abc", prepare_login_user_data.as_str()).unwrap();
-
-	let user_key_data = sentc_crypto::user::done_login(&derived_master_key, done_login_user_data.as_str()).unwrap();
-
-	let pw_reset_out = sentc_crypto::user::reset_password(
-		new_pw,
-		&user_key_data.device_keys.private_key,
-		&user_key_data.device_keys.sign_key,
-	)
-	.unwrap();
-	let reset_password_data = sentc_crypto_common::user::ResetPasswordData::from_string(pw_reset_out.as_str()).unwrap();
+	let reset_password_data = sentc_crypto_light::user::register_typed(email, new_pw).unwrap();
 
 	let input = server_api_common::customer::CustomerDonePasswordResetInput {
 		token,
@@ -706,7 +603,7 @@ async fn test_16_reset_customer_password()
 
 	let url = get_url("api/v1/customer/prepare_login".to_owned());
 
-	let prep_server_input = sentc_crypto::user::prepare_login_start(email).unwrap();
+	let prep_server_input = sentc_crypto_light::user::prepare_login_start(email).unwrap();
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -719,7 +616,7 @@ async fn test_16_reset_customer_password()
 	let body = res.text().await.unwrap();
 
 	//try login with the old pw
-	let (auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
+	let (auth_key, _derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/customer/done_login".to_owned());
