@@ -14,10 +14,9 @@ use sentc_crypto_common::{AppId, GroupId, UserId};
 use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
 use crate::sentc_app_entities::AppData;
 use crate::sentc_app_utils::hash_token_to_string;
-use crate::sentc_group_entities::{InternalGroupData, InternalGroupDataComplete, InternalUserGroupData};
 use crate::sentc_group_user_service::NewUserType;
 use crate::sentc_user_jwt_service::create_jwt;
-use crate::sentc_user_service::{auth_user, create_refresh_token};
+use crate::sentc_user_service::{auth_user, create_refresh_token, internal_group_data};
 use crate::user::light::user_light_model;
 use crate::user::user_model;
 use crate::util::api_res::ApiErrorCodes;
@@ -94,24 +93,7 @@ pub async fn done_register_device_light(
 	let device_id = user_model::get_done_register_device(&app_id, input.token).await?;
 
 	group_user_service::invite_auto_light(
-		&InternalGroupDataComplete {
-			group_data: InternalGroupData {
-				app_id: app_id.clone(),
-				id: user_group_id.into(),
-				time: 0,
-				parent: None,
-				invite: 1, //must be 1 to accept the device invite
-				is_connected_group: false,
-			},
-			user_data: InternalUserGroupData {
-				user_id: "".to_string(),
-				real_user_id: "".to_string(),
-				joined_time: 0,
-				rank: 0, //Rank must be 0
-				get_values_from_parent: None,
-				get_values_from_group_as_member: None,
-			},
-		},
+		&internal_group_data(&app_id, user_group_id),
 		input.user_group,
 		&device_id, //invite the new device
 		NewUserType::Normal,

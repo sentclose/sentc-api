@@ -234,24 +234,7 @@ pub async fn done_register_device(
 
 	//for the auto invite we only need the group id and the group user rank
 	let session_id = group_user_service::invite_auto(
-		&InternalGroupDataComplete {
-			group_data: InternalGroupData {
-				app_id: app_id.clone(),
-				id: user_group_id.into(),
-				time: 0,
-				parent: None,
-				invite: 1, //must be 1 to accept the device invite
-				is_connected_group: false,
-			},
-			user_data: InternalUserGroupData {
-				user_id: "".to_string(),
-				real_user_id: "".to_string(),
-				joined_time: 0,
-				rank: 0, //Rank must be 0
-				get_values_from_parent: None,
-				get_values_from_group_as_member: None,
-			},
-		},
+		&internal_group_data(&app_id, user_group_id),
 		input.user_keys,
 		&device_id, //invite the new device
 		NewUserType::Normal,
@@ -490,28 +473,7 @@ pub async fn delete_device(user: &UserJwtEntity, app_id: impl Into<AppId>, devic
 
 	user_model::delete_device(user_id, &app_id, device_id).await?;
 
-	group_user_service::leave_group(
-		&InternalGroupDataComplete {
-			group_data: InternalGroupData {
-				app_id,
-				id: user.group_id.to_string(),
-				time: 0,
-				parent: None,
-				invite: 0,
-				is_connected_group: false,
-			},
-			user_data: InternalUserGroupData {
-				user_id: user_id.to_string(),
-				real_user_id: "".to_string(),
-				joined_time: 0,
-				rank: 4,
-				get_values_from_parent: None,
-				get_values_from_group_as_member: None,
-			},
-		},
-		None,
-	)
-	.await
+	group_user_service::leave_group(&internal_group_data(&app_id, &user.group_id), None).await
 }
 
 pub fn get_devices<'a>(
@@ -592,6 +554,28 @@ pub fn reset_password<'a>(
 
 //__________________________________________________________________________________________________
 //internal fn
+
+pub(super) fn internal_group_data(app_id: impl Into<AppId>, user_group_id: impl Into<GroupId>) -> InternalGroupDataComplete
+{
+	InternalGroupDataComplete {
+		group_data: InternalGroupData {
+			app_id: app_id.into(),
+			id: user_group_id.into(),
+			time: 0,
+			parent: None,
+			invite: 1, //must be 1 to accept the device invite
+			is_connected_group: false,
+		},
+		user_data: InternalUserGroupData {
+			user_id: "".to_string(),
+			real_user_id: "".to_string(),
+			joined_time: 0,
+			rank: 0, //Rank must be 0
+			get_values_from_parent: None,
+			get_values_from_group_as_member: None,
+		},
+	}
+}
 
 async fn create_salt(app_id: impl Into<AppId>, user_identifier: &str) -> AppRes<PrepareLoginSaltServerOutput>
 {
