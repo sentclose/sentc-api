@@ -5,6 +5,7 @@ use rustgram_server_util::db::mysql_async_export::prelude::Queryable;
 use sentc_crypto::entities::group::GroupKeyData;
 use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::sdk_common::file::FileData;
+use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::SdkError;
 use sentc_crypto_common::file::FileRegisterOutput;
@@ -576,7 +577,7 @@ async fn test_15_not_upload_file_in_a_group_without_access()
 		},
 		Err(e) => {
 			match e {
-				SdkError::ServerErr(s, _msg) => {
+				SdkError::Util(SdkUtilError::ServerErr(s, _)) => {
 					assert_eq!(s, 310); //no group access error
 				},
 				_ => {

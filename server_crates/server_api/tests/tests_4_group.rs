@@ -7,6 +7,7 @@ use rustgram_server_util::error::ServerErrorCodes;
 use sentc_crypto::entities::group::GroupKeyData;
 use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupInviteServerOutput};
+use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::SdkError;
 use sentc_crypto_common::group::{
@@ -487,7 +488,7 @@ async fn test_14_not_send_invite_or_join_when_invite_is_disabled()
 		Ok(_) => panic!("Should be an error"),
 		Err(e) => {
 			match e {
-				SdkError::ServerErr(s, _) => {
+				SdkError::Util(SdkUtilError::ServerErr(s, _)) => {
 					assert_eq!(s, 317);
 				},
 				_ => panic!("should be server error"),

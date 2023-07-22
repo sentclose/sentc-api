@@ -5,6 +5,7 @@ use reqwest::StatusCode;
 use rustgram_server_util::error::ServerErrorCodes;
 use sentc_crypto::entities::group::GroupKeyData;
 use sentc_crypto::entities::user::UserDataInt;
+use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::SdkError;
 use sentc_crypto_common::group::{
@@ -373,7 +374,7 @@ async fn test_11_not_connect_normal_group_to_normal_group_by_invite()
 		},
 		Err(e) => {
 			match e {
-				SdkError::ServerErr(s, _m) => {
+				SdkError::Util(SdkUtilError::ServerErr(s, _)) => {
 					assert_eq!(s, ApiErrorCodes::GroupJoinAsConnectedGroup.get_int_code());
 				},
 				_ => panic!("Should be server error"),
@@ -480,7 +481,7 @@ async fn test_13_not_invite_connected_group_as_member()
 		},
 		Err(e) => {
 			match e {
-				SdkError::ServerErr(s, _m) => {
+				SdkError::Util(SdkUtilError::ServerErr(s, _)) => {
 					assert_eq!(s, ApiErrorCodes::GroupJoinAsConnectedGroup.get_int_code());
 				},
 				_ => panic!("Should be server error"),

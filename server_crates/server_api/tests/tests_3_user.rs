@@ -4,6 +4,7 @@ use rustgram_server_util::error::ServerErrorCodes;
 use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, KeyRotationInput};
 use sentc_crypto::sdk_common::user::UserDeviceRegisterOutput;
+use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::SdkError;
 use sentc_crypto_common::group::{GroupKeyServerOutput, KeyRotationStartServerOutput};
@@ -246,7 +247,7 @@ async fn test_13_user_register_failed_username_exists()
 		},
 		Err(e) => {
 			match e {
-				SdkError::ServerErr(s, m) => {
+				SdkError::Util(SdkUtilError::ServerErr(s, m)) => {
 					//this should be the right err
 					//this are the same err as the backend
 					assert_eq!(error.err_code.unwrap(), s);
@@ -352,7 +353,7 @@ async fn test_15_login_with_wrong_password()
 		},
 		Err(e) => {
 			match e {
-				SdkError::ServerErr(s, m) => {
+				SdkError::Util(SdkUtilError::ServerErr(s, m)) => {
 					//this should be the right err
 					//this are the same err as the backend
 					assert_eq!(login_output.err_code.unwrap(), s);
@@ -785,7 +786,7 @@ async fn test_22_refresh_jwt()
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let jwt = &user.user_data.as_ref().unwrap().jwt;
 
-	let input = sentc_crypto::user::prepare_refresh_jwt(&user.user_data.as_ref().unwrap().refresh_token).unwrap();
+	let input = sentc_crypto::user::prepare_refresh_jwt(user.user_data.as_ref().unwrap().refresh_token.clone()).unwrap();
 
 	let url = get_url("api/v1/refresh".to_owned());
 	let client = reqwest::Client::new();
@@ -869,7 +870,7 @@ async fn test_23_user_normal_init()
 
 	let url = get_url("api/v1/init".to_owned());
 
-	let input = sentc_crypto::user::prepare_refresh_jwt(&user.user_data.as_ref().unwrap().refresh_token).unwrap();
+	let input = sentc_crypto::user::prepare_refresh_jwt(user.user_data.as_ref().unwrap().refresh_token.clone()).unwrap();
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -1255,7 +1256,7 @@ async fn test_28_delete_device()
 		Ok(_) => panic!("should be error"),
 		Err(e) => {
 			match e {
-				SdkError::ServerErr(s, _) => {
+				SdkError::Util(SdkUtilError::ServerErr(s, _)) => {
 					assert_eq!(s, 100)
 				},
 				_ => panic!("should be server error"),
@@ -1375,7 +1376,7 @@ async fn test_41_not_register_user_with_wrong_input()
 		},
 		Err(e) => {
 			match e {
-				SdkError::ServerErr(s, m) => {
+				SdkError::Util(SdkUtilError::ServerErr(s, m)) => {
 					//this should be the right err
 					//this are the same err as the backend
 					assert_eq!(error.err_code.unwrap(), s);
