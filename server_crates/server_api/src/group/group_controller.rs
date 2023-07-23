@@ -5,7 +5,7 @@ use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::input_helper::{bytes_to_json, get_raw_body};
 use rustgram_server_util::res::{echo, echo_success, JRes, ServerSuccessOutput};
 use rustgram_server_util::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_time_from_url_param};
-use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDataCheckUpdateServerOutput, GroupLightServerData};
+use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDataCheckUpdateServerOutput};
 use sentc_crypto_common::GroupId;
 
 use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
@@ -121,16 +121,6 @@ pub async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 	.await?;
 
 	echo_success()
-}
-
-pub async fn get_user_group_light_data(req: Request) -> JRes<GroupLightServerData>
-{
-	check_endpoint_with_req(&req, Endpoint::GroupUserDataGet)?;
-
-	let group_data = get_group_user_data_from_req(&req)?;
-
-	//no keys fetch here
-	echo(group_service::get_user_group_light_data(group_data))
 }
 
 pub async fn get_user_group_data(req: Request) -> JRes<GroupServerData>

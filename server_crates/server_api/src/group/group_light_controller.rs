@@ -6,7 +6,7 @@ use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::input_helper::{bytes_to_json, get_raw_body};
 use rustgram_server_util::res::{echo, echo_success, JRes, ServerSuccessOutput};
 use rustgram_server_util::url_helper::get_name_param_from_req;
-use sentc_crypto_common::group::{GroupCreateOutput, GroupNewMemberLightInput};
+use sentc_crypto_common::group::{GroupCreateOutput, GroupDataCheckUpdateServerOutputLight, GroupLightServerData, GroupNewMemberLightInput};
 use sentc_crypto_common::GroupId;
 
 use crate::group::group_user::group_user_model;
@@ -206,4 +206,29 @@ pub async fn accept_join_req_light(mut req: Request) -> JRes<ServerSuccessOutput
 	cache::delete(&key_user).await?;
 
 	echo_success()
+}
+
+//__________________________________________________________________________________________________
+
+pub async fn get_user_group_light_data(req: Request) -> JRes<GroupLightServerData>
+{
+	check_endpoint_with_req(&req, Endpoint::GroupUserDataGet)?;
+
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	//no keys fetch here
+	echo(group_service::get_user_group_light_data(group_data))
+}
+
+pub async fn get_update_for_user_light(req: Request) -> JRes<GroupDataCheckUpdateServerOutputLight>
+{
+	check_endpoint_with_req(&req, Endpoint::GroupUserUpdateCheck)?;
+
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let out = GroupDataCheckUpdateServerOutputLight {
+		rank: group_data.user_data.rank,
+	};
+
+	echo(out)
 }
