@@ -484,6 +484,13 @@ pub(crate) fn routes(router: &mut Router)
 			.add(app_token::app_token_transform),
 	);
 	router.get(
+		"/api/v1/group/:group_id/update_check_light",
+		r(crate::group::get_update_for_user_light)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
 		"/api/v1/group/:group_id/keys/:last_fetched_time/:last_k_id",
 		r(crate::group::get_user_group_keys)
 			.add(group::group_transform)
