@@ -69,6 +69,7 @@ reqwest = {version = "0.11.11", default-features = false, features=["rustls-tls"
 [dev-dependencies]
 
 sentc-crypto = {workspace=true, features=["server_test"]}
+sentc-crypto-light = {workspace=true, features=["server_test"]}
 
 [features]
 default = ["mysql"]
