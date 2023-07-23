@@ -54,10 +54,6 @@ pub(crate) fn routes(router: &mut Router)
 		"/api/v1/user/prepare_register_device",
 		r(crate::user::prepare_register_device).add(app_token::app_token_transform),
 	);
-	router.post(
-		"/api/v1/user/prepare_register_device_light",
-		r(crate::user::prepare_register_device_light).add(app_token::app_token_transform),
-	);
 	router.put(
 		"/api/v1/user/reset_pw_light",
 		r(crate::user::reset_password_light).add(app_token::app_token_transform),

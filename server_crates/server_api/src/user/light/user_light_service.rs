@@ -7,7 +7,6 @@ use sentc_crypto_common::user::{
 	RegisterServerOutput,
 	UserDeviceDoneRegisterInputLight,
 	UserDeviceRegisterInput,
-	UserDeviceRegisterOutput,
 };
 use sentc_crypto_common::{AppId, GroupId, UserId};
 
@@ -46,38 +45,6 @@ pub async fn register_light(app_id: impl Into<AppId>, input: UserDeviceRegisterI
 		user_id,
 		device_id,
 		device_identifier: input.device_identifier,
-	})
-}
-
-pub async fn prepare_register_device_light(app_id: impl Into<AppId>, input: UserDeviceRegisterInput) -> AppRes<UserDeviceRegisterOutput>
-{
-	let app_id = app_id.into();
-	let check = user_model::check_user_exists(&app_id, &input.device_identifier).await?;
-
-	if check {
-		//check true == user exists
-		return Err(ServerCoreError::new_msg(
-			400,
-			ApiErrorCodes::UserExists,
-			"Identifier already exists",
-		));
-	}
-
-	let public_key_string = input.derived.public_key.to_string();
-	let keypair_encrypt_alg = input.derived.keypair_encrypt_alg.to_string();
-
-	let identifier = hash_token_to_string(input.device_identifier.as_bytes())?;
-
-	let token = create_refresh_token()?;
-
-	let device_id = user_light_model::register_device_light(app_id, identifier, input.master_key, input.derived, &token).await?;
-
-	Ok(UserDeviceRegisterOutput {
-		device_id,
-		token,
-		device_identifier: input.device_identifier,
-		public_key_string,
-		keypair_encrypt_alg,
 	})
 }
 

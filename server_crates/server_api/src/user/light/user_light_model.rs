@@ -69,33 +69,6 @@ pub(super) async fn register_light(
 	Ok((user_id, device_id))
 }
 
-pub(super) async fn register_device_light(
-	app_id: impl Into<AppId>,
-	device_identifier: String,
-	master_key: MasterKey,
-	derived: KeyDerivedData,
-	token: impl Into<String>,
-) -> AppRes<DeviceId>
-{
-	let device_id = create_id();
-	let time = get_time()?;
-
-	let (sql_keys, key_params) = prepare_register_device(
-		&device_id,
-		"not_registered",
-		app_id,
-		time,
-		device_identifier,
-		master_key,
-		derived,
-		Some(token.into()),
-	);
-
-	exec(sql_keys, key_params).await?;
-
-	Ok(device_id)
-}
-
 pub(super) async fn get_done_login_light_data(app_id: impl Into<AppId>, user_identifier: impl Into<String>) -> AppRes<Option<UserLoginLightEntity>>
 {
 	//language=SQL

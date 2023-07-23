@@ -7,7 +7,6 @@ use sentc_crypto_common::user::{
 	RegisterServerOutput,
 	UserDeviceDoneRegisterInputLight,
 	UserDeviceRegisterInput,
-	UserDeviceRegisterOutput,
 };
 
 use crate::sentc_app_utils::{check_endpoint_with_app_options, get_app_data_from_req, Endpoint};
@@ -25,19 +24,6 @@ pub(crate) async fn register_light(mut req: Request) -> JRes<RegisterServerOutpu
 	check_endpoint_with_app_options(app_data, Endpoint::UserRegister)?;
 
 	let out = user_light_service::register_light(&app_data.app_data.app_id, register_input, true).await?;
-
-	echo(out)
-}
-
-pub(crate) async fn prepare_register_device_light(mut req: Request) -> JRes<UserDeviceRegisterOutput>
-{
-	let body = get_raw_body(&mut req).await?;
-	let input: UserDeviceRegisterInput = bytes_to_json(&body)?;
-	let app_data = get_app_data_from_req(&req)?;
-
-	check_endpoint_with_app_options(app_data, Endpoint::UserDeviceRegister)?;
-
-	let out = user_light_service::prepare_register_device_light(&app_data.app_data.app_id, input).await?;
 
 	echo(out)
 }
