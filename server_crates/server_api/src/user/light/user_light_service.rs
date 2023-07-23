@@ -36,7 +36,7 @@ pub async fn register_light(app_id: impl Into<AppId>, input: UserDeviceRegisterI
 
 	if user {
 		//creat the user group for the user devices
-		let group_id = group_service::create_group_light(&app_id, &user_id, GROUP_TYPE_USER, None, None, None, false).await?;
+		let group_id = group_service::create_group_light(&app_id, &device_id, GROUP_TYPE_USER, None, None, None, false).await?;
 
 		user_model::register_update_user_group_id(app_id, &user_id, group_id).await?;
 	}
