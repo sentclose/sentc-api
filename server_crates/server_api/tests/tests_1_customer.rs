@@ -354,14 +354,26 @@ async fn test_14_change_password()
 
 	let body_done_login = res.text().await.unwrap();
 
-	let out = ServerOutput::<CustomerDoneLoginOutput>::from_string(body_done_login.as_str()).unwrap();
+	let out: CustomerDoneLoginOutput = handle_server_response(&body_done_login).unwrap();
 
 	//use a new fresh jwt
-	let jwt = out.result.unwrap().user_keys.jwt;
+	let jwt = out.user_keys.jwt.clone();
 
 	//______________________________________________________________________________________________
 
-	let input = sentc_crypto_light::user::change_password(pw, new_pw, body.as_str(), body_done_login.as_str()).unwrap();
+	let input = sentc_crypto_light::user::change_password(
+		pw,
+		new_pw,
+		body.as_str(),
+		&serde_json::to_string(&ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(out.user_keys),
+		})
+		.unwrap(),
+	)
+	.unwrap();
 
 	let url = get_url("api/v1/customer/password".to_owned());
 
@@ -462,14 +474,26 @@ async fn test_15_change_password_again_from_pw_change()
 
 	let body_done_login = res.text().await.unwrap();
 
-	let out = ServerOutput::<CustomerDoneLoginOutput>::from_string(body_done_login.as_str()).unwrap();
+	let out: CustomerDoneLoginOutput = handle_server_response(&body_done_login).unwrap();
 
 	//use a new fresh jwt
-	let jwt = out.result.unwrap().user_keys.jwt;
+	let jwt = out.user_keys.jwt.clone();
 
 	//______________________________________________________________________________________________
 
-	let input = sentc_crypto_light::user::change_password(pw, new_pw, body.as_str(), body_done_login.as_str()).unwrap();
+	let input = sentc_crypto_light::user::change_password(
+		pw,
+		new_pw,
+		body.as_str(),
+		&serde_json::to_string(&ServerOutput {
+			status: true,
+			err_msg: None,
+			err_code: None,
+			result: Some(out.user_keys),
+		})
+		.unwrap(),
+	)
+	.unwrap();
 
 	let url = get_url("api/v1/customer/password".to_owned());
 
