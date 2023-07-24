@@ -1,4 +1,4 @@
-use sentc_crypto::sdk_utils::keys::{SymKeyFormatExport, SymKeyFormatInt};
+use sentc_crypto::entities::keys::{SymKeyFormatExport, SymKeyFormatInt};
 
 pub fn generate_new_key() -> SymKeyFormatInt
 {

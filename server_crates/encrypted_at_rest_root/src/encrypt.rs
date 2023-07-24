@@ -1,5 +1,5 @@
 use rustgram_server_util::res::AppRes;
-use sentc_crypto::sdk_utils::keys::SymKeyFormatInt;
+use sentc_crypto::entities::keys::SymKeyFormatInt;
 
 use crate::error::SentcSdkErrorWrapper;
 use crate::CRYPTO_ROOT_KEY;
