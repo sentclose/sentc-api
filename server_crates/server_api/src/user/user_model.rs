@@ -22,7 +22,6 @@ use crate::user::user_entities::{
 	DoneLoginServerKeysOutputEntity,
 	UserDeviceList,
 	UserLoginDataEntity,
-	UserLoginLightEntity,
 	UserPublicKeyDataEntity,
 	UserRefreshTokenCheck,
 	UserVerifyKeyDataEntity,
@@ -144,24 +143,6 @@ WHERE
     u.app_id = ?";
 
 	let data: Option<DoneLoginServerKeysOutputEntity> = query_first(sql, set_params!(user_identifier.into(), app_id.into())).await?;
-
-	Ok(data)
-}
-
-pub(super) async fn get_done_login_light_data(app_id: impl Into<AppId>, user_identifier: impl Into<String>) -> AppRes<Option<UserLoginLightEntity>>
-{
-	//language=SQL
-	let sql = r"
-SELECT user_id, ud.id as device_id
-FROM 
-    sentc_user_device ud, 
-    sentc_user u 
-WHERE 
-    device_identifier = ? AND 
-    user_id = u.id AND 
-    u.app_id = ?";
-
-	let data: Option<UserLoginLightEntity> = query_first(sql, set_params!(user_identifier.into(), app_id.into())).await?;
 
 	Ok(data)
 }
@@ -774,9 +755,7 @@ pub(super) async fn delete_captcha(app_id: impl Into<AppId>, id: String) -> AppR
 	Ok(())
 }
 
-//__________________________________________________________________________________________________
-
-fn prepare_register_device(
+pub(super) fn prepare_register_device(
 	device_id: impl Into<DeviceId>,
 	user_id: impl Into<UserId>,
 	app_id: impl Into<AppId>,

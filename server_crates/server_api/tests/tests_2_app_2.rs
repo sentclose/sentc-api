@@ -2,6 +2,7 @@
 
 use hyper::header::AUTHORIZATION;
 use reqwest::StatusCode;
+use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::SdkError;
 use sentc_crypto_common::group::{GroupChangeRankServerInput, GroupCreateOutput, GroupNewMemberLightInput};
@@ -440,7 +441,7 @@ async fn test_17_not_access_group_without_access()
 	match handle_server_response::<CustomerGroupView>(&body) {
 		Ok(_) => panic!("Should be an error"),
 		Err(e) => {
-			if let SdkError::ServerErr(s, _) = e {
+			if let SdkError::Util(SdkUtilError::ServerErr(s, _)) = e {
 				assert_eq!(s, 310);
 			} else {
 				panic!("Should be server error")
@@ -486,7 +487,7 @@ async fn test_18_not_access_group_apps_without_access()
 	match handle_server_response::<CustomerGroupView>(&body) {
 		Ok(_) => panic!("Should be an error"),
 		Err(e) => {
-			if let SdkError::ServerErr(s, _) = e {
+			if let SdkError::Util(SdkUtilError::ServerErr(s, _)) = e {
 				assert_eq!(s, 310);
 			} else {
 				panic!("Should be server error")
@@ -513,7 +514,7 @@ async fn test_18_not_access_group_apps_without_access()
 	match handle_server_response::<AppDetails>(&body) {
 		Ok(_) => panic!("Should be an error"),
 		Err(e) => {
-			if let SdkError::ServerErr(s, _) = e {
+			if let SdkError::Util(SdkUtilError::ServerErr(s, _)) = e {
 				assert_eq!(s, 200);
 			} else {
 				panic!("Should be server error")
@@ -626,7 +627,7 @@ async fn test_22_kicked_member_should_not_fetch_the_group()
 	match handle_server_response::<CustomerGroupView>(&body) {
 		Ok(_) => panic!("Should be an error"),
 		Err(e) => {
-			if let SdkError::ServerErr(s, _) = e {
+			if let SdkError::Util(SdkUtilError::ServerErr(s, _)) = e {
 				assert_eq!(s, 310);
 			} else {
 				panic!("Should be server error")

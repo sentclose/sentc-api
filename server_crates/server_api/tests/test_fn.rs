@@ -15,10 +15,10 @@ use sentc_crypto::sdk_common::file::FileData;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupHmacData, GroupInviteServerOutput, GroupSortableData};
 use sentc_crypto::sdk_common::user::UserPublicKeyData;
 use sentc_crypto::sdk_core::SymKey;
-use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::SdkError;
+use sentc_crypto::sdk_utils::error::SdkUtilError;
+use sentc_crypto::sdk_utils::{handle_general_server_response, handle_server_response};
 use sentc_crypto_common::group::{GroupCreateOutput, GroupKeyServerOutput, KeyRotationStartServerOutput};
-use sentc_crypto_common::user::{CaptchaCreateOutput, CaptchaInput, RegisterData, UserInitServerOutput};
+use sentc_crypto_common::user::{CaptchaCreateOutput, CaptchaInput, UserDeviceRegisterInput, UserInitServerOutput};
 use sentc_crypto_common::{CustomerId, GroupId, ServerOutput, UserId};
 use server_api_common::app::{AppFileOptionsInput, AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
 use server_api_common::customer::{CustomerData, CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput};
@@ -34,7 +34,7 @@ pub fn get_server_error_from_normal_res(body: &str) -> u32
 		Ok(_) => panic!("should be an error"),
 		Err(e) => {
 			match e {
-				SdkError::ServerErr(c, _) => c,
+				SdkUtilError::ServerErr(c, _) => c,
 				_ => panic!("should be server error"),
 			}
 		},
@@ -117,8 +117,8 @@ pub async fn register_customer(email: String, pw: &str) -> CustomerId
 {
 	let url = get_url("api/v1/customer/register".to_string());
 
-	let register_data = sentc_crypto::user::register(email.as_str(), pw).unwrap();
-	let register_data = RegisterData::from_string(register_data.as_str()).unwrap();
+	let register_data = sentc_crypto_light::user::register(email.as_str(), pw).unwrap();
+	let register_data: UserDeviceRegisterInput = serde_json::from_str(register_data.as_str()).unwrap();
 
 	let captcha_input = get_captcha().await;
 
@@ -129,7 +129,7 @@ pub async fn register_customer(email: String, pw: &str) -> CustomerId
 			company: None,
 		},
 		email,
-		register_data: register_data.device,
+		register_data,
 		captcha_input,
 	};
 
@@ -155,7 +155,7 @@ pub async fn login_customer(email: &str, pw: &str) -> CustomerDoneLoginOutput
 {
 	let url = get_url("api/v1/customer/prepare_login".to_owned());
 
-	let prep_server_input = sentc_crypto::user::prepare_login_start(email).unwrap();
+	let prep_server_input = sentc_crypto_light::user::prepare_login_start(email).unwrap();
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -167,7 +167,7 @@ pub async fn login_customer(email: &str, pw: &str) -> CustomerDoneLoginOutput
 
 	let body = res.text().await.unwrap();
 
-	let (auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
+	let (auth_key, _derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/customer/done_login".to_owned());
@@ -352,6 +352,44 @@ pub async fn delete_user(app_secret_token: &str, user_id: &str)
 	handle_general_server_response(body.as_str()).unwrap();
 }
 
+pub async fn login_user_light(public_token: &str, username: &str, pw: &str) -> sentc_crypto_light::UserDataInt
+{
+	let url = get_url("api/v1/prepare_login".to_owned());
+
+	let prep_server_input = sentc_crypto_light::user::prepare_login_start(username).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(prep_server_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let (auth_key, derived_master_key) = sentc_crypto_light::user::prepare_login(username, pw, body.as_str()).unwrap();
+
+	// //done login
+	let url = get_url("api/v1/done_login_light".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(auth_key)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let done_login = sentc_crypto_light::user::done_login(&derived_master_key, body.as_str()).unwrap();
+
+	done_login
+}
+
 pub async fn login_user(public_token: &str, username: &str, pw: &str) -> UserDataInt
 {
 	let url = get_url("api/v1/prepare_login".to_owned());
@@ -394,7 +432,7 @@ pub async fn init_user(app_secret_token: &str, jwt: &str, refresh_token: &str) -
 {
 	let url = get_url("api/v1/init".to_owned());
 
-	let input = sentc_crypto::user::prepare_refresh_jwt(refresh_token).unwrap();
+	let input = sentc_crypto::user::prepare_refresh_jwt(refresh_token.to_string()).unwrap();
 
 	let client = reqwest::Client::new();
 	let res = client

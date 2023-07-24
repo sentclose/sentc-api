@@ -5,6 +5,7 @@ use reqwest::header::AUTHORIZATION;
 use rustgram_server_util::error::ServerErrorCodes;
 use sentc_crypto::entities::group::GroupKeyData;
 use sentc_crypto::entities::user::UserDataInt;
+use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::SdkError;
 use sentc_crypto_common::group::{GroupAcceptJoinReqServerOutput, GroupInviteServerOutput, KeyRotationStartServerOutput};
@@ -191,7 +192,7 @@ async fn test_11_not_invite_user_with_wrong_rank()
 		Ok(_) => panic!("must be error"),
 		Err(e) => {
 			match e {
-				SdkError::ServerErr(code, _) => {
+				SdkError::Util(SdkUtilError::ServerErr(code, _)) => {
 					assert_eq!(code, 301);
 				},
 				_ => panic!("should be server error"),
@@ -313,7 +314,7 @@ async fn test_13_not_invite_user_with_higher_rank()
 		Ok(_) => panic!("must be error"),
 		Err(e) => {
 			match e {
-				SdkError::ServerErr(code, _) => {
+				SdkError::Util(SdkUtilError::ServerErr(code, _)) => {
 					assert_eq!(code, 301);
 				},
 				_ => panic!("should be server error"),
@@ -465,7 +466,7 @@ async fn test_15_not_accept_join_with_wrong_rank()
 		Ok(_) => panic!("must be error"),
 		Err(e) => {
 			match e {
-				SdkError::ServerErr(code, _) => {
+				SdkError::Util(SdkUtilError::ServerErr(code, _)) => {
 					assert_eq!(code, 301);
 				},
 				_ => panic!("should be server error"),
@@ -524,7 +525,7 @@ async fn test_16_not_accept_join_with_higher_rank()
 		Ok(_) => panic!("must be error"),
 		Err(e) => {
 			match e {
-				SdkError::ServerErr(code, _) => {
+				SdkError::Util(SdkUtilError::ServerErr(code, _)) => {
 					assert_eq!(code, 301);
 				},
 				_ => panic!("should be server error"),
@@ -949,7 +950,7 @@ async fn test_41_no_key_rotation_with_wrong_rank()
 		Ok(_) => panic!("Should be an error"),
 		Err(e) => {
 			match e {
-				SdkError::ServerErr(s, _) => {
+				SdkError::Util(SdkUtilError::ServerErr(s, _)) => {
 					assert_eq!(s, ApiErrorCodes::GroupUserRank.get_int_code());
 				},
 				_ => panic!("Should be server error"),
@@ -1014,7 +1015,7 @@ async fn test_42_key_rotation_limit()
 		Ok(_) => panic!("Should be an error"),
 		Err(e) => {
 			match e {
-				SdkError::ServerErr(s, _) => {
+				SdkError::Util(SdkUtilError::ServerErr(s, _)) => {
 					assert_eq!(s, ApiErrorCodes::GroupKeyRotationLimit.get_int_code());
 				},
 				_ => panic!("Should be server error"),

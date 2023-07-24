@@ -15,6 +15,7 @@ use sentc_crypto_common::user::{
 	JwtRefreshInput,
 	PrepareLoginSaltServerOutput,
 	PrepareLoginServerInput,
+	UserDeviceRegisterInput,
 	UserUpdateServerInput,
 };
 use server_api_common::customer::{
@@ -97,7 +98,8 @@ pub async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 		));
 	}
 
-	let (customer_id, _) = user::user_service::register_light(&app_data.app_data.app_id, register_data.register_data).await?;
+	let out = user::light::user_light_service::register_light(&app_data.app_data.app_id, register_data.register_data, false).await?;
+	let customer_id = out.user_id;
 
 	//send the normal token via email
 	let validate_token = generate_email_validate_token()?;
@@ -180,7 +182,7 @@ pub async fn done_login(mut req: Request) -> JRes<CustomerDoneLoginOutput>
 	let done_login: DoneLoginServerInput = bytes_to_json(&body)?;
 	let app_data = get_app_data_from_req(&req)?;
 
-	let user_keys = user::user_service::done_login_light(app_data, done_login).await?;
+	let user_keys = user::light::user_light_service::done_login_light(app_data, done_login).await?;
 
 	let customer_data = customer_model::get_customer_data(&user_keys.user_id).await?;
 
@@ -344,7 +346,15 @@ pub async fn done_reset_password(mut req: Request) -> JRes<ServerSuccessOutput>
 
 	let token_data = customer_model::get_email_by_token(input.token).await?;
 
-	user::user_service::reset_password(&token_data.id, &token_data.device_id, input.reset_password_data).await?;
+	user::light::user_light_service::reset_password_light(
+		SENTC_ROOT_APP,
+		UserDeviceRegisterInput {
+			master_key: input.reset_password_data.master_key,
+			derived: input.reset_password_data.derived,
+			device_identifier: token_data.email,
+		},
+	)
+	.await?;
 
 	echo_success()
 }

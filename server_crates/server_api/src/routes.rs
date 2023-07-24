@@ -35,6 +35,10 @@ pub(crate) fn routes(router: &mut Router)
 		r(crate::user::register).add(app_token::app_token_transform),
 	);
 	router.post(
+		"/api/v1/register_light",
+		r(crate::user::register_light).add(app_token::app_token_transform),
+	);
+	router.post(
 		"/api/v1/prepare_login",
 		r(crate::user::prepare_login).add(app_token::app_token_transform),
 	);
@@ -43,8 +47,16 @@ pub(crate) fn routes(router: &mut Router)
 		r(crate::user::done_login).add(app_token::app_token_transform),
 	);
 	router.post(
+		"/api/v1/done_login_light",
+		r(crate::user::done_login_light).add(app_token::app_token_transform),
+	);
+	router.post(
 		"/api/v1/user/prepare_register_device",
 		r(crate::user::prepare_register_device).add(app_token::app_token_transform),
+	);
+	router.put(
+		"/api/v1/user/reset_pw_light",
+		r(crate::user::reset_password_light).add(app_token::app_token_transform),
 	);
 	router.delete(
 		"/api/v1/user/force/:user_id",
@@ -103,6 +115,12 @@ pub(crate) fn routes(router: &mut Router)
 	router.put(
 		"/api/v1/user/done_register_device",
 		r(crate::user::done_register_device)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.put(
+		"/api/v1/user/done_register_device_light",
+		r(crate::user::done_register_device_light)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
@@ -461,6 +479,13 @@ pub(crate) fn routes(router: &mut Router)
 	router.get(
 		"/api/v1/group/:group_id/update_check",
 		r(crate::group::get_key_update_for_user)
+			.add(group::group_transform)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/group/:group_id/update_check_light",
+		r(crate::group::get_update_for_user_light)
 			.add(group::group_transform)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),

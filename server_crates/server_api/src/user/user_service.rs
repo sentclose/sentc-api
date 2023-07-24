@@ -9,7 +9,6 @@ use rustgram_server_util::res::AppRes;
 use sentc_crypto::util::public::HashedAuthenticationKey;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
-	DoneLoginLightOutput,
 	DoneLoginLightServerOutput,
 	DoneLoginServerInput,
 	JwtRefreshInput,
@@ -108,22 +107,6 @@ pub async fn exists(app_id: impl Into<AppId>, data: UserIdentifierAvailableServe
 	};
 
 	Ok(out)
-}
-
-pub async fn register_light(app_id: impl Into<AppId>, input: UserDeviceRegisterInput) -> AppRes<(String, String)>
-{
-	let app_id = app_id.into();
-
-	let identifier = hash_token_to_string(input.device_identifier.as_bytes())?;
-
-	let (user_id, device_id) = user_model::register(&app_id, identifier, input.master_key, input.derived).await?;
-
-	//delete the user in app check cache from the jwt mw
-	//it can happened that a user id was used before which doesn't exists yet
-	let cache_key = get_user_in_app_key(&app_id, &user_id);
-	cache::delete(&cache_key).await?;
-
-	Ok((user_id, device_id))
 }
 
 pub async fn register(app_id: impl Into<AppId>, register_input: RegisterData) -> AppRes<RegisterServerOutput>
@@ -251,24 +234,7 @@ pub async fn done_register_device(
 
 	//for the auto invite we only need the group id and the group user rank
 	let session_id = group_user_service::invite_auto(
-		&InternalGroupDataComplete {
-			group_data: InternalGroupData {
-				app_id: app_id.clone(),
-				id: user_group_id.into(),
-				time: 0,
-				parent: None,
-				invite: 1, //must be 1 to accept the device invite
-				is_connected_group: false,
-			},
-			user_data: InternalUserGroupData {
-				user_id: "".to_string(),
-				real_user_id: "".to_string(),
-				joined_time: 0,
-				rank: 0, //Rank must be 0
-				get_values_from_parent: None,
-				get_values_from_group_as_member: None,
-			},
-		},
+		&internal_group_data(&app_id, user_group_id, 0),
 		input.user_keys,
 		&device_id, //invite the new device
 		NewUserType::Normal,
@@ -285,42 +251,6 @@ pub async fn done_register_device(
 pub fn prepare_login<'a>(app_data: &'a AppData, user_identifier: &'a str) -> impl Future<Output = AppRes<PrepareLoginSaltServerOutput>> + 'a
 {
 	create_salt(&app_data.app_data.app_id, user_identifier)
-}
-
-/**
-Only the jwt and user id, no keys
-*/
-pub async fn done_login_light(app_data: &AppData, done_login: DoneLoginServerInput) -> AppRes<DoneLoginLightOutput>
-{
-	let identifier = hash_token_to_string(done_login.device_identifier.as_bytes())?;
-
-	auth_user(&app_data.app_data.app_id, &identifier, done_login.auth_key).await?;
-
-	let id = user_model::get_done_login_light_data(app_data.app_data.app_id.as_str(), identifier)
-		.await?
-		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::Login, "Wrong username or password"))?;
-
-	let jwt = create_jwt(
-		&id.user_id,
-		&id.device_id,
-		&app_data.jwt_data[0], //use always the latest created jwt data
-		true,
-	)
-	.await?;
-
-	let refresh_token = create_refresh_token()?;
-
-	//activate refresh token
-	user_model::insert_refresh_token(&app_data.app_data.app_id, &id.device_id, &refresh_token).await?;
-
-	let out = DoneLoginLightOutput {
-		user_id: id.user_id,
-		jwt,
-		device_id: id.device_id,
-		refresh_token,
-	};
-
-	Ok(out)
 }
 
 /**
@@ -543,28 +473,7 @@ pub async fn delete_device(user: &UserJwtEntity, app_id: impl Into<AppId>, devic
 
 	user_model::delete_device(user_id, &app_id, device_id).await?;
 
-	group_user_service::leave_group(
-		&InternalGroupDataComplete {
-			group_data: InternalGroupData {
-				app_id,
-				id: user.group_id.to_string(),
-				time: 0,
-				parent: None,
-				invite: 0,
-				is_connected_group: false,
-			},
-			user_data: InternalUserGroupData {
-				user_id: user_id.to_string(),
-				real_user_id: "".to_string(),
-				joined_time: 0,
-				rank: 4,
-				get_values_from_parent: None,
-				get_values_from_group_as_member: None,
-			},
-		},
-		None,
-	)
-	.await
+	group_user_service::leave_group(&internal_group_data(&app_id, &user.group_id, 4), None).await
 }
 
 pub fn get_devices<'a>(
@@ -646,6 +555,28 @@ pub fn reset_password<'a>(
 //__________________________________________________________________________________________________
 //internal fn
 
+pub(super) fn internal_group_data(app_id: impl Into<AppId>, user_group_id: impl Into<GroupId>, rank: i32) -> InternalGroupDataComplete
+{
+	InternalGroupDataComplete {
+		group_data: InternalGroupData {
+			app_id: app_id.into(),
+			id: user_group_id.into(),
+			time: 0,
+			parent: None,
+			invite: 1, //must be 1 to accept the device invite
+			is_connected_group: false,
+		},
+		user_data: InternalUserGroupData {
+			user_id: "".to_string(),
+			real_user_id: "".to_string(),
+			joined_time: 0,
+			rank,
+			get_values_from_parent: None,
+			get_values_from_group_as_member: None,
+		},
+	}
+}
+
 async fn create_salt(app_id: impl Into<AppId>, user_identifier: &str) -> AppRes<PrepareLoginSaltServerOutput>
 {
 	let identifier = hash_token_to_string(user_identifier.as_bytes())?;
@@ -678,7 +609,7 @@ async fn create_salt(app_id: impl Into<AppId>, user_identifier: &str) -> AppRes<
 	Ok(out)
 }
 
-fn create_refresh_token() -> AppRes<String>
+pub(super) fn create_refresh_token() -> AppRes<String>
 {
 	let mut rng = rand::thread_rng();
 
@@ -692,7 +623,7 @@ fn create_refresh_token() -> AppRes<String>
 	Ok(token_string)
 }
 
-async fn auth_user(app_id: &str, hashed_user_identifier: impl Into<String>, auth_key: String) -> AppRes<String>
+pub(super) async fn auth_user(app_id: &str, hashed_user_identifier: impl Into<String>, auth_key: String) -> AppRes<String>
 {
 	//get the login data
 	let login_data = user_model::get_user_login_data(app_id, hashed_user_identifier).await?;

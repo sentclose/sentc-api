@@ -18,9 +18,12 @@ routes:
               - get: { p: "/group/:group_id/public_key", s: crate::group::get_public_key_data }
               - post: {p: "/exists", s: crate::user::exists}
               - post: {p: "/register", s: crate::user::register}
+              - post: {p: "/register_light", s: crate::user::register_light}
               - post: {p: "/prepare_login", s: crate::user::prepare_login}
               - post: {p: "/done_login", s: crate::user::done_login}
+              - post: {p: "/done_login_light", s: crate::user::done_login_light}
               - post: {p: "/user/prepare_register_device", s: crate::user::prepare_register_device}
+              - put: {p: "/user/reset_pw_light", s: crate::user::reset_password_light}
               - delete: {p: "/user/force/:user_id", s: crate::user::delete_user}
               #_________________________________________________________________________________________________________
               # group with exp jwt mw -> the jwt can be exp for this routes
@@ -68,6 +71,7 @@ routes:
                     - get: {p: "/jwt", s: crate::user::get_user_data_from_jwt}
                     - put: {p: "", s: crate::user::update}
                     - put: {p: "/done_register_device", s: crate::user::done_register_device}
+                    - put: {p: "/done_register_device_light", s: crate::user::done_register_device_light}
                     - put: {p: "/update_pw", s: crate::user::change_password}
                     - put: {p: "/reset_pw", s: crate::user::reset_password}
                     # check the api token for delete action, maybe the app creator only wants to trigger delete from the own backend
@@ -178,6 +182,7 @@ routes:
                           - get: { p: "", s: crate::group::get_user_group_data }
                           - get: {p: "/light", s: crate::group::get_user_group_light_data}
                           - get: {p: "/update_check", s: crate::group::get_key_update_for_user}
+                          - get: {p: "/update_check_light", s: crate::group::get_update_for_user_light}
                           - get: { p: "/keys/:last_fetched_time/:last_k_id", s: crate::group::get_user_group_keys }
                           - get: { p: "/key/:key_id", s: crate::group::get_user_group_key }
                           - get: {p: "/member/:last_fetched_time/:last_user_id", s: crate::group::get_group_member}
