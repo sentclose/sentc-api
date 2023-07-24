@@ -352,6 +352,44 @@ pub async fn delete_user(app_secret_token: &str, user_id: &str)
 	handle_general_server_response(body.as_str()).unwrap();
 }
 
+pub async fn login_user_light(public_token: &str, username: &str, pw: &str) -> sentc_crypto_light::UserDataInt
+{
+	let url = get_url("api/v1/prepare_login".to_owned());
+
+	let prep_server_input = sentc_crypto_light::user::prepare_login_start(username).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(prep_server_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let (auth_key, derived_master_key) = sentc_crypto_light::user::prepare_login(username, pw, body.as_str()).unwrap();
+
+	// //done login
+	let url = get_url("api/v1/done_login_light".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(auth_key)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let done_login = sentc_crypto_light::user::done_login(&derived_master_key, body.as_str()).unwrap();
+
+	done_login
+}
+
 pub async fn login_user(public_token: &str, username: &str, pw: &str) -> UserDataInt
 {
 	let url = get_url("api/v1/prepare_login".to_owned());
