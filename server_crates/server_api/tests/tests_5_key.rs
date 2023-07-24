@@ -1,9 +1,9 @@
 use reqwest::header::AUTHORIZATION;
 use sentc_crypto::entities::group::GroupKeyData;
+use sentc_crypto::entities::keys::SymKeyFormatInt;
 use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::sdk_common::crypto::GeneratedSymKeyHeadServerOutput;
 use sentc_crypto::sdk_common::ServerOutput;
-use sentc_crypto::sdk_utils::keys::SymKeyFormatInt;
 use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerRegisterOutput;
 use sentc_crypto_common::SymKeyId;
 use server_api_common::app::AppRegisterOutput;
