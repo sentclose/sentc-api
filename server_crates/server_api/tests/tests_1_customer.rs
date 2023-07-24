@@ -601,7 +601,8 @@ async fn test_16_reset_customer_password()
 		.unwrap();
 	let token = token.unwrap().0;
 
-	let reset_password_data = sentc_crypto_light::user::register_typed(email, new_pw).unwrap();
+	let reset_password_data = sentc_crypto_light::user::register(email, new_pw).unwrap();
+	let reset_password_data: UserDeviceRegisterInput = serde_json::from_str(&reset_password_data).unwrap();
 
 	let input = server_api_common::customer::CustomerDonePasswordResetInput {
 		token,
