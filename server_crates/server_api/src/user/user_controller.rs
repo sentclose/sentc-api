@@ -27,12 +27,14 @@ use sentc_crypto_common::user::{
 	UserIdentifierAvailableServerOutput,
 	UserJwtInfo,
 	UserUpdateServerInput,
+	VerifyLoginInput,
 };
 
 use crate::customer_app::app_util::{check_endpoint_with_app_options, get_app_data_from_req, Endpoint};
 use crate::group::group_entities::{GroupKeyUpdate, GroupUserKeys};
 use crate::group::{group_key_rotation_service, group_user_service};
 use crate::sentc_app_utils::check_endpoint_with_req;
+use crate::sentc_user_entities::VerifyLoginOutput;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
 use crate::user::user_service::UserAction;
@@ -153,6 +155,22 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerOutput>
 		1,
 	)
 	.await?;
+
+	echo(out)
+}
+
+pub(crate) async fn verify_login(mut req: Request) -> JRes<VerifyLoginOutput>
+{
+	//return here the jwt and the refresh token when he challenge was correct.
+
+	let body = get_raw_body(&mut req).await?;
+	let done_login: VerifyLoginInput = bytes_to_json(&body)?;
+
+	let app_data = get_app_data_from_req(&req)?;
+
+	check_endpoint_with_app_options(app_data, Endpoint::UserDoneLogin)?;
+
+	let out = user_service::verify_login(app_data, done_login).await?;
 
 	echo(out)
 }
