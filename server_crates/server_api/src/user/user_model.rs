@@ -17,6 +17,7 @@ use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::user::{ChangePasswordData, KeyDerivedData, MasterKey, ResetPasswordData};
 use sentc_crypto_common::{AppId, DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, UserId};
 
+use crate::sentc_user_entities::VerifyLoginEntity;
 use crate::user::user_entities::{
 	CaptchaEntity,
 	DoneLoginServerKeysOutputEntity,
@@ -145,6 +146,59 @@ WHERE
 	let data: Option<DoneLoginServerKeysOutputEntity> = query_first(sql, set_params!(user_identifier.into(), app_id.into())).await?;
 
 	Ok(data)
+}
+
+pub(super) async fn insert_verify_login_challenge(app_id: impl Into<AppId>, device_id: impl Into<DeviceId>, challenge: String) -> AppRes<()>
+{
+	let time = get_time()?;
+
+	//language=SQL
+	let sql = r"
+INSERT INTO sentc_user_device_challenge 
+    (challenge, device_id, app_id, time) 
+VALUES (?,?,?,?)";
+
+	exec(
+		sql,
+		set_params!(challenge, device_id.into(), app_id.into(), time.to_string()),
+	)
+	.await
+}
+
+pub(super) async fn get_verify_login_data(
+	app_id: impl Into<AppId>,
+	user_identifier: impl Into<String>,
+	challenge: String,
+) -> AppRes<Option<VerifyLoginEntity>>
+{
+	//language=SQL
+	let sql = r"
+SELECT 
+    ud.id as k_id,
+    user_id,
+    user_group_id
+FROM 
+    sentc_user u, 
+    sentc_user_device ud, 
+    sentc_user_device_challenge udc
+WHERE 
+    user_id = u.id AND 
+    device_id = ud.id AND
+    ud.device_identifier = ? AND 
+    u.app_id = ? AND 
+    challenge = ?";
+
+	let out: Option<VerifyLoginEntity> = query_first(sql, set_params!(user_identifier.into(), app_id.into(), challenge)).await?;
+
+	if let Some(o) = &out {
+		//if challenge was found, delete it.
+		//language=SQL
+		let sql = "DELETE FROM sentc_user_device_challenge WHERE device_id = ?";
+
+		exec(sql, set_params!(o.device_id.clone())).await?;
+	}
+
+	Ok(out)
 }
 
 pub(super) async fn insert_refresh_token(app_id: impl Into<AppId>, device_id: impl Into<DeviceId>, refresh_token: impl Into<String>) -> AppRes<()>

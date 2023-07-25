@@ -53,34 +53,38 @@ pub struct UserLoginDataEntity
 pub struct DoneLoginServerOutput
 {
 	pub device_keys: DoneLoginServerKeysOutputEntity,
-	pub user_keys: Vec<GroupUserKeys>,
-	pub hmac_keys: Vec<GroupHmacData>,
-	pub jwt: String,
-	pub refresh_token: String,
+	pub challenge: String,
 }
 
 impl Into<sentc_crypto_common::user::DoneLoginServerOutput> for DoneLoginServerOutput
 {
 	fn into(self) -> sentc_crypto_common::user::DoneLoginServerOutput
 	{
-		let mut user_keys = Vec::with_capacity(self.user_keys.len());
-
-		for user_key in self.user_keys {
-			user_keys.push(user_key.into());
-		}
-
-		let mut hmac_keys = Vec::with_capacity(self.hmac_keys.len());
-
-		for hmac_key in self.hmac_keys {
-			hmac_keys.push(hmac_key.into());
-		}
-
 		sentc_crypto_common::user::DoneLoginServerOutput {
 			device_keys: self.device_keys.into(),
+			challenge: self.challenge,
+		}
+	}
+}
+
+#[derive(Serialize)]
+pub struct VerifyLoginOutput
+{
+	pub user_keys: Vec<GroupUserKeys>,
+	pub hmac_keys: Vec<GroupHmacData>,
+	pub jwt: String,
+	pub refresh_token: String,
+}
+
+impl Into<sentc_crypto_common::user::VerifyLoginOutput> for VerifyLoginOutput
+{
+	fn into(self) -> sentc_crypto_common::user::VerifyLoginOutput
+	{
+		sentc_crypto_common::user::VerifyLoginOutput {
 			jwt: self.jwt,
 			refresh_token: self.refresh_token,
-			user_keys,
-			hmac_keys,
+			user_keys: self.user_keys.into_iter().map(|k| k.into()).collect(),
+			hmac_keys: self.hmac_keys.into_iter().map(|k| k.into()).collect(),
 		}
 	}
 }
@@ -181,21 +185,13 @@ impl rustgram_server_util::db::FromSqliteRow for DoneLoginServerKeysOutputEntity
 	}
 }
 
-//__________________________________________________________________________________________________
-
 #[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
 #[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
-pub struct UserLoginLightEntity
+pub struct VerifyLoginEntity
 {
-	pub user_id: UserId,
 	pub device_id: DeviceId,
-	pub encrypted_master_key: String,
-	pub encrypted_private_key: String,
-	pub public_key_string: String,
-	pub keypair_encrypt_alg: String,
-	pub encrypted_sign_key: String,
-	pub verify_key: String,
-	pub keypair_sign_alg: String,
+	pub user_id: UserId,
+	pub user_group_id: GroupId,
 }
 
 //__________________________________________________________________________________________________
