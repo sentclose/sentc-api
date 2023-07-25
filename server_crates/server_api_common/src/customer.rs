@@ -1,5 +1,5 @@
 use sentc_crypto_common::group::GroupUserListItem;
-use sentc_crypto_common::user::{CaptchaInput, DoneLoginLightOutput, UserDeviceRegisterInput};
+use sentc_crypto_common::user::{CaptchaInput, UserDeviceRegisterInput, VerifyLoginLightOutput};
 use sentc_crypto_common::{AppId, CustomerId, GroupId, UserId};
 use serde::{Deserialize, Serialize};
 
@@ -36,7 +36,7 @@ pub struct CustomerDoneRegistrationInput
 #[derive(Serialize, Deserialize)]
 pub struct CustomerDoneLoginOutput
 {
-	pub user_keys: DoneLoginLightOutput,
+	pub verify: VerifyLoginLightOutput,
 	pub email_data: CustomerDataOutput,
 }
 
