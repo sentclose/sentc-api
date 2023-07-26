@@ -22,6 +22,7 @@ use sentc_crypto_common::user::{
 	UserPublicKeyDataServerOutput,
 	UserUpdateServerInput,
 	UserVerifyKeyDataServerOutput,
+	VerifyLoginOutput,
 };
 use sentc_crypto_common::{ServerOutput, UserId};
 use serde::{Deserialize, Serialize};
@@ -380,6 +381,69 @@ async fn test_15_login_with_wrong_password()
 			}
 		},
 	}
+}
+
+#[tokio::test]
+async fn test_15_login_with_wrong_challenge()
+{
+	//make the pre req to the sever with the username
+	let url = get_url("api/v1/prepare_login".to_owned());
+
+	let user = USER_TEST_STATE.get().unwrap().read().await;
+	let username = &user.username;
+	let pw = &user.pw;
+
+	let prep_server_input = sentc_crypto::user::prepare_login_start(username.as_str()).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.body(prep_server_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let (input, auth_key, derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
+
+	// //done login
+	let url = get_url("api/v1/done_login".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let server_out = res.text().await.unwrap();
+	let keys = sentc_crypto::user::done_login(
+		&derived_master_key,
+		auth_key,
+		username.to_string(),
+		server_out.as_str(),
+	)
+	.unwrap();
+
+	//wrong challenge
+	let challenge = keys.challenge + "abc";
+
+	let url = get_url("api/v1/verify_login".to_owned());
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.body(challenge)
+		.send()
+		.await
+		.unwrap();
+
+	let server_out = res.text().await.unwrap();
+	let login_output = ServerOutput::<VerifyLoginOutput>::from_string(&server_out).unwrap();
+	assert!(!login_output.status);
 }
 
 #[tokio::test]
