@@ -138,21 +138,6 @@ routes:
                           - get: { p: "/large/:cat_id/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_group_from_cat_large }
                           - get: { p: "/xlarge/:cat_id/:last_fetched_time/:last_id", s: crate::content_management::get_content_for_group_from_cat_x_large }
               #_________________________________________________________________________________________________________
-              # encrypted search
-              - group:
-                  p: "/search"
-                  gr:
-                    - group:
-                        p: "/group/:group_id"
-                        mw:
-                          - group::group_transform
-                        gr:
-                          - post: {p: "", s: crate::content_searchable::create}
-                          - delete: {p: "/:item_ref", s: crate::content_searchable::delete}
-                          - delete: {p: "/:item_ref/:cat_id", s: crate::content_searchable::delete_by_cat}
-                          - get: {p: "/all/:last_fetched_time/:last_id", s: crate::content_searchable::search_all}
-                          - get: {p: "/:cat_id/:last_fetched_time/:last_id", s: crate::content_searchable::search_cat}
-              #_________________________________________________________________________________________________________
               # group routes in the group mod, check always the app token for this actions
               - group:
                   p: "/group"
