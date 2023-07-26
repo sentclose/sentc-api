@@ -59,7 +59,7 @@ async fn aaa_init_global_test()
 
 	let (_, customer_data) = create_test_customer("helle@test4.com", "12345").await;
 
-	let customer_jwt = customer_data.user_keys.jwt.to_string();
+	let customer_jwt = customer_data.verify.jwt.to_string();
 
 	CUSTOMER_TEST_STATE
 		.get_or_init(|| async move { RwLock::new(customer_data) })
@@ -907,7 +907,7 @@ async fn test_40_change_app_group_options()
 	let client = reqwest::Client::new();
 	let res = client
 		.put(url)
-		.header(AUTHORIZATION, auth_header(customer.user_keys.jwt.as_str()))
+		.header(AUTHORIZATION, auth_header(customer.verify.jwt.as_str()))
 		.body(to_string(&input).unwrap())
 		.send()
 		.await
@@ -1041,13 +1041,7 @@ async fn zzz_clean_up()
 		delete_user(secret_token, &user.user_data.user_id).await;
 	}
 
-	let customer_jwt = &CUSTOMER_TEST_STATE
-		.get()
-		.unwrap()
-		.read()
-		.await
-		.user_keys
-		.jwt;
+	let customer_jwt = &CUSTOMER_TEST_STATE.get().unwrap().read().await.verify.jwt;
 
 	delete_app(customer_jwt, app.app_id.as_str()).await;
 

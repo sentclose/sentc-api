@@ -75,7 +75,7 @@ async fn test_10_create_group()
 	let client = reqwest::Client::new();
 	let res = client
 		.post(get_url("api/v1/customer/group".to_owned()))
-		.header(AUTHORIZATION, auth_header(&creator.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&creator.customer_data.verify.jwt))
 		.body(
 			to_string(&CustomerGroupCreateInput {
 				name: None,
@@ -96,7 +96,7 @@ async fn test_10_create_group()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(get_url("api/v1/customer/group/".to_owned() + &group_id))
-		.header(AUTHORIZATION, auth_header(&creator.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&creator.customer_data.verify.jwt))
 		.send()
 		.await
 		.unwrap();
@@ -116,7 +116,7 @@ async fn test_10_create_group()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(get_url("api/v1/customer/group/all/0/none".to_owned()))
-		.header(AUTHORIZATION, auth_header(&creator.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&creator.customer_data.verify.jwt))
 		.send()
 		.await
 		.unwrap();
@@ -133,7 +133,7 @@ async fn test_10_create_group()
 		.get(get_url(
 			"api/v1/customer/group/all/".to_owned() + out[0].time.to_string().as_str() + "/" + &out[0].id,
 		))
-		.header(AUTHORIZATION, auth_header(&creator.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&creator.customer_data.verify.jwt))
 		.send()
 		.await
 		.unwrap();
@@ -164,7 +164,7 @@ async fn test_11_create_app_in_group()
 	let client = reqwest::Client::new();
 	let res = client
 		.post(url)
-		.header(AUTHORIZATION, auth_header(&creator.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&creator.customer_data.verify.jwt))
 		.body(input.to_string().unwrap())
 		.send()
 		.await
@@ -194,7 +194,7 @@ async fn test_12_get_all_apps_for_group()
 {
 	let creator = CUSTOMER_STATE.get().unwrap().read().await;
 	let creator = &creator[0];
-	let customer_jwt = &creator.customer_data.user_keys.jwt;
+	let customer_jwt = &creator.customer_data.verify.jwt;
 
 	let groups = GROUP_STATE.get().unwrap().read().await;
 	let group_id = &groups[0];
@@ -247,7 +247,7 @@ async fn test_13_invite_new_member_to_group()
 	let client = reqwest::Client::new();
 	let res = client
 		.put(url)
-		.header(AUTHORIZATION, auth_header(&creator.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&creator.customer_data.verify.jwt))
 		.body(
 			to_string(&GroupNewMemberLightInput {
 				rank: None,
@@ -276,7 +276,7 @@ async fn test_13_z_get_group_member_list()
 		.get(get_url(
 			"api/v1/customer/group/".to_owned() + group_id + "/member/0/none",
 		))
-		.header(AUTHORIZATION, auth_header(&user.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&user.customer_data.verify.jwt))
 		.send()
 		.await
 		.unwrap();
@@ -304,7 +304,7 @@ async fn test_14_new_member_should_fetch_the_group()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(get_url("api/v1/customer/group/".to_owned() + group_id))
-		.header(AUTHORIZATION, auth_header(&user.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&user.customer_data.verify.jwt))
 		.send()
 		.await
 		.unwrap();
@@ -320,7 +320,7 @@ async fn test_14_new_member_should_fetch_the_group()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(get_url("api/v1/customer/group/all/0/none".to_owned()))
-		.header(AUTHORIZATION, auth_header(&user.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&user.customer_data.verify.jwt))
 		.send()
 		.await
 		.unwrap();
@@ -337,7 +337,7 @@ async fn test_14_new_member_should_fetch_the_group()
 		.get(get_url(
 			"api/v1/customer/group/all/".to_owned() + out[0].time.to_string().as_str() + "/" + &out[0].id,
 		))
-		.header(AUTHORIZATION, auth_header(&user.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&user.customer_data.verify.jwt))
 		.send()
 		.await
 		.unwrap();
@@ -352,7 +352,7 @@ async fn test_15_get_all_apps_for_group_as_new_user()
 {
 	let users = CUSTOMER_STATE.get().unwrap().read().await;
 	let user = &users[1];
-	let customer_jwt = &user.customer_data.user_keys.jwt;
+	let customer_jwt = &user.customer_data.verify.jwt;
 
 	let groups = GROUP_STATE.get().unwrap().read().await;
 	let group_id = &groups[0];
@@ -396,7 +396,7 @@ async fn test_16_access_single_app_for_new_member()
 {
 	let users = CUSTOMER_STATE.get().unwrap().read().await;
 	let user = &users[1];
-	let customer_jwt = &user.customer_data.user_keys.jwt;
+	let customer_jwt = &user.customer_data.verify.jwt;
 
 	let apps = APP_TEST_STATE.get().unwrap().read().await;
 	let app_id = &apps[0].app_id;
@@ -431,7 +431,7 @@ async fn test_17_not_access_group_without_access()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(get_url("api/v1/customer/group/".to_owned() + group_id))
-		.header(AUTHORIZATION, auth_header(&user.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&user.customer_data.verify.jwt))
 		.send()
 		.await
 		.unwrap();
@@ -453,7 +453,7 @@ async fn test_17_not_access_group_without_access()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(get_url("api/v1/customer/group/all/0/none".to_owned()))
-		.header(AUTHORIZATION, auth_header(&user.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&user.customer_data.verify.jwt))
 		.send()
 		.await
 		.unwrap();
@@ -477,7 +477,7 @@ async fn test_18_not_access_group_apps_without_access()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
-		.header(AUTHORIZATION, auth_header(&user.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&user.customer_data.verify.jwt))
 		.send()
 		.await
 		.unwrap();
@@ -504,7 +504,7 @@ async fn test_18_not_access_group_apps_without_access()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
-		.header(AUTHORIZATION, auth_header(&user.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&user.customer_data.verify.jwt))
 		.send()
 		.await
 		.unwrap();
@@ -538,7 +538,7 @@ async fn test_19_change_user_rank()
 	let client = reqwest::Client::new();
 	let res = client
 		.put(url)
-		.header(AUTHORIZATION, auth_header(&creator.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&creator.customer_data.verify.jwt))
 		.body(
 			to_string(&GroupChangeRankServerInput {
 				changed_user_id: user.id.clone(),
@@ -568,7 +568,7 @@ async fn test_20_new_member_should_fetch_the_group_with_new_rank()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(get_url("api/v1/customer/group/".to_owned() + group_id))
-		.header(AUTHORIZATION, auth_header(&user.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&user.customer_data.verify.jwt))
 		.send()
 		.await
 		.unwrap();
@@ -594,7 +594,7 @@ async fn test_21_kick_member_from_group()
 	let client = reqwest::Client::new();
 	let res = client
 		.delete(url)
-		.header(AUTHORIZATION, auth_header(&creator.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&creator.customer_data.verify.jwt))
 		.send()
 		.await
 		.unwrap();
@@ -617,7 +617,7 @@ async fn test_22_kicked_member_should_not_fetch_the_group()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(get_url("api/v1/customer/group/".to_owned() + group_id))
-		.header(AUTHORIZATION, auth_header(&user.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&user.customer_data.verify.jwt))
 		.send()
 		.await
 		.unwrap();
@@ -639,7 +639,7 @@ async fn test_22_kicked_member_should_not_fetch_the_group()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(get_url("api/v1/customer/group/all/0/none".to_owned()))
-		.header(AUTHORIZATION, auth_header(&user.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&user.customer_data.verify.jwt))
 		.send()
 		.await
 		.unwrap();
@@ -664,7 +664,7 @@ async fn test_23_update_group()
 	let client = reqwest::Client::new();
 	let res = client
 		.put(url)
-		.header(AUTHORIZATION, auth_header(&creator.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&creator.customer_data.verify.jwt))
 		.body(
 			to_string(&CustomerGroupCreateInput {
 				des: Some("Hello".to_string()),
@@ -683,7 +683,7 @@ async fn test_23_update_group()
 	let client = reqwest::Client::new();
 	let res = client
 		.get(get_url("api/v1/customer/group/".to_owned() + group_id))
-		.header(AUTHORIZATION, auth_header(&creator.customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&creator.customer_data.verify.jwt))
 		.send()
 		.await
 		.unwrap();
@@ -708,7 +708,7 @@ async fn zzz_clean_up()
 		let client = reqwest::Client::new();
 		let res = client
 			.delete(get_url("api/v1/customer/group/".to_owned() + group))
-			.header(AUTHORIZATION, auth_header(&creator.customer_data.user_keys.jwt))
+			.header(AUTHORIZATION, auth_header(&creator.customer_data.verify.jwt))
 			.send()
 			.await
 			.unwrap();
@@ -718,6 +718,6 @@ async fn zzz_clean_up()
 	}
 
 	for c in customer.iter() {
-		customer_delete(&c.customer_data.user_keys.jwt).await;
+		customer_delete(&c.customer_data.verify.jwt).await;
 	}
 }

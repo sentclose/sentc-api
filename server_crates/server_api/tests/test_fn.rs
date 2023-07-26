@@ -167,22 +167,27 @@ pub async fn login_customer(email: &str, pw: &str) -> CustomerDoneLoginOutput
 
 	let body = res.text().await.unwrap();
 
-	let (auth_key, _derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
+	let (input, auth_key, derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/customer/done_login".to_owned());
 
 	let client = reqwest::Client::new();
-	let res = client.post(url).body(auth_key).send().await.unwrap();
+	let res = client.post(url).body(input).send().await.unwrap();
 
-	let body = res.text().await.unwrap();
+	let server_out = res.text().await.unwrap();
 
-	let out = ServerOutput::<CustomerDoneLoginOutput>::from_string(body.as_str()).unwrap();
+	let keys = sentc_crypto_light::user::done_login(&derived_master_key, auth_key, email.to_string(), server_out.as_str()).unwrap();
 
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
+	let url = get_url("api/v1/customer/verify_login".to_owned());
+	let client = reqwest::Client::new();
+	let res = client.post(url).body(keys.challenge).send().await.unwrap();
 
-	out.result.unwrap()
+	let server_out = res.text().await.unwrap();
+
+	let server_out: CustomerDoneLoginOutput = handle_server_response(&server_out).unwrap();
+
+	server_out
 }
 
 pub async fn customer_delete(customer_jwt: &str)
@@ -369,25 +374,42 @@ pub async fn login_user_light(public_token: &str, username: &str, pw: &str) -> s
 
 	let body = res.text().await.unwrap();
 
-	let (auth_key, derived_master_key) = sentc_crypto_light::user::prepare_login(username, pw, body.as_str()).unwrap();
+	let (input, auth_key, derived_master_key) = sentc_crypto_light::user::prepare_login(username, pw, body.as_str()).unwrap();
 
 	// //done login
-	let url = get_url("api/v1/done_login_light".to_owned());
+	let url = get_url("api/v1/done_login".to_owned());
 
 	let client = reqwest::Client::new();
 	let res = client
 		.post(url)
 		.header("x-sentc-app-token", public_token)
-		.body(auth_key)
+		.body(input)
 		.send()
 		.await
 		.unwrap();
 
-	let body = res.text().await.unwrap();
+	let server_out = res.text().await.unwrap();
+	let keys = sentc_crypto_light::user::done_login(
+		&derived_master_key,
+		auth_key,
+		username.to_string(),
+		server_out.as_str(),
+	)
+	.unwrap();
 
-	let done_login = sentc_crypto_light::user::done_login(&derived_master_key, body.as_str()).unwrap();
+	let url = get_url("api/v1/verify_login_light".to_owned());
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(keys.challenge)
+		.send()
+		.await
+		.unwrap();
+	let server_out = res.text().await.unwrap();
 
-	done_login
+	let keys = sentc_crypto_light::user::verify_login(&server_out, keys.user_id, keys.device_id, keys.device_keys).unwrap();
+
+	keys
 }
 
 pub async fn login_user(public_token: &str, username: &str, pw: &str) -> UserDataInt
@@ -407,7 +429,7 @@ pub async fn login_user(public_token: &str, username: &str, pw: &str) -> UserDat
 
 	let body = res.text().await.unwrap();
 
-	let (auth_key, derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
+	let (input, auth_key, derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/done_login".to_owned());
@@ -416,16 +438,33 @@ pub async fn login_user(public_token: &str, username: &str, pw: &str) -> UserDat
 	let res = client
 		.post(url)
 		.header("x-sentc-app-token", public_token)
-		.body(auth_key)
+		.body(input)
 		.send()
 		.await
 		.unwrap();
 
-	let body = res.text().await.unwrap();
+	let server_out = res.text().await.unwrap();
+	let keys = sentc_crypto::user::done_login(
+		&derived_master_key,
+		auth_key,
+		username.to_string(),
+		server_out.as_str(),
+	)
+	.unwrap();
 
-	let done_login = sentc_crypto::user::done_login(&derived_master_key, body.as_str()).unwrap();
+	let url = get_url("api/v1/verify_login".to_owned());
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", public_token)
+		.body(keys.challenge)
+		.send()
+		.await
+		.unwrap();
+	let server_out = res.text().await.unwrap();
 
-	done_login
+	let keys = sentc_crypto::user::verify_login(&server_out, keys.user_id, keys.device_id, keys.device_keys).unwrap();
+
+	keys
 }
 
 pub async fn init_user(app_secret_token: &str, jwt: &str, refresh_token: &str) -> UserInitServerOutput
