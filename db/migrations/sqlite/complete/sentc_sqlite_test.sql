@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 2:37pm on July 20, 2023 (UTC)
+-- Exported: 9:47am on July 26, 2023 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -358,6 +358,15 @@ CREATE TABLE 'sentc_group_sortable_keys' ('id' TEXT PRIMARY KEY NOT NULL, 'group
 ----
 
 ----
+-- Table structure for sentc_user_device_challenge
+----
+CREATE TABLE 'sentc_user_device_challenge' ('challenge' TEXT NOT NULL, 'device_id' TEXT NOT NULL, 'app_id' TEXT NOT NULL, 'time' TEXT NOT NULL, PRIMARY KEY ('challenge', 'device_id', 'app_id', 'time'));
+
+----
+-- Data dump for sentc_user_device_challenge, a total of 0 rows
+----
+
+----
 -- structure for index sqlite_autoindex_test_1 on table test
 ----
 ;
@@ -588,6 +597,11 @@ CREATE INDEX app_hashed_secret_token_index
 CREATE INDEX 'group_id' ON "sentc_group_sortable_keys" ("group_id" ASC, "app_id" ASC);
 
 ----
+-- structure for index sqlite_autoindex_sentc_user_device_challenge_1 on table sentc_user_device_challenge
+----
+;
+
+----
 -- structure for trigger  group_user_delete_key_rotation_keys on table sentc_group_user
 ----
 CREATE TRIGGER ' group_user_delete_key_rotation_keys' AFTER DELETE ON "sentc_group_user" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_key_rotation WHERE user_id = OLD.user_id AND group_id = OLD.group_id; END;
@@ -701,4 +715,9 @@ CREATE TRIGGER 'file_session_delete' AFTER DELETE ON "sentc_file" FOR EACH ROW B
 -- structure for trigger group_delete_sortable_keys on table sentc_group
 ----
 CREATE TRIGGER 'group_delete_sortable_keys' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_sortable_keys WHERE group_id = OLD.id; END;
+
+----
+-- structure for trigger user_delete_challenge on table sentc_user_device
+----
+CREATE TRIGGER 'user_delete_challenge' AFTER DELETE ON "sentc_user_device" FOR EACH ROW BEGIN DELETE FROM sentc_user_device_challenge WHERE device_id = OLD.id ; END;
 COMMIT;
