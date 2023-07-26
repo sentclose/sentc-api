@@ -1,5 +1,5 @@
 CREATE TABLE `sentc_user_device_challenge` (
-	`challenge` varchar(50) NOT NULL,
+	`challenge` varchar(100) NOT NULL,
 	`device_id` varchar(36) NOT NULL,
 	`app_id` varchar(36) NOT NULL,
 	`time` bigint(20) NOT NULL,
