@@ -72,7 +72,7 @@ async fn test_10_create_app()
 		group_options: Default::default(),
 	};
 
-	let customer_jwt = &app.customer_data.user_keys.jwt;
+	let customer_jwt = &app.customer_data.verify.jwt;
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -110,7 +110,7 @@ async fn test_11_update_app()
 {
 	let app = APP_TEST_STATE.get().unwrap().read().await;
 
-	let customer_jwt = &app.customer_data.user_keys.jwt;
+	let customer_jwt = &app.customer_data.verify.jwt;
 
 	let input = AppUpdateInput {
 		identifier: Some("My app updated".to_string()),
@@ -139,7 +139,7 @@ async fn test_12_renew_tokens()
 {
 	let mut app = APP_TEST_STATE.get().unwrap().write().await;
 
-	let customer_jwt = &app.customer_data.user_keys.jwt;
+	let customer_jwt = &app.customer_data.verify.jwt;
 
 	let url = get_url("api/v1/customer/app/".to_owned() + app.app_id.as_str() + "/token_renew");
 
@@ -179,7 +179,7 @@ async fn test_13_add_new_jwt_keys()
 {
 	let mut app = APP_TEST_STATE.get().unwrap().write().await;
 
-	let customer_jwt = &app.customer_data.user_keys.jwt;
+	let customer_jwt = &app.customer_data.verify.jwt;
 
 	let url = get_url("api/v1/customer/app/".to_owned() + app.app_id.as_str() + "/new_jwt_keys");
 
@@ -219,7 +219,7 @@ async fn test_14_get_app_jwt_keys()
 {
 	let app = APP_TEST_STATE.get().unwrap().read().await;
 
-	let customer_jwt = &app.customer_data.user_keys.jwt;
+	let customer_jwt = &app.customer_data.verify.jwt;
 
 	let url = get_url("api/v1/customer/app/".to_owned() + app.app_id.as_str() + "/jwt");
 
@@ -252,7 +252,7 @@ async fn test_15_delete_jwt_keys()
 {
 	let mut app = APP_TEST_STATE.get().unwrap().write().await;
 
-	let customer_jwt = &app.customer_data.user_keys.jwt;
+	let customer_jwt = &app.customer_data.verify.jwt;
 
 	let jwt_id = &app.jwt_data.as_ref().unwrap()[0].jwt_id;
 
@@ -280,7 +280,7 @@ async fn test_16_get_all_apps()
 {
 	let app = APP_TEST_STATE.get().unwrap().read().await;
 
-	let customer_jwt = &app.customer_data.user_keys.jwt;
+	let customer_jwt = &app.customer_data.verify.jwt;
 	let app_id = &app.app_id;
 
 	//fetch the first page
@@ -311,7 +311,7 @@ async fn test_17_get_single_app()
 {
 	let app = APP_TEST_STATE.get().unwrap().read().await;
 
-	let customer_jwt = &app.customer_data.user_keys.jwt;
+	let customer_jwt = &app.customer_data.verify.jwt;
 	let app_id = &app.app_id;
 
 	let url = get_url("api/v1/customer/app/".to_owned() + app_id);
@@ -336,7 +336,7 @@ async fn test_17_update_app_options()
 	//first try to register user with default app options and a public token
 
 	let app = APP_TEST_STATE.get().unwrap().read().await;
-	let customer_jwt = &app.customer_data.user_keys.jwt;
+	let customer_jwt = &app.customer_data.verify.jwt;
 
 	let username = "admin";
 	let pw = "12345";
@@ -417,7 +417,7 @@ async fn test_18_delete_app()
 {
 	let app = APP_TEST_STATE.get().unwrap().read().await;
 
-	let customer_jwt = &app.customer_data.user_keys.jwt;
+	let customer_jwt = &app.customer_data.verify.jwt;
 
 	let app_id = &app.app_id;
 
@@ -442,7 +442,7 @@ async fn test_19_create_app_test_fn()
 {
 	let app = APP_TEST_STATE.get().unwrap().read().await;
 
-	let customer_jwt = &app.customer_data.user_keys.jwt;
+	let customer_jwt = &app.customer_data.verify.jwt;
 
 	let app_data = create_app(customer_jwt).await;
 
@@ -463,7 +463,7 @@ async fn test_20_get_all_apps_via_pagination()
 {
 	let app = APP_TEST_STATE.get().unwrap().read().await;
 
-	let customer_jwt = &app.customer_data.user_keys.jwt;
+	let customer_jwt = &app.customer_data.verify.jwt;
 
 	//first create multiple apps, sleep between apps to get a different time
 	let app_data_0 = create_app(customer_jwt).await;
@@ -527,7 +527,7 @@ async fn zzz_clean_up()
 {
 	let app = APP_TEST_STATE.get().unwrap().read().await;
 
-	let customer_jwt = &app.customer_data.user_keys.jwt;
+	let customer_jwt = &app.customer_data.verify.jwt;
 
 	customer_delete(customer_jwt).await;
 }

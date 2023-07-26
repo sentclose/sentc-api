@@ -20,6 +20,10 @@ pub(crate) fn routes(router: &mut Router)
 		"/api/v1/customer/done_login",
 		r(server_api::sentc_customer_controller::done_login).add(server_api::sentc_app_base_mw),
 	);
+	router.post(
+		"/api/v1/customer/verify_login",
+		r(server_api::sentc_customer_controller::verify_login).add(server_api::sentc_app_base_mw),
+	);
 	router.get(
 		"/api/v1/customer/captcha",
 		r(server_api::sentc_customer_controller::customer_captcha).add(server_api::sentc_app_base_mw),

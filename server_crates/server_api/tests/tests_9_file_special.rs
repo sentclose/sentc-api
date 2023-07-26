@@ -64,7 +64,7 @@ async fn init_app()
 	let client = reqwest::Client::new();
 	let res = client
 		.post(url)
-		.header(AUTHORIZATION, auth_header(&customer_data.user_keys.jwt))
+		.header(AUTHORIZATION, auth_header(&customer_data.verify.jwt))
 		.body(input.to_string().unwrap())
 		.send()
 		.await
@@ -242,7 +242,7 @@ async fn delete_file_worker()
 async fn clean_up()
 {
 	let state = TEST_STATE.get().unwrap().read().await;
-	customer_delete(state.customer_data.user_keys.jwt.as_str()).await;
+	customer_delete(state.customer_data.verify.jwt.as_str()).await;
 }
 
 #[ignore]
@@ -272,7 +272,7 @@ async fn test_0_large_file()
 	let file_size = 1024 * 1024 * 104; //104 mb
 
 	let (_, customer_data) = create_test_customer("hello@test61.com", "12345").await;
-	let customer_jwt = &customer_data.user_keys.jwt;
+	let customer_jwt = &customer_data.verify.jwt;
 	let app_data = create_app(customer_jwt).await;
 	let secret_token = app_data.secret_token.to_string();
 	let public_token = app_data.public_token.to_string();
@@ -424,7 +424,7 @@ async fn test_0_large_file()
 
 	//______________________________________________________________________________________________
 	//mark it as delete
-	customer_delete(customer_data.user_keys.jwt.as_str()).await;
+	customer_delete(customer_data.verify.jwt.as_str()).await;
 
 	//delete the file
 

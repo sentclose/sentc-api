@@ -17,6 +17,7 @@ use sentc_crypto_common::user::{
 	PrepareLoginServerInput,
 	UserDeviceRegisterInput,
 	UserUpdateServerInput,
+	VerifyLoginInput,
 };
 use server_api_common::customer::{
 	CustomerAppList,
@@ -42,6 +43,7 @@ use crate::file::file_service;
 use crate::group::{group_service, group_user_service};
 use crate::sentc_customer_entities::CustomerGroupMemberFetch;
 use crate::sentc_group_user_service::NewUserType;
+use crate::sentc_user_entities::DoneLoginServerOutput;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::ApiErrorCodes;
 use crate::util::email;
@@ -176,22 +178,31 @@ pub async fn prepare_login(mut req: Request) -> JRes<PrepareLoginSaltServerOutpu
 	echo(out)
 }
 
-pub async fn done_login(mut req: Request) -> JRes<CustomerDoneLoginOutput>
+pub async fn done_login(mut req: Request) -> JRes<DoneLoginServerOutput>
 {
 	let body = get_raw_body(&mut req).await?;
 	let done_login: DoneLoginServerInput = bytes_to_json(&body)?;
 	let app_data = get_app_data_from_req(&req)?;
 
-	let user_keys = user::light::user_light_service::done_login_light(app_data, done_login).await?;
-
-	let customer_data = customer_model::get_customer_data(&user_keys.user_id).await?;
-
-	let out = CustomerDoneLoginOutput {
-		user_keys,
-		email_data: customer_data.into(),
-	};
+	let out = user::user_service::done_login(app_data, done_login).await?;
 
 	echo(out)
+}
+
+pub async fn verify_login(mut req: Request) -> JRes<CustomerDoneLoginOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+	let done_login: VerifyLoginInput = bytes_to_json(&body)?;
+	let app_data = get_app_data_from_req(&req)?;
+
+	let (verify, data) = user::light::user_light_service::verify_login_light(app_data, done_login).await?;
+
+	let customer_data = customer_model::get_customer_data(&data.user_id).await?;
+
+	echo(CustomerDoneLoginOutput {
+		verify,
+		email_data: customer_data.into(),
+	})
 }
 
 pub async fn refresh_jwt(mut req: Request) -> JRes<DoneLoginLightServerOutput>

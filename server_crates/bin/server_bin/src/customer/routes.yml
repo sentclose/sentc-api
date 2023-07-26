@@ -13,6 +13,7 @@ routes:
               - post: { p: "/register", s: server_api::sentc_customer_controller::register }
               - post: { p: "/prepare_login", s: server_api::sentc_customer_controller::prepare_login }
               - post: { p: "/done_login", s: server_api::sentc_customer_controller::done_login }
+              - post: { p: "/verify_login", s: server_api::sentc_customer_controller::verify_login }
               - get: { p: "/captcha", s: server_api::sentc_customer_controller::customer_captcha }
               - put: { p: "/password_reset", s: server_api::sentc_customer_controller::prepare_reset_password }
               - put: { p: "/password_reset_validation", s: server_api::sentc_customer_controller::done_reset_password }

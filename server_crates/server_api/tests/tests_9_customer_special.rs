@@ -1,7 +1,7 @@
 use std::env;
 
 use rustgram_server_util::error::ServerErrorCodes;
-use sentc_crypto_common::user::RegisterData;
+use sentc_crypto_common::user::{RegisterData, UserDeviceRegisterInput};
 use sentc_crypto_common::ServerOutput;
 use server_api::util::api_res::ApiErrorCodes;
 use server_api_common::customer::{CustomerData, CustomerRegisterData, CustomerRegisterOutput};
@@ -22,8 +22,8 @@ async fn test_0_register_customer_with_email()
 
 	let email = env::var("EMAIL_ADDRESS_TEST").unwrap();
 
-	let register_data = sentc_crypto::user::register(email.as_str(), "12345").unwrap();
-	let register_data = RegisterData::from_string(register_data.as_str()).unwrap();
+	let register_data = sentc_crypto_light::user::register(email.as_str(), "12345").unwrap();
+	let register_data: UserDeviceRegisterInput = serde_json::from_str(register_data.as_str()).unwrap();
 
 	let captcha_input = get_captcha().await;
 
@@ -34,7 +34,7 @@ async fn test_0_register_customer_with_email()
 			company: None,
 		},
 		email,
-		register_data: register_data.device,
+		register_data,
 		captcha_input,
 	};
 

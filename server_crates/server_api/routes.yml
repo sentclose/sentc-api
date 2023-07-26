@@ -21,7 +21,8 @@ routes:
               - post: {p: "/register_light", s: crate::user::register_light}
               - post: {p: "/prepare_login", s: crate::user::prepare_login}
               - post: {p: "/done_login", s: crate::user::done_login}
-              - post: {p: "/done_login_light", s: crate::user::done_login_light}
+              - post: {p: "/verify_login", s: crate::user::verify_login}
+              - post: {p: "/verify_login_light", s: crate::user::verify_login_light}
               - post: {p: "/user/prepare_register_device", s: crate::user::prepare_register_device}
               - put: {p: "/user/reset_pw_light", s: crate::user::reset_password_light}
               - delete: {p: "/user/force/:user_id", s: crate::user::delete_user}

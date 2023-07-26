@@ -41,7 +41,7 @@ async fn aaa_init_global_state()
 
 	let (_, customer_data) = create_test_customer("hello@test5.com", "12345").await;
 
-	let customer_jwt = &customer_data.user_keys.jwt;
+	let customer_jwt = &customer_data.verify.jwt;
 
 	//create here an app
 	let app_data = create_app(customer_jwt).await;
@@ -267,5 +267,5 @@ async fn zz_clean_up()
 {
 	let state = KEY_TEST_STATE.get().unwrap().read().await;
 
-	customer_delete(state.customer_data.user_keys.jwt.as_str()).await;
+	customer_delete(state.customer_data.verify.jwt.as_str()).await;
 }

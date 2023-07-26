@@ -157,22 +157,25 @@ async fn test_12_login_customer()
 
 	let body = res.text().await.unwrap();
 
-	let (auth_key, _derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
+	let (input, auth_key, derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/customer/done_login".to_owned());
 
 	let client = reqwest::Client::new();
-	let res = client.post(url).body(auth_key).send().await.unwrap();
+	let res = client.post(url).body(input).send().await.unwrap();
 
 	let body = res.text().await.unwrap();
 
-	let out = ServerOutput::<CustomerDoneLoginOutput>::from_string(body.as_str()).unwrap();
+	let keys = sentc_crypto_light::user::done_login(&derived_master_key, auth_key, email.to_string(), &body).unwrap();
 
-	assert!(out.status);
-	assert_eq!(out.err_code, None);
+	let url = get_url("api/v1/customer/verify_login".to_owned());
+	let client = reqwest::Client::new();
+	let res = client.post(url).body(keys.challenge).send().await.unwrap();
 
-	let login_data = out.result.unwrap();
+	let server_out = res.text().await.unwrap();
+
+	let login_data: CustomerDoneLoginOutput = handle_server_response(&server_out).unwrap();
 
 	customer.customer_data = Some(login_data);
 }
@@ -181,7 +184,7 @@ async fn test_12_login_customer()
 async fn test_13_aa_update_data()
 {
 	let mut customer = CUSTOMER_TEST_STATE.get().unwrap().write().await;
-	let jwt = &customer.customer_data.as_ref().unwrap().user_keys.jwt;
+	let jwt = &customer.customer_data.as_ref().unwrap().verify.jwt;
 	let email = &customer.customer_email;
 	let pw = &customer.customer_pw;
 
@@ -222,17 +225,25 @@ async fn test_13_aa_update_data()
 
 	let body = res.text().await.unwrap();
 
-	let (auth_key, _derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
+	let (input, auth_key, derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/customer/done_login".to_owned());
 
 	let client = reqwest::Client::new();
-	let res = client.post(url).body(auth_key).send().await.unwrap();
+	let res = client.post(url).body(input).send().await.unwrap();
 
-	let body = res.text().await.unwrap();
+	let server_out = res.text().await.unwrap();
 
-	let out: CustomerDoneLoginOutput = handle_server_response(body.as_str()).unwrap();
+	let keys = sentc_crypto_light::user::done_login(&derived_master_key, auth_key, email.to_string(), server_out.as_str()).unwrap();
+
+	let url = get_url("api/v1/customer/verify_login".to_owned());
+	let client = reqwest::Client::new();
+	let res = client.post(url).body(keys.challenge).send().await.unwrap();
+
+	let server_out = res.text().await.unwrap();
+
+	let out: CustomerDoneLoginOutput = handle_server_response(&server_out).unwrap();
 
 	assert_eq!(out.email_data.name, "hello".to_string());
 
@@ -246,7 +257,7 @@ async fn test_13_update_customer()
 
 	let email = &customer.customer_email;
 	let pw = &customer.customer_pw;
-	let jwt = &customer.customer_data.as_ref().unwrap().user_keys.jwt;
+	let jwt = &customer.customer_data.as_ref().unwrap().verify.jwt;
 
 	let new_email = "hello3@test.com".to_string();
 
@@ -286,13 +297,13 @@ async fn test_13_update_customer()
 
 	let body = res.text().await.unwrap();
 
-	let (auth_key, _derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
+	let (input, _auth_key, _derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/customer/done_login".to_owned());
 
 	let client = reqwest::Client::new();
-	let res = client.post(url).body(auth_key).send().await.unwrap();
+	let res = client.post(url).body(input).send().await.unwrap();
 
 	let body = res.text().await.unwrap();
 
@@ -339,41 +350,32 @@ async fn test_14_change_password()
 
 	let body = res.text().await.unwrap();
 
-	let (auth_key, _derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
+	let (input, auth_key, derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/customer/done_login".to_owned());
 
 	let client = reqwest::Client::new();
-	let res = client
-		.post(url)
-		.body(auth_key.to_string())
-		.send()
-		.await
-		.unwrap();
+	let res = client.post(url).body(input).send().await.unwrap();
 
-	let body_done_login = res.text().await.unwrap();
+	let done_login_out = res.text().await.unwrap();
 
-	let out: CustomerDoneLoginOutput = handle_server_response(&body_done_login).unwrap();
+	let keys = sentc_crypto_light::user::done_login(&derived_master_key, auth_key, email.to_string(), &done_login_out).unwrap();
+
+	let url = get_url("api/v1/customer/verify_login".to_owned());
+	let client = reqwest::Client::new();
+	let res = client.post(url).body(keys.challenge).send().await.unwrap();
+
+	let server_out = res.text().await.unwrap();
+
+	let out: CustomerDoneLoginOutput = handle_server_response(&server_out).unwrap();
 
 	//use a new fresh jwt
-	let jwt = out.user_keys.jwt.clone();
+	let jwt = out.verify.jwt.clone();
 
 	//______________________________________________________________________________________________
 
-	let input = sentc_crypto_light::user::change_password(
-		pw,
-		new_pw,
-		body.as_str(),
-		&serde_json::to_string(&ServerOutput {
-			status: true,
-			err_msg: None,
-			err_code: None,
-			result: Some(out.user_keys),
-		})
-		.unwrap(),
-	)
-	.unwrap();
+	let input = sentc_crypto_light::user::change_password(pw, new_pw, body.as_str(), &done_login_out).unwrap();
 
 	let url = get_url("api/v1/customer/password".to_owned());
 
@@ -408,13 +410,13 @@ async fn test_14_change_password()
 	let body = res.text().await.unwrap();
 
 	//try login with the old pw
-	let (auth_key, _derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
+	let (input, _auth_key, _derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/customer/done_login".to_owned());
 
 	let client = reqwest::Client::new();
-	let res = client.post(url).body(auth_key).send().await.unwrap();
+	let res = client.post(url).body(input).send().await.unwrap();
 
 	let body_done_login = res.text().await.unwrap();
 
@@ -459,41 +461,32 @@ async fn test_15_change_password_again_from_pw_change()
 
 	let body = res.text().await.unwrap();
 
-	let (auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
+	let (input, auth_key, derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/customer/done_login".to_owned());
 
 	let client = reqwest::Client::new();
-	let res = client
-		.post(url)
-		.body(auth_key.to_string())
-		.send()
-		.await
-		.unwrap();
+	let res = client.post(url).body(input).send().await.unwrap();
 
-	let body_done_login = res.text().await.unwrap();
+	let done_login_out = res.text().await.unwrap();
 
-	let out: CustomerDoneLoginOutput = handle_server_response(&body_done_login).unwrap();
+	let keys = sentc_crypto_light::user::done_login(&derived_master_key, auth_key, email.to_string(), &done_login_out).unwrap();
+
+	let url = get_url("api/v1/customer/verify_login".to_owned());
+	let client = reqwest::Client::new();
+	let res = client.post(url).body(keys.challenge).send().await.unwrap();
+
+	let server_out = res.text().await.unwrap();
+
+	let out: CustomerDoneLoginOutput = handle_server_response(&server_out).unwrap();
 
 	//use a new fresh jwt
-	let jwt = out.user_keys.jwt.clone();
+	let jwt = out.verify.jwt.clone();
 
 	//______________________________________________________________________________________________
 
-	let input = sentc_crypto_light::user::change_password(
-		pw,
-		new_pw,
-		body.as_str(),
-		&serde_json::to_string(&ServerOutput {
-			status: true,
-			err_msg: None,
-			err_code: None,
-			result: Some(out.user_keys),
-		})
-		.unwrap(),
-	)
-	.unwrap();
+	let input = sentc_crypto_light::user::change_password(pw, new_pw, body.as_str(), &done_login_out).unwrap();
 
 	let url = get_url("api/v1/customer/password".to_owned());
 
@@ -528,13 +521,13 @@ async fn test_15_change_password_again_from_pw_change()
 	let body = res.text().await.unwrap();
 
 	//try login with the old pw
-	let (auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
+	let (input, _auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/customer/done_login".to_owned());
 
 	let client = reqwest::Client::new();
-	let res = client.post(url).body(auth_key).send().await.unwrap();
+	let res = client.post(url).body(input).send().await.unwrap();
 
 	let body_done_login = res.text().await.unwrap();
 
@@ -641,13 +634,13 @@ async fn test_16_reset_customer_password()
 	let body = res.text().await.unwrap();
 
 	//try login with the old pw
-	let (auth_key, _derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
+	let (input, _auth_key, _derived_master_key) = sentc_crypto_light::user::prepare_login(email, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/customer/done_login".to_owned());
 
 	let client = reqwest::Client::new();
-	let res = client.post(url).body(auth_key).send().await.unwrap();
+	let res = client.post(url).body(input).send().await.unwrap();
 
 	let body_done_login = res.text().await.unwrap();
 
@@ -671,7 +664,7 @@ async fn test_30_delete_customer()
 {
 	let customer = CUSTOMER_TEST_STATE.get().unwrap().read().await;
 
-	let jwt = &customer.customer_data.as_ref().unwrap().user_keys.jwt;
+	let jwt = &customer.customer_data.as_ref().unwrap().verify.jwt;
 
 	let url = get_url("api/v1/customer".to_owned());
 

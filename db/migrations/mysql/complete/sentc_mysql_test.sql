@@ -655,9 +655,26 @@ CREATE TABLE `sentc_user_device` (
 -- Trigger `sentc_user_device`
 --
 DELIMITER $$
+CREATE TRIGGER `user_delete_challenge` AFTER DELETE ON `sentc_user_device` FOR EACH ROW DELETE FROM sentc_user_device_challenge WHERE device_id = OLD.id
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `user_delete_jwt_refresh` AFTER DELETE ON `sentc_user_device` FOR EACH ROW DELETE FROM sentc_user_token WHERE device_id = OLD.id
 $$
 DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_user_device_challenge`
+--
+
+CREATE TABLE `sentc_user_device_challenge` (
+   `challenge` varchar(100) NOT NULL,
+   `device_id` varchar(36) NOT NULL,
+   `app_id` varchar(36) NOT NULL,
+   `time` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -873,6 +890,12 @@ ALTER TABLE `sentc_user_device`
   ADD KEY `user_id` (`user_id`,`app_id`) USING BTREE,
   ADD KEY `app_id` (`app_id`,`token`),
   ADD KEY `device_identifier` (`device_identifier`) USING BTREE;
+
+--
+-- Indizes für die Tabelle `sentc_user_device_challenge`
+--
+ALTER TABLE `sentc_user_device_challenge`
+	ADD PRIMARY KEY (`challenge`,`device_id`,`app_id`,`time`) USING BTREE;
 
 --
 -- Indizes für die Tabelle `sentc_user_token`

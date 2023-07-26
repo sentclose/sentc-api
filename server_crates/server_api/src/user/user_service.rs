@@ -22,6 +22,7 @@ use sentc_crypto_common::user::{
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
 	UserUpdateServerInput,
+	VerifyLoginInput,
 };
 use sentc_crypto_common::{AppId, DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, SymKeyId, UserId};
 
@@ -30,7 +31,7 @@ use crate::group::group_user_service::NewUserType;
 use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
 use crate::sentc_app_entities::AppData;
 use crate::sentc_app_utils::hash_token_to_string;
-use crate::sentc_user_entities::{UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
+use crate::sentc_user_entities::{UserPublicKeyDataEntity, UserVerifyKeyDataEntity, VerifyLoginEntity, VerifyLoginOutput};
 use crate::user::jwt::create_jwt;
 use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserJwtEntity, SERVER_RANDOM_VALUE};
 use crate::user::user_model;
@@ -267,10 +268,45 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 		.await?
 		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::Login, "Wrong username or password"))?;
 
+	let challenge = create_refresh_token()?;
+
+	let encrypted_challenge = sentc_crypto::util::server::encrypt_login_verify_challenge(
+		&device_keys.public_key_string,
+		&device_keys.keypair_encrypt_alg,
+		&challenge,
+	)
+	.map_err(|_e| {
+		ServerCoreError::new_msg(
+			400,
+			ApiErrorCodes::AppTokenWrongFormat,
+			"Can't create login challenge",
+		)
+	})?;
+
+	user_model::insert_verify_login_challenge(&app_data.app_data.app_id, &device_keys.device_id, challenge).await?;
+
+	let out = DoneLoginServerOutput {
+		device_keys,
+		challenge: encrypted_challenge,
+	};
+
+	Ok(out)
+}
+
+pub(crate) async fn verify_login_internally(app_data: &AppData, done_login: VerifyLoginInput) -> AppRes<(VerifyLoginEntity, String, String)>
+{
+	let identifier = hash_token_to_string(done_login.device_identifier.as_bytes())?;
+	auth_user(&app_data.app_data.app_id, &identifier, done_login.auth_key).await?;
+
+	//verify the login, return the device and user id and user group id
+	let data = user_model::get_verify_login_data(&app_data.app_data.app_id, identifier, done_login.challenge)
+		.await?
+		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::Login, "Wrong username or password"))?;
+
 	// and create the jwt
 	let jwt = create_jwt(
-		&device_keys.user_id,
-		&device_keys.device_id,
+		&data.user_id,
+		&data.device_id,
 		&app_data.jwt_data[0], //use always the latest created jwt data
 		true,
 	)
@@ -279,21 +315,21 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 	let refresh_token = create_refresh_token()?;
 
 	//activate refresh token
-	user_model::insert_refresh_token(&app_data.app_data.app_id, &device_keys.device_id, &refresh_token).await?;
+	user_model::insert_refresh_token(&app_data.app_data.app_id, &data.device_id, &refresh_token).await?;
+
+	Ok((data, jwt, refresh_token))
+}
+
+pub async fn verify_login(app_data: &AppData, done_login: VerifyLoginInput) -> AppRes<VerifyLoginOutput>
+{
+	let (data, jwt, refresh_token) = verify_login_internally(app_data, done_login).await?;
 
 	//fetch the first page of the group keys with the device id as user
-	let user_keys = group_service::get_user_group_keys(
-		&app_data.app_data.app_id,
-		&device_keys.user_group_id,
-		&device_keys.device_id,
-		0,
-		"",
-	)
-	.await?;
+	let user_keys = group_service::get_user_group_keys(&app_data.app_data.app_id, &data.user_group_id, &data.device_id, 0, "").await?;
 
 	let hmac_keys = group_service::get_group_hmac(
 		&app_data.app_data.app_id,
-		&device_keys.user_group_id,
+		&data.user_group_id,
 		0, //fetch the first page
 		"",
 	)
@@ -301,8 +337,7 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 
 	//fetch the first page of the hmac keys
 
-	let out = DoneLoginServerOutput {
-		device_keys,
+	let out = VerifyLoginOutput {
 		user_keys,
 		hmac_keys,
 		jwt,
@@ -609,7 +644,7 @@ async fn create_salt(app_id: impl Into<AppId>, user_identifier: &str) -> AppRes<
 	Ok(out)
 }
 
-pub(super) fn create_refresh_token() -> AppRes<String>
+pub(super) fn create_refresh_token_raw() -> AppRes<[u8; 50]>
 {
 	let mut rng = rand::thread_rng();
 
@@ -618,9 +653,14 @@ pub(super) fn create_refresh_token() -> AppRes<String>
 	rng.try_fill_bytes(&mut token)
 		.map_err(|_| ServerCoreError::new_msg(400, ApiErrorCodes::AppTokenWrongFormat, "Can't create refresh token"))?;
 
-	let token_string = base64::encode_config(token, base64::URL_SAFE_NO_PAD);
+	Ok(token)
+}
 
-	Ok(token_string)
+pub(super) fn create_refresh_token() -> AppRes<String>
+{
+	let token = create_refresh_token_raw()?;
+
+	Ok(base64::encode_config(token, base64::URL_SAFE_NO_PAD))
 }
 
 pub(super) async fn auth_user(app_id: &str, hashed_user_identifier: impl Into<String>, auth_key: String) -> AppRes<String>
