@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 9:47am on July 26, 2023 (UTC)
+-- Exported: 8:32pm on July 26, 2023 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -198,16 +198,6 @@ CREATE TABLE 'sentc_group' (
 , 'type' INTEGER, 'invite' INTEGER, 'is_connected_group' INTEGER);
 
 ----
--- Table structure for sentc_content_searchable_item
-----
-CREATE TABLE 'sentc_content_searchable_item' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'belongs_to_group' TEXT, 'belongs_to_user' TEXT, 'category' TEXT, 'item_ref' TEXT, 'alg' TEXT, 'key_id' TEXT, 'time' TEXT);
-
-----
--- Table structure for sentc_content_searchable_item_parts
-----
-CREATE TABLE 'sentc_content_searchable_item_parts' ('item_id' TEXT NOT NULL, 'hash' TEXT NOT NULL, PRIMARY KEY ('item_id', 'hash'));
-
-----
 -- Table structure for sentc_app
 ----
 CREATE TABLE 'sentc_app' (
@@ -336,6 +326,51 @@ CREATE TABLE 'sentc_user_device_challenge' ('challenge' TEXT NOT NULL, 'device_i
 ;
 
 ----
+-- structure for index sqlite_autoindex_sentc_content_1 on table sentc_content
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_group_hmac_keys_1 on table sentc_group_hmac_keys
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_group_1 on table sentc_group
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_app_1 on table sentc_app
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_customer_group_1 on table sentc_customer_group
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_app_group_options_1 on table sentc_app_group_options
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_file_1 on table sentc_file
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_group_sortable_keys_1 on table sentc_group_sortable_keys
+----
+;
+
+----
+-- structure for index sqlite_autoindex_sentc_user_device_challenge_1 on table sentc_user_device_challenge
+----
+;
+
+----
 -- structure for index app_jwt_keys_app_id_index on table sentc_app_jwt_keys
 ----
 CREATE INDEX app_jwt_keys_app_id_index
@@ -362,11 +397,6 @@ CREATE INDEX 'app_id' ON "sentc_user" ("app_id");
 CREATE INDEX 'token' ON "sentc_user_device" ("token");
 
 ----
--- structure for index sqlite_autoindex_sentc_content_1 on table sentc_content
-----
-;
-
-----
 -- structure for index time on table sentc_content
 ----
 CREATE INDEX 'time' ON "sentc_content" ("time" DESC);
@@ -382,19 +412,9 @@ CREATE INDEX 'item' ON "sentc_content" ("item" ASC);
 CREATE INDEX 'cat_id' ON "sentc_content" ("category" ASC);
 
 ----
--- structure for index sqlite_autoindex_sentc_group_hmac_keys_1 on table sentc_group_hmac_keys
-----
-;
-
-----
 -- structure for index group_id_belongs_to on table sentc_group_hmac_keys
 ----
 CREATE INDEX 'group_id_belongs_to' ON "sentc_group_hmac_keys" ("group_id" ASC, "app_id" ASC);
-
-----
--- structure for index sqlite_autoindex_sentc_group_1 on table sentc_group
-----
-;
 
 ----
 -- structure for index sentc_group_app_id_index on table sentc_group
@@ -409,36 +429,6 @@ CREATE INDEX sentc_group_parent_index
 	on sentc_group (parent);
 
 ----
--- structure for index sqlite_autoindex_sentc_content_searchable_item_1 on table sentc_content_searchable_item
-----
-;
-
-----
--- structure for index app_id_index on table sentc_content_searchable_item
-----
-CREATE INDEX 'app_id_index' ON "sentc_content_searchable_item" ("app_id");
-
-----
--- structure for index category_index on table sentc_content_searchable_item
-----
-CREATE INDEX 'category_index' ON "sentc_content_searchable_item" ("category");
-
-----
--- structure for index time_index on table sentc_content_searchable_item
-----
-CREATE INDEX 'time_index' ON "sentc_content_searchable_item" ("time");
-
-----
--- structure for index sqlite_autoindex_sentc_content_searchable_item_parts_1 on table sentc_content_searchable_item_parts
-----
-;
-
-----
--- structure for index sqlite_autoindex_sentc_app_1 on table sentc_app
-----
-;
-
-----
 -- structure for index app_hashed_public_token_index on table sentc_app
 ----
 CREATE INDEX app_hashed_public_token_index
@@ -451,34 +441,9 @@ CREATE INDEX app_hashed_secret_token_index
 	on "sentc_app" (hashed_secret_token);
 
 ----
--- structure for index sqlite_autoindex_sentc_customer_group_1 on table sentc_customer_group
-----
-;
-
-----
--- structure for index sqlite_autoindex_sentc_app_group_options_1 on table sentc_app_group_options
-----
-;
-
-----
--- structure for index sqlite_autoindex_sentc_file_1 on table sentc_file
-----
-;
-
-----
--- structure for index sqlite_autoindex_sentc_group_sortable_keys_1 on table sentc_group_sortable_keys
-----
-;
-
-----
 -- structure for index group_id on table sentc_group_sortable_keys
 ----
 CREATE INDEX 'group_id' ON "sentc_group_sortable_keys" ("group_id" ASC, "app_id" ASC);
-
-----
--- structure for index sqlite_autoindex_sentc_user_device_challenge_1 on table sentc_user_device_challenge
-----
-;
 
 ----
 -- structure for trigger  group_user_delete_key_rotation_keys on table sentc_group_user
@@ -521,11 +486,6 @@ CREATE TRIGGER 'group_delete_user' AFTER DELETE ON "sentc_group" FOR EACH ROW BE
 CREATE TRIGGER 'group_delete_hmac_keys' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_hmac_keys WHERE group_id = OLD.id; END;
 
 ----
--- structure for trigger  content_searchable_delete_hash on table sentc_content_searchable_item
-----
-CREATE TRIGGER ' content_searchable_delete_hash' AFTER DELETE ON "sentc_content_searchable_item" FOR EACH ROW BEGIN DELETE FROM sentc_content_searchable_item_parts WHERE item_id = OLD.id; END;
-
-----
 -- structure for trigger delete_app on table sentc_customer
 ----
 CREATE TRIGGER 'delete_app' AFTER DELETE ON "sentc_customer" FOR EACH ROW BEGIN DELETE FROM sentc_app WHERE owner_id = OLD.id AND owner_type = 0; END;
@@ -564,11 +524,6 @@ CREATE TRIGGER 'delete_file_options' AFTER DELETE ON "sentc_app" FOR EACH ROW BE
 -- structure for trigger delete_app_content on table sentc_app
 ----
 CREATE TRIGGER 'delete_app_content' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_content WHERE app_id = OLD.id; END;
-
-----
--- structure for trigger delete_app_search on table sentc_app
-----
-CREATE TRIGGER 'delete_app_search' AFTER DELETE ON "sentc_app" FOR EACH ROW BEGIN DELETE FROM sentc_content_searchable_item WHERE app_id = OLD.id; END;
 
 ----
 -- structure for trigger  delete_customer_group_apps on table sentc_customer_group

@@ -660,7 +660,6 @@ pub(super) async fn reset(app_id: impl Into<AppId>) -> AppRes<()>
 	2. delete all groups
 	3. delete all keys
 	4. delete content
-	5. delete searchable
 
 	Do not delete the options.
 	 */
@@ -681,10 +680,6 @@ pub(super) async fn reset(app_id: impl Into<AppId>) -> AppRes<()>
 	let sql_content = r"DELETE FROM sentc_content WHERE app_id = ?";
 	let params_content = set_params!(app_id.clone());
 
-	//language=SQL
-	let sql_search = r"DELETE FROM sentc_content_searchable_item WHERE app_id = ?";
-	let params_search = set_params!(app_id);
-
 	exec_transaction(vec![
 		TransactionData {
 			sql: sql_user,
@@ -701,10 +696,6 @@ pub(super) async fn reset(app_id: impl Into<AppId>) -> AppRes<()>
 		TransactionData {
 			sql: sql_content,
 			params: params_content,
-		},
-		TransactionData {
-			sql: sql_search,
-			params: params_search,
 		},
 	])
 	.await?;
