@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 26. Jul 2023 um 09:35
+-- Erstellungszeit: 26. Jul 2023 um 20:28
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -45,39 +45,35 @@ CREATE TABLE `sentc_app` (
 
 CREATE TRIGGER `delete_app_content` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_content WHERE app_id = OLD.id
 
- ;
+;
 
 CREATE TRIGGER `delete_app_jwt` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_app_jwt_keys WHERE app_id = OLD.id
 
- ;
-
-CREATE TRIGGER `delete_app_search` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_content_searchable_item WHERE app_id = OLD.id
-
- ;
+;
 
 CREATE TRIGGER `delete_file_options` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_file_options WHERE app_id = OLD.id
 
- ;
+;
 
 CREATE TRIGGER `delete_group` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_group WHERE app_id = OLD.id
 
- ;
+;
 
 CREATE TRIGGER `delete_group_options` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_app_group_options WHERE app_id = OLD.id
 
- ;
+;
 
 CREATE TRIGGER `delete_keys` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_sym_key_management WHERE app_id = OLD.id
 
- ;
+;
 
 CREATE TRIGGER `delete_options` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_app_options WHERE app_id = OLD.id
 
- ;
+;
 
 CREATE TRIGGER `delete_user` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_user WHERE app_id = OLD.id
 
- ;
+;
 
 -- --------------------------------------------------------
 
@@ -194,43 +190,6 @@ CREATE TABLE `sentc_content` (
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `sentc_content_searchable_item`
---
-
-CREATE TABLE `sentc_content_searchable_item` (
-  `id` varchar(36) NOT NULL,
-  `app_id` varchar(36) NOT NULL,
-  `belongs_to_group` varchar(36) DEFAULT NULL,
-  `belongs_to_user` varchar(36) DEFAULT NULL,
-  `category` varchar(50) DEFAULT NULL,
-  `item_ref` varchar(50) NOT NULL COMMENT 'a ref to the backend of the customer where the item is stored',
-  `alg` text NOT NULL COMMENT 'the hash alg',
-  `key_id` varchar(36) NOT NULL COMMENT 'the key which was used to hash the hashes',
-  `time` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Trigger `sentc_content_searchable_item`
---
-
-CREATE TRIGGER `content_searchable_delete_hash` AFTER DELETE ON `sentc_content_searchable_item` FOR EACH ROW DELETE FROM sentc_content_searchable_item_parts WHERE item_id = OLD.id
-
- ;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `sentc_content_searchable_item_parts`
---
-
-CREATE TABLE `sentc_content_searchable_item_parts` (
-  `item_id` varchar(36) NOT NULL,
-  `hash` varchar(44) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- --------------------------------------------------------
-
---
 -- Tabellenstruktur für Tabelle `sentc_customer`
 --
 
@@ -253,7 +212,7 @@ CREATE TABLE `sentc_customer` (
 
 CREATE TRIGGER `delete_app` AFTER DELETE ON `sentc_customer` FOR EACH ROW DELETE FROM sentc_app WHERE owner_id = OLD.id AND owner_type = 0
 
- ;
+;
 
 -- --------------------------------------------------------
 
@@ -273,7 +232,7 @@ CREATE TABLE `sentc_customer_group` (
 
 CREATE TRIGGER `delete_customer_group_apps` AFTER DELETE ON `sentc_customer_group` FOR EACH ROW DELETE FROM sentc_app WHERE owner_id = OLD.sentc_group_id AND owner_type = 1
 
- ;
+;
 
 -- --------------------------------------------------------
 
@@ -302,11 +261,11 @@ CREATE TABLE `sentc_file` (
 
 CREATE TRIGGER `file_delete_parts` AFTER DELETE ON `sentc_file` FOR EACH ROW DELETE FROM sentc_file_part WHERE file_id = OLD.id
 
- ;
+;
 
 CREATE TRIGGER `file_session_delete` AFTER DELETE ON `sentc_file` FOR EACH ROW DELETE FROM sentc_file_session WHERE file_id = OLD.id
 
- ;
+;
 
 -- --------------------------------------------------------
 
@@ -374,23 +333,23 @@ CREATE TABLE `sentc_group` (
 
 CREATE TRIGGER `group_delete_hmac_keys` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_hmac_keys WHERE group_id = OLD.id
 
- ;
+;
 
 CREATE TRIGGER `group_delete_invites` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = OLD.id
 
- ;
+;
 
 CREATE TRIGGER `group_delete_keys` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_keys WHERE group_id = OLD.id
 
- ;
+;
 
 CREATE TRIGGER `group_delete_sortable_keys` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_sortable_keys WHERE group_id = OLD.id
 
- ;
+;
 
 CREATE TRIGGER `group_delete_user` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_user WHERE group_id = OLD.id
 
- ;
+;
 
 -- --------------------------------------------------------
 
@@ -474,11 +433,11 @@ CREATE TABLE `sentc_group_user` (
 
 CREATE TRIGGER `group_user_delete_key_rotation_keys` AFTER DELETE ON `sentc_group_user` FOR EACH ROW DELETE FROM sentc_group_user_key_rotation WHERE user_id = OLD.user_id AND group_id = OLD.group_id
 
- ;
+;
 
 CREATE TRIGGER `group_user_delete_user_keys` AFTER DELETE ON `sentc_group_user` FOR EACH ROW DELETE FROM sentc_group_user_keys WHERE user_id = OLD.user_id AND group_id = OLD.group_id
 
- ;
+;
 
 -- --------------------------------------------------------
 
@@ -570,10 +529,10 @@ CREATE TABLE `sentc_user` (
 --
 -- Trigger `sentc_user`
 --
- 
+
 CREATE TRIGGER `user_delete_user_device` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_device WHERE user_id = OLD.id
 
- ;
+;
 
 -- --------------------------------------------------------
 
@@ -619,14 +578,14 @@ CREATE TABLE `sentc_user_device` (
 --
 -- Trigger `sentc_user_device`
 --
- 
+
 CREATE TRIGGER `user_delete_challenge` AFTER DELETE ON `sentc_user_device` FOR EACH ROW DELETE FROM sentc_user_device_challenge WHERE device_id = OLD.id
 
- ;
- 
+;
+
 CREATE TRIGGER `user_delete_jwt_refresh` AFTER DELETE ON `sentc_user_device` FOR EACH ROW DELETE FROM sentc_user_token WHERE device_id = OLD.id
 
- ;
+;
 
 -- --------------------------------------------------------
 
@@ -712,21 +671,6 @@ ALTER TABLE `sentc_content`
   ADD KEY `time` (`time`),
   ADD KEY `item` (`item`) USING BTREE,
   ADD KEY `cat_id` (`category`);
-
---
--- Indizes für die Tabelle `sentc_content_searchable_item`
---
-ALTER TABLE `sentc_content_searchable_item`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `app_id` (`app_id`),
-  ADD KEY `category` (`category`),
-  ADD KEY `time` (`time`);
-
---
--- Indizes für die Tabelle `sentc_content_searchable_item_parts`
---
-ALTER TABLE `sentc_content_searchable_item_parts`
-  ADD PRIMARY KEY (`item_id`,`hash`);
 
 --
 -- Indizes für die Tabelle `sentc_customer`
