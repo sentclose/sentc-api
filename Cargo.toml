@@ -37,10 +37,10 @@ rustgram-server-util = {git= "https://gitlab.com/grammm/rustgram/rustgram-server
 
 #_______________________________________________________________________________________________________________________
 
-sentc-crypto = {git = "https://github.com/sentclose/sentc.git", rev="c72b4f0f9f4205b2b3a716f4ab6661239e0e2fa6", default-features = false, features = ["rust", "server"]}
+sentc-crypto = {git = "https://github.com/sentclose/sentc.git", rev="86bbfed46aac593dbaa1c5863faa53d0ff57ef10", default-features = false, features = ["rust", "server"]}
 #sentc-crypto = {path = "../../sdk/crypto", default-features = false, features = ["rust", "server"]} # for local dev
 
-sentc-crypto-light = {git = "https://github.com/sentclose/sentc.git", rev="c72b4f0f9f4205b2b3a716f4ab6661239e0e2fa6", default-features = false, features = ["rust"]}
+sentc-crypto-light = {git = "https://github.com/sentclose/sentc.git", rev="86bbfed46aac593dbaa1c5863faa53d0ff57ef10", default-features = false, features = ["rust"]}
 #sentc-crypto-light = {path = "../../sdk/crypto_light", default-features = false, features = ["rust"]} # for local dev
 
 #_______________________________________________________________________________________________________________________
