@@ -1,9 +1,8 @@
+use rustgram_server_util::DB;
 use sentc_crypto_common::{CategoryId, ContentId, GroupId, UserId};
 use serde::Serialize;
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, DB)]
 pub struct ListContentItem
 {
 	pub id: ContentId,
@@ -35,9 +34,7 @@ impl Into<sentc_crypto_common::content::ListContentItem> for ListContentItem
 
 //__________________________________________________________________________________________________
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, DB)]
 pub struct ContentItemAccess
 {
 	pub access: bool,

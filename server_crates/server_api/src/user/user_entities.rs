@@ -1,4 +1,4 @@
-use rustgram_server_util::take_or_err;
+use rustgram_server_util::{take_or_err, DB};
 use sentc_crypto_common::user::{UserInitServerOutput, UserPublicKeyDataServerOutput, UserVerifyKeyDataServerOutput};
 use sentc_crypto_common::{DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, UserId};
 use serde::{Deserialize, Serialize};
@@ -25,8 +25,7 @@ pub struct UserJwtEntity
 //__________________________________________________________________________________________________
 //Captcha
 
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(DB)]
 pub struct CaptchaEntity
 {
 	pub solution: String,
@@ -36,9 +35,7 @@ pub struct CaptchaEntity
 //__________________________________________________________________________________________________
 //User login data
 
-#[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, Deserialize, DB)]
 pub struct UserLoginDataEntity
 {
 	pub client_random_value: String,
@@ -185,8 +182,7 @@ impl rustgram_server_util::db::FromSqliteRow for DoneLoginServerKeysOutputEntity
 	}
 }
 
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(DB)]
 pub struct VerifyLoginEntity
 {
 	pub device_id: DeviceId,
@@ -196,8 +192,7 @@ pub struct VerifyLoginEntity
 
 //__________________________________________________________________________________________________
 
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(DB)]
 pub struct UserRefreshTokenCheck
 {
 	pub user_id: DeviceId,
@@ -206,9 +201,7 @@ pub struct UserRefreshTokenCheck
 
 //__________________________________________________________________________________________________
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, DB)]
 pub struct UserPublicKeyDataEntity
 {
 	pub public_key_id: EncryptionKeyPairId,
@@ -234,9 +227,7 @@ impl Into<UserPublicKeyDataServerOutput> for UserPublicKeyDataEntity
 
 //__________________________________________________________________________________________________
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, DB)]
 pub struct UserVerifyKeyDataEntity
 {
 	pub verify_key_id: EncryptionKeyPairId,
@@ -287,9 +278,7 @@ impl Into<UserInitServerOutput> for UserInitEntity
 
 //__________________________________________________________________________________________________
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, DB)]
 pub struct UserDeviceList
 {
 	pub device_id: String,
