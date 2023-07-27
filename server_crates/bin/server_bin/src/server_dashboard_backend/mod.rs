@@ -7,20 +7,19 @@ use hyper::http::HeaderValue;
 use rustgram::service::IntoResponse;
 use rustgram::{r, Request, Response, Router};
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
-use rustgram_server_util::file;
-use rustgram_server_util::file::FileHandler;
+use rustgram_server_util::file::{FileHandler, LocalStorage};
 use rustgram_server_util::url_helper::get_name_param_from_req;
 use server_api::util::api_res::ApiErrorCodes;
 use tokio::sync::OnceCell;
 
-static LOCAL_FILE_HANDLER: OnceCell<Box<dyn FileHandler>> = OnceCell::const_new();
+static LOCAL_FILE_HANDLER: OnceCell<Box<LocalStorage>> = OnceCell::const_new();
 
 pub async fn start()
 {
 	let path = env::var("LOCAL_FRONTED_DIR").unwrap_or_else(|_| "dist".to_string());
 
 	LOCAL_FILE_HANDLER
-		.get_or_init(move || async { file::get_local_storage(path) })
+		.get_or_init(move || async { Box::new(LocalStorage::new(path)) })
 		.await;
 }
 
