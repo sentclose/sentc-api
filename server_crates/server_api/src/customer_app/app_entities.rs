@@ -1,3 +1,4 @@
+use rustgram_server_util::DB;
 use sentc_crypto_common::{AppId, CustomerId, GroupId, SignKeyPairId};
 use serde::{Deserialize, Serialize};
 use server_api_common::app::{AppGroupOption, AppOptions};
@@ -25,9 +26,7 @@ pub struct AppData
 	pub group_options: AppGroupOption,
 }
 
-#[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, Deserialize, DB)]
 pub struct AppFileOptions
 {
 	pub file_storage: i32,
@@ -51,9 +50,7 @@ This values can only be exists once
 
 Only internal values from the db
  */
-#[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, Deserialize, DB)]
 pub struct AppDataGeneral
 {
 	pub app_id: AppId,
@@ -75,9 +72,7 @@ It is possible to have multiple valid jwt keys.
 
 Only internal values from the db
  */
-#[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, Deserialize, DB)]
 pub struct AppJwt
 {
 	pub jwt_key_id: SignKeyPairId,
@@ -87,8 +82,7 @@ pub struct AppJwt
 
 //__________________________________________________________________________________________________
 
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(DB)]
 pub struct AppCustomerAccess
 {
 	pub app_id: AppId,

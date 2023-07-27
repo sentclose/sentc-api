@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use rustgram_server_util::DB;
 use sentc_crypto_common::{CustomerId, DeviceId, UserId};
 use serde::{Deserialize, Serialize};
 
@@ -16,8 +17,7 @@ pub(crate) enum RegisterEmailStatus
 
 //__________________________________________________________________________________________________
 
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(DB)]
 pub(crate) struct CustomerDataEntity
 {
 	pub email: String,
@@ -53,8 +53,7 @@ impl Into<server_api_common::customer::CustomerDataOutput> for CustomerDataEntit
 
 //__________________________________________________________________________________________________
 
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(DB)]
 pub(crate) struct CustomerDataByEmailEntity
 {
 	pub id: CustomerId,
@@ -65,8 +64,7 @@ pub(crate) struct CustomerDataByEmailEntity
 
 //__________________________________________________________________________________________________
 
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(DB)]
 pub(crate) struct CustomerEmailToken
 {
 	pub email_token: String,
@@ -75,8 +73,7 @@ pub(crate) struct CustomerEmailToken
 
 //__________________________________________________________________________________________________
 
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(DB)]
 pub(crate) struct CustomerEmailByToken
 {
 	pub email: String,
@@ -86,9 +83,7 @@ pub(crate) struct CustomerEmailByToken
 
 //__________________________________________________________________________________________________
 
-#[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, Deserialize, DB)]
 pub struct CustomerList
 {
 	pub id: UserId,

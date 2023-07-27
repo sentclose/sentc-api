@@ -1,10 +1,9 @@
+use rustgram_server_util::DB;
 use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerOutput;
 use sentc_crypto_common::SymKeyId;
 use serde::Serialize;
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, DB)]
 pub struct SymKeyEntity
 {
 	key_id: SymKeyId,

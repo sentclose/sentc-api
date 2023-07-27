@@ -1,10 +1,9 @@
-use rustgram_server_util::take_or_err;
+use rustgram_server_util::{take_or_err, DB};
 use sentc_crypto_common::file::BelongsToType;
 use sentc_crypto_common::{AppId, FileId, PartId, UserId};
 use serde::Serialize;
 
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(DB)]
 pub struct FileSessionCheck
 {
 	pub file_id: FileId,
@@ -117,9 +116,7 @@ impl rustgram_server_util::db::FromSqliteRow for FileMetaData
 
 //__________________________________________________________________________________________________
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, DB)]
 pub struct FilePartListItem
 {
 	pub part_id: PartId,
@@ -141,8 +138,7 @@ impl Into<sentc_crypto_common::file::FilePartListItem> for FilePartListItem
 
 //__________________________________________________________________________________________________
 
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(DB)]
 pub struct FilePartListItemDelete
 {
 	pub part_id: PartId,
@@ -153,8 +149,7 @@ pub struct FilePartListItemDelete
 
 //__________________________________________________________________________________________________
 
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(DB)]
 pub struct FileExternalStorageUrl
 {
 	pub storage_url: String,

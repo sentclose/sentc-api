@@ -1,4 +1,4 @@
-use rustgram_server_util::take_or_err;
+use rustgram_server_util::{take_or_err, DB};
 use sentc_crypto_common::group::{GroupInviteReqList, GroupJoinReqList, GroupKeyServerOutput, GroupUserAccessBy, KeyRotationInput};
 use sentc_crypto_common::{AppId, EncryptionKeyPairId, GroupId, SignKeyPairId, SymKeyId, UserId};
 use serde::{Deserialize, Serialize};
@@ -20,9 +20,7 @@ pub const GROUP_INVITE_TYPE_JOIN_REQ: GroupNewUserType = 1;
 /**
 Internal used group data, to check if the group exists with this app id
 */
-#[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, Deserialize, DB)]
 pub struct InternalGroupData
 {
 	pub id: GroupId,
@@ -100,9 +98,7 @@ internally used in cache to check every user
 
 This is fetched when the user is not a direct member but a member from a parent.
  */
-#[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, Deserialize, DB)]
 pub struct InternalUserGroupDataFromParent
 {
 	pub get_values_from_parent: GroupId,
@@ -164,9 +160,7 @@ impl Into<sentc_crypto_common::group::GroupServerData> for GroupServerData
 
 //__________________________________________________________________________________________________
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, DB)]
 pub struct GroupHmacData
 {
 	pub id: SymKeyId,
@@ -192,9 +186,7 @@ impl Into<sentc_crypto_common::group::GroupHmacData> for GroupHmacData
 
 //__________________________________________________________________________________________________
 
-#[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, Deserialize, DB)]
 pub struct GroupSortableData
 {
 	pub id: SymKeyId,
@@ -333,9 +325,7 @@ impl rustgram_server_util::db::FromSqliteRow for GroupUserKeys
 
 //__________________________________________________________________________________________________
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, DB)]
 pub struct GroupJoinReq
 {
 	pub user_id: UserId,
@@ -357,9 +347,7 @@ impl Into<GroupJoinReqList> for GroupJoinReq
 
 //__________________________________________________________________________________________________
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, DB)]
 pub struct GroupInviteReq
 {
 	pub group_id: GroupId,
@@ -379,9 +367,7 @@ impl Into<GroupInviteReqList> for GroupInviteReq
 
 //__________________________________________________________________________________________________
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, DB)]
 pub struct GroupKeyUpdate
 {
 	pub new_group_key_id: SymKeyId,
@@ -424,8 +410,7 @@ impl Into<KeyRotationInput> for GroupKeyUpdate
 
 //__________________________________________________________________________________________________
 
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(DB)]
 pub struct KeyRotationWorkerKey
 {
 	pub ephemeral_alg: String,
@@ -447,8 +432,7 @@ pub struct UserEphKeyOut
 
 //__________________________________________________________________________________________________
 
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(DB)]
 pub struct UserGroupPublicKeyData
 {
 	pub user_id: UserId,
@@ -460,9 +444,7 @@ pub struct UserGroupPublicKeyData
 
 //__________________________________________________________________________________________________
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, DB)]
 pub struct GroupUserListItem
 {
 	pub user_id: UserId,
@@ -486,9 +468,7 @@ impl Into<sentc_crypto_common::group::GroupUserListItem> for GroupUserListItem
 
 //__________________________________________________________________________________________________
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, DB)]
 pub struct ListGroups
 {
 	pub group_id: GroupId,
@@ -514,9 +494,7 @@ impl Into<sentc_crypto_common::group::ListGroups> for ListGroups
 
 //__________________________________________________________________________________________________
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(Serialize, DB)]
 pub struct GroupChildrenList
 {
 	pub group_id: GroupId,
@@ -538,8 +516,7 @@ impl Into<sentc_crypto_common::group::GroupChildrenList> for GroupChildrenList
 
 //__________________________________________________________________________________________________
 
-#[cfg_attr(feature = "mysql", derive(rustgram_server_util::MariaDb))]
-#[cfg_attr(feature = "sqlite", derive(rustgram_server_util::Sqlite))]
+#[derive(DB)]
 pub struct GroupUserInvitesAndJoinReq
 {
 	pub user_type: i32,
