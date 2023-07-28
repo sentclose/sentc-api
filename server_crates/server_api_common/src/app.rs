@@ -67,8 +67,6 @@ pub struct AppOptions
 
 	pub user_key_update: i32,
 
-	pub content_search: i32,
-
 	pub content: i32,
 
 	pub content_small: i32,
@@ -121,7 +119,6 @@ impl Default for AppOptions
 			user_device_list: 1,
 			group_invite_stop: 1,
 			user_key_update: 1,
-			content_search: 1,
 			content: 1,
 			content_small: 2,
 			content_med: 2,
@@ -175,7 +172,6 @@ impl AppOptions
 			user_device_list: 0,
 			group_invite_stop: 0,
 			user_key_update: 0,
-			content_search: 0,
 			content: 0,
 			content_small: 0,
 			content_med: 0,
@@ -226,7 +222,6 @@ impl AppOptions
 			user_device_list: 1,
 			group_invite_stop: 1,
 			user_key_update: 1,
-			content_search: 1,
 			content: 1,
 			content_small: 1,
 			content_med: 1,
@@ -297,15 +292,13 @@ impl rustgram_server_util::db::mysql_async_export::prelude::FromRow for AppOptio
 
 			user_key_update: rustgram_server_util::take_or_err!(row, 37, i32),
 
-			content_search: rustgram_server_util::take_or_err!(row, 38, i32),
+			file_delete: rustgram_server_util::take_or_err!(row, 38, i32),
+			content: rustgram_server_util::take_or_err!(row, 39, i32),
 
-			file_delete: rustgram_server_util::take_or_err!(row, 39, i32),
-			content: rustgram_server_util::take_or_err!(row, 40, i32),
-
-			content_small: rustgram_server_util::take_or_err!(row, 41, i32),
-			content_med: rustgram_server_util::take_or_err!(row, 42, i32),
-			content_large: rustgram_server_util::take_or_err!(row, 43, i32),
-			content_x_large: rustgram_server_util::take_or_err!(row, 44, i32),
+			content_small: rustgram_server_util::take_or_err!(row, 40, i32),
+			content_med: rustgram_server_util::take_or_err!(row, 41, i32),
+			content_large: rustgram_server_util::take_or_err!(row, 42, i32),
+			content_x_large: rustgram_server_util::take_or_err!(row, 43, i32),
 		})
 	}
 }
@@ -369,15 +362,13 @@ impl rustgram_server_util::db::FromSqliteRow for AppOptions
 
 			user_key_update: rustgram_server_util::take_or_err!(row, 37),
 
-			content_search: rustgram_server_util::take_or_err!(row, 38),
+			file_delete: rustgram_server_util::take_or_err!(row, 38),
+			content: rustgram_server_util::take_or_err!(row, 39),
 
-			file_delete: rustgram_server_util::take_or_err!(row, 39),
-			content: rustgram_server_util::take_or_err!(row, 40),
-
-			content_small: rustgram_server_util::take_or_err!(row, 41),
-			content_med: rustgram_server_util::take_or_err!(row, 42),
-			content_large: rustgram_server_util::take_or_err!(row, 43),
-			content_x_large: rustgram_server_util::take_or_err!(row, 44),
+			content_small: rustgram_server_util::take_or_err!(row, 40),
+			content_med: rustgram_server_util::take_or_err!(row, 41),
+			content_large: rustgram_server_util::take_or_err!(row, 42),
+			content_x_large: rustgram_server_util::take_or_err!(row, 43),
 		})
 	}
 }
