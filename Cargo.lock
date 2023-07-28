@@ -2281,7 +2281,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto"
 version = "0.9.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=0b38c8e47c7da4d2761bac5130cd15fb561f0b63#0b38c8e47c7da4d2761bac5130cd15fb561f0b63"
+source = "git+https://github.com/sentclose/sentc.git?rev=49b7b49a7d0c23d3fa7cf247bb4356ae573f5313#49b7b49a7d0c23d3fa7cf247bb4356ae573f5313"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -2313,7 +2313,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-core"
 version = "0.9.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=0b38c8e47c7da4d2761bac5130cd15fb561f0b63#0b38c8e47c7da4d2761bac5130cd15fb561f0b63"
+source = "git+https://github.com/sentclose/sentc.git?rev=49b7b49a7d0c23d3fa7cf247bb4356ae573f5313#49b7b49a7d0c23d3fa7cf247bb4356ae573f5313"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -2329,8 +2329,8 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-light"
-version = "0.10.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=0b38c8e47c7da4d2761bac5130cd15fb561f0b63#0b38c8e47c7da4d2761bac5130cd15fb561f0b63"
+version = "0.9.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=49b7b49a7d0c23d3fa7cf247bb4356ae573f5313#49b7b49a7d0c23d3fa7cf247bb4356ae573f5313"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -2343,8 +2343,8 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-utils"
-version = "0.10.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=0b38c8e47c7da4d2761bac5130cd15fb561f0b63#0b38c8e47c7da4d2761bac5130cd15fb561f0b63"
+version = "0.9.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=49b7b49a7d0c23d3fa7cf247bb4356ae573f5313#49b7b49a7d0c23d3fa7cf247bb4356ae573f5313"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
