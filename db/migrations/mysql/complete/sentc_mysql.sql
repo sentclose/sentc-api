@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 26. Jul 2023 um 20:28
+-- Erstellungszeit: 28. Jul 2023 um 20:50
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -148,7 +148,6 @@ CREATE TABLE `sentc_app_options` (
   `user_device_list` int(11) NOT NULL,
   `group_invite_stop` int(11) NOT NULL,
   `user_key_update` int(11) NOT NULL,
-  `content_search` int(11) NOT NULL,
   `file_delete` int(11) NOT NULL,
   `content` int(11) NOT NULL,
   `content_small` int(11) NOT NULL,
