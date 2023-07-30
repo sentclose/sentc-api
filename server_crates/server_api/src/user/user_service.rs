@@ -30,13 +30,12 @@ use crate::group::group_entities::{GroupUserKeys, InternalGroupData, InternalGro
 use crate::group::group_user_service::NewUserType;
 use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
 use crate::sentc_app_entities::AppData;
-use crate::sentc_app_utils::hash_token_to_string;
 use crate::sentc_user_entities::{UserPublicKeyDataEntity, UserVerifyKeyDataEntity, VerifyLoginEntity, VerifyLoginOutput};
 use crate::user::jwt::create_jwt;
 use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserJwtEntity, SERVER_RANDOM_VALUE};
 use crate::user::user_model;
 use crate::util::api_res::ApiErrorCodes;
-use crate::util::get_user_in_app_key;
+use crate::util::{get_user_in_app_key, hash_token_to_string};
 
 pub enum UserAction
 {

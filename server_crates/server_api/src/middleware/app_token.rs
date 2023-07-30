@@ -12,9 +12,8 @@ use rustgram_server_util::res::AppRes;
 
 use crate::customer_app::app_entities::AppData;
 use crate::customer_app::app_model;
-use crate::customer_app::app_util::hash_token_from_string_to_string;
 use crate::util::api_res::ApiErrorCodes;
-use crate::util::APP_TOKEN_CACHE;
+use crate::util::{hash_token_from_string_to_string, APP_TOKEN_CACHE};
 use crate::SENTC_ROOT_APP;
 
 pub struct AppTokenMiddleware<S>
