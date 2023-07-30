@@ -45,14 +45,14 @@ pub(super) async fn get_jwt_sign_key(kid: impl Into<String>) -> AppRes<Option<St
 	}
 }
 
-pub(super) async fn get_jwt_verify_key(kid: impl Into<String>) -> AppRes<Option<StringEntity>>
+pub(super) async fn get_jwt_verify_key(kid: impl Into<String>) -> AppRes<Option<String>>
 {
 	//language=SQL
 	let sql = "SELECT verify_key FROM sentc_app_jwt_keys WHERE id = ?";
 
 	let sign_key: Option<StringEntity> = query_first(sql, set_params!(kid.into())).await?;
 
-	Ok(sign_key)
+	Ok(sign_key.map(|i| i.0))
 }
 
 //__________________________________________________________________________________________________
