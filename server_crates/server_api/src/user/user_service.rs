@@ -12,6 +12,9 @@ use sentc_crypto_common::user::{
 	DoneLoginLightServerOutput,
 	DoneLoginServerInput,
 	JwtRefreshInput,
+	OtpInput,
+	OtpRecoveryKeysOutput,
+	OtpRegister,
 	PrepareLoginSaltServerOutput,
 	RegisterData,
 	RegisterServerOutput,
@@ -30,10 +33,10 @@ use crate::group::group_entities::{GroupUserKeys, InternalGroupData, InternalGro
 use crate::group::group_user_service::NewUserType;
 use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
 use crate::sentc_app_entities::AppData;
-use crate::sentc_user_entities::{UserPublicKeyDataEntity, UserVerifyKeyDataEntity, VerifyLoginEntity, VerifyLoginOutput};
+use crate::sentc_user_entities::{DoneLoginServerReturn, UserPublicKeyDataEntity, UserVerifyKeyDataEntity, VerifyLoginEntity, VerifyLoginOutput};
 use crate::user::jwt::create_jwt;
 use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserJwtEntity, SERVER_RANDOM_VALUE};
-use crate::user::user_model;
+use crate::user::{otp, user_model};
 use crate::util::api_res::ApiErrorCodes;
 use crate::util::{get_user_in_app_key, hash_token_to_string};
 
@@ -254,16 +257,17 @@ pub fn prepare_login<'a>(app_data: &'a AppData, user_identifier: &'a str) -> imp
 }
 
 /**
-After successful login return the user keys so they can be decrypted in the client
-*/
-pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) -> AppRes<DoneLoginServerOutput>
-{
-	let identifier = hash_token_to_string(done_login.device_identifier.as_bytes())?;
+Prepare the challenge and give the device keys back.
 
-	auth_user(&app_data.app_data.app_id, &identifier, done_login.auth_key).await?;
+Use this fn directly after done login if the user does not enable 2fa-
+But if so then use it after validate otp
+*/
+pub(crate) async fn prepare_done_login(app_id: impl Into<AppId>, identifier: impl Into<String>) -> AppRes<DoneLoginServerOutput>
+{
+	let app_id = app_id.into();
 
 	//if correct -> fetch and return the user data
-	let device_keys = user_model::get_done_login_data(&app_data.app_data.app_id, identifier)
+	let device_keys = user_model::get_done_login_data(&app_id, identifier)
 		.await?
 		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::Login, "Wrong username or password"))?;
 
@@ -282,7 +286,7 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 		)
 	})?;
 
-	user_model::insert_verify_login_challenge(&app_data.app_data.app_id, &device_keys.device_id, challenge).await?;
+	user_model::insert_verify_login_challenge(app_id, &device_keys.device_id, challenge).await?;
 
 	let out = DoneLoginServerOutput {
 		device_keys,
@@ -290,6 +294,66 @@ pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) ->
 	};
 
 	Ok(out)
+}
+
+/**
+After successful login return the user keys so they can be decrypted in the client
+*/
+pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) -> AppRes<DoneLoginServerReturn>
+{
+	let identifier = hash_token_to_string(done_login.device_identifier.as_bytes())?;
+
+	let (_, sec) = auth_user_mfa(&app_data.app_data.app_id, &identifier, done_login.auth_key).await?;
+
+	if sec.is_none() {
+		Ok(DoneLoginServerReturn::Direct(
+			prepare_done_login(&app_data.app_data.app_id, identifier).await?,
+		))
+	} else {
+		Ok(DoneLoginServerReturn::Otp)
+	}
+}
+
+pub async fn validate_mfa(app_data: &AppData, input: OtpInput) -> AppRes<DoneLoginServerOutput>
+{
+	let identifier = hash_token_to_string(input.device_identifier.as_bytes())?;
+	let (_, sec) = auth_user_mfa(&app_data.app_data.app_id, &identifier, input.auth_key).await?;
+
+	//an error here because if user calls this fn it must be otp enabled
+	let sec = sec.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::ToTpGet, "Otp secret not found"))?;
+
+	//encrypt it here and not in the model because the real secret is only needed here and not for the checks if user enabled 2fa
+	let sec = encrypted_at_rest_root::decrypt(&sec).await?;
+
+	if !otp::validate_otp(sec, &input.token)? {
+		return Err(ServerCoreError::new_msg(
+			402,
+			ApiErrorCodes::ToTpWrongToken,
+			"Wrong otp.",
+		));
+	}
+
+	//if we add more factors for the auth in the future then validate them in this fn, get it from auth_user_otp
+
+	prepare_done_login(&app_data.app_data.app_id, identifier).await
+}
+
+pub async fn validate_recovery_otp(app_data: &AppData, input: OtpInput) -> AppRes<DoneLoginServerOutput>
+{
+	//the token is the recovery token. the secrete of the totp can be ignored because we are using the recovery tokens.
+	let identifier = hash_token_to_string(input.device_identifier.as_bytes())?;
+	auth_user(&app_data.app_data.app_id, &identifier, input.auth_key).await?;
+
+	let recovery = encrypted_at_rest_root::encrypt(&input.token).await?;
+
+	let token_id = user_model::get_otp_recovery_token(&app_data.app_data.app_id, &identifier, recovery).await?;
+
+	let done_login = prepare_done_login(&app_data.app_data.app_id, identifier).await?;
+
+	//now delete the token but only after done login fetch makes no problems
+	user_model::delete_otp_recovery_token(token_id).await?;
+
+	Ok(done_login)
 }
 
 pub(crate) async fn verify_login_internally(app_data: &AppData, done_login: VerifyLoginInput) -> AppRes<(VerifyLoginEntity, String, String)>
@@ -587,6 +651,84 @@ pub fn reset_password<'a>(
 }
 
 //__________________________________________________________________________________________________
+//otp
+
+pub async fn register_otp(app_id: impl Into<AppId>, user_id: impl Into<UserId>) -> AppRes<OtpRegister>
+{
+	let data = otp::register_otp()?;
+
+	user_model::register_otp(app_id, user_id, &data.secret, data.alg.into(), &data.recover).await?;
+
+	Ok(data)
+}
+
+pub async fn reset_otp(app_id: impl Into<AppId>, user: &UserJwtEntity) -> AppRes<OtpRegister>
+{
+	if !user.fresh {
+		return Err(ServerCoreError::new_msg(
+			401,
+			ApiErrorCodes::WrongJwtAction,
+			"The jwt is not valid for this action",
+		));
+	}
+
+	let user_id = &user.id;
+
+	//1. delete the old recovery keys
+	user_model::delete_all_otp_token(user_id).await?;
+
+	//2. create new secret and new recovery keys
+	register_otp(app_id, user_id).await
+}
+
+pub async fn disable_otp(user: &UserJwtEntity) -> AppRes<()>
+{
+	if !user.fresh {
+		return Err(ServerCoreError::new_msg(
+			401,
+			ApiErrorCodes::WrongJwtAction,
+			"The jwt is not valid for this action",
+		));
+	}
+
+	let user_id = &user.id;
+
+	//1. delete the old recovery keys
+	user_model::delete_all_otp_token(user_id).await?;
+
+	//2. remove the secret
+	user_model::disable_otp(user_id).await?;
+
+	Ok(())
+}
+
+pub async fn get_otp_recovery_keys(user: &UserJwtEntity) -> AppRes<OtpRecoveryKeysOutput>
+{
+	if !user.fresh {
+		return Err(ServerCoreError::new_msg(
+			401,
+			ApiErrorCodes::WrongJwtAction,
+			"The jwt is not valid for this action",
+		));
+	}
+
+	let user_id = &user.id;
+
+	let encrypted_keys = user_model::get_otp_recovery_keys(user_id).await?;
+
+	let key = encrypted_at_rest_root::get_key_map().await;
+
+	let keys = encrypted_keys
+		.iter()
+		.map(|k| encrypted_at_rest_root::decrypt_with_key(&key, &k.0))
+		.collect::<Result<Vec<String>, _>>()?;
+
+	Ok(OtpRecoveryKeysOutput {
+		keys,
+	})
+}
+
+//__________________________________________________________________________________________________
 //internal fn
 
 pub(super) fn internal_group_data(app_id: impl Into<AppId>, user_group_id: impl Into<GroupId>, rank: i32) -> InternalGroupDataComplete
@@ -662,25 +804,13 @@ pub(super) fn create_refresh_token() -> AppRes<String>
 	Ok(base64::encode_config(token, base64::URL_SAFE_NO_PAD))
 }
 
-pub(super) async fn auth_user(app_id: &str, hashed_user_identifier: impl Into<String>, auth_key: String) -> AppRes<String>
+//__________________________________________________________________________________________________
+
+fn auth_user_private(auth_key: &str, hashed_user_auth_key: &str, alg: &str) -> AppRes<()>
 {
-	//get the login data
-	let login_data = user_model::get_user_login_data(app_id, hashed_user_identifier).await?;
-
-	let (hashed_user_auth_key, alg) = match login_data {
-		Some(d) => (d.hashed_authentication_key, d.derived_alg),
-		None => {
-			return Err(ServerCoreError::new_msg(
-				401,
-				ApiErrorCodes::UserNotFound,
-				"No user found with this identifier",
-			))
-		},
-	};
-
 	//hash the auth key and use the first 16 bytes
-	let (server_hashed_auth_key, hashed_client_key) =
-		sentc_crypto::util::server::get_auth_keys_from_base64(auth_key.as_str(), hashed_user_auth_key.as_str(), alg.as_str()).map_err(|_e| {
+	let (server_hashed_auth_key, hashed_client_key) = sentc_crypto::util::server::get_auth_keys_from_base64(auth_key, hashed_user_auth_key, alg)
+		.map_err(|_e| {
 			ServerCoreError::new_msg(
 				401,
 				ApiErrorCodes::AuthKeyFormat,
@@ -700,8 +830,53 @@ pub(super) async fn auth_user(app_id: &str, hashed_user_identifier: impl Into<St
 		));
 	}
 
+	Ok(())
+}
+
+pub(super) async fn auth_user(app_id: &str, hashed_user_identifier: impl Into<String>, auth_key: String) -> AppRes<String>
+{
+	//split get user login into simple without table join and extend for the otp
+
+	//get the login data
+	let login_data = user_model::get_user_login_data(app_id, hashed_user_identifier).await?;
+
+	let (hashed_user_auth_key, alg) = match login_data {
+		Some(d) => (d.hashed_authentication_key, d.derived_alg),
+		None => {
+			return Err(ServerCoreError::new_msg(
+				401,
+				ApiErrorCodes::UserNotFound,
+				"No user found with this identifier",
+			))
+		},
+	};
+
+	auth_user_private(&auth_key, &hashed_user_auth_key, &alg)?;
+
 	//return this here for the update user pw functions
 	Ok(hashed_user_auth_key)
+}
+
+pub(super) async fn auth_user_mfa(app_id: &str, hashed_user_identifier: impl Into<String>, auth_key: String) -> AppRes<(String, Option<String>)>
+{
+	//get the login data
+	let login_data = user_model::get_user_login_data_with_otp(app_id, hashed_user_identifier).await?;
+
+	let (hashed_user_auth_key, alg, otp_secret) = match login_data {
+		Some(d) => (d.hashed_authentication_key, d.derived_alg, d.otp_secret),
+		None => {
+			return Err(ServerCoreError::new_msg(
+				401,
+				ApiErrorCodes::UserNotFound,
+				"No user found with this identifier",
+			))
+		},
+	};
+
+	auth_user_private(&auth_key, &hashed_user_auth_key, &alg)?;
+
+	//return this here for the update user pw functions
+	Ok((hashed_user_auth_key, otp_secret))
 }
 
 /// Secure `memeq`.
