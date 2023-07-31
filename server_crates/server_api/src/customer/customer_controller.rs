@@ -176,7 +176,7 @@ pub async fn prepare_login(mut req: Request) -> JRes<PrepareLoginSaltServerOutpu
 
 	let app_data = get_app_data_from_req(&req)?;
 
-	let out = user::user_service::prepare_login(app_data, &user_identifier.user_identifier).await?;
+	let out = user::auth::auth_service::prepare_login(app_data, &user_identifier.user_identifier).await?;
 
 	echo(out)
 }
@@ -187,7 +187,7 @@ pub async fn done_login(mut req: Request) -> JRes<DoneLoginServerReturn>
 	let done_login: DoneLoginServerInput = bytes_to_json(&body)?;
 	let app_data = get_app_data_from_req(&req)?;
 
-	let out = user::user_service::done_login(app_data, done_login).await?;
+	let out = user::auth::auth_service::done_login(app_data, done_login).await?;
 
 	echo(out)
 }
@@ -199,7 +199,7 @@ pub async fn validate_mfa(mut req: Request) -> JRes<DoneLoginServerOutput>
 
 	let app_data = get_app_data_from_req(&req)?;
 
-	let out = user::user_service::validate_mfa(app_data, input).await?;
+	let out = user::auth::auth_service::validate_mfa(app_data, input).await?;
 
 	echo(out)
 }
@@ -211,7 +211,7 @@ pub async fn validate_recovery_otp(mut req: Request) -> JRes<DoneLoginServerOutp
 
 	let app_data = get_app_data_from_req(&req)?;
 
-	let out = user::user_service::validate_recovery_otp(app_data, input).await?;
+	let out = user::auth::auth_service::validate_recovery_otp(app_data, input).await?;
 
 	echo(out)
 }

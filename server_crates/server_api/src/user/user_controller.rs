@@ -38,6 +38,7 @@ use crate::group::group_entities::{GroupKeyUpdate, GroupUserKeys};
 use crate::group::{group_key_rotation_service, group_user_service};
 use crate::sentc_app_utils::check_endpoint_with_req;
 use crate::sentc_user_entities::{DoneLoginServerOutput, DoneLoginServerReturn, VerifyLoginOutput};
+use crate::user::auth::auth_service;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::user::user_entities::{UserDeviceList, UserInitEntity, UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
 use crate::user::user_service::UserAction;
@@ -134,7 +135,7 @@ pub(crate) async fn prepare_login(mut req: Request) -> JRes<PrepareLoginSaltServ
 
 	check_endpoint_with_app_options(app_data, Endpoint::UserPrepLogin)?;
 
-	let out = user_service::prepare_login(app_data, &user_identifier.user_identifier).await?;
+	let out = auth_service::prepare_login(app_data, &user_identifier.user_identifier).await?;
 
 	echo(out)
 }
@@ -148,7 +149,7 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerReturn>
 
 	check_endpoint_with_app_options(app_data, Endpoint::UserDoneLogin)?;
 
-	let out = user_service::done_login(app_data, done_login).await?;
+	let out = auth_service::done_login(app_data, done_login).await?;
 
 	if let DoneLoginServerReturn::Direct(d) = &out {
 		//save the action, only in controller not service because this just not belongs to other controller
@@ -171,7 +172,7 @@ pub(crate) async fn validate_mfa(mut req: Request) -> JRes<DoneLoginServerOutput
 
 	let app_data = get_app_data_from_req(&req)?;
 
-	let out = user_service::validate_mfa(app_data, input).await?;
+	let out = auth_service::validate_mfa(app_data, input).await?;
 
 	//2fa do there the user action
 	user_model::save_user_action(
@@ -192,7 +193,7 @@ pub(crate) async fn validate_recovery_otp(mut req: Request) -> JRes<DoneLoginSer
 
 	let app_data = get_app_data_from_req(&req)?;
 
-	let out = user_service::validate_recovery_otp(app_data, input).await?;
+	let out = auth_service::validate_recovery_otp(app_data, input).await?;
 
 	//2fa do there the user action
 	user_model::save_user_action(
