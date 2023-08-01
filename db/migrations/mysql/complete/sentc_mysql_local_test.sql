@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 28. Jul 2023 um 20:50
+-- Erstellungszeit: 01. Aug 2023 um 22:11
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -562,12 +562,18 @@ CREATE TABLE `sentc_user` (
   `id` varchar(36) NOT NULL,
   `app_id` varchar(36) NOT NULL,
   `user_group_id` varchar(36) NOT NULL,
-  `time` bigint(20) NOT NULL COMMENT 'registered at'
+  `time` bigint(20) NOT NULL COMMENT 'registered at',
+  `otp_secret` text DEFAULT NULL,
+  `otp_alg` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Trigger `sentc_user`
 --
+DELIMITER $$
+CREATE TRIGGER `user_delete_otp` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_otp_recovery WHERE user_id = OLD.id
+$$
+DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `user_delete_user_device` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_device WHERE user_id = OLD.id
 $$
@@ -636,6 +642,19 @@ CREATE TABLE `sentc_user_device_challenge` (
   `challenge` varchar(100) NOT NULL,
   `device_id` varchar(36) NOT NULL,
   `app_id` varchar(36) NOT NULL,
+  `time` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_user_otp_recovery`
+--
+
+CREATE TABLE `sentc_user_otp_recovery` (
+  `id` varchar(36) NOT NULL,
+  `user_id` varchar(36) NOT NULL,
+  `token` varchar(50) NOT NULL,
   `time` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -844,6 +863,13 @@ ALTER TABLE `sentc_user_device`
 --
 ALTER TABLE `sentc_user_device_challenge`
   ADD PRIMARY KEY (`challenge`,`device_id`,`app_id`,`time`) USING BTREE;
+
+--
+-- Indizes für die Tabelle `sentc_user_otp_recovery`
+--
+ALTER TABLE `sentc_user_otp_recovery`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `token` (`token`,`user_id`) USING BTREE;
 
 --
 -- Indizes für die Tabelle `sentc_user_token`

@@ -622,7 +622,7 @@ pub(super) async fn register_otp(app_id: impl Into<AppId>, user_id: impl Into<Us
 		"sentc_user_otp_recovery",
 		&["id", "user_id", "token", "time"],
 		encrypted_recover,
-		|i| {
+		move |i| {
 			let id = create_id();
 
 			set_params!(id, user_id.clone(), i, time.to_string())

@@ -1124,15 +1124,16 @@ dependencies = [
 
 [[package]]
 name = "hyper-rustls"
-version = "0.23.1"
+version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59df7c4e19c950e6e0e868dcc0a300b09a9b88e9ec55bd879ca819087a77355d"
+checksum = "8d78e1e73ec14cf7375674f74d7dde185c8206fd9dea6fb6295e8a98098aaa97"
 dependencies = [
+ "futures-util",
  "http",
  "hyper",
- "rustls 0.20.6",
+ "rustls",
  "tokio",
- "tokio-rustls 0.23.4",
+ "tokio-rustls",
 ]
 
 [[package]]
@@ -1282,11 +1283,11 @@ dependencies = [
  "nom",
  "once_cell",
  "quoted_printable",
- "rustls 0.21.1",
+ "rustls",
  "rustls-pemfile",
  "socket2 0.4.9",
  "tokio",
- "tokio-rustls 0.24.0",
+ "tokio-rustls",
  "webpki-roots 0.23.0",
 ]
 
@@ -1562,14 +1563,14 @@ dependencies = [
  "percent-encoding",
  "pin-project",
  "priority-queue",
- "rustls 0.21.1",
+ "rustls",
  "rustls-pemfile",
  "serde",
  "serde_json",
  "socket2 0.5.2",
  "thiserror",
  "tokio",
- "tokio-rustls 0.24.0",
+ "tokio-rustls",
  "tokio-util",
  "twox-hash",
  "url",
@@ -1986,12 +1987,12 @@ dependencies = [
  "itoa",
  "percent-encoding",
  "pin-project-lite",
- "rustls 0.21.1",
+ "rustls",
  "rustls-native-certs",
  "ryu",
  "sha1_smol",
  "tokio",
- "tokio-rustls 0.24.0",
+ "tokio-rustls",
  "tokio-util",
  "url",
 ]
@@ -2024,11 +2025,11 @@ checksum = "a3f87b73ce11b1619a3c6332f45341e0047173771e8b8b73f87bfeefb7b56244"
 
 [[package]]
 name = "reqwest"
-version = "0.11.11"
+version = "0.11.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b75aa69a3f06bbcc66ede33af2af253c6f7a86b1ca0033f60c580a27074fbf92"
+checksum = "cde824a14b7c14f85caff81225f411faacc04a2013f41670f41443742b1c1c55"
 dependencies = [
- "base64 0.13.0",
+ "base64 0.21.0",
  "bytes",
  "encoding_rs",
  "futures-core",
@@ -2040,18 +2041,18 @@ dependencies = [
  "hyper-rustls",
  "ipnet",
  "js-sys",
- "lazy_static",
  "log",
  "mime",
+ "once_cell",
  "percent-encoding",
  "pin-project-lite",
- "rustls 0.20.6",
+ "rustls",
  "rustls-pemfile",
  "serde",
  "serde_json",
  "serde_urlencoded",
  "tokio",
- "tokio-rustls 0.23.4",
+ "tokio-rustls",
  "tower-service",
  "url",
  "wasm-bindgen",
@@ -2171,18 +2172,6 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.20.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5aab8ee6c7097ed6057f43c187a62418d0c05a4bd5f18b3571db50ee0f9ce033"
-dependencies = [
- "log",
- "ring",
- "sct",
- "webpki",
-]
-
-[[package]]
-name = "rustls"
 version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c911ba11bc8433e811ce56fde130ccf32f5127cab0e0194e9c68c5a5b671791e"
@@ -2293,11 +2282,10 @@ dependencies = [
 [[package]]
 name = "sentc-crypto"
 version = "0.9.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=49b7b49a7d0c23d3fa7cf247bb4356ae573f5313#49b7b49a7d0c23d3fa7cf247bb4356ae573f5313"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
- "sentc-crypto-common 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sentc-crypto-common",
  "sentc-crypto-core",
  "sentc-crypto-utils",
  "serde",
@@ -2313,19 +2301,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "sentc-crypto-common"
-version = "0.9.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e4342d2c79e471b11f80d7ccd1508dae2ec87dbf8b9bf885e60b972b6f74c94b"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "sentc-crypto-core"
 version = "0.9.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=49b7b49a7d0c23d3fa7cf247bb4356ae573f5313#49b7b49a7d0c23d3fa7cf247bb4356ae573f5313"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -2340,14 +2317,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "sentc-crypto-full"
+version = "0.9.0"
+dependencies = [
+ "sentc-crypto",
+ "sentc-crypto-common",
+ "sentc-crypto-utils",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "sentc-crypto-light"
 version = "0.9.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=49b7b49a7d0c23d3fa7cf247bb4356ae573f5313#49b7b49a7d0c23d3fa7cf247bb4356ae573f5313"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
- "sentc-crypto-common 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sentc-crypto-common",
  "sentc-crypto-core",
+ "sentc-crypto-utils",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "sentc-crypto-light-full"
+version = "0.9.0"
+dependencies = [
+ "sentc-crypto-common",
+ "sentc-crypto-light",
  "sentc-crypto-utils",
  "serde",
  "serde_json",
@@ -2356,11 +2354,11 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-utils"
 version = "0.9.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=49b7b49a7d0c23d3fa7cf247bb4356ae573f5313#49b7b49a7d0c23d3fa7cf247bb4356ae573f5313"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
- "sentc-crypto-common 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "reqwest",
+ "sentc-crypto-common",
  "sentc-crypto-core",
  "serde",
  "serde_json",
@@ -2458,8 +2456,10 @@ dependencies = [
  "rustgram",
  "rustgram-server-util",
  "sentc-crypto",
- "sentc-crypto-common 0.9.3",
+ "sentc-crypto-common",
+ "sentc-crypto-full",
  "sentc-crypto-light",
+ "sentc-crypto-light-full",
  "serde",
  "serde_json",
  "server_api_common",
@@ -2472,7 +2472,7 @@ name = "server_api_common"
 version = "0.1.0"
 dependencies = [
  "rustgram-server-util",
- "sentc-crypto-common 0.9.3",
+ "sentc-crypto-common",
  "serde",
  "serde_json",
 ]
@@ -2762,22 +2762,11 @@ dependencies = [
 
 [[package]]
 name = "tokio-rustls"
-version = "0.23.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c43ee83903113e03984cb9e5cebe6c04a5116269e900e3ddba8f068a62adda59"
-dependencies = [
- "rustls 0.20.6",
- "tokio",
- "webpki",
-]
-
-[[package]]
-name = "tokio-rustls"
 version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e0d409377ff5b1e3ca6437aa86c1eb7d40c134bfec254e44c830defa92669db5"
 dependencies = [
- "rustls 0.21.1",
+ "rustls",
  "tokio",
 ]
 

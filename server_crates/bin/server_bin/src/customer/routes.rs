@@ -21,6 +21,14 @@ pub(crate) fn routes(router: &mut Router)
 		r(server_api::sentc_customer_controller::done_login).add(server_api::sentc_app_base_mw),
 	);
 	router.post(
+		"/api/v1/customer/validate_mfa",
+		r(server_api::sentc_customer_controller::validate_mfa).add(server_api::sentc_app_base_mw),
+	);
+	router.post(
+		"/api/v1/customer/validate_recovery_otp",
+		r(server_api::sentc_customer_controller::validate_recovery_otp).add(server_api::sentc_app_base_mw),
+	);
+	router.post(
 		"/api/v1/customer/verify_login",
 		r(server_api::sentc_customer_controller::verify_login).add(server_api::sentc_app_base_mw),
 	);
@@ -77,6 +85,22 @@ pub(crate) fn routes(router: &mut Router)
 		r(server_api::sentc_customer_controller::delete)
 			.add(server_api::sentc_jwt_mw)
 			.add(server_api::sentc_app_base_mw),
+	);
+	router.patch(
+		"/api/v1/customer/register_otp",
+		r(server_api::sentc_customer_controller::register_otp).add(server_api::sentc_jwt_customer_app),
+	);
+	router.patch(
+		"/api/v1/customer/reset_otp",
+		r(server_api::sentc_customer_controller::reset_otp).add(server_api::sentc_jwt_customer_app),
+	);
+	router.patch(
+		"/api/v1/customer/disable_otp",
+		r(server_api::sentc_customer_controller::disable_otp).add(server_api::sentc_jwt_customer_app),
+	);
+	router.get(
+		"/api/v1/customer/otp_recovery_keys",
+		r(server_api::sentc_customer_controller::get_otp_recovery_keys).add(server_api::sentc_jwt_customer_app),
 	);
 	router.post(
 		"/api/v1/customer/group",

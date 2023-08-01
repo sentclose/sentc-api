@@ -13,6 +13,8 @@ routes:
               - post: { p: "/register", s: server_api::sentc_customer_controller::register }
               - post: { p: "/prepare_login", s: server_api::sentc_customer_controller::prepare_login }
               - post: { p: "/done_login", s: server_api::sentc_customer_controller::done_login }
+              - post: { p: "/validate_mfa", s: server_api::sentc_customer_controller::validate_mfa }
+              - post: { p: "/validate_recovery_otp", s: server_api::sentc_customer_controller::validate_recovery_otp }
               - post: { p: "/verify_login", s: server_api::sentc_customer_controller::verify_login }
               - get: { p: "/captcha", s: server_api::sentc_customer_controller::customer_captcha }
               - put: { p: "/password_reset", s: server_api::sentc_customer_controller::prepare_reset_password }
@@ -42,6 +44,10 @@ routes:
             mw:
               - server_api::sentc_jwt_customer_app
             gr:
+              - patch: {p: "/register_otp", s: server_api::sentc_customer_controller::register_otp}
+              - patch: {p: "/reset_otp", s: server_api::sentc_customer_controller::reset_otp}
+              - patch: {p: "/disable_otp", s: server_api::sentc_customer_controller::disable_otp}
+              - get: {p: "/otp_recovery_keys", s: server_api::sentc_customer_controller::get_otp_recovery_keys}
               # group routes
               - group:
                   p: "/group"

@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 9:00pm on July 28, 2023 (UTC)
+-- Exported: 10:10pm on August 1, 2023 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -198,7 +198,7 @@ INSERT INTO "sentc_file_options" ("app_id","file_storage","storage_url","auth_to
 ----
 -- Table structure for sentc_user
 ----
-CREATE TABLE 'sentc_user' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'time' TEXT, 'user_group_id' TEXT);
+CREATE TABLE 'sentc_user' ('id' TEXT PRIMARY KEY NOT NULL, 'app_id' TEXT, 'time' TEXT, 'user_group_id' TEXT, 'otp_secret' TEXT, 'otp_alg' TEXT);
 
 ----
 -- Data dump for sentc_user, a total of 0 rows
@@ -347,6 +347,15 @@ CREATE TABLE 'sentc_app_options' ('app_id' TEXT PRIMARY KEY NOT NULL, 'group_cre
 -- Data dump for sentc_app_options, a total of 1 rows
 ----
 INSERT INTO "sentc_app_options" ("app_id","group_create","group_get","group_invite","group_reject_invite","group_accept_invite","group_join_req","group_accept_join_req","group_reject_join_req","group_key_rotation","group_user_delete","group_change_rank","group_delete","group_leave","user_exists","user_register","user_delete","user_update","user_change_password","user_reset_password","user_prepare_login","user_done_login","user_public_data","user_refresh","key_register","key_get","group_user_keys","group_user_update_check","group_auto_invite","group_list","file_register","file_part_upload","file_get","file_part_download","user_device_register","user_device_delete","user_device_list","group_invite_stop","user_key_update","file_delete","content","content_small","content_med","content_large","content_x_large") VALUES ('sentc_int','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0');
+
+----
+-- Table structure for sentc_user_otp_recovery
+----
+CREATE TABLE 'sentc_user_otp_recovery' ('id' TEXT PRIMARY KEY NOT NULL, 'user_id' TEXT, 'token' TEXT, 'time' TEXT);
+
+----
+-- Data dump for sentc_user_otp_recovery, a total of 0 rows
+----
 
 ----
 -- structure for index sqlite_autoindex_test_1 on table test
@@ -559,6 +568,16 @@ CREATE INDEX 'group_id' ON "sentc_group_sortable_keys" ("group_id" ASC, "app_id"
 ;
 
 ----
+-- structure for index sqlite_autoindex_sentc_user_otp_recovery_1 on table sentc_user_otp_recovery
+----
+;
+
+----
+-- structure for index token_key on table sentc_user_otp_recovery
+----
+CREATE INDEX 'token_key' ON "sentc_user_otp_recovery" ("token" ASC, "user_id" ASC);
+
+----
 -- structure for trigger  group_user_delete_key_rotation_keys on table sentc_group_user
 ----
 CREATE TRIGGER ' group_user_delete_key_rotation_keys' AFTER DELETE ON "sentc_group_user" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_key_rotation WHERE user_id = OLD.user_id AND group_id = OLD.group_id; END;
@@ -667,4 +686,9 @@ CREATE TRIGGER 'group_delete_sortable_keys' AFTER DELETE ON "sentc_group" FOR EA
 -- structure for trigger user_delete_challenge on table sentc_user_device
 ----
 CREATE TRIGGER 'user_delete_challenge' AFTER DELETE ON "sentc_user_device" FOR EACH ROW BEGIN DELETE FROM sentc_user_device_challenge WHERE device_id = OLD.id ; END;
+
+----
+-- structure for trigger user_delete_otp on table sentc_user
+----
+CREATE TRIGGER 'user_delete_otp' AFTER DELETE ON "sentc_user" FOR EACH ROW BEGIN DELETE FROM sentc_user_otp_recovery WHERE user_id = OLD.id; END;
 COMMIT;

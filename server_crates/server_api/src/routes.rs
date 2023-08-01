@@ -47,6 +47,14 @@ pub(crate) fn routes(router: &mut Router)
 		r(crate::user::done_login).add(app_token::app_token_transform),
 	);
 	router.post(
+		"/api/v1/validate_mfa",
+		r(crate::user::validate_mfa).add(app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/validate_recovery_otp",
+		r(crate::user::validate_recovery_otp).add(app_token::app_token_transform),
+	);
+	router.post(
 		"/api/v1/verify_login",
 		r(crate::user::verify_login).add(app_token::app_token_transform),
 	);
@@ -128,6 +136,12 @@ pub(crate) fn routes(router: &mut Router)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
+	router.patch(
+		"/api/v1/user/register_otp",
+		r(crate::user::register_otp)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
 	router.put(
 		"/api/v1/user/update_pw",
 		r(crate::user::change_password)
@@ -137,6 +151,24 @@ pub(crate) fn routes(router: &mut Router)
 	router.put(
 		"/api/v1/user/reset_pw",
 		r(crate::user::reset_password)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.patch(
+		"/api/v1/user/reset_otp",
+		r(crate::user::reset_otp)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.patch(
+		"/api/v1/user/disable_otp",
+		r(crate::user::disable_otp)
+			.add(jwt::jwt_transform)
+			.add(app_token::app_token_transform),
+	);
+	router.get(
+		"/api/v1/user/otp_recovery_keys",
+		r(crate::user::get_otp_recovery_keys)
 			.add(jwt::jwt_transform)
 			.add(app_token::app_token_transform),
 	);
