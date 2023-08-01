@@ -4,7 +4,7 @@ use reqwest::header::AUTHORIZATION;
 use rustgram_server_util::db::StringEntity;
 use rustgram_server_util::error::ServerErrorCodes;
 use sentc_crypto::util::public::handle_server_response;
-use sentc_crypto_common::user::UserDeviceRegisterInput;
+use sentc_crypto_common::user::{DoneLoginServerReturn, UserDeviceRegisterInput};
 use sentc_crypto_common::ServerOutput;
 use server_api::util::api_res::ApiErrorCodes;
 use server_api_common::customer::{CustomerData, CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput, CustomerUpdateInput};
@@ -165,19 +165,26 @@ async fn test_12_login_customer()
 	let client = reqwest::Client::new();
 	let res = client.post(url).body(input).send().await.unwrap();
 
-	let body = res.text().await.unwrap();
-
-	let keys = sentc_crypto_light::user::done_login(&derived_master_key, auth_key, email.to_string(), &body).unwrap();
-
-	let url = get_url("api/v1/customer/verify_login".to_owned());
-	let client = reqwest::Client::new();
-	let res = client.post(url).body(keys.challenge).send().await.unwrap();
-
 	let server_out = res.text().await.unwrap();
 
-	let login_data: CustomerDoneLoginOutput = handle_server_response(&server_out).unwrap();
+	match sentc_crypto_light::user::check_done_login(&server_out).unwrap() {
+		DoneLoginServerReturn::Direct(d) => {
+			let keys = sentc_crypto_light::user::done_login(&derived_master_key, auth_key, email.to_string(), d).unwrap();
 
-	customer.customer_data = Some(login_data);
+			let url = get_url("api/v1/customer/verify_login".to_owned());
+			let client = reqwest::Client::new();
+			let res = client.post(url).body(keys.challenge).send().await.unwrap();
+
+			let server_out = res.text().await.unwrap();
+
+			let server_out: CustomerDoneLoginOutput = handle_server_response(&server_out).unwrap();
+
+			customer.customer_data = Some(server_out);
+		},
+		DoneLoginServerReturn::Otp => {
+			panic!("No mfa excepted for customer login")
+		},
+	}
 }
 
 #[tokio::test]
@@ -235,19 +242,26 @@ async fn test_13_aa_update_data()
 
 	let server_out = res.text().await.unwrap();
 
-	let keys = sentc_crypto_light::user::done_login(&derived_master_key, auth_key, email.to_string(), server_out.as_str()).unwrap();
+	match sentc_crypto_light::user::check_done_login(&server_out).unwrap() {
+		DoneLoginServerReturn::Direct(d) => {
+			let keys = sentc_crypto_light::user::done_login(&derived_master_key, auth_key, email.to_string(), d).unwrap();
 
-	let url = get_url("api/v1/customer/verify_login".to_owned());
-	let client = reqwest::Client::new();
-	let res = client.post(url).body(keys.challenge).send().await.unwrap();
+			let url = get_url("api/v1/customer/verify_login".to_owned());
+			let client = reqwest::Client::new();
+			let res = client.post(url).body(keys.challenge).send().await.unwrap();
 
-	let server_out = res.text().await.unwrap();
+			let server_out = res.text().await.unwrap();
 
-	let out: CustomerDoneLoginOutput = handle_server_response(&server_out).unwrap();
+			let out: CustomerDoneLoginOutput = handle_server_response(&server_out).unwrap();
 
-	assert_eq!(out.email_data.name, "hello".to_string());
+			assert_eq!(out.email_data.name, "hello".to_string());
 
-	customer.customer_data = Some(out);
+			customer.customer_data = Some(out);
+		},
+		DoneLoginServerReturn::Otp => {
+			panic!("No mfa excepted for customer login")
+		},
+	}
 }
 
 #[tokio::test]
@@ -307,7 +321,7 @@ async fn test_13_update_customer()
 
 	let body = res.text().await.unwrap();
 
-	let out = ServerOutput::<CustomerDoneLoginOutput>::from_string(body.as_str()).unwrap();
+	let out = ServerOutput::<DoneLoginServerReturn>::from_string(body.as_str()).unwrap();
 
 	assert!(!out.status);
 
@@ -358,24 +372,33 @@ async fn test_14_change_password()
 	let client = reqwest::Client::new();
 	let res = client.post(url).body(input).send().await.unwrap();
 
-	let done_login_out = res.text().await.unwrap();
-
-	let keys = sentc_crypto_light::user::done_login(&derived_master_key, auth_key, email.to_string(), &done_login_out).unwrap();
-
-	let url = get_url("api/v1/customer/verify_login".to_owned());
-	let client = reqwest::Client::new();
-	let res = client.post(url).body(keys.challenge).send().await.unwrap();
-
 	let server_out = res.text().await.unwrap();
 
-	let out: CustomerDoneLoginOutput = handle_server_response(&server_out).unwrap();
+	let (out, done_login_out) = match sentc_crypto_light::user::check_done_login(&server_out).unwrap() {
+		DoneLoginServerReturn::Direct(d) => {
+			let keys = sentc_crypto_light::user::done_login(&derived_master_key, auth_key, email.to_string(), d.clone()).unwrap();
+
+			let url = get_url("api/v1/customer/verify_login".to_owned());
+			let client = reqwest::Client::new();
+			let res = client.post(url).body(keys.challenge).send().await.unwrap();
+
+			let server_out = res.text().await.unwrap();
+
+			let out: CustomerDoneLoginOutput = handle_server_response(&server_out).unwrap();
+
+			(out, d)
+		},
+		DoneLoginServerReturn::Otp => {
+			panic!("No mfa excepted for customer login")
+		},
+	};
 
 	//use a new fresh jwt
 	let jwt = out.verify.jwt.clone();
 
 	//______________________________________________________________________________________________
 
-	let input = sentc_crypto_light::user::change_password(pw, new_pw, body.as_str(), &done_login_out).unwrap();
+	let input = sentc_crypto_light::user::change_password(pw, new_pw, body.as_str(), done_login_out).unwrap();
 
 	let url = get_url("api/v1/customer/password".to_owned());
 
@@ -469,24 +492,33 @@ async fn test_15_change_password_again_from_pw_change()
 	let client = reqwest::Client::new();
 	let res = client.post(url).body(input).send().await.unwrap();
 
-	let done_login_out = res.text().await.unwrap();
-
-	let keys = sentc_crypto_light::user::done_login(&derived_master_key, auth_key, email.to_string(), &done_login_out).unwrap();
-
-	let url = get_url("api/v1/customer/verify_login".to_owned());
-	let client = reqwest::Client::new();
-	let res = client.post(url).body(keys.challenge).send().await.unwrap();
-
 	let server_out = res.text().await.unwrap();
 
-	let out: CustomerDoneLoginOutput = handle_server_response(&server_out).unwrap();
+	let (out, done_login_out) = match sentc_crypto_light::user::check_done_login(&server_out).unwrap() {
+		DoneLoginServerReturn::Direct(d) => {
+			let keys = sentc_crypto_light::user::done_login(&derived_master_key, auth_key, email.to_string(), d.clone()).unwrap();
+
+			let url = get_url("api/v1/customer/verify_login".to_owned());
+			let client = reqwest::Client::new();
+			let res = client.post(url).body(keys.challenge).send().await.unwrap();
+
+			let server_out = res.text().await.unwrap();
+
+			let out: CustomerDoneLoginOutput = handle_server_response(&server_out).unwrap();
+
+			(out, d)
+		},
+		DoneLoginServerReturn::Otp => {
+			panic!("No mfa excepted for customer login")
+		},
+	};
 
 	//use a new fresh jwt
 	let jwt = out.verify.jwt.clone();
 
 	//______________________________________________________________________________________________
 
-	let input = sentc_crypto_light::user::change_password(pw, new_pw, body.as_str(), &done_login_out).unwrap();
+	let input = sentc_crypto_light::user::change_password(pw, new_pw, body.as_str(), done_login_out).unwrap();
 
 	let url = get_url("api/v1/customer/password".to_owned());
 

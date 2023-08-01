@@ -17,11 +17,16 @@ use sentc_crypto::sdk_common::user::UserPublicKeyData;
 use sentc_crypto::sdk_core::SymKey;
 use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::sdk_utils::{handle_general_server_response, handle_server_response};
-use sentc_crypto_common::group::{GroupCreateOutput, GroupKeyServerOutput, KeyRotationStartServerOutput};
+use sentc_crypto_common::group::{GroupKeyServerOutput, KeyRotationStartServerOutput};
 use sentc_crypto_common::user::{CaptchaCreateOutput, CaptchaInput, UserDeviceRegisterInput, UserInitServerOutput};
 use sentc_crypto_common::{CustomerId, GroupId, ServerOutput, UserId};
 use server_api_common::app::{AppFileOptionsInput, AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
 use server_api_common::customer::{CustomerData, CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput};
+
+pub fn get_base_url() -> String
+{
+	format!("http://127.0.0.1:{}", 3002)
+}
 
 pub fn get_url(path: String) -> String
 {
@@ -177,17 +182,24 @@ pub async fn login_customer(email: &str, pw: &str) -> CustomerDoneLoginOutput
 
 	let server_out = res.text().await.unwrap();
 
-	let keys = sentc_crypto_light::user::done_login(&derived_master_key, auth_key, email.to_string(), server_out.as_str()).unwrap();
+	match sentc_crypto_light::user::check_done_login(&server_out).unwrap() {
+		sentc_crypto_light::sdk_common::user::DoneLoginServerReturn::Direct(d) => {
+			let keys = sentc_crypto_light::user::done_login(&derived_master_key, auth_key, email.to_string(), d).unwrap();
 
-	let url = get_url("api/v1/customer/verify_login".to_owned());
-	let client = reqwest::Client::new();
-	let res = client.post(url).body(keys.challenge).send().await.unwrap();
+			let url = get_url("api/v1/customer/verify_login".to_owned());
+			let client = reqwest::Client::new();
+			let res = client.post(url).body(keys.challenge).send().await.unwrap();
 
-	let server_out = res.text().await.unwrap();
+			let server_out = res.text().await.unwrap();
 
-	let server_out: CustomerDoneLoginOutput = handle_server_response(&server_out).unwrap();
+			let server_out: CustomerDoneLoginOutput = handle_server_response(&server_out).unwrap();
 
-	server_out
+			server_out
+		},
+		sentc_crypto_light::sdk_common::user::DoneLoginServerReturn::Otp => {
+			panic!("No mfa excepted for customer login")
+		},
+	}
 }
 
 pub async fn customer_delete(customer_jwt: &str)
@@ -315,28 +327,9 @@ pub async fn delete_app(customer_jwt: &str, app_id: &str)
 
 pub async fn register_user(app_secret_token: &str, username: &str, password: &str) -> UserId
 {
-	let url = get_url("api/v1/register".to_owned());
-
-	let input = sentc_crypto::user::register(username, password).unwrap();
-
-	let client = reqwest::Client::new();
-	let res = client
-		.post(url)
-		.header("x-sentc-app-token", app_secret_token)
-		.body(input)
-		.send()
+	sentc_crypto_full::user::register(get_base_url(), app_secret_token, username, password)
 		.await
-		.unwrap();
-
-	assert_eq!(res.status(), StatusCode::OK);
-
-	let body = res.text().await.unwrap();
-
-	let user_id = sentc_crypto::user::done_register(body.as_str()).unwrap();
-
-	assert_ne!(user_id, "".to_owned());
-
-	user_id
+		.unwrap()
 }
 
 pub async fn delete_user(app_secret_token: &str, user_id: &str)
@@ -359,139 +352,35 @@ pub async fn delete_user(app_secret_token: &str, user_id: &str)
 
 pub async fn login_user_light(public_token: &str, username: &str, pw: &str) -> sentc_crypto_light::UserDataInt
 {
-	let url = get_url("api/v1/prepare_login".to_owned());
-
-	let prep_server_input = sentc_crypto_light::user::prepare_login_start(username).unwrap();
-
-	let client = reqwest::Client::new();
-	let res = client
-		.post(url)
-		.header("x-sentc-app-token", public_token)
-		.body(prep_server_input)
-		.send()
+	let out = sentc_crypto_light_full::user::login(get_base_url(), public_token, username, pw)
 		.await
 		.unwrap();
 
-	let body = res.text().await.unwrap();
-
-	let (input, auth_key, derived_master_key) = sentc_crypto_light::user::prepare_login(username, pw, body.as_str()).unwrap();
-
-	// //done login
-	let url = get_url("api/v1/done_login".to_owned());
-
-	let client = reqwest::Client::new();
-	let res = client
-		.post(url)
-		.header("x-sentc-app-token", public_token)
-		.body(input)
-		.send()
-		.await
-		.unwrap();
-
-	let server_out = res.text().await.unwrap();
-	let keys = sentc_crypto_light::user::done_login(
-		&derived_master_key,
-		auth_key,
-		username.to_string(),
-		server_out.as_str(),
-	)
-	.unwrap();
-
-	let url = get_url("api/v1/verify_login_light".to_owned());
-	let res = client
-		.post(url)
-		.header("x-sentc-app-token", public_token)
-		.body(keys.challenge)
-		.send()
-		.await
-		.unwrap();
-	let server_out = res.text().await.unwrap();
-
-	let keys = sentc_crypto_light::user::verify_login(&server_out, keys.user_id, keys.device_id, keys.device_keys).unwrap();
-
-	keys
+	if let sentc_crypto_light_full::user::PreLoginOut::Direct(d) = out {
+		d
+	} else {
+		panic!("No mfa excepted");
+	}
 }
 
 pub async fn login_user(public_token: &str, username: &str, pw: &str) -> UserDataInt
 {
-	let url = get_url("api/v1/prepare_login".to_owned());
-
-	let prep_server_input = sentc_crypto::user::prepare_login_start(username).unwrap();
-
-	let client = reqwest::Client::new();
-	let res = client
-		.post(url)
-		.header("x-sentc-app-token", public_token)
-		.body(prep_server_input)
-		.send()
+	let out = sentc_crypto_full::user::login(get_base_url(), public_token, username, pw)
 		.await
 		.unwrap();
 
-	let body = res.text().await.unwrap();
-
-	let (input, auth_key, derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
-
-	// //done login
-	let url = get_url("api/v1/done_login".to_owned());
-
-	let client = reqwest::Client::new();
-	let res = client
-		.post(url)
-		.header("x-sentc-app-token", public_token)
-		.body(input)
-		.send()
-		.await
-		.unwrap();
-
-	let server_out = res.text().await.unwrap();
-	let keys = sentc_crypto::user::done_login(
-		&derived_master_key,
-		auth_key,
-		username.to_string(),
-		server_out.as_str(),
-	)
-	.unwrap();
-
-	let url = get_url("api/v1/verify_login".to_owned());
-	let res = client
-		.post(url)
-		.header("x-sentc-app-token", public_token)
-		.body(keys.challenge)
-		.send()
-		.await
-		.unwrap();
-	let server_out = res.text().await.unwrap();
-
-	let keys = sentc_crypto::user::verify_login(&server_out, keys.user_id, keys.device_id, keys.device_keys).unwrap();
-
-	keys
+	if let sentc_crypto_full::user::PreLoginOut::Direct(d) = out {
+		d
+	} else {
+		panic!("No mfa excepted");
+	}
 }
 
 pub async fn init_user(app_secret_token: &str, jwt: &str, refresh_token: &str) -> UserInitServerOutput
 {
-	let url = get_url("api/v1/init".to_owned());
-
-	let input = sentc_crypto::user::prepare_refresh_jwt(refresh_token.to_string()).unwrap();
-
-	let client = reqwest::Client::new();
-	let res = client
-		.post(url)
-		.header(AUTHORIZATION, auth_header(jwt))
-		.header("x-sentc-app-token", app_secret_token)
-		.body(input)
-		.send()
+	sentc_crypto_full::user::init_user(get_base_url(), app_secret_token, jwt, refresh_token.to_string())
 		.await
-		.unwrap();
-
-	assert_eq!(res.status(), StatusCode::OK);
-
-	let body = res.text().await.unwrap();
-
-	let out = ServerOutput::<UserInitServerOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-
-	out.result.unwrap()
+		.unwrap()
 }
 
 pub async fn create_test_user(secret_token: &str, public_token: &str, username: &str, pw: &str) -> (UserId, UserDataInt)
@@ -505,34 +394,18 @@ pub async fn create_test_user(secret_token: &str, public_token: &str, username: 
 
 pub async fn create_group(secret_token: &str, creator_public_key: &PublicKeyFormatInt, parent_group_id: Option<GroupId>, jwt: &str) -> GroupId
 {
-	let group_input = sentc_crypto::group::prepare_create(creator_public_key).unwrap();
-
-	let url = match parent_group_id {
-		Some(p) => get_url("api/v1/group".to_owned() + "/" + p.as_str() + "/child"),
-		None => get_url("api/v1/group".to_owned()),
-	};
-
-	let client = reqwest::Client::new();
-	let res = client
-		.post(url)
-		.header(AUTHORIZATION, auth_header(jwt))
-		.header("x-sentc-app-token", secret_token)
-		.body(group_input)
-		.send()
-		.await
-		.unwrap();
-
-	assert_eq!(res.status(), StatusCode::OK);
-
-	let body = res.text().await.unwrap();
-	let out = ServerOutput::<GroupCreateOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
-
-	let out = out.result.unwrap();
-
-	out.group_id
+	match parent_group_id {
+		Some(i) => {
+			sentc_crypto_full::group::create_child_group(get_base_url(), secret_token, jwt, &i, 0, creator_public_key, None)
+				.await
+				.unwrap()
+		},
+		None => {
+			sentc_crypto_full::group::create(get_base_url(), secret_token, jwt, creator_public_key, None)
+				.await
+				.unwrap()
+		},
+	}
 }
 
 pub async fn create_child_group_from_group_as_member(
@@ -543,32 +416,17 @@ pub async fn create_child_group_from_group_as_member(
 	group_to_access: &str,
 ) -> GroupId
 {
-	let group_input = sentc_crypto::group::prepare_create(creator_public_key).unwrap();
-
-	let url = get_url("api/v1/group".to_owned() + "/" + parent_group_id + "/child");
-
-	let client = reqwest::Client::new();
-	let res = client
-		.post(url)
-		.header(AUTHORIZATION, auth_header(jwt))
-		.header("x-sentc-app-token", secret_token)
-		.header("x-sentc-group-access-id", group_to_access)
-		.body(group_input)
-		.send()
-		.await
-		.unwrap();
-
-	assert_eq!(res.status(), StatusCode::OK);
-
-	let body = res.text().await.unwrap();
-	let out = ServerOutput::<GroupCreateOutput>::from_string(body.as_str()).unwrap();
-
-	assert_eq!(out.status, true);
-	assert_eq!(out.err_code, None);
-
-	let out = out.result.unwrap();
-
-	out.group_id
+	sentc_crypto_full::group::create_child_group(
+		get_base_url(),
+		secret_token,
+		jwt,
+		parent_group_id,
+		0,
+		creator_public_key,
+		Some(group_to_access),
+	)
+	.await
+	.unwrap()
 }
 
 pub fn decrypt_group_hmac_keys(first_group_key: &SymKeyFormatInt, hmac_keys: Vec<GroupHmacData>) -> Vec<HmacKeyFormatInt>
@@ -605,25 +463,15 @@ pub async fn get_group(
 	key_update: bool,
 ) -> (GroupOutData, Vec<GroupKeyData>)
 {
-	let url = get_url("api/v1/group/".to_owned() + group_id);
-	let client = reqwest::Client::new();
-	let res = client
-		.get(url)
-		.header(AUTHORIZATION, auth_header(jwt))
-		.header("x-sentc-app-token", secret_token)
-		.send()
+	let data = sentc_crypto_full::group::get_group(get_base_url(), secret_token, jwt, group_id, None)
 		.await
 		.unwrap();
 
-	let body = res.text().await.unwrap();
-
-	let data = sentc_crypto::group::get_group_data(body.as_str()).unwrap();
-
-	let mut data_keys = Vec::with_capacity(data.keys.len());
-
-	for key in data.keys {
-		data_keys.push(sentc_crypto::group::decrypt_group_keys(private_key, key).unwrap());
-	}
+	let data_keys = data
+		.keys
+		.into_iter()
+		.map(|k| sentc_crypto::group::decrypt_group_keys(private_key, k).unwrap())
+		.collect();
 
 	assert_eq!(data.key_update, key_update);
 
@@ -654,26 +502,15 @@ pub async fn get_group_from_group_as_member(
 	private_group_key: &PrivateKeyFormatInt,
 ) -> (GroupOutData, Vec<GroupKeyData>)
 {
-	let url = get_url("api/v1/group/".to_owned() + group_id);
-	let client = reqwest::Client::new();
-	let res = client
-		.get(url)
-		.header(AUTHORIZATION, auth_header(jwt))
-		.header("x-sentc-app-token", secret_token)
-		.header("x-sentc-group-access-id", group_to_access)
-		.send()
+	let data = sentc_crypto_full::group::get_group(get_base_url(), secret_token, jwt, group_id, Some(group_to_access))
 		.await
 		.unwrap();
 
-	let body = res.text().await.unwrap();
-
-	let data = sentc_crypto::group::get_group_data(body.as_str()).unwrap();
-
-	let mut data_keys = Vec::with_capacity(data.keys.len());
-
-	for key in data.keys {
-		data_keys.push(sentc_crypto::group::decrypt_group_keys(private_group_key, key).unwrap());
-	}
+	let data_keys = data
+		.keys
+		.into_iter()
+		.map(|k| sentc_crypto::group::decrypt_group_keys(private_group_key, k).unwrap())
+		.collect();
 
 	(
 		GroupOutData {
