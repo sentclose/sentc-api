@@ -5,6 +5,8 @@
 storage/
 .run_config/
 db/sqlite/db_test.sqlite3
+db/sqlite/db_test.sqlite3-shm
+db/sqlite/db_test.sqlite3-wal
 
 # local env files
 .env
