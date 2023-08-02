@@ -1,11 +1,12 @@
 CREATE TABLE `sentc_user_otp_recovery` (
-    `id` VARCHAR(36) NOT NULL ,
-    `user_id` VARCHAR(36) NOT NULL ,
-    `token` VARCHAR(50) NOT NULL ,
-    `time` BIGINT NOT NULL ,
-    PRIMARY KEY (`id`),
-	KEY `token` (`token`,`user_id`)
-) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4;
+	`id` varchar(36) NOT NULL,
+	`user_id` varchar(36) NOT NULL,
+	`token` text NOT NULL,
+	`time` bigint(20) NOT NULL,
+	`token_hash` varchar(100) NOT NULL COMMENT 'to search the token',
+	PRIMARY KEY (`id`),
+	KEY `user_id` (`user_id`,`token_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TRIGGER `user_delete_otp` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_otp_recovery WHERE user_id = OLD.id ;
 

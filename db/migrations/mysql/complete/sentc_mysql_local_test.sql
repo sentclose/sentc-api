@@ -654,7 +654,7 @@ CREATE TABLE `sentc_user_device_challenge` (
 CREATE TABLE `sentc_user_otp_recovery` (
   `id` varchar(36) NOT NULL,
   `user_id` varchar(36) NOT NULL,
-  `token` varchar(50) NOT NULL,
+  `token` varchar(200) NOT NULL,
   `time` bigint(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
