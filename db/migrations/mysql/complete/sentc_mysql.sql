@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 01. Aug 2023 um 22:11
+-- Erstellungszeit: 02. Aug 2023 um 20:37
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -42,38 +42,38 @@ CREATE TABLE `sentc_app` (
 --
 -- Trigger `sentc_app`
 --
-
+DELIMITER $$
 CREATE TRIGGER `delete_app_content` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_content WHERE app_id = OLD.id
-
-;
-
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `delete_app_jwt` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_app_jwt_keys WHERE app_id = OLD.id
-
-;
-
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `delete_file_options` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_file_options WHERE app_id = OLD.id
-
-;
-
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `delete_group` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_group WHERE app_id = OLD.id
-
-;
-
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `delete_group_options` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_app_group_options WHERE app_id = OLD.id
-
-;
-
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `delete_keys` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_sym_key_management WHERE app_id = OLD.id
-
-;
-
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `delete_options` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_app_options WHERE app_id = OLD.id
-
-;
-
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `delete_user` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_user WHERE app_id = OLD.id
-
-;
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -153,7 +153,11 @@ CREATE TABLE `sentc_app_options` (
   `content_small` int(11) NOT NULL,
   `content_med` int(11) NOT NULL,
   `content_large` int(11) NOT NULL,
-  `content_x_large` int(11) NOT NULL
+  `content_x_large` int(11) NOT NULL,
+  `user_register_otp` int(11) NOT NULL,
+  `user_reset_otp` int(11) NOT NULL,
+  `user_disable_otp` int(11) NOT NULL,
+  `user_get_otp_recovery_keys` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='option: 0 = not allowed,  1 = public token, 2 = secret token';
 
 -- --------------------------------------------------------
@@ -208,10 +212,10 @@ CREATE TABLE `sentc_customer` (
 --
 -- Trigger `sentc_customer`
 --
-
+DELIMITER $$
 CREATE TRIGGER `delete_app` AFTER DELETE ON `sentc_customer` FOR EACH ROW DELETE FROM sentc_app WHERE owner_id = OLD.id AND owner_type = 0
-
-;
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -228,10 +232,10 @@ CREATE TABLE `sentc_customer_group` (
 --
 -- Trigger `sentc_customer_group`
 --
-
+DELIMITER $$
 CREATE TRIGGER `delete_customer_group_apps` AFTER DELETE ON `sentc_customer_group` FOR EACH ROW DELETE FROM sentc_app WHERE owner_id = OLD.sentc_group_id AND owner_type = 1
-
-;
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -257,14 +261,14 @@ CREATE TABLE `sentc_file` (
 --
 -- Trigger `sentc_file`
 --
-
+DELIMITER $$
 CREATE TRIGGER `file_delete_parts` AFTER DELETE ON `sentc_file` FOR EACH ROW DELETE FROM sentc_file_part WHERE file_id = OLD.id
-
-;
-
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `file_session_delete` AFTER DELETE ON `sentc_file` FOR EACH ROW DELETE FROM sentc_file_session WHERE file_id = OLD.id
-
-;
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -329,26 +333,26 @@ CREATE TABLE `sentc_group` (
 --
 -- Trigger `sentc_group`
 --
-
+DELIMITER $$
 CREATE TRIGGER `group_delete_hmac_keys` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_hmac_keys WHERE group_id = OLD.id
-
-;
-
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `group_delete_invites` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = OLD.id
-
-;
-
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `group_delete_keys` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_keys WHERE group_id = OLD.id
-
-;
-
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `group_delete_sortable_keys` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_sortable_keys WHERE group_id = OLD.id
-
-;
-
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `group_delete_user` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_user WHERE group_id = OLD.id
-
-;
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -429,14 +433,14 @@ CREATE TABLE `sentc_group_user` (
 --
 -- Trigger `sentc_group_user`
 --
-
+DELIMITER $$
 CREATE TRIGGER `group_user_delete_key_rotation_keys` AFTER DELETE ON `sentc_group_user` FOR EACH ROW DELETE FROM sentc_group_user_key_rotation WHERE user_id = OLD.user_id AND group_id = OLD.group_id
-
-;
-
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `group_user_delete_user_keys` AFTER DELETE ON `sentc_group_user` FOR EACH ROW DELETE FROM sentc_group_user_keys WHERE user_id = OLD.user_id AND group_id = OLD.group_id
-
-;
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -530,14 +534,14 @@ CREATE TABLE `sentc_user` (
 --
 -- Trigger `sentc_user`
 --
-
+DELIMITER $$
 CREATE TRIGGER `user_delete_otp` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_otp_recovery WHERE user_id = OLD.id
-
-;
-
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `user_delete_user_device` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_device WHERE user_id = OLD.id
-
-;
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -583,14 +587,14 @@ CREATE TABLE `sentc_user_device` (
 --
 -- Trigger `sentc_user_device`
 --
-
+DELIMITER $$
 CREATE TRIGGER `user_delete_challenge` AFTER DELETE ON `sentc_user_device` FOR EACH ROW DELETE FROM sentc_user_device_challenge WHERE device_id = OLD.id
-
-;
-
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `user_delete_jwt_refresh` AFTER DELETE ON `sentc_user_device` FOR EACH ROW DELETE FROM sentc_user_token WHERE device_id = OLD.id
-
-;
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -614,8 +618,9 @@ CREATE TABLE `sentc_user_device_challenge` (
 CREATE TABLE `sentc_user_otp_recovery` (
   `id` varchar(36) NOT NULL,
   `user_id` varchar(36) NOT NULL,
-  `token` varchar(200) NOT NULL,
-  `time` bigint(20) NOT NULL
+  `token` text NOT NULL,
+  `time` bigint(20) NOT NULL,
+  `token_hash` varchar(100) NOT NULL COMMENT 'to search the token'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -829,7 +834,7 @@ ALTER TABLE `sentc_user_device_challenge`
 --
 ALTER TABLE `sentc_user_otp_recovery`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `token` (`token`,`user_id`) USING BTREE;
+  ADD KEY `user_id` (`user_id`,`token_hash`);
 
 --
 -- Indizes für die Tabelle `sentc_user_token`
