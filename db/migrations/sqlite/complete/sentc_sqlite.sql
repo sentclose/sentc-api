@@ -1,7 +1,7 @@
 ----
 -- phpLiteAdmin database dump (https://www.phpliteadmin.org/)
 -- phpLiteAdmin version: 1.9.8.2
--- Exported: 10:10pm on August 1, 2023 (UTC)
+-- Exported: 6:32pm on August 2, 2023 (UTC)
 -- database file: D:\Programming\sentclose\sentc\backend\sentc-api\db\sqlite\db.sqlite3
 ----
 BEGIN TRANSACTION;
@@ -238,7 +238,7 @@ CREATE TABLE 'sentc_app_options' ('app_id' TEXT PRIMARY KEY NOT NULL, 'group_cre
 ----
 -- Table structure for sentc_user_otp_recovery
 ----
-CREATE TABLE 'sentc_user_otp_recovery' ('id' TEXT PRIMARY KEY NOT NULL, 'user_id' TEXT, 'token' TEXT, 'time' TEXT);
+CREATE TABLE 'sentc_user_otp_recovery' ('id' TEXT PRIMARY KEY NOT NULL, 'user_id' TEXT, 'token' TEXT, 'time' TEXT, 'token_hash' TEXT);
 
 ----
 -- structure for index sqlite_autoindex_test_1 on table test
@@ -456,9 +456,9 @@ CREATE INDEX 'group_id' ON "sentc_group_sortable_keys" ("group_id" ASC, "app_id"
 ;
 
 ----
--- structure for index token_key on table sentc_user_otp_recovery
+-- structure for index search_token on table sentc_user_otp_recovery
 ----
-CREATE INDEX 'token_key' ON "sentc_user_otp_recovery" ("token" ASC, "user_id" ASC);
+CREATE INDEX 'search_token' ON "sentc_user_otp_recovery" ("user_id" ASC, "token_hash" ASC);
 
 ----
 -- structure for trigger  group_user_delete_key_rotation_keys on table sentc_group_user
