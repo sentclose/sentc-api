@@ -531,7 +531,7 @@ pub async fn register_otp(app_id: impl Into<AppId>, user_id: impl Into<UserId>) 
 
 	for i in &data.recover {
 		encrypted_recover.push((
-			encrypted_at_rest_root::encrypt_with_key(&key, &i)?,
+			encrypted_at_rest_root::encrypt_with_key(&key, i)?,
 			hash_token_to_string(i.as_bytes())?,
 		))
 	}
