@@ -62,6 +62,11 @@ pub enum Endpoint
 	ContentMed,
 	ContentLarge,
 	ContentXLarge,
+
+	UserRegisterOtp,
+	UserResetOtp,
+	UserDisableOtp,
+	UserGetOtpRecoveryKeys,
 }
 
 pub fn get_app_data_from_req(req: &Request) -> AppRes<&AppData>
@@ -140,6 +145,11 @@ pub(crate) fn check_endpoint_with_app_options(app_data: &AppData, endpoint: Endp
 		Endpoint::ContentXLarge => options.content_x_large,
 
 		Endpoint::ForceServer => 2,
+
+		Endpoint::UserRegisterOtp => options.user_register_otp,
+		Endpoint::UserResetOtp => options.user_reset_otp,
+		Endpoint::UserDisableOtp => options.user_disable_otp,
+		Endpoint::UserGetOtpRecoveryKeys => options.user_get_otp_recovery_keys,
 	};
 
 	let token_needed = match token_needed {

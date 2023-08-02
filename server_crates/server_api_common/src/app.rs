@@ -73,6 +73,11 @@ pub struct AppOptions
 	pub content_med: i32,
 	pub content_large: i32,
 	pub content_x_large: i32,
+
+	pub user_register_otp: i32,
+	pub user_reset_otp: i32,
+	pub user_disable_otp: i32,
+	pub user_get_otp_recovery_keys: i32,
 }
 
 impl Default for AppOptions
@@ -124,6 +129,10 @@ impl Default for AppOptions
 			content_med: 2,
 			content_large: 2,
 			content_x_large: 2,
+			user_register_otp: 1,
+			user_reset_otp: 1,
+			user_disable_otp: 1,
+			user_get_otp_recovery_keys: 1,
 		}
 	}
 }
@@ -177,6 +186,10 @@ impl AppOptions
 			content_med: 0,
 			content_large: 0,
 			content_x_large: 0,
+			user_register_otp: 0,
+			user_reset_otp: 0,
+			user_disable_otp: 0,
+			user_get_otp_recovery_keys: 0,
 		}
 	}
 
@@ -227,6 +240,10 @@ impl AppOptions
 			content_med: 1,
 			content_large: 1,
 			content_x_large: 1,
+			user_register_otp: 1,
+			user_reset_otp: 1,
+			user_disable_otp: 1,
+			user_get_otp_recovery_keys: 1,
 		}
 	}
 }
@@ -299,6 +316,11 @@ impl rustgram_server_util::db::mysql_async_export::prelude::FromRow for AppOptio
 			content_med: rustgram_server_util::take_or_err!(row, 41, i32),
 			content_large: rustgram_server_util::take_or_err!(row, 42, i32),
 			content_x_large: rustgram_server_util::take_or_err!(row, 43, i32),
+
+			user_register_otp: rustgram_server_util::take_or_err!(row, 44, i32),
+			user_reset_otp: rustgram_server_util::take_or_err!(row, 45, i32),
+			user_disable_otp: rustgram_server_util::take_or_err!(row, 46, i32),
+			user_get_otp_recovery_keys: rustgram_server_util::take_or_err!(row, 47, i32),
 		})
 	}
 }
@@ -369,6 +391,11 @@ impl rustgram_server_util::db::FromSqliteRow for AppOptions
 			content_med: rustgram_server_util::take_or_err!(row, 41),
 			content_large: rustgram_server_util::take_or_err!(row, 42),
 			content_x_large: rustgram_server_util::take_or_err!(row, 43),
+
+			user_register_otp: rustgram_server_util::take_or_err!(row, 44),
+			user_reset_otp: rustgram_server_util::take_or_err!(row, 45),
+			user_disable_otp: rustgram_server_util::take_or_err!(row, 46),
+			user_get_otp_recovery_keys: rustgram_server_util::take_or_err!(row, 47),
 		})
 	}
 }

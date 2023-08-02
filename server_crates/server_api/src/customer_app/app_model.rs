@@ -60,7 +60,11 @@ SELECT
     content_small,
     content_med,
     content_large,
-    content_x_large
+    content_x_large,
+    user_register_otp,
+    user_reset_otp,
+    user_disable_otp,
+    user_get_otp_recovery_keys
 FROM sentc_app_options 
 WHERE 
     app_id = ?";
@@ -754,8 +758,12 @@ INSERT INTO sentc_app_options
      content_small,
      content_med,
      content_large,
-     content_x_large
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+     content_x_large,
+     user_register_otp,
+     user_reset_otp,
+     user_disable_otp,
+     user_get_otp_recovery_keys
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let params_options = set_params!(
 		app_id.into(),
@@ -803,6 +811,10 @@ INSERT INTO sentc_app_options
 		app_options.content_med,
 		app_options.content_large,
 		app_options.content_x_large,
+		app_options.user_register_otp,
+		app_options.user_reset_otp,
+		app_options.user_disable_otp,
+		app_options.user_get_otp_recovery_keys
 	);
 
 	(sql, params_options)
