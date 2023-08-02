@@ -171,6 +171,7 @@ pub(crate) async fn validate_mfa(mut req: Request) -> JRes<DoneLoginServerOutput
 	let input: OtpInput = bytes_to_json(&body)?;
 
 	let app_data = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(app_data, Endpoint::UserDoneLogin)?;
 
 	let out = auth_service::validate_mfa(app_data, input).await?;
 
@@ -192,6 +193,7 @@ pub(crate) async fn validate_recovery_otp(mut req: Request) -> JRes<DoneLoginSer
 	let input: OtpInput = bytes_to_json(&body)?;
 
 	let app_data = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(app_data, Endpoint::UserDoneLogin)?;
 
 	let out = auth_service::validate_recovery_otp(app_data, input).await?;
 
@@ -437,6 +439,8 @@ pub(crate) async fn reset_password(mut req: Request) -> JRes<ServerSuccessOutput
 pub(crate) async fn register_otp(req: Request) -> JRes<OtpRegister>
 {
 	let app_data = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(app_data, Endpoint::UserRegisterOtp)?;
+
 	let user = get_jwt_data_from_param(&req)?;
 
 	let out = user_service::register_otp(&app_data.app_data.app_id, &user.id).await?;
@@ -447,6 +451,8 @@ pub(crate) async fn register_otp(req: Request) -> JRes<OtpRegister>
 pub(crate) async fn reset_otp(req: Request) -> JRes<OtpRegister>
 {
 	let app_data = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(app_data, Endpoint::UserResetOtp)?;
+
 	let user = get_jwt_data_from_param(&req)?;
 
 	let out = user_service::reset_otp(&app_data.app_data.app_id, user).await?;
@@ -456,6 +462,8 @@ pub(crate) async fn reset_otp(req: Request) -> JRes<OtpRegister>
 
 pub(crate) async fn disable_otp(req: Request) -> JRes<ServerSuccessOutput>
 {
+	check_endpoint_with_req(&req, Endpoint::UserDisableOtp)?;
+
 	let user = get_jwt_data_from_param(&req)?;
 
 	user_service::disable_otp(user).await?;
@@ -465,6 +473,8 @@ pub(crate) async fn disable_otp(req: Request) -> JRes<ServerSuccessOutput>
 
 pub(crate) async fn get_otp_recovery_keys(req: Request) -> JRes<OtpRecoveryKeysOutput>
 {
+	check_endpoint_with_req(&req, Endpoint::UserGetOtpRecoveryKeys)?;
+
 	let user = get_jwt_data_from_param(&req)?;
 
 	let out = user_service::get_otp_recovery_keys(user).await?;
