@@ -20,6 +20,7 @@ use crate::test_fn::{
 	delete_user,
 	get_base_url,
 	get_url,
+	login_user,
 };
 
 mod test_fn;
@@ -422,9 +423,237 @@ async fn test_16_test_with_all_keys()
 	}
 }
 
-//TODO
-// reset otp with new keys
-// disable otp
+#[tokio::test]
+async fn test_17_get_not_key_after_used_all_of_them()
+{
+	let user = USER_TEST_STATE.get().unwrap().read().await;
+
+	let url = get_url("api/v1/user/otp_recovery_keys".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(&user.user_data.jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: OtpRecoveryKeysOutput = handle_server_response(&body).unwrap();
+
+	assert_eq!(out.keys.len(), 0);
+}
+
+#[tokio::test]
+async fn test_18_reset_otp()
+{
+	let mut user = USER_TEST_STATE.get().unwrap().write().await;
+
+	let url = get_url("api/v1/user/reset_otp".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.patch(url)
+		.header(AUTHORIZATION, auth_header(&user.user_data.jwt))
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.send()
+		.await
+		.unwrap();
+	let body = res.text().await.unwrap();
+
+	let out: OtpRegister = handle_server_response(&body).unwrap();
+
+	user.otp_secret = out.secret;
+	user.recover = out.recover;
+}
+
+#[tokio::test]
+async fn test_19_login_with_new_totp_secret()
+{
+	//make the pre req to the sever with the username
+	let url = get_url("api/v1/prepare_login".to_owned());
+
+	let user = USER_TEST_STATE.get().unwrap().read().await;
+	let username = &user.username;
+	let pw = &user.pw;
+
+	let prep_server_input = sentc_crypto::user::prepare_login_start(username.as_str()).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.body(prep_server_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let (input, auth_key, derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
+
+	// //done login
+	let url = get_url("api/v1/done_login".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let server_out = res.text().await.unwrap();
+
+	let r = sentc_crypto::user::check_done_login(&server_out).unwrap();
+
+	match r {
+		sentc_crypto::sdk_common::user::DoneLoginServerReturn::Otp => {},
+		_ => {
+			panic!("Should be otp login")
+		},
+	}
+
+	//create a token
+	let totp = get_totp(user.otp_secret.clone());
+
+	let token = totp.generate_current().unwrap();
+
+	let keys = sentc_crypto_full::user::mfa_login(
+		get_base_url(),
+		&user.app_data.public_token,
+		&derived_master_key,
+		auth_key,
+		username.clone(),
+		token.clone(),
+		false,
+	)
+	.await
+	.unwrap();
+
+	assert_eq!(
+		user.user_data.device_keys.private_key.key_id,
+		keys.device_keys.private_key.key_id
+	);
+}
+
+#[tokio::test]
+async fn test_20_login_with_new_recovery_keys()
+{
+	let user = USER_TEST_STATE.get().unwrap().read().await;
+	let token = &user.recover[0];
+
+	let url = get_url("api/v1/prepare_login".to_owned());
+
+	let username = &user.username;
+	let pw = &user.pw;
+
+	let prep_server_input = sentc_crypto::user::prepare_login_start(username.as_str()).unwrap();
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.body(prep_server_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let (input, auth_key, derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
+
+	// //done login
+	let url = get_url("api/v1/done_login".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let server_out = res.text().await.unwrap();
+
+	let _r = sentc_crypto::user::check_done_login(&server_out).unwrap();
+
+	let keys = sentc_crypto_full::user::mfa_login(
+		get_base_url(),
+		&user.app_data.public_token,
+		&derived_master_key,
+		auth_key,
+		username.clone(),
+		token.clone(),
+		true,
+	)
+	.await
+	.unwrap();
+
+	assert_eq!(
+		user.user_data.device_keys.private_key.key_id,
+		keys.device_keys.private_key.key_id
+	);
+}
+
+#[tokio::test]
+async fn test_21_reset_otp_with_recover_keys_left()
+{
+	let mut user = USER_TEST_STATE.get().unwrap().write().await;
+
+	let url = get_url("api/v1/user/reset_otp".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.patch(url)
+		.header(AUTHORIZATION, auth_header(&user.user_data.jwt))
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.send()
+		.await
+		.unwrap();
+	let body = res.text().await.unwrap();
+
+	let out: OtpRegister = handle_server_response(&body).unwrap();
+
+	user.otp_secret = out.secret;
+	user.recover = out.recover;
+}
+
+#[tokio::test]
+async fn test_22_disable_otp()
+{
+	let user = USER_TEST_STATE.get().unwrap().read().await;
+	let url = get_url("api/v1/user/disable_otp".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.patch(url)
+		.header(AUTHORIZATION, auth_header(&user.user_data.jwt))
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.send()
+		.await
+		.unwrap();
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(&body).unwrap();
+}
+
+#[tokio::test]
+async fn test_23_login_normal_after_disable_otp()
+{
+	let user = USER_TEST_STATE.get().unwrap().read().await;
+
+	let keys = login_user(&user.app_data.public_token, &user.username, &user.pw).await;
+
+	assert_eq!(
+		user.user_data.device_keys.private_key.key_id,
+		keys.device_keys.private_key.key_id
+	);
+}
 
 #[tokio::test]
 async fn zzz_clean_up()
