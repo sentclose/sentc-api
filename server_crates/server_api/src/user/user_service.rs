@@ -521,7 +521,22 @@ pub async fn register_otp(app_id: impl Into<AppId>, user_id: impl Into<UserId>) 
 {
 	let data = otp::register_otp()?;
 
-	user_model::register_otp(app_id, user_id, &data.secret, data.alg.clone(), &data.recover).await?;
+	let key = encrypted_at_rest_root::get_key_map().await;
+
+	let encrypted_secret = encrypted_at_rest_root::encrypt_with_key(&key, &data.secret)?;
+
+	//hash the recover tokens for search look up
+
+	let mut encrypted_recover = Vec::with_capacity(6);
+
+	for i in &data.recover {
+		encrypted_recover.push((
+			encrypted_at_rest_root::encrypt_with_key(&key, &i)?,
+			hash_token_to_string(i.as_bytes())?,
+		))
+	}
+
+	user_model::register_otp(app_id, user_id, encrypted_secret, data.alg.clone(), encrypted_recover).await?;
 
 	Ok(data)
 }

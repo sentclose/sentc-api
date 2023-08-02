@@ -109,9 +109,9 @@ pub async fn validate_recovery_otp(app_data: &AppData, input: OtpInput) -> AppRe
 	let identifier = hash_token_to_string(input.device_identifier.as_bytes())?;
 	auth_user(&app_data.app_data.app_id, &identifier, input.auth_key).await?;
 
-	let recovery = encrypted_at_rest_root::encrypt(&input.token).await?;
+	let hashed_token = hash_token_to_string(input.token.as_bytes())?;
 
-	let token_id = auth_model::get_otp_recovery_token(&app_data.app_data.app_id, &identifier, recovery).await?;
+	let token_id = auth_model::get_otp_recovery_token(&app_data.app_data.app_id, &identifier, hashed_token).await?;
 
 	let done_login = prepare_done_login(&app_data.app_data.app_id, identifier).await?;
 

@@ -589,16 +589,18 @@ pub(super) async fn get_device_identifier(
 //__________________________________________________________________________________________________
 //otp
 
-pub(super) async fn register_otp(app_id: impl Into<AppId>, user_id: impl Into<UserId>, secret: &str, alg: String, recover: &[String]) -> AppRes<()>
+pub(super) async fn register_otp(
+	app_id: impl Into<AppId>,
+	user_id: impl Into<UserId>,
+	encrypted_secret: String,
+	alg: String,
+	recover: Vec<(String, String)>,
+) -> AppRes<()>
 {
 	//store the recovery keys and the secret but also encrypted
 
-	let key = encrypted_at_rest_root::get_key_map().await;
-
 	let time = get_time()?;
 	let user_id = user_id.into();
-
-	let encrypted_secret = encrypted_at_rest_root::encrypt_with_key(&key, secret)?;
 
 	//language=SQL
 	let sql = "UPDATE sentc_user SET otp_secret = ?, otp_alg = ? WHERE id = ? AND app_id = ?";
@@ -609,23 +611,18 @@ pub(super) async fn register_otp(app_id: impl Into<AppId>, user_id: impl Into<Us
 	)
 	.await?;
 
-	let encrypted_recover = recover
-		.iter()
-		.map(|i| encrypted_at_rest_root::encrypt_with_key(&key, i))
-		.collect::<Result<Vec<String>, _>>()?;
-
 	//language=SQL
-	//let sql = "INSERT INTO sentc_user_otp_recovery (id, user_id, token, time) VALUES (?,?,?,?)";
+	//let sql = "INSERT INTO sentc_user_otp_recovery (id, user_id, token, time, token_hash) VALUES (?,?,?,?,?)";
 
 	bulk_insert(
 		true,
 		"sentc_user_otp_recovery",
-		&["id", "user_id", "token", "time"],
-		encrypted_recover,
+		&["id", "user_id", "token", "time", "token_hash"],
+		recover,
 		move |i| {
 			let id = create_id();
 
-			set_params!(id, user_id.clone(), i, time.to_string())
+			set_params!(id, user_id.clone(), i.0, time.to_string(), i.1)
 		},
 	)
 	.await?;

@@ -166,7 +166,7 @@ WHERE
 	Ok(out)
 }
 
-pub(super) async fn get_otp_recovery_token(app_id: impl Into<AppId>, user_identifier: impl Into<String>, encrypted_token: String) -> AppRes<String>
+pub(super) async fn get_otp_recovery_token(app_id: impl Into<AppId>, user_identifier: impl Into<String>, hashed_token: String) -> AppRes<String>
 {
 	//check if the token exists.
 	//in two fn to delete only the token after the login data was fetched.
@@ -181,14 +181,11 @@ WHERE
     app_id = ? AND 
     r.user_id = ud.user_id AND 
     device_identifier = ? AND 
-    r.token = ?";
+    r.token_hash = ?";
 
-	let out: StringEntity = query_first(
-		sql,
-		set_params!(app_id.into(), user_identifier.into(), encrypted_token),
-	)
-	.await?
-	.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::ToTpGet, "Recovery token not found"))?;
+	let out: StringEntity = query_first(sql, set_params!(app_id.into(), user_identifier.into(), hashed_token))
+		.await?
+		.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::ToTpGet, "Recovery token not found"))?;
 
 	Ok(out.0)
 }
