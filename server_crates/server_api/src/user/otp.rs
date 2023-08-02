@@ -82,7 +82,7 @@ pub fn register_otp() -> AppRes<OtpRegister>
 
 	Ok(OtpRegister {
 		secret,
-		alg: OTP_ALG,
+		alg: OTP_ALG.to_string(),
 		recover,
 	})
 }

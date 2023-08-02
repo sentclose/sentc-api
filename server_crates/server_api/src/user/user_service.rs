@@ -521,7 +521,7 @@ pub async fn register_otp(app_id: impl Into<AppId>, user_id: impl Into<UserId>) 
 {
 	let data = otp::register_otp()?;
 
-	user_model::register_otp(app_id, user_id, &data.secret, data.alg.into(), &data.recover).await?;
+	user_model::register_otp(app_id, user_id, &data.secret, data.alg.clone(), &data.recover).await?;
 
 	Ok(data)
 }
