@@ -182,7 +182,9 @@ pub async fn prepare_register_device(app_id: impl Into<AppId>, input: UserDevice
 {
 	let app_id = app_id.into();
 
-	let check = user_model::check_user_exists(&app_id, &input.device_identifier).await?;
+	let identifier = hash_token_to_string(input.device_identifier.as_bytes())?;
+
+	let check = user_model::check_user_exists(&app_id, &identifier).await?;
 
 	if check {
 		//check true == user exists
@@ -195,8 +197,6 @@ pub async fn prepare_register_device(app_id: impl Into<AppId>, input: UserDevice
 
 	let public_key_string = input.derived.public_key.to_string();
 	let keypair_encrypt_alg = input.derived.keypair_encrypt_alg.to_string();
-
-	let identifier = hash_token_to_string(input.device_identifier.as_bytes())?;
 
 	let token = create_refresh_token()?;
 
