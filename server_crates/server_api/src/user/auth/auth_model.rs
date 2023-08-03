@@ -28,7 +28,8 @@ FROM
     sentc_user_device 
 WHERE 
     device_identifier = ? AND 
-    app_id = ?";
+    app_id = ? AND 
+    user_id != 'not_registered'";
 
 	query_first(sql, set_params!(user_identifier.into(), app_id.into()))
 }
