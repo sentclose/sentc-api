@@ -49,14 +49,14 @@ This keys should be printed out and can only be used once.
 
 Do not use a hashed version because the user still need a possibility to print the keys again
 */
-fn create_recover() -> AppRes<[String; 6]>
+fn create_recover() -> AppRes<Vec<String>>
 {
 	let mut rng = rand::thread_rng();
 
-	let mut vec: [String; 6] = Default::default();
+	let mut vec = Vec::with_capacity(6);
 
 	#[allow(clippy::needless_range_loop)]
-	for i in 0..6 {
+	for _i in 0..6 {
 		let mut recover = [0u8; 32];
 		rng.try_fill_bytes(&mut recover)
 			.map_err(|_| ServerCoreError::new_msg(400, ApiErrorCodes::AppTokenWrongFormat, "Can't create one time token"))?;
@@ -68,7 +68,7 @@ fn create_recover() -> AppRes<[String; 6]>
 			&recover,
 		);
 
-		vec[i] = base32_string;
+		vec.push(base32_string);
 	}
 
 	Ok(vec)
