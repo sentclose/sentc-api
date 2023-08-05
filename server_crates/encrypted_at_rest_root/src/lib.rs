@@ -13,7 +13,7 @@ static CRYPTO_ROOT_KEY: OnceCell<RwLock<SymKeyFormatInt>> = OnceCell::const_new(
 
 pub async fn init_crypto()
 {
-	CRYPTO_ROOT_KEY
+	let _ = CRYPTO_ROOT_KEY
 		.get_or_init(init_private_crypto)
 		.await
 		.read()
