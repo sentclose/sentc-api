@@ -34,7 +34,7 @@ pub struct UserState
 	pub app_data: AppRegisterOutput,
 	pub customer_data: CustomerDoneLoginOutput,
 	pub otp_secret: String,
-	pub recover: [String; 6],
+	pub recover: Vec<String>,
 }
 
 static USER_TEST_STATE: OnceCell<RwLock<UserState>> = OnceCell::const_new();

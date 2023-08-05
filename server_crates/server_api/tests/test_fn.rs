@@ -18,7 +18,7 @@ use sentc_crypto::sdk_core::SymKey;
 use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::sdk_utils::{handle_general_server_response, handle_server_response};
 use sentc_crypto_common::group::{GroupKeyServerOutput, KeyRotationStartServerOutput};
-use sentc_crypto_common::user::{CaptchaCreateOutput, CaptchaInput, UserDeviceRegisterInput, UserInitServerOutput};
+use sentc_crypto_common::user::{CaptchaCreateOutput, CaptchaInput, UserDeviceRegisterInput};
 use sentc_crypto_common::{CustomerId, GroupId, ServerOutput, UserId};
 use server_api_common::app::{AppFileOptionsInput, AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
 use server_api_common::customer::{CustomerData, CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput};
@@ -376,7 +376,7 @@ pub async fn login_user(public_token: &str, username: &str, pw: &str) -> UserDat
 	}
 }
 
-pub async fn init_user(app_secret_token: &str, jwt: &str, refresh_token: &str) -> UserInitServerOutput
+pub async fn init_user(app_secret_token: &str, jwt: &str, refresh_token: &str) -> sentc_crypto::sdk_common::user::UserInitServerOutput
 {
 	sentc_crypto_full::user::init_user(get_base_url(), app_secret_token, jwt, refresh_token.to_string())
 		.await
