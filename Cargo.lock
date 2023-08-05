@@ -2282,10 +2282,11 @@ dependencies = [
 [[package]]
 name = "sentc-crypto"
 version = "0.9.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=2317ea01a846490fe64ae41a8069bd5cfdad679f#2317ea01a846490fe64ae41a8069bd5cfdad679f"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
- "sentc-crypto-common",
+ "sentc-crypto-common 0.9.4 (git+https://github.com/sentclose/sentc-common.git?rev=46f582557017a2510d454d3781a2087659a6a776)",
  "sentc-crypto-core",
  "sentc-crypto-utils",
  "serde",
@@ -2294,7 +2295,16 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-common"
-version = "0.9.3"
+version = "0.9.4"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "sentc-crypto-common"
+version = "0.9.4"
+source = "git+https://github.com/sentclose/sentc-common.git?rev=46f582557017a2510d454d3781a2087659a6a776#46f582557017a2510d454d3781a2087659a6a776"
 dependencies = [
  "serde",
  "serde_json",
@@ -2303,6 +2313,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-core"
 version = "0.9.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=2317ea01a846490fe64ae41a8069bd5cfdad679f#2317ea01a846490fe64ae41a8069bd5cfdad679f"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -2319,9 +2330,10 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-full"
 version = "0.9.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=2317ea01a846490fe64ae41a8069bd5cfdad679f#2317ea01a846490fe64ae41a8069bd5cfdad679f"
 dependencies = [
  "sentc-crypto",
- "sentc-crypto-common",
+ "sentc-crypto-common 0.9.4 (git+https://github.com/sentclose/sentc-common.git?rev=46f582557017a2510d454d3781a2087659a6a776)",
  "sentc-crypto-utils",
  "serde",
  "serde_json",
@@ -2330,10 +2342,11 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-light"
 version = "0.9.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=2317ea01a846490fe64ae41a8069bd5cfdad679f#2317ea01a846490fe64ae41a8069bd5cfdad679f"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
- "sentc-crypto-common",
+ "sentc-crypto-common 0.9.4 (git+https://github.com/sentclose/sentc-common.git?rev=46f582557017a2510d454d3781a2087659a6a776)",
  "sentc-crypto-core",
  "sentc-crypto-utils",
  "serde",
@@ -2343,8 +2356,9 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-light-full"
 version = "0.9.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=2317ea01a846490fe64ae41a8069bd5cfdad679f#2317ea01a846490fe64ae41a8069bd5cfdad679f"
 dependencies = [
- "sentc-crypto-common",
+ "sentc-crypto-common 0.9.4 (git+https://github.com/sentclose/sentc-common.git?rev=46f582557017a2510d454d3781a2087659a6a776)",
  "sentc-crypto-light",
  "sentc-crypto-utils",
  "serde",
@@ -2354,11 +2368,12 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-utils"
 version = "0.9.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=2317ea01a846490fe64ae41a8069bd5cfdad679f#2317ea01a846490fe64ae41a8069bd5cfdad679f"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
  "reqwest",
- "sentc-crypto-common",
+ "sentc-crypto-common 0.9.4 (git+https://github.com/sentclose/sentc-common.git?rev=46f582557017a2510d454d3781a2087659a6a776)",
  "sentc-crypto-core",
  "serde",
  "serde_json",
@@ -2456,7 +2471,7 @@ dependencies = [
  "rustgram",
  "rustgram-server-util",
  "sentc-crypto",
- "sentc-crypto-common",
+ "sentc-crypto-common 0.9.4",
  "sentc-crypto-full",
  "sentc-crypto-light",
  "sentc-crypto-light-full",
@@ -2472,7 +2487,7 @@ name = "server_api_common"
 version = "0.1.0"
 dependencies = [
  "rustgram-server-util",
- "sentc-crypto-common",
+ "sentc-crypto-common 0.9.4",
  "serde",
  "serde_json",
 ]

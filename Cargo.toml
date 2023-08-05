@@ -37,17 +37,17 @@ rustgram-server-util = {git= "https://gitlab.com/grammm/rustgram/rustgram-server
 
 #_______________________________________________________________________________________________________________________
 
-#sentc-crypto = {git = "https://github.com/sentclose/sentc.git", rev="49b7b49a7d0c23d3fa7cf247bb4356ae573f5313", default-features = false, features = ["rust", "server"]}
-sentc-crypto = {path = "../../sdk/crypto", default-features = false, features = ["rust", "server"]} # for local dev
+sentc-crypto = {git = "https://github.com/sentclose/sentc.git", rev="2317ea01a846490fe64ae41a8069bd5cfdad679f", default-features = false, features = ["rust", "server"]}
+#sentc-crypto = {path = "../../sdk/crypto", default-features = false, features = ["rust", "server"]} # for local dev
 
-#sentc-crypto-full = {git = "https://github.com/sentclose/sentc.git", rev="49b7b49a7d0c23d3fa7cf247bb4356ae573f5313", default-features = false, features = ["rust", "rustls"]}
-sentc-crypto-full = {path = "../../sdk/crypto_full", default-features = false, features = ["rust", "rustls"]} # for local dev
+sentc-crypto-full = {git = "https://github.com/sentclose/sentc.git", rev="2317ea01a846490fe64ae41a8069bd5cfdad679f", default-features = false, features = ["rust", "rustls"]}
+#sentc-crypto-full = {path = "../../sdk/crypto_full", default-features = false, features = ["rust", "rustls"]} # for local dev
 
-#sentc-crypto-light = {git = "https://github.com/sentclose/sentc.git", rev="49b7b49a7d0c23d3fa7cf247bb4356ae573f5313", default-features = false, features = ["rust"]}
-sentc-crypto-light = {path = "../../sdk/crypto_light", default-features = false, features = ["rust"]} # for local dev
+sentc-crypto-light = {git = "https://github.com/sentclose/sentc.git", rev="2317ea01a846490fe64ae41a8069bd5cfdad679f", default-features = false, features = ["rust"]}
+#sentc-crypto-light = {path = "../../sdk/crypto_light", default-features = false, features = ["rust"]} # for local dev
 
-#sentc-crypto-light-full = {git = "https://github.com/sentclose/sentc.git", rev="49b7b49a7d0c23d3fa7cf247bb4356ae573f5313", default-features = false, features = ["rust", "rustls"]}
-sentc-crypto-light-full = {path = "../../sdk/crypto_light_full", default-features = false, features = ["rust", "rustls"]} # for local dev
+sentc-crypto-light-full = {git = "https://github.com/sentclose/sentc.git", rev="2317ea01a846490fe64ae41a8069bd5cfdad679f", default-features = false, features = ["rust", "rustls"]}
+#sentc-crypto-light-full = {path = "../../sdk/crypto_light_full", default-features = false, features = ["rust", "rustls"]} # for local dev
 
 #_______________________________________________________________________________________________________________________
 # json handling
