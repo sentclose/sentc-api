@@ -77,8 +77,8 @@ async fn read_file(req: Request) -> Response
 
 	let headers = req.headers().get(ACCEPT_ENCODING);
 
-	let encoding = if ext == "js" {
-		if let Some(h) = headers {
+	let encoding = match (ext == "js" || ext == "wasm", headers) {
+		(true, Some(h)) => {
 			if let Ok(h) = std::str::from_utf8(h.as_bytes()) {
 				if h.contains("br") {
 					//use brotli
@@ -94,11 +94,8 @@ async fn read_file(req: Request) -> Response
 			} else {
 				None
 			}
-		} else {
-			None
-		}
-	} else {
-		None
+		},
+		_ => None,
 	};
 
 	let handler = LOCAL_FILE_HANDLER.get().unwrap();
