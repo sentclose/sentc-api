@@ -15,6 +15,9 @@ use sentc_crypto_common::user::{
 	DoneLoginLightServerOutput,
 	DoneLoginServerInput,
 	JwtRefreshInput,
+	OtpInput,
+	OtpRecoveryKeysOutput,
+	OtpRegister,
 	PrepareLoginSaltServerOutput,
 	PrepareLoginServerInput,
 	RegisterData,
@@ -34,9 +37,10 @@ use crate::customer_app::app_util::{check_endpoint_with_app_options, get_app_dat
 use crate::group::group_entities::{GroupKeyUpdate, GroupUserKeys};
 use crate::group::{group_key_rotation_service, group_user_service};
 use crate::sentc_app_utils::check_endpoint_with_req;
-use crate::sentc_user_entities::VerifyLoginOutput;
+use crate::sentc_user_entities::{DoneLoginServerOutput, DoneLoginServerReturn, VerifyLoginOutput};
+use crate::user::auth::auth_service;
 use crate::user::jwt::get_jwt_data_from_param;
-use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
+use crate::user::user_entities::{UserDeviceList, UserInitEntity, UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
 use crate::user::user_service::UserAction;
 use crate::user::{user_model, user_service};
 use crate::util::api_res::ApiErrorCodes;
@@ -131,12 +135,12 @@ pub(crate) async fn prepare_login(mut req: Request) -> JRes<PrepareLoginSaltServ
 
 	check_endpoint_with_app_options(app_data, Endpoint::UserPrepLogin)?;
 
-	let out = user_service::prepare_login(app_data, &user_identifier.user_identifier).await?;
+	let out = auth_service::prepare_login(app_data, &user_identifier.user_identifier).await?;
 
 	echo(out)
 }
 
-pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerOutput>
+pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerReturn>
 {
 	let body = get_raw_body(&mut req).await?;
 	let done_login: DoneLoginServerInput = bytes_to_json(&body)?;
@@ -145,9 +149,55 @@ pub(crate) async fn done_login(mut req: Request) -> JRes<DoneLoginServerOutput>
 
 	check_endpoint_with_app_options(app_data, Endpoint::UserDoneLogin)?;
 
-	let out = user_service::done_login(app_data, done_login).await?;
+	let out = auth_service::done_login(app_data, done_login).await?;
 
-	//save the action, only in controller not service because this just not belongs to other controller
+	if let DoneLoginServerReturn::Direct(d) = &out {
+		//save the action, only in controller not service because this just not belongs to other controller
+		user_model::save_user_action(
+			&app_data.app_data.app_id,
+			&d.device_keys.user_id,
+			UserAction::Login,
+			1,
+		)
+		.await?;
+	}
+
+	echo(out)
+}
+
+pub(crate) async fn validate_mfa(mut req: Request) -> JRes<DoneLoginServerOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+	let input: OtpInput = bytes_to_json(&body)?;
+
+	let app_data = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(app_data, Endpoint::UserDoneLogin)?;
+
+	let out = auth_service::validate_mfa(app_data, input).await?;
+
+	//2fa do there the user action
+	user_model::save_user_action(
+		&app_data.app_data.app_id,
+		&out.device_keys.user_id,
+		UserAction::Login,
+		1,
+	)
+	.await?;
+
+	echo(out)
+}
+
+pub(crate) async fn validate_recovery_otp(mut req: Request) -> JRes<DoneLoginServerOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+	let input: OtpInput = bytes_to_json(&body)?;
+
+	let app_data = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(app_data, Endpoint::UserDoneLogin)?;
+
+	let out = auth_service::validate_recovery_otp(app_data, input).await?;
+
+	//2fa do there the user action
 	user_model::save_user_action(
 		&app_data.app_data.app_id,
 		&out.device_keys.user_id,
@@ -381,6 +431,55 @@ pub(crate) async fn reset_password(mut req: Request) -> JRes<ServerSuccessOutput
 	user_model::save_user_action(&app_data.app_data.app_id, &user.id, UserAction::ResetPassword, 1).await?;
 
 	echo_success()
+}
+
+//__________________________________________________________________________________________________
+//otp
+
+pub(crate) async fn register_otp(req: Request) -> JRes<OtpRegister>
+{
+	let app_data = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(app_data, Endpoint::UserRegisterOtp)?;
+
+	let user = get_jwt_data_from_param(&req)?;
+
+	let out = user_service::register_otp(&app_data.app_data.app_id, &user.id).await?;
+
+	echo(out)
+}
+
+pub(crate) async fn reset_otp(req: Request) -> JRes<OtpRegister>
+{
+	let app_data = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(app_data, Endpoint::UserResetOtp)?;
+
+	let user = get_jwt_data_from_param(&req)?;
+
+	let out = user_service::reset_otp(&app_data.app_data.app_id, user).await?;
+
+	echo(out)
+}
+
+pub(crate) async fn disable_otp(req: Request) -> JRes<ServerSuccessOutput>
+{
+	check_endpoint_with_req(&req, Endpoint::UserDisableOtp)?;
+
+	let user = get_jwt_data_from_param(&req)?;
+
+	user_service::disable_otp(user).await?;
+
+	echo_success()
+}
+
+pub(crate) async fn get_otp_recovery_keys(req: Request) -> JRes<OtpRecoveryKeysOutput>
+{
+	check_endpoint_with_req(&req, Endpoint::UserGetOtpRecoveryKeys)?;
+
+	let user = get_jwt_data_from_param(&req)?;
+
+	let out = user_service::get_otp_recovery_keys(user).await?;
+
+	echo(out)
 }
 
 //__________________________________________________________________________________________________

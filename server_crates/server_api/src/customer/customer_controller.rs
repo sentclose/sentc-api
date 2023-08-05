@@ -13,6 +13,9 @@ use sentc_crypto_common::user::{
 	DoneLoginLightServerOutput,
 	DoneLoginServerInput,
 	JwtRefreshInput,
+	OtpInput,
+	OtpRecoveryKeysOutput,
+	OtpRegister,
 	PrepareLoginSaltServerOutput,
 	PrepareLoginServerInput,
 	UserDeviceRegisterInput,
@@ -43,7 +46,7 @@ use crate::file::file_service;
 use crate::group::{group_service, group_user_service};
 use crate::sentc_customer_entities::CustomerGroupMemberFetch;
 use crate::sentc_group_user_service::NewUserType;
-use crate::sentc_user_entities::DoneLoginServerOutput;
+use crate::sentc_user_entities::{DoneLoginServerOutput, DoneLoginServerReturn};
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::util::api_res::ApiErrorCodes;
 use crate::util::email;
@@ -173,18 +176,42 @@ pub async fn prepare_login(mut req: Request) -> JRes<PrepareLoginSaltServerOutpu
 
 	let app_data = get_app_data_from_req(&req)?;
 
-	let out = user::user_service::prepare_login(app_data, &user_identifier.user_identifier).await?;
+	let out = user::auth::auth_service::prepare_login(app_data, &user_identifier.user_identifier).await?;
 
 	echo(out)
 }
 
-pub async fn done_login(mut req: Request) -> JRes<DoneLoginServerOutput>
+pub async fn done_login(mut req: Request) -> JRes<DoneLoginServerReturn>
 {
 	let body = get_raw_body(&mut req).await?;
 	let done_login: DoneLoginServerInput = bytes_to_json(&body)?;
 	let app_data = get_app_data_from_req(&req)?;
 
-	let out = user::user_service::done_login(app_data, done_login).await?;
+	let out = user::auth::auth_service::done_login(app_data, done_login).await?;
+
+	echo(out)
+}
+
+pub async fn validate_mfa(mut req: Request) -> JRes<DoneLoginServerOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+	let input: OtpInput = bytes_to_json(&body)?;
+
+	let app_data = get_app_data_from_req(&req)?;
+
+	let out = user::auth::auth_service::validate_mfa(app_data, input).await?;
+
+	echo(out)
+}
+
+pub async fn validate_recovery_otp(mut req: Request) -> JRes<DoneLoginServerOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+	let input: OtpInput = bytes_to_json(&body)?;
+
+	let app_data = get_app_data_from_req(&req)?;
+
+	let out = user::auth::auth_service::validate_recovery_otp(app_data, input).await?;
 
 	echo(out)
 }
@@ -380,6 +407,47 @@ pub async fn update_data(mut req: Request) -> JRes<ServerSuccessOutput>
 	customer_model::update_data(&user.id, input).await?;
 
 	echo_success()
+}
+
+//__________________________________________________________________________________________________
+//otp
+
+pub async fn register_otp(req: Request) -> JRes<OtpRegister>
+{
+	let customer = get_jwt_data_from_param(&req)?;
+	let app_data = get_app_data_from_req(&req)?;
+
+	let out = user::user_service::register_otp(&app_data.app_data.app_id, &customer.id).await?;
+
+	echo(out)
+}
+
+pub async fn reset_otp(req: Request) -> JRes<OtpRegister>
+{
+	let app_data = get_app_data_from_req(&req)?;
+	let user = get_jwt_data_from_param(&req)?;
+
+	let out = user::user_service::reset_otp(&app_data.app_data.app_id, user).await?;
+
+	echo(out)
+}
+
+pub async fn disable_otp(req: Request) -> JRes<ServerSuccessOutput>
+{
+	let user = get_jwt_data_from_param(&req)?;
+
+	user::user_service::disable_otp(user).await?;
+
+	echo_success()
+}
+
+pub async fn get_otp_recovery_keys(req: Request) -> JRes<OtpRecoveryKeysOutput>
+{
+	let user = get_jwt_data_from_param(&req)?;
+
+	let out = user::user_service::get_otp_recovery_keys(user).await?;
+
+	echo(out)
 }
 
 //__________________________________________________________________________________________________

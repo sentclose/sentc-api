@@ -1,18 +1,16 @@
 use std::future::Future;
-use std::ptr;
 
 use rand::RngCore;
 use rustgram_server_util::cache;
 use rustgram_server_util::db::StringEntity;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
-use sentc_crypto::util::public::HashedAuthenticationKey;
 use sentc_crypto_common::user::{
 	ChangePasswordData,
 	DoneLoginLightServerOutput,
-	DoneLoginServerInput,
 	JwtRefreshInput,
-	PrepareLoginSaltServerOutput,
+	OtpRecoveryKeysOutput,
+	OtpRegister,
 	RegisterData,
 	RegisterServerOutput,
 	ResetPasswordData,
@@ -30,13 +28,13 @@ use crate::group::group_entities::{GroupUserKeys, InternalGroupData, InternalGro
 use crate::group::group_user_service::NewUserType;
 use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
 use crate::sentc_app_entities::AppData;
-use crate::sentc_app_utils::hash_token_to_string;
-use crate::sentc_user_entities::{UserPublicKeyDataEntity, UserVerifyKeyDataEntity, VerifyLoginEntity, VerifyLoginOutput};
+use crate::sentc_user_entities::{UserPublicKeyDataEntity, UserVerifyKeyDataEntity, VerifyLoginOutput};
+use crate::user::auth::auth_service::{auth_user, verify_login_internally};
 use crate::user::jwt::create_jwt;
-use crate::user::user_entities::{DoneLoginServerOutput, UserDeviceList, UserInitEntity, UserJwtEntity, SERVER_RANDOM_VALUE};
-use crate::user::user_model;
+use crate::user::user_entities::{UserDeviceList, UserInitEntity, UserJwtEntity};
+use crate::user::{otp, user_model};
 use crate::util::api_res::ApiErrorCodes;
-use crate::util::get_user_in_app_key;
+use crate::util::{get_user_in_app_key, hash_token_to_string};
 
 pub enum UserAction
 {
@@ -184,7 +182,9 @@ pub async fn prepare_register_device(app_id: impl Into<AppId>, input: UserDevice
 {
 	let app_id = app_id.into();
 
-	let check = user_model::check_user_exists(&app_id, &input.device_identifier).await?;
+	let identifier = hash_token_to_string(input.device_identifier.as_bytes())?;
+
+	let check = user_model::check_user_exists(&app_id, &identifier).await?;
 
 	if check {
 		//check true == user exists
@@ -197,8 +197,6 @@ pub async fn prepare_register_device(app_id: impl Into<AppId>, input: UserDevice
 
 	let public_key_string = input.derived.public_key.to_string();
 	let keypair_encrypt_alg = input.derived.keypair_encrypt_alg.to_string();
-
-	let identifier = hash_token_to_string(input.device_identifier.as_bytes())?;
 
 	let token = create_refresh_token()?;
 
@@ -248,77 +246,6 @@ pub async fn done_register_device(
 }
 
 //__________________________________________________________________________________________________
-
-pub fn prepare_login<'a>(app_data: &'a AppData, user_identifier: &'a str) -> impl Future<Output = AppRes<PrepareLoginSaltServerOutput>> + 'a
-{
-	create_salt(&app_data.app_data.app_id, user_identifier)
-}
-
-/**
-After successful login return the user keys so they can be decrypted in the client
-*/
-pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) -> AppRes<DoneLoginServerOutput>
-{
-	let identifier = hash_token_to_string(done_login.device_identifier.as_bytes())?;
-
-	auth_user(&app_data.app_data.app_id, &identifier, done_login.auth_key).await?;
-
-	//if correct -> fetch and return the user data
-	let device_keys = user_model::get_done_login_data(&app_data.app_data.app_id, identifier)
-		.await?
-		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::Login, "Wrong username or password"))?;
-
-	let challenge = create_refresh_token()?;
-
-	let encrypted_challenge = sentc_crypto::util::server::encrypt_login_verify_challenge(
-		&device_keys.public_key_string,
-		&device_keys.keypair_encrypt_alg,
-		&challenge,
-	)
-	.map_err(|_e| {
-		ServerCoreError::new_msg(
-			400,
-			ApiErrorCodes::AppTokenWrongFormat,
-			"Can't create login challenge",
-		)
-	})?;
-
-	user_model::insert_verify_login_challenge(&app_data.app_data.app_id, &device_keys.device_id, challenge).await?;
-
-	let out = DoneLoginServerOutput {
-		device_keys,
-		challenge: encrypted_challenge,
-	};
-
-	Ok(out)
-}
-
-pub(crate) async fn verify_login_internally(app_data: &AppData, done_login: VerifyLoginInput) -> AppRes<(VerifyLoginEntity, String, String)>
-{
-	let identifier = hash_token_to_string(done_login.device_identifier.as_bytes())?;
-	auth_user(&app_data.app_data.app_id, &identifier, done_login.auth_key).await?;
-
-	//verify the login, return the device and user id and user group id
-	let data = user_model::get_verify_login_data(&app_data.app_data.app_id, identifier, done_login.challenge)
-		.await?
-		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::Login, "Wrong username or password"))?;
-
-	// and create the jwt
-	let jwt = create_jwt(
-		&data.user_id,
-		&data.device_id,
-		&app_data.jwt_data[0], //use always the latest created jwt data
-		true,
-	)
-	.await?;
-
-	let refresh_token = create_refresh_token()?;
-
-	//activate refresh token
-	user_model::insert_refresh_token(&app_data.app_data.app_id, &data.device_id, &refresh_token).await?;
-
-	Ok((data, jwt, refresh_token))
-}
 
 pub async fn verify_login(app_data: &AppData, done_login: VerifyLoginInput) -> AppRes<VerifyLoginOutput>
 {
@@ -588,6 +515,99 @@ pub fn reset_password<'a>(
 }
 
 //__________________________________________________________________________________________________
+//otp
+
+pub async fn register_otp(app_id: impl Into<AppId>, user_id: impl Into<UserId>) -> AppRes<OtpRegister>
+{
+	let data = otp::register_otp()?;
+
+	let key = encrypted_at_rest_root::get_key_map().await;
+
+	let encrypted_secret = encrypted_at_rest_root::encrypt_with_key(&key, &data.secret)?;
+
+	//hash the recover tokens for search look up
+
+	let mut encrypted_recover = Vec::with_capacity(6);
+
+	for i in &data.recover {
+		encrypted_recover.push((
+			encrypted_at_rest_root::encrypt_with_key(&key, i)?,
+			hash_token_to_string(i.as_bytes())?,
+		))
+	}
+
+	user_model::register_otp(app_id, user_id, encrypted_secret, data.alg.clone(), encrypted_recover).await?;
+
+	Ok(data)
+}
+
+pub async fn reset_otp(app_id: impl Into<AppId>, user: &UserJwtEntity) -> AppRes<OtpRegister>
+{
+	if !user.fresh {
+		return Err(ServerCoreError::new_msg(
+			401,
+			ApiErrorCodes::WrongJwtAction,
+			"The jwt is not valid for this action",
+		));
+	}
+
+	let user_id = &user.id;
+
+	//1. delete the old recovery keys
+	user_model::delete_all_otp_token(user_id).await?;
+
+	//2. create new secret and new recovery keys
+	register_otp(app_id, user_id).await
+}
+
+pub async fn disable_otp(user: &UserJwtEntity) -> AppRes<()>
+{
+	if !user.fresh {
+		return Err(ServerCoreError::new_msg(
+			401,
+			ApiErrorCodes::WrongJwtAction,
+			"The jwt is not valid for this action",
+		));
+	}
+
+	let user_id = &user.id;
+
+	//1. delete the old recovery keys
+	user_model::delete_all_otp_token(user_id).await?;
+
+	//2. remove the secret
+	user_model::disable_otp(user_id).await?;
+
+	Ok(())
+}
+
+pub async fn get_otp_recovery_keys(user: &UserJwtEntity) -> AppRes<OtpRecoveryKeysOutput>
+{
+	if !user.fresh {
+		return Err(ServerCoreError::new_msg(
+			401,
+			ApiErrorCodes::WrongJwtAction,
+			"The jwt is not valid for this action",
+		));
+	}
+
+	let user_id = &user.id;
+
+	let encrypted_keys = user_model::get_otp_recovery_keys(user_id).await?;
+
+	let key = encrypted_at_rest_root::get_key_map().await;
+
+	let keys = encrypted_keys
+		.iter()
+		.map(|k| encrypted_at_rest_root::decrypt_with_key(&key, &k.0))
+		.collect::<Result<Vec<String>, _>>()?;
+
+	Ok(OtpRecoveryKeysOutput {
+		keys,
+	})
+}
+
+//__________________________________________________________________________________________________
 //internal fn
 
 pub(super) fn internal_group_data(app_id: impl Into<AppId>, user_group_id: impl Into<GroupId>, rank: i32) -> InternalGroupDataComplete
@@ -612,38 +632,6 @@ pub(super) fn internal_group_data(app_id: impl Into<AppId>, user_group_id: impl 
 	}
 }
 
-async fn create_salt(app_id: impl Into<AppId>, user_identifier: &str) -> AppRes<PrepareLoginSaltServerOutput>
-{
-	let identifier = hash_token_to_string(user_identifier.as_bytes())?;
-
-	//check the user id in the db
-	let login_data = user_model::get_user_login_data(app_id, &identifier).await?;
-
-	//create the salt
-	let (client_random_value, alg, add_str) = match login_data {
-		Some(d) => (d.client_random_value, d.derived_alg, ""),
-
-		//when user_identifier not found, push the user_identifier to the salt string, use the default alg
-		None => {
-			(
-				SERVER_RANDOM_VALUE.0.to_owned(),
-				SERVER_RANDOM_VALUE.1.to_owned(),
-				user_identifier,
-			)
-		},
-	};
-
-	let salt_string = sentc_crypto::util::server::generate_salt_from_base64_to_string(client_random_value.as_str(), alg.as_str(), add_str)
-		.map_err(|_e| ServerCoreError::new_msg(401, ApiErrorCodes::SaltError, "Can't create salt"))?;
-
-	let out = PrepareLoginSaltServerOutput {
-		salt_string,
-		derived_encryption_key_alg: alg,
-	};
-
-	Ok(out)
-}
-
 pub(super) fn create_refresh_token_raw() -> AppRes<[u8; 50]>
 {
 	let mut rng = rand::thread_rng();
@@ -661,71 +649,4 @@ pub(super) fn create_refresh_token() -> AppRes<String>
 	let token = create_refresh_token_raw()?;
 
 	Ok(base64::encode_config(token, base64::URL_SAFE_NO_PAD))
-}
-
-pub(super) async fn auth_user(app_id: &str, hashed_user_identifier: impl Into<String>, auth_key: String) -> AppRes<String>
-{
-	//get the login data
-	let login_data = user_model::get_user_login_data(app_id, hashed_user_identifier).await?;
-
-	let (hashed_user_auth_key, alg) = match login_data {
-		Some(d) => (d.hashed_authentication_key, d.derived_alg),
-		None => {
-			return Err(ServerCoreError::new_msg(
-				401,
-				ApiErrorCodes::UserNotFound,
-				"No user found with this identifier",
-			))
-		},
-	};
-
-	//hash the auth key and use the first 16 bytes
-	let (server_hashed_auth_key, hashed_client_key) =
-		sentc_crypto::util::server::get_auth_keys_from_base64(auth_key.as_str(), hashed_user_auth_key.as_str(), alg.as_str()).map_err(|_e| {
-			ServerCoreError::new_msg(
-				401,
-				ApiErrorCodes::AuthKeyFormat,
-				"The authentication key has a wrong format",
-			)
-		})?;
-
-	//check the keys
-	let check = compare_auth_keys(server_hashed_auth_key, hashed_client_key);
-
-	//if not correct -> err msg
-	if !check {
-		return Err(ServerCoreError::new_msg(
-			401,
-			ApiErrorCodes::Login,
-			"Wrong username or password",
-		));
-	}
-
-	//return this here for the update user pw functions
-	Ok(hashed_user_auth_key)
-}
-
-/// Secure `memeq`.
-/// from here:https://github.com/quininer/memsec/blob/master/src/lib.rs#L22
-#[inline(never)]
-unsafe fn memeq(b1: *const u8, b2: *const u8, len: usize) -> bool
-{
-	(0..len)
-		.map(|i| ptr::read_volatile(b1.add(i)) ^ ptr::read_volatile(b2.add(i)))
-		.fold(0, |sum, next| sum | next)
-		.eq(&0)
-}
-
-fn compare_auth_keys(left: HashedAuthenticationKey, right: HashedAuthenticationKey) -> bool
-{
-	match (left, right) {
-		(HashedAuthenticationKey::Argon2(l), HashedAuthenticationKey::Argon2(r)) => {
-			//calling in unsafe block
-
-			unsafe {
-				//
-				memeq(l.as_ptr(), r.as_ptr(), 16)
-			}
-		},
-	}
 }

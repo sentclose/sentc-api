@@ -14,12 +14,12 @@ use server_api_common::app::{
 };
 use server_api_common::customer::CustomerAppList;
 
-use crate::customer_app::app_util::{hash_token_to_string, HASH_ALG};
 use crate::customer_app::{app_model, generate_tokens};
 use crate::file::file_service;
 use crate::sentc_app_entities::AppData;
 use crate::user::jwt::create_jwt_keys;
 use crate::util::api_res::ApiErrorCodes;
+use crate::util::{hash_token_to_string, HASH_ALG};
 use crate::SENTC_ROOT_APP;
 
 /*

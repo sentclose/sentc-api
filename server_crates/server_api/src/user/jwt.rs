@@ -244,12 +244,12 @@ async fn get_verify_key(key_id: &str) -> AppRes<String>
 				Some(key) => {
 					cache::add(
 						verify_key_cache_key,
-						json_to_string(&CacheVariant::Some(&key.0))?,
+						json_to_string(&CacheVariant::Some(&key))?,
 						LONG_TTL,
 					)
 					.await?;
 
-					Ok(key.0)
+					Ok(key)
 				},
 				None => {
 					//cache wrong keys too

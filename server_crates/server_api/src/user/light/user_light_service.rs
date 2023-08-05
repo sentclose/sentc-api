@@ -11,13 +11,13 @@ use sentc_crypto_common::{AppId, GroupId, UserId};
 
 use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
 use crate::sentc_app_entities::AppData;
-use crate::sentc_app_utils::hash_token_to_string;
 use crate::sentc_group_user_service::NewUserType;
 use crate::sentc_user_entities::VerifyLoginEntity;
 use crate::sentc_user_service::internal_group_data;
+use crate::user::auth::auth_service;
 use crate::user::light::user_light_model;
-use crate::user::{user_model, user_service};
-use crate::util::get_user_in_app_key;
+use crate::user::user_model;
+use crate::util::{get_user_in_app_key, hash_token_to_string};
 
 pub async fn register_light(app_id: impl Into<AppId>, input: UserDeviceRegisterInput, user: bool) -> AppRes<RegisterServerOutput>
 {
@@ -72,7 +72,7 @@ pub async fn done_register_device_light(
 
 pub async fn verify_login_light(app_data: &AppData, done_login: VerifyLoginInput) -> AppRes<(VerifyLoginLightOutput, VerifyLoginEntity)>
 {
-	let (data, jwt, refresh_token) = user_service::verify_login_internally(app_data, done_login).await?;
+	let (data, jwt, refresh_token) = auth_service::verify_login_internally(app_data, done_login).await?;
 
 	Ok((
 		VerifyLoginLightOutput {

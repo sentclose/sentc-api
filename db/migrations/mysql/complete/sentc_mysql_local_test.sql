@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 28. Jul 2023 um 20:50
+-- Erstellungszeit: 02. Aug 2023 um 20:37
 -- Server-Version: 10.2.6-MariaDB-log
 -- PHP-Version: 7.4.5
 
@@ -177,16 +177,20 @@ CREATE TABLE `sentc_app_options` (
   `content_small` int(11) NOT NULL,
   `content_med` int(11) NOT NULL,
   `content_large` int(11) NOT NULL,
-  `content_x_large` int(11) NOT NULL
+  `content_x_large` int(11) NOT NULL,
+  `user_register_otp` int(11) NOT NULL,
+  `user_reset_otp` int(11) NOT NULL,
+  `user_disable_otp` int(11) NOT NULL,
+  `user_get_otp_recovery_keys` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='option: 0 = not allowed,  1 = public token, 2 = secret token';
 
 --
 -- Daten für Tabelle `sentc_app_options`
 --
 
-INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_user_keys`, `group_user_update_check`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`, `key_register`, `key_get`, `group_auto_invite`, `group_list`, `file_register`, `file_part_upload`, `file_get`, `file_part_download`, `user_device_register`, `user_device_delete`, `user_device_list`, `group_invite_stop`, `user_key_update`, `file_delete`, `content`, `content_small`, `content_med`, `content_large`, `content_x_large`) VALUES
-('ecae27fb-d849-467d-9c58-49fca0d8430a', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
-('sentc_int', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_user_keys`, `group_user_update_check`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`, `key_register`, `key_get`, `group_auto_invite`, `group_list`, `file_register`, `file_part_upload`, `file_get`, `file_part_download`, `user_device_register`, `user_device_delete`, `user_device_list`, `group_invite_stop`, `user_key_update`, `file_delete`, `content`, `content_small`, `content_med`, `content_large`, `content_x_large`, `user_register_otp`, `user_reset_otp`, `user_disable_otp`, `user_get_otp_recovery_keys`) VALUES
+('ecae27fb-d849-467d-9c58-49fca0d8430a', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+('sentc_int', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -562,12 +566,18 @@ CREATE TABLE `sentc_user` (
   `id` varchar(36) NOT NULL,
   `app_id` varchar(36) NOT NULL,
   `user_group_id` varchar(36) NOT NULL,
-  `time` bigint(20) NOT NULL COMMENT 'registered at'
+  `time` bigint(20) NOT NULL COMMENT 'registered at',
+  `otp_secret` text DEFAULT NULL,
+  `otp_alg` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Trigger `sentc_user`
 --
+DELIMITER $$
+CREATE TRIGGER `user_delete_otp` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_otp_recovery WHERE user_id = OLD.id
+$$
+DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `user_delete_user_device` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_device WHERE user_id = OLD.id
 $$
@@ -637,6 +647,20 @@ CREATE TABLE `sentc_user_device_challenge` (
   `device_id` varchar(36) NOT NULL,
   `app_id` varchar(36) NOT NULL,
   `time` bigint(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `sentc_user_otp_recovery`
+--
+
+CREATE TABLE `sentc_user_otp_recovery` (
+  `id` varchar(36) NOT NULL,
+  `user_id` varchar(36) NOT NULL,
+  `token` text NOT NULL,
+  `time` bigint(20) NOT NULL,
+  `token_hash` varchar(100) NOT NULL COMMENT 'to search the token'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -844,6 +868,13 @@ ALTER TABLE `sentc_user_device`
 --
 ALTER TABLE `sentc_user_device_challenge`
   ADD PRIMARY KEY (`challenge`,`device_id`,`app_id`,`time`) USING BTREE;
+
+--
+-- Indizes für die Tabelle `sentc_user_otp_recovery`
+--
+ALTER TABLE `sentc_user_otp_recovery`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`,`token_hash`);
 
 --
 -- Indizes für die Tabelle `sentc_user_token`

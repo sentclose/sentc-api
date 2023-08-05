@@ -241,9 +241,17 @@ async fn test_14_login()
 		.await
 		.unwrap();
 
-	let body = res.text().await.unwrap();
+	let server_out = res.text().await.unwrap();
 
-	let keys = sentc_crypto_light::user::done_login(&derived_master_key, auth_key, username.to_string(), body.as_str()).unwrap();
+	let keys = match sentc_crypto_light::user::check_done_login(&server_out).unwrap() {
+		sentc_crypto_light::sdk_common::user::DoneLoginServerReturn::Direct(d) => {
+			sentc_crypto::user::done_login(&derived_master_key, auth_key, username.to_string(), d).unwrap()
+		},
+		sentc_crypto_light::sdk_common::user::DoneLoginServerReturn::Otp => {
+			panic!("No mfa excepted for user login test 2")
+		},
+	};
+
 	let url = get_url("api/v1/verify_login_light".to_owned());
 	let res = client
 		.post(url)
@@ -282,7 +290,7 @@ async fn test_15_login_with_wrong_password()
 
 	let body = res.text().await.unwrap();
 
-	let (input, auth_key, derived_master_key) = sentc_crypto_light::user::prepare_login(username, pw, body.as_str()).unwrap();
+	let (input, _auth_key, _derived_master_key) = sentc_crypto_light::user::prepare_login(username, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/done_login".to_owned());
@@ -297,23 +305,11 @@ async fn test_15_login_with_wrong_password()
 		.unwrap();
 
 	let body = res.text().await.unwrap();
+	let login_output = ServerOutput::<DoneLoginServerOutput>::from_string(body.as_str()).unwrap();
 
-	match sentc_crypto_light::user::done_login(&derived_master_key, auth_key, username.to_string(), body.as_str()) {
-		Ok(_v) => {
-			panic!("this should not be Ok")
-		},
-		Err(e) => {
-			match e {
-				SdkLightError::Util(SdkUtilError::ServerErr(s, _m)) => {
-					//this should be the right err
-					//this are the same err as the backend
-
-					assert_eq!(s, ApiErrorCodes::Login.get_int_code());
-				},
-				_ => panic!("this should not be the right error code"),
-			}
-		},
-	}
+	assert!(!login_output.status);
+	assert!(login_output.result.is_none());
+	assert_eq!(login_output.err_code.unwrap(), ApiErrorCodes::Login.get_int_code());
 }
 
 #[tokio::test]
@@ -410,14 +406,19 @@ async fn test_17_change_user_pw()
 
 	let done_body = res.text().await.unwrap();
 
+	let (keys, done_body) = match sentc_crypto_light::user::check_done_login(&done_body).unwrap() {
+		sentc_crypto_light::sdk_common::user::DoneLoginServerReturn::Direct(d) => {
+			(
+				sentc_crypto::user::done_login(&derived_master_key, auth_key, username.to_string(), d.clone()).unwrap(),
+				d,
+			)
+		},
+		sentc_crypto_light::sdk_common::user::DoneLoginServerReturn::Otp => {
+			panic!("No mfa excepted for user login test 2")
+		},
+	};
+
 	//2. login again to get a fresh jwt
-	let keys = sentc_crypto_light::user::done_login(
-		&derived_master_key,
-		auth_key,
-		username.to_string(),
-		done_body.as_str(),
-	)
-	.unwrap();
 
 	let url = get_url("api/v1/verify_login_light".to_owned());
 	let res = client
@@ -436,7 +437,7 @@ async fn test_17_change_user_pw()
 	//______________________________________________________________________________________________
 	//use a fresh jwt here
 
-	let input = sentc_crypto_light::user::change_password(pw, new_pw, body.as_str(), done_body.as_str()).unwrap();
+	let input = sentc_crypto_light::user::change_password(pw, new_pw, body.as_str(), done_body).unwrap();
 
 	let url = get_url("api/v1/user/update_pw".to_owned());
 	let client = reqwest::Client::new();
@@ -767,9 +768,17 @@ async fn test_24_user_add_device()
 		.await
 		.unwrap();
 
-	let body = res.text().await.unwrap();
+	let server_out = res.text().await.unwrap();
 
-	let keys = sentc_crypto_light::user::done_login(&derived_master_key, auth_key, "device_1".to_string(), body.as_str()).unwrap();
+	let keys = match sentc_crypto_light::user::check_done_login(&server_out).unwrap() {
+		sentc_crypto_light::sdk_common::user::DoneLoginServerReturn::Direct(d) => {
+			sentc_crypto::user::done_login(&derived_master_key, auth_key, "device_1".to_string(), d).unwrap()
+		},
+		sentc_crypto_light::sdk_common::user::DoneLoginServerReturn::Otp => {
+			panic!("No mfa excepted for user login test 2")
+		},
+	};
+
 	let url = get_url("api/v1/verify_login_light".to_owned());
 	let res = client
 		.post(url)
@@ -880,7 +889,7 @@ async fn test_28_delete_device()
 
 	let body = res.text().await.unwrap();
 
-	let (input, auth_key, derived_master_key) = sentc_crypto_light::user::prepare_login("device_1", "12345", body.as_str()).unwrap();
+	let (input, _auth_key, _derived_master_key) = sentc_crypto_light::user::prepare_login("device_1", "12345", body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/done_login".to_owned());
@@ -896,11 +905,11 @@ async fn test_28_delete_device()
 
 	let body = res.text().await.unwrap();
 
-	match sentc_crypto_light::user::done_login(&derived_master_key, auth_key, "device_1".to_string(), body.as_str()) {
+	match handle_server_response::<sentc_crypto_light::sdk_common::user::DoneLoginServerReturn>(&body) {
 		Ok(_) => panic!("should be error"),
 		Err(e) => {
 			match e {
-				SdkLightError::Util(SdkUtilError::ServerErr(s, _)) => {
+				SdkUtilError::ServerErr(s, _) => {
 					assert_eq!(s, 100)
 				},
 				_ => panic!("should be server error"),

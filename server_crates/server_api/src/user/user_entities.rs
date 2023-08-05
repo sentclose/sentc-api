@@ -43,6 +43,18 @@ pub struct UserLoginDataEntity
 	pub derived_alg: String,
 }
 
+#[derive(Serialize, Deserialize, DB)]
+pub struct UserLoginDataOtpEntity
+{
+	pub client_random_value: String,
+	pub hashed_authentication_key: String,
+	pub derived_alg: String,
+
+	//this shows if the user enabled the otp for 2fa
+	pub otp_secret: Option<String>,
+	pub otp_alg: Option<String>,
+}
+
 //__________________________________________________________________________________________________
 //User done login data
 
@@ -60,6 +72,25 @@ impl Into<sentc_crypto_common::user::DoneLoginServerOutput> for DoneLoginServerO
 		sentc_crypto_common::user::DoneLoginServerOutput {
 			device_keys: self.device_keys.into(),
 			challenge: self.challenge,
+		}
+	}
+}
+
+#[allow(clippy::large_enum_variant)]
+#[derive(Serialize)]
+pub enum DoneLoginServerReturn
+{
+	Otp,
+	Direct(DoneLoginServerOutput),
+}
+
+impl Into<sentc_crypto_common::user::DoneLoginServerReturn> for DoneLoginServerReturn
+{
+	fn into(self) -> sentc_crypto_common::user::DoneLoginServerReturn
+	{
+		match self {
+			Self::Otp => sentc_crypto_common::user::DoneLoginServerReturn::Otp,
+			Self::Direct(d) => sentc_crypto_common::user::DoneLoginServerReturn::Direct(d.into()),
 		}
 	}
 }

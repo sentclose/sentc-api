@@ -101,6 +101,10 @@ pub enum ApiErrorCodes
 	ContentSearchableNoHashes,
 	ContentSearchableTooManyHashes,
 	ContentSearchableQueryMissing,
+
+	ToTpSecretDecode,
+	ToTpGet,
+	ToTpWrongToken,
 }
 
 impl From<CoreErrorCodes> for ApiErrorCodes
@@ -212,6 +216,10 @@ impl ServerErrorCodes for ApiErrorCodes
 			ApiErrorCodes::ContentSearchableNoHashes => 802,
 			ApiErrorCodes::ContentSearchableTooManyHashes => 803,
 			ApiErrorCodes::ContentSearchableQueryMissing => 810,
+
+			ApiErrorCodes::ToTpSecretDecode => 900,
+			ApiErrorCodes::ToTpGet => 901,
+			ApiErrorCodes::ToTpWrongToken => 902,
 		}
 	}
 }

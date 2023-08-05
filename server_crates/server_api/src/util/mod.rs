@@ -1,5 +1,9 @@
 use chrono::{Datelike, TimeZone, Utc};
+use ring::digest::{Context, SHA256};
+use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
+
+use crate::util::api_res::ApiErrorCodes;
 
 pub mod api_res;
 pub mod email;
@@ -56,4 +60,35 @@ pub(crate) fn get_begin_of_month() -> AppRes<i64>
 	let beginning_of_month = Utc.with_ymd_and_hms(current_date.year(), current_date.month(), 1, 0, 0, 0);
 
 	Ok(beginning_of_month.unwrap().timestamp_millis())
+}
+
+pub const HASH_ALG: &str = "SHA256";
+
+pub fn hash_token(token: &[u8]) -> AppRes<[u8; 32]>
+{
+	let mut context = Context::new(&SHA256);
+	context.update(token);
+	let result = context.finish();
+
+	let hashed_token: [u8; 32] = result
+		.as_ref()
+		.try_into()
+		.map_err(|_e| ServerCoreError::new_msg(400, ApiErrorCodes::AppTokenWrongFormat, "Token can't be hashed"))?;
+
+	Ok(hashed_token)
+}
+
+pub fn hash_token_to_string(token: &[u8]) -> AppRes<String>
+{
+	let token = hash_token(token)?;
+
+	Ok(base64::encode(token))
+}
+
+pub fn hash_token_from_string_to_string(token: &str) -> AppRes<String>
+{
+	//the normal token is also encoded as base64 when exporting it to user
+	let token = base64::decode(token).map_err(|_e| ServerCoreError::new_msg(401, ApiErrorCodes::AppTokenWrongFormat, "Token can't be hashed"))?;
+
+	hash_token_to_string(&token)
 }

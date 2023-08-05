@@ -21,6 +21,8 @@ routes:
               - post: {p: "/register_light", s: crate::user::register_light}
               - post: {p: "/prepare_login", s: crate::user::prepare_login}
               - post: {p: "/done_login", s: crate::user::done_login}
+              - post: {p: "/validate_mfa", s: crate::user::validate_mfa}
+              - post: {p: "/validate_recovery_otp", s: crate::user::validate_recovery_otp}
               - post: {p: "/verify_login", s: crate::user::verify_login}
               - post: {p: "/verify_login_light", s: crate::user::verify_login_light}
               - post: {p: "/user/prepare_register_device", s: crate::user::prepare_register_device}
@@ -73,8 +75,12 @@ routes:
                     - put: {p: "", s: crate::user::update}
                     - put: {p: "/done_register_device", s: crate::user::done_register_device}
                     - put: {p: "/done_register_device_light", s: crate::user::done_register_device_light}
+                    - patch: {p: "/register_otp", s: crate::user::register_otp}
                     - put: {p: "/update_pw", s: crate::user::change_password}
                     - put: {p: "/reset_pw", s: crate::user::reset_password}
+                    - patch: {p: "/reset_otp", s: crate::user::reset_otp}
+                    - patch: {p: "/disable_otp", s: crate::user::disable_otp}
+                    - get: {p: "/otp_recovery_keys", s: crate::user::get_otp_recovery_keys}
                     # check the api token for delete action, maybe the app creator only wants to trigger delete from the own backend
                     - delete: {p: "", s: crate::user::delete}
                     - delete: {p: "/device/:device_id", s: crate::user::delete_device}

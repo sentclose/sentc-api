@@ -1,7 +1,11 @@
+use std::future::Future;
+
 use rustgram_server_util::db::id_handling::create_id;
 use rustgram_server_util::db::{
+	bulk_insert,
 	exec,
 	exec_transaction,
+	query,
 	query_first,
 	query_string,
 	I32Entity,
@@ -17,16 +21,7 @@ use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::user::{ChangePasswordData, KeyDerivedData, MasterKey, ResetPasswordData};
 use sentc_crypto_common::{AppId, DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, UserId};
 
-use crate::sentc_user_entities::VerifyLoginEntity;
-use crate::user::user_entities::{
-	CaptchaEntity,
-	DoneLoginServerKeysOutputEntity,
-	UserDeviceList,
-	UserLoginDataEntity,
-	UserPublicKeyDataEntity,
-	UserRefreshTokenCheck,
-	UserVerifyKeyDataEntity,
-};
+use crate::user::user_entities::{CaptchaEntity, UserDeviceList, UserPublicKeyDataEntity, UserRefreshTokenCheck, UserVerifyKeyDataEntity};
 use crate::user::user_service::UserAction;
 use crate::util::api_res::ApiErrorCodes;
 use crate::util::get_begin_of_month;
@@ -45,14 +40,14 @@ pub(super) async fn get_jwt_sign_key(kid: impl Into<String>) -> AppRes<Option<St
 	}
 }
 
-pub(super) async fn get_jwt_verify_key(kid: impl Into<String>) -> AppRes<Option<StringEntity>>
+pub(super) async fn get_jwt_verify_key(kid: impl Into<String>) -> AppRes<Option<String>>
 {
 	//language=SQL
 	let sql = "SELECT verify_key FROM sentc_app_jwt_keys WHERE id = ?";
 
 	let sign_key: Option<StringEntity> = query_first(sql, set_params!(kid.into())).await?;
 
-	Ok(sign_key)
+	Ok(sign_key.map(|i| i.0))
 }
 
 //__________________________________________________________________________________________________
@@ -89,137 +84,6 @@ LIMIT 1";
 		Some(_) => Ok(true),
 		None => Ok(false),
 	}
-}
-
-/**
-Internal login data
-
-used for salt creation and auth user.
-
-Get it for a device
-*/
-pub(super) async fn get_user_login_data(app_id: impl Into<AppId>, user_identifier: impl Into<String>) -> AppRes<Option<UserLoginDataEntity>>
-{
-	//language=SQL
-	let sql = r"
-SELECT client_random_value, hashed_auth_key, derived_alg 
-FROM 
-    sentc_user_device 
-WHERE 
-    device_identifier = ? AND 
-    app_id = ?";
-
-	let login_data: Option<UserLoginDataEntity> = query_first(sql, set_params!(user_identifier.into(), app_id.into())).await?;
-
-	Ok(login_data)
-}
-
-/**
-The user data which are needed to get the user keys
-*/
-pub(super) async fn get_done_login_data(
-	app_id: impl Into<AppId>,
-	user_identifier: impl Into<String>,
-) -> AppRes<Option<DoneLoginServerKeysOutputEntity>>
-{
-	//language=SQL
-	let sql = r"
-SELECT 
-    encrypted_master_key,
-    encrypted_private_key,
-    public_key,
-    keypair_encrypt_alg,
-    encrypted_sign_key,
-    verify_key,
-    keypair_sign_alg,
-    ud.id as k_id,
-    user_id,
-    user_group_id
-FROM 
-    sentc_user u, 
-    sentc_user_device ud
-WHERE 
-    user_id = u.id AND
-    ud.device_identifier = ? AND 
-    u.app_id = ?";
-
-	let data: Option<DoneLoginServerKeysOutputEntity> = query_first(sql, set_params!(user_identifier.into(), app_id.into())).await?;
-
-	Ok(data)
-}
-
-pub(super) async fn insert_verify_login_challenge(app_id: impl Into<AppId>, device_id: impl Into<DeviceId>, challenge: String) -> AppRes<()>
-{
-	let time = get_time()?;
-
-	//language=SQL
-	let sql = r"
-INSERT INTO sentc_user_device_challenge 
-    (challenge, device_id, app_id, time) 
-VALUES (?,?,?,?)";
-
-	exec(
-		sql,
-		set_params!(challenge, device_id.into(), app_id.into(), time.to_string()),
-	)
-	.await
-}
-
-pub(super) async fn get_verify_login_data(
-	app_id: impl Into<AppId>,
-	user_identifier: impl Into<String>,
-	challenge: String,
-) -> AppRes<Option<VerifyLoginEntity>>
-{
-	//language=SQL
-	let sql = r"
-SELECT 
-    ud.id as k_id,
-    user_id,
-    user_group_id
-FROM 
-    sentc_user u, 
-    sentc_user_device ud, 
-    sentc_user_device_challenge udc
-WHERE 
-    user_id = u.id AND 
-    device_id = ud.id AND
-    ud.device_identifier = ? AND 
-    u.app_id = ? AND 
-    challenge = ?";
-
-	let out: Option<VerifyLoginEntity> = query_first(sql, set_params!(user_identifier.into(), app_id.into(), challenge)).await?;
-
-	if let Some(o) = &out {
-		//if challenge was found, delete it.
-		//language=SQL
-		let sql = "DELETE FROM sentc_user_device_challenge WHERE device_id = ?";
-
-		exec(sql, set_params!(o.device_id.clone())).await?;
-	}
-
-	Ok(out)
-}
-
-pub(super) async fn insert_refresh_token(app_id: impl Into<AppId>, device_id: impl Into<DeviceId>, refresh_token: impl Into<String>) -> AppRes<()>
-{
-	let time = get_time()?;
-
-	//language=SQL
-	let sql = "INSERT INTO sentc_user_token (device_id, token, app_id, time) VALUES (?,?,?,?)";
-
-	exec(
-		sql,
-		set_params!(
-			device_id.into(),
-			refresh_token.into(),
-			app_id.into(),
-			time.to_string()
-		),
-	)
-	.await?;
-
-	Ok(())
 }
 
 pub(super) async fn check_refresh_token(
@@ -720,6 +584,80 @@ pub(super) async fn get_device_identifier(
 	let device: Option<StringEntity> = query_first(sql, set_params!(device_id.into(), user_id.into(), app_id.into())).await?;
 
 	Ok(device)
+}
+
+//__________________________________________________________________________________________________
+//otp
+
+pub(super) async fn register_otp(
+	app_id: impl Into<AppId>,
+	user_id: impl Into<UserId>,
+	encrypted_secret: String,
+	alg: String,
+	recover: Vec<(String, String)>,
+) -> AppRes<()>
+{
+	//store the recovery keys and the secret but also encrypted
+
+	let time = get_time()?;
+	let user_id = user_id.into();
+
+	//language=SQL
+	let sql = "UPDATE sentc_user SET otp_secret = ?, otp_alg = ? WHERE id = ? AND app_id = ?";
+
+	exec(
+		sql,
+		set_params!(encrypted_secret, alg, user_id.clone(), app_id.into()),
+	)
+	.await?;
+
+	//language=SQL
+	//let sql = "INSERT INTO sentc_user_otp_recovery (id, user_id, token, time, token_hash) VALUES (?,?,?,?,?)";
+
+	bulk_insert(
+		true,
+		"sentc_user_otp_recovery",
+		&["id", "user_id", "token", "time", "token_hash"],
+		recover,
+		move |i| {
+			let id = create_id();
+
+			set_params!(id, user_id.clone(), i.0, time.to_string(), i.1)
+		},
+	)
+	.await?;
+
+	Ok(())
+}
+
+pub(super) fn delete_all_otp_token(user_id: impl Into<UserId>) -> impl Future<Output = AppRes<()>>
+{
+	//for token or 2fa reset, no app id check needed because this is done in the jwt mw
+	//only with fresh jwt
+	//language=SQL
+	let sql = "DELETE FROM sentc_user_otp_recovery WHERE user_id = ?";
+
+	exec(sql, set_params!(user_id.into()))
+}
+
+pub(super) fn disable_otp(user_id: impl Into<UserId>) -> impl Future<Output = AppRes<()>>
+{
+	//update the user table and set the values to null
+	//language=SQL
+	let sql = "UPDATE sentc_user SET otp_secret = NULL, otp_alg = NULL WHERE id = ?";
+
+	exec(sql, set_params!(user_id.into()))
+}
+
+pub(super) fn get_otp_recovery_keys(user_id: impl Into<UserId>) -> impl Future<Output = AppRes<Vec<StringEntity>>>
+{
+	//only with fresh jwt
+	//tokens are encrypted
+
+	//language=SQL
+	let sql = "SELECT token FROM sentc_user_otp_recovery WHERE user_id = ?";
+
+	query(sql, set_params!(user_id.into()))
 }
 
 //__________________________________________________________________________________________________
