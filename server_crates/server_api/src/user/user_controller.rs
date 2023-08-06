@@ -38,7 +38,7 @@ use crate::customer_app::app_util::{check_endpoint_with_app_options, get_app_dat
 use crate::group::group_entities::{GroupKeyUpdate, GroupUserKeys};
 use crate::group::{group_key_rotation_service, group_user_service};
 use crate::sentc_app_utils::check_endpoint_with_req;
-use crate::sentc_user_entities::{DoneLoginServerOutput, DoneLoginServerReturn, VerifyLoginOutput};
+use crate::sentc_user_entities::{DoneLoginServerOutput, DoneLoginServerReturn, LoginForcedOutput, VerifyLoginOutput};
 use crate::user::auth::auth_service;
 use crate::user::jwt::get_jwt_data_from_param;
 use crate::user::user_entities::{UserDeviceList, UserInitEntity, UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
@@ -226,7 +226,7 @@ pub(crate) async fn verify_login(mut req: Request) -> JRes<VerifyLoginOutput>
 	echo(out)
 }
 
-pub(crate) async fn verify_login_forced(mut req: Request) -> JRes<VerifyLoginOutput>
+pub(crate) async fn verify_login_forced(mut req: Request) -> JRes<LoginForcedOutput>
 {
 	//Fn to skip the login process and just return the user data
 

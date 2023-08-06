@@ -59,6 +59,42 @@ pub struct UserLoginDataOtpEntity
 //User done login data
 
 #[derive(Serialize)]
+pub struct LoginForcedOutput
+{
+	pub device_keys: VerifyLoginForcedEntity,
+	pub verify: VerifyLoginOutput,
+}
+
+impl Into<sentc_crypto_common::user::LoginForcedOutput> for LoginForcedOutput
+{
+	fn into(self) -> sentc_crypto_common::user::LoginForcedOutput
+	{
+		sentc_crypto_common::user::LoginForcedOutput {
+			device_keys: self.device_keys.into(),
+			verify: self.verify.into(),
+		}
+	}
+}
+
+#[derive(Serialize)]
+pub struct LoginForcedLightOutput
+{
+	pub device_keys: VerifyLoginForcedEntity,
+	pub verify: sentc_crypto_common::user::VerifyLoginLightOutput,
+}
+
+impl Into<sentc_crypto_common::user::LoginForcedLightOutput> for LoginForcedLightOutput
+{
+	fn into(self) -> sentc_crypto_common::user::LoginForcedLightOutput
+	{
+		sentc_crypto_common::user::LoginForcedLightOutput {
+			device_keys: self.device_keys.into(),
+			verify: self.verify,
+		}
+	}
+}
+
+#[derive(Serialize)]
 pub struct DoneLoginServerOutput
 {
 	pub device_keys: DoneLoginServerKeysOutputEntity,
@@ -219,6 +255,41 @@ pub struct VerifyLoginEntity
 	pub device_id: DeviceId,
 	pub user_id: UserId,
 	pub user_group_id: GroupId,
+}
+
+#[derive(DB, Serialize)]
+pub struct VerifyLoginForcedEntity
+{
+	pub device_id: DeviceId,
+	pub user_id: UserId,
+	pub user_group_id: GroupId,
+
+	pub encrypted_master_key: String,
+	pub encrypted_private_key: String,
+	pub public_key_string: String,
+	pub keypair_encrypt_alg: String,
+	pub encrypted_sign_key: String,
+	pub verify_key_string: String,
+	pub keypair_sign_alg: String,
+}
+
+impl Into<sentc_crypto_common::user::VerifyLoginForcedEntity> for VerifyLoginForcedEntity
+{
+	fn into(self) -> sentc_crypto_common::user::VerifyLoginForcedEntity
+	{
+		sentc_crypto_common::user::VerifyLoginForcedEntity {
+			device_id: self.device_id,
+			user_id: self.user_id,
+			user_group_id: self.user_group_id,
+			encrypted_master_key: self.encrypted_master_key,
+			encrypted_private_key: self.encrypted_private_key,
+			public_key_string: self.public_key_string,
+			keypair_encrypt_alg: self.keypair_encrypt_alg,
+			encrypted_sign_key: self.encrypted_sign_key,
+			verify_key_string: self.verify_key_string,
+			keypair_sign_alg: self.keypair_sign_alg,
+		}
+	}
 }
 
 //__________________________________________________________________________________________________

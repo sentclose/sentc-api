@@ -8,7 +8,7 @@ use sentc_crypto_common::user::{DoneLoginServerInput, OtpInput, PrepareLoginSalt
 use sentc_crypto_common::AppId;
 
 use crate::sentc_app_entities::AppData;
-use crate::sentc_user_entities::{DoneLoginServerOutput, DoneLoginServerReturn, VerifyLoginEntity, SERVER_RANDOM_VALUE};
+use crate::sentc_user_entities::{DoneLoginServerOutput, DoneLoginServerReturn, VerifyLoginEntity, VerifyLoginForcedEntity, SERVER_RANDOM_VALUE};
 use crate::sentc_user_jwt_service::create_jwt;
 use crate::sentc_user_service::create_refresh_token;
 use crate::user::auth::auth_model;
@@ -148,7 +148,7 @@ pub(crate) async fn verify_login_internally(app_data: &AppData, done_login: Veri
 	Ok((data, jwt, refresh_token))
 }
 
-pub(crate) async fn verify_login_forced_internally(app_data: &AppData, identifier: &str) -> AppRes<(VerifyLoginEntity, String, String)>
+pub(crate) async fn verify_login_forced_internally(app_data: &AppData, identifier: &str) -> AppRes<(VerifyLoginForcedEntity, String, String)>
 {
 	let identifier = hash_token_to_string(identifier.as_bytes())?;
 

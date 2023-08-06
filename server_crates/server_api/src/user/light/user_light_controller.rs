@@ -11,6 +11,7 @@ use sentc_crypto_common::user::{
 };
 
 use crate::sentc_app_utils::{check_endpoint_with_app_options, get_app_data_from_req, Endpoint};
+use crate::sentc_user_entities::LoginForcedLightOutput;
 use crate::sentc_user_jwt_service::get_jwt_data_from_param;
 use crate::user::light::user_light_service;
 
@@ -55,7 +56,7 @@ pub(crate) async fn verify_login_light(mut req: Request) -> JRes<VerifyLoginLigh
 	echo(out)
 }
 
-pub(crate) async fn verify_login_light_forced(mut req: Request) -> JRes<VerifyLoginLightOutput>
+pub(crate) async fn verify_login_light_forced(mut req: Request) -> JRes<LoginForcedLightOutput>
 {
 	//Fn to skip the login process and just return the user data
 

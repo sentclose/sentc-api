@@ -28,7 +28,7 @@ use crate::group::group_entities::{GroupUserKeys, InternalGroupData, InternalGro
 use crate::group::group_user_service::NewUserType;
 use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
 use crate::sentc_app_entities::AppData;
-use crate::sentc_user_entities::{UserPublicKeyDataEntity, UserVerifyKeyDataEntity, VerifyLoginOutput};
+use crate::sentc_user_entities::{LoginForcedOutput, UserPublicKeyDataEntity, UserVerifyKeyDataEntity, VerifyLoginOutput};
 use crate::user::auth::auth_service::{auth_user, verify_login_forced_internally, verify_login_internally};
 use crate::user::jwt::create_jwt;
 use crate::user::user_entities::{UserDeviceList, UserInitEntity, UserJwtEntity};
@@ -274,7 +274,7 @@ pub async fn verify_login(app_data: &AppData, done_login: VerifyLoginInput) -> A
 	Ok(out)
 }
 
-pub async fn verify_login_forced(app_data: &AppData, identifier: &str) -> AppRes<VerifyLoginOutput>
+pub async fn verify_login_forced(app_data: &AppData, identifier: &str) -> AppRes<LoginForcedOutput>
 {
 	let (data, jwt, refresh_token) = verify_login_forced_internally(app_data, identifier).await?;
 
@@ -298,7 +298,10 @@ pub async fn verify_login_forced(app_data: &AppData, identifier: &str) -> AppRes
 		refresh_token,
 	};
 
-	Ok(out)
+	Ok(LoginForcedOutput {
+		device_keys: data,
+		verify: out,
+	})
 }
 
 pub fn get_user_keys<'a>(

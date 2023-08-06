@@ -12,7 +12,7 @@ use sentc_crypto_common::{AppId, GroupId, UserId};
 use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
 use crate::sentc_app_entities::AppData;
 use crate::sentc_group_user_service::NewUserType;
-use crate::sentc_user_entities::VerifyLoginEntity;
+use crate::sentc_user_entities::{LoginForcedLightOutput, VerifyLoginEntity};
 use crate::sentc_user_service::internal_group_data;
 use crate::user::auth::auth_service;
 use crate::user::light::user_light_model;
@@ -83,13 +83,16 @@ pub async fn verify_login_light(app_data: &AppData, done_login: VerifyLoginInput
 	))
 }
 
-pub async fn verify_login_light_forced(app_data: &AppData, identifier: &str) -> AppRes<VerifyLoginLightOutput>
+pub async fn verify_login_light_forced(app_data: &AppData, identifier: &str) -> AppRes<LoginForcedLightOutput>
 {
-	let (_data, jwt, refresh_token) = auth_service::verify_login_forced_internally(app_data, identifier).await?;
+	let (data, jwt, refresh_token) = auth_service::verify_login_forced_internally(app_data, identifier).await?;
 
-	Ok(VerifyLoginLightOutput {
-		jwt,
-		refresh_token,
+	Ok(LoginForcedLightOutput {
+		device_keys: data,
+		verify: VerifyLoginLightOutput {
+			jwt,
+			refresh_token,
+		},
 	})
 }
 

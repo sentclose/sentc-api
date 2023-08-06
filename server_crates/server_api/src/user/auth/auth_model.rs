@@ -6,7 +6,13 @@ use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::{AppId, DeviceId};
 
-use crate::sentc_user_entities::{DoneLoginServerKeysOutputEntity, UserLoginDataEntity, UserLoginDataOtpEntity, VerifyLoginEntity};
+use crate::sentc_user_entities::{
+	DoneLoginServerKeysOutputEntity,
+	UserLoginDataEntity,
+	UserLoginDataOtpEntity,
+	VerifyLoginEntity,
+	VerifyLoginForcedEntity,
+};
 use crate::util::api_res::ApiErrorCodes;
 
 /**
@@ -167,7 +173,10 @@ WHERE
 	Ok(out)
 }
 
-pub(super) async fn get_verify_login_data_forced(app_id: impl Into<AppId>, user_identifier: impl Into<String>) -> AppRes<Option<VerifyLoginEntity>>
+pub(super) async fn get_verify_login_data_forced(
+	app_id: impl Into<AppId>,
+	user_identifier: impl Into<String>,
+) -> AppRes<Option<VerifyLoginForcedEntity>>
 {
 	//the same as verify login but this time without the challenge check
 
@@ -176,7 +185,15 @@ pub(super) async fn get_verify_login_data_forced(app_id: impl Into<AppId>, user_
 SELECT 
     ud.id as k_id,
     user_id,
-    user_group_id
+    user_group_id,
+    
+    encrypted_master_key,
+    encrypted_private_key,
+    public_key,
+    keypair_encrypt_alg,
+    encrypted_sign_key,
+    verify_key,
+    keypair_sign_alg
 FROM 
     sentc_user u, 
     sentc_user_device ud
@@ -185,7 +202,7 @@ WHERE
     ud.device_identifier = ? AND 
     u.app_id = ?";
 
-	let out: Option<VerifyLoginEntity> = query_first(sql, set_params!(user_identifier.into(), app_id.into())).await?;
+	let out: Option<VerifyLoginForcedEntity> = query_first(sql, set_params!(user_identifier.into(), app_id.into())).await?;
 
 	Ok(out)
 }
