@@ -29,9 +29,9 @@ pub(crate) struct CustomerDataEntity
 	pub name: String,
 }
 
-impl Into<server_api_common::customer::CustomerDataOutput> for CustomerDataEntity
+impl Into<server_dashboard_common::customer::CustomerDataOutput> for CustomerDataEntity
 {
-	fn into(self) -> server_api_common::customer::CustomerDataOutput
+	fn into(self) -> server_dashboard_common::customer::CustomerDataOutput
 	{
 		let validate_email = match self.email_valid {
 			0 => false,
@@ -39,7 +39,7 @@ impl Into<server_api_common::customer::CustomerDataOutput> for CustomerDataEntit
 			_ => false,
 		};
 
-		server_api_common::customer::CustomerDataOutput {
+		server_dashboard_common::customer::CustomerDataOutput {
 			validate_email,
 			email: self.email,
 			email_send: self.email_send,
@@ -92,11 +92,11 @@ pub struct CustomerList
 	pub email: String,
 }
 
-impl Into<server_api_common::customer::CustomerList> for CustomerList
+impl Into<server_dashboard_common::customer::CustomerList> for CustomerList
 {
-	fn into(self) -> server_api_common::customer::CustomerList
+	fn into(self) -> server_dashboard_common::customer::CustomerList
 	{
-		server_api_common::customer::CustomerList {
+		server_dashboard_common::customer::CustomerList {
 			id: self.id,
 			first_name: self.first_name,
 			name: self.name,
@@ -112,11 +112,11 @@ pub struct CustomerGroupMemberFetch
 	pub customer_data: Vec<CustomerList>,
 }
 
-impl Into<server_api_common::customer::CustomerGroupMemberFetch> for CustomerGroupMemberFetch
+impl Into<server_dashboard_common::customer::CustomerGroupMemberFetch> for CustomerGroupMemberFetch
 {
-	fn into(self) -> server_api_common::customer::CustomerGroupMemberFetch
+	fn into(self) -> server_dashboard_common::customer::CustomerGroupMemberFetch
 	{
-		server_api_common::customer::CustomerGroupMemberFetch {
+		server_dashboard_common::customer::CustomerGroupMemberFetch {
 			group_member: self.group_member.into_iter().map(|i| i.into()).collect(),
 			customer_data: self.customer_data.into_iter().map(|i| i.into()).collect(),
 		}

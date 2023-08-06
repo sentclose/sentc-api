@@ -3,7 +3,7 @@ use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params, set_params_vec_outer};
 use sentc_crypto_common::{CustomerId, GroupId, UserId};
-use server_api_common::customer::{CustomerData, CustomerGroupCreateInput, CustomerGroupList, CustomerUpdateInput};
+use server_dashboard_common::customer::{CustomerData, CustomerGroupCreateInput, CustomerGroupList, CustomerUpdateInput};
 
 #[cfg(feature = "send_mail")]
 use crate::customer::customer_entities::RegisterEmailStatus;

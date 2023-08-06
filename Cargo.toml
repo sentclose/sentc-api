@@ -15,7 +15,7 @@ members = [
     # lib
     "sdk-common",
     "server_crates/server_api",
-    "server_crates/server_api_common",
+    "server_crates/server_dashboard_common",
     "server_crates/encrypted_at_rest_root"
 ]
 

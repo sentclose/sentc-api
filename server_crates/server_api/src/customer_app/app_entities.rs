@@ -1,7 +1,7 @@
 use rustgram_server_util::DB;
 use sentc_crypto_common::{AppId, CustomerId, GroupId, SignKeyPairId};
 use serde::{Deserialize, Serialize};
-use server_api_common::app::{AppGroupOption, AppOptions};
+use server_dashboard_common::app::{AppGroupOption, AppOptions};
 
 pub const CUSTOMER_OWNER_TYPE_USER: i32 = 0;
 pub const CUSTOMER_OWNER_TYPE_GROUP: i32 = 1;
