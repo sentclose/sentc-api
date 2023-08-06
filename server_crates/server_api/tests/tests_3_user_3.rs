@@ -644,7 +644,7 @@ async fn test_22_forced_login()
 		.unwrap();
 	let body = res.text().await.unwrap();
 
-	let _out: sentc_crypto_common::user::VerifyLoginOutput = handle_server_response(&body).unwrap();
+	let _out: sentc_crypto_common::user::LoginForcedOutput = handle_server_response(&body).unwrap();
 }
 
 #[tokio::test]
@@ -671,7 +671,7 @@ async fn test_23_forced_login_light()
 		.unwrap();
 	let body = res.text().await.unwrap();
 
-	let _out: sentc_crypto_common::user::VerifyLoginLightOutput = handle_server_response(&body).unwrap();
+	let _out: sentc_crypto_common::user::LoginForcedLightOutput = handle_server_response(&body).unwrap();
 }
 
 #[tokio::test]
