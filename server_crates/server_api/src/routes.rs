@@ -74,6 +74,14 @@ pub(crate) fn routes(router: &mut Router)
 		"/api/v1/user/force/:user_id",
 		r(crate::user::delete_user).add(app_token::app_token_transform),
 	);
+	router.post(
+		"/api/v1/user/force/login",
+		r(crate::user::verify_login_forced).add(app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/user/force/login_light",
+		r(crate::user::verify_login_light_forced).add(app_token::app_token_transform),
+	);
 	router.put(
 		"/api/v1/refresh",
 		r(crate::user::refresh_jwt)

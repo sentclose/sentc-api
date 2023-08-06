@@ -148,6 +148,34 @@ pub(crate) async fn verify_login_internally(app_data: &AppData, done_login: Veri
 	Ok((data, jwt, refresh_token))
 }
 
+pub(crate) async fn verify_login_forced_internally(app_data: &AppData, identifier: &str) -> AppRes<(VerifyLoginEntity, String, String)>
+{
+	let identifier = hash_token_to_string(identifier.as_bytes())?;
+
+	//No auth user here because this is only called from a backend
+
+	//verify the login, return the device and user id and user group id
+	let data = auth_model::get_verify_login_data_forced(&app_data.app_data.app_id, identifier)
+		.await?
+		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::Login, "Wrong username or password"))?;
+
+	// and create the jwt
+	let jwt = create_jwt(
+		&data.user_id,
+		&data.device_id,
+		&app_data.jwt_data[0], //use always the latest created jwt data
+		true,
+	)
+	.await?;
+
+	let refresh_token = create_refresh_token()?;
+
+	//activate refresh token
+	auth_model::insert_refresh_token(&app_data.app_data.app_id, &data.device_id, &refresh_token).await?;
+
+	Ok((data, jwt, refresh_token))
+}
+
 async fn create_salt(app_id: impl Into<AppId>, user_identifier: &str) -> AppRes<PrepareLoginSaltServerOutput>
 {
 	let identifier = hash_token_to_string(user_identifier.as_bytes())?;

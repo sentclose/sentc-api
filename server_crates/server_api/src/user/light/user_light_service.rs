@@ -83,6 +83,16 @@ pub async fn verify_login_light(app_data: &AppData, done_login: VerifyLoginInput
 	))
 }
 
+pub async fn verify_login_light_forced(app_data: &AppData, identifier: &str) -> AppRes<VerifyLoginLightOutput>
+{
+	let (_data, jwt, refresh_token) = auth_service::verify_login_forced_internally(app_data, identifier).await?;
+
+	Ok(VerifyLoginLightOutput {
+		jwt,
+		refresh_token,
+	})
+}
+
 pub async fn reset_password_light(app_id: impl Into<AppId>, input: UserDeviceRegisterInput) -> AppRes<()>
 {
 	let identifier = hash_token_to_string(input.device_identifier.as_bytes())?;

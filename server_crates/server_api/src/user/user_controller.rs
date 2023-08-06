@@ -15,6 +15,7 @@ use sentc_crypto_common::user::{
 	DoneLoginLightServerOutput,
 	DoneLoginServerInput,
 	JwtRefreshInput,
+	LoginForcedInput,
 	OtpInput,
 	OtpRecoveryKeysOutput,
 	OtpRegister,
@@ -221,6 +222,21 @@ pub(crate) async fn verify_login(mut req: Request) -> JRes<VerifyLoginOutput>
 	check_endpoint_with_app_options(app_data, Endpoint::UserDoneLogin)?;
 
 	let out = user_service::verify_login(app_data, done_login).await?;
+
+	echo(out)
+}
+
+pub(crate) async fn verify_login_forced(mut req: Request) -> JRes<VerifyLoginOutput>
+{
+	//Fn to skip the login process and just return the user data
+
+	let body = get_raw_body(&mut req).await?;
+	let user_identifier: LoginForcedInput = bytes_to_json(&body)?;
+
+	let app_data = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(app_data, Endpoint::ForceServer)?;
+
+	let out = user_service::verify_login_forced(app_data, &user_identifier.user_identifier).await?;
 
 	echo(out)
 }
