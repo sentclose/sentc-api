@@ -7,8 +7,8 @@ use sentc_crypto::sdk_common::group::GroupCreateOutput;
 use sentc_crypto::util::public::handle_server_response;
 use sentc_crypto_common::group::GroupInviteServerOutput;
 use sentc_crypto_common::{GroupId, UserId};
-use server_api_common::app::AppRegisterOutput;
-use server_api_common::customer::CustomerDoneLoginOutput;
+use server_dashboard_common::app::AppRegisterOutput;
+use server_dashboard_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{

@@ -24,8 +24,8 @@ use sentc_crypto_light::UserDataInt;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 use server_api::util::api_res::ApiErrorCodes;
-use server_api_common::app::AppRegisterOutput;
-use server_api_common::customer::CustomerDoneLoginOutput;
+use server_dashboard_common::app::AppRegisterOutput;
+use server_dashboard_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{

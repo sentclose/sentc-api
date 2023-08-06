@@ -8,7 +8,7 @@ use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::RegisterServerOutput;
 use sentc_crypto_common::ServerOutput;
 use server_api::util::api_res::ApiErrorCodes;
-use server_api_common::app::{
+use server_dashboard_common::app::{
 	AppDetails,
 	AppJwtData,
 	AppJwtRegisterOutput,
@@ -18,7 +18,7 @@ use server_api_common::app::{
 	AppTokenRenewOutput,
 	AppUpdateInput,
 };
-use server_api_common::customer::{CustomerAppList, CustomerDoneLoginOutput};
+use server_dashboard_common::customer::{CustomerAppList, CustomerDoneLoginOutput};
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{add_app_jwt_keys, auth_header, create_app, create_test_customer, customer_delete, delete_app, delete_app_jwt_key, get_url};

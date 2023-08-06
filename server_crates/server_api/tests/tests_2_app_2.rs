@@ -8,8 +8,8 @@ use sentc_crypto::SdkError;
 use sentc_crypto_common::group::{GroupChangeRankServerInput, GroupCreateOutput, GroupNewMemberLightInput};
 use sentc_crypto_common::UserId;
 use serde_json::to_string;
-use server_api_common::app::{AppDetails, AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
-use server_api_common::customer::{
+use server_dashboard_common::app::{AppDetails, AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
+use server_dashboard_common::customer::{
 	CustomerAppList,
 	CustomerDoneLoginOutput,
 	CustomerGroupCreateInput,

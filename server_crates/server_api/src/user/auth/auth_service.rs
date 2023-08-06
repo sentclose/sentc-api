@@ -8,7 +8,7 @@ use sentc_crypto_common::user::{DoneLoginServerInput, OtpInput, PrepareLoginSalt
 use sentc_crypto_common::AppId;
 
 use crate::sentc_app_entities::AppData;
-use crate::sentc_user_entities::{DoneLoginServerOutput, DoneLoginServerReturn, VerifyLoginEntity, SERVER_RANDOM_VALUE};
+use crate::sentc_user_entities::{DoneLoginServerOutput, DoneLoginServerReturn, VerifyLoginEntity, VerifyLoginForcedEntity, SERVER_RANDOM_VALUE};
 use crate::sentc_user_jwt_service::create_jwt;
 use crate::sentc_user_service::create_refresh_token;
 use crate::user::auth::auth_model;
@@ -128,6 +128,34 @@ pub(crate) async fn verify_login_internally(app_data: &AppData, done_login: Veri
 
 	//verify the login, return the device and user id and user group id
 	let data = auth_model::get_verify_login_data(&app_data.app_data.app_id, identifier, done_login.challenge)
+		.await?
+		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::Login, "Wrong username or password"))?;
+
+	// and create the jwt
+	let jwt = create_jwt(
+		&data.user_id,
+		&data.device_id,
+		&app_data.jwt_data[0], //use always the latest created jwt data
+		true,
+	)
+	.await?;
+
+	let refresh_token = create_refresh_token()?;
+
+	//activate refresh token
+	auth_model::insert_refresh_token(&app_data.app_data.app_id, &data.device_id, &refresh_token).await?;
+
+	Ok((data, jwt, refresh_token))
+}
+
+pub(crate) async fn verify_login_forced_internally(app_data: &AppData, identifier: &str) -> AppRes<(VerifyLoginForcedEntity, String, String)>
+{
+	let identifier = hash_token_to_string(identifier.as_bytes())?;
+
+	//No auth user here because this is only called from a backend
+
+	//verify the login, return the device and user id and user group id
+	let data = auth_model::get_verify_login_data_forced(&app_data.app_data.app_id, identifier)
 		.await?
 		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::Login, "Wrong username or password"))?;
 

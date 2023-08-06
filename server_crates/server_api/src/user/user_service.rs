@@ -28,8 +28,8 @@ use crate::group::group_entities::{GroupUserKeys, InternalGroupData, InternalGro
 use crate::group::group_user_service::NewUserType;
 use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
 use crate::sentc_app_entities::AppData;
-use crate::sentc_user_entities::{UserPublicKeyDataEntity, UserVerifyKeyDataEntity, VerifyLoginOutput};
-use crate::user::auth::auth_service::{auth_user, verify_login_internally};
+use crate::sentc_user_entities::{LoginForcedOutput, UserPublicKeyDataEntity, UserVerifyKeyDataEntity, VerifyLoginOutput};
+use crate::user::auth::auth_service::{auth_user, verify_login_forced_internally, verify_login_internally};
 use crate::user::jwt::create_jwt;
 use crate::user::user_entities::{UserDeviceList, UserInitEntity, UserJwtEntity};
 use crate::user::{otp, user_model};
@@ -272,6 +272,36 @@ pub async fn verify_login(app_data: &AppData, done_login: VerifyLoginInput) -> A
 	};
 
 	Ok(out)
+}
+
+pub async fn verify_login_forced(app_data: &AppData, identifier: &str) -> AppRes<LoginForcedOutput>
+{
+	let (data, jwt, refresh_token) = verify_login_forced_internally(app_data, identifier).await?;
+
+	//fetch the first page of the group keys with the device id as user
+	let user_keys = group_service::get_user_group_keys(&app_data.app_data.app_id, &data.user_group_id, &data.device_id, 0, "").await?;
+
+	let hmac_keys = group_service::get_group_hmac(
+		&app_data.app_data.app_id,
+		&data.user_group_id,
+		0, //fetch the first page
+		"",
+	)
+	.await?;
+
+	//fetch the first page of the hmac keys
+
+	let out = VerifyLoginOutput {
+		user_keys,
+		hmac_keys,
+		jwt,
+		refresh_token,
+	};
+
+	Ok(LoginForcedOutput {
+		device_keys: data,
+		verify: out,
+	})
 }
 
 pub fn get_user_keys<'a>(

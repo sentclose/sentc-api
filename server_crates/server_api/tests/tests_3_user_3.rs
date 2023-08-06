@@ -3,10 +3,10 @@
 use reqwest::header::AUTHORIZATION;
 use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto_common::user::{OtpRecoveryKeysOutput, OtpRegister};
+use sentc_crypto_common::user::{LoginForcedInput, OtpRecoveryKeysOutput, OtpRegister};
 use sentc_crypto_common::UserId;
-use server_api_common::app::AppRegisterOutput;
-use server_api_common::customer::CustomerDoneLoginOutput;
+use server_dashboard_common::app::AppRegisterOutput;
+use server_dashboard_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
 use totp_rs::{Algorithm, Secret, TOTP};
 
@@ -349,10 +349,7 @@ async fn test_15_not_use_key_again()
 
 	match keys {
 		Ok(_) => panic!("should be an error for used recovery key"),
-		Err(e) => {
-			//
-			println!("{:?}", e);
-		},
+		Err(_e) => {},
 	}
 }
 
@@ -624,7 +621,61 @@ async fn test_21_reset_otp_with_recover_keys_left()
 }
 
 #[tokio::test]
-async fn test_22_disable_otp()
+async fn test_22_forced_login()
+{
+	//should work even if otp is enabled
+
+	let user = USER_TEST_STATE.get().unwrap().read().await;
+
+	let url = get_url("api/v1/user/force/login".to_owned());
+
+	let input = LoginForcedInput {
+		user_identifier: user.username.clone(),
+	};
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(&user.user_data.jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.body(serde_json::to_string(&input).unwrap())
+		.send()
+		.await
+		.unwrap();
+	let body = res.text().await.unwrap();
+
+	let _out: sentc_crypto_common::user::LoginForcedOutput = handle_server_response(&body).unwrap();
+}
+
+#[tokio::test]
+async fn test_23_forced_login_light()
+{
+	//should work even if otp is enabled
+
+	let user = USER_TEST_STATE.get().unwrap().read().await;
+
+	let url = get_url("api/v1/user/force/login_light".to_owned());
+
+	let input = LoginForcedInput {
+		user_identifier: user.username.clone(),
+	};
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header(AUTHORIZATION, auth_header(&user.user_data.jwt))
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.body(serde_json::to_string(&input).unwrap())
+		.send()
+		.await
+		.unwrap();
+	let body = res.text().await.unwrap();
+
+	let _out: sentc_crypto_common::user::LoginForcedLightOutput = handle_server_response(&body).unwrap();
+}
+
+#[tokio::test]
+async fn test_24_disable_otp()
 {
 	let user = USER_TEST_STATE.get().unwrap().read().await;
 	let url = get_url("api/v1/user/disable_otp".to_owned());
@@ -643,7 +694,7 @@ async fn test_22_disable_otp()
 }
 
 #[tokio::test]
-async fn test_23_login_normal_after_disable_otp()
+async fn test_25_login_normal_after_disable_otp()
 {
 	let user = USER_TEST_STATE.get().unwrap().read().await;
 

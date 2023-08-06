@@ -8,7 +8,7 @@ use sentc_crypto_common::user::UserDeviceRegisterInput;
 use sentc_crypto_common::ServerOutput;
 use sentc_crypto_light::sdk_common::user::DoneLoginServerReturn;
 use server_api::util::api_res::ApiErrorCodes;
-use server_api_common::customer::{CustomerData, CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput, CustomerUpdateInput};
+use server_dashboard_common::customer::{CustomerData, CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput, CustomerUpdateInput};
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{auth_header, get_captcha, get_url, login_customer};
@@ -593,7 +593,7 @@ async fn test_16_reset_customer_password()
 
 	let captcha_input = get_captcha().await;
 
-	let input = server_api_common::customer::CustomerResetPasswordInput {
+	let input = server_dashboard_common::customer::CustomerResetPasswordInput {
 		email: email.to_string(),
 		captcha_input,
 	};
@@ -630,7 +630,7 @@ async fn test_16_reset_customer_password()
 	let reset_password_data = sentc_crypto_light::user::register(email, new_pw).unwrap();
 	let reset_password_data: UserDeviceRegisterInput = serde_json::from_str(&reset_password_data).unwrap();
 
-	let input = server_api_common::customer::CustomerDonePasswordResetInput {
+	let input = server_dashboard_common::customer::CustomerDonePasswordResetInput {
 		token,
 		reset_password_data,
 	};
