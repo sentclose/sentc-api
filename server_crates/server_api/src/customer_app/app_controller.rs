@@ -6,7 +6,7 @@ use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::input_helper::{bytes_to_json, get_raw_body};
 use rustgram_server_util::res::{echo, echo_success, AppRes, JRes, ServerSuccessOutput};
 use rustgram_server_util::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
-use server_api_common::app::{
+use server_dashboard_common::app::{
 	AppDetails,
 	AppFileOptionsInput,
 	AppJwtData,

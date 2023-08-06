@@ -4,8 +4,8 @@ use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::{AppId, CustomerId, GroupId, JwtKeyId, UserId};
-use server_api_common::app::{AppFileOptionsInput, AppGroupOption, AppJwtData, AppOptions, AppRegisterInput};
-use server_api_common::customer::CustomerAppList;
+use server_dashboard_common::app::{AppFileOptionsInput, AppGroupOption, AppJwtData, AppOptions, AppRegisterInput};
+use server_dashboard_common::customer::CustomerAppList;
 
 use crate::customer_app::app_entities::{AppData, AppDataGeneral, AuthWithToken};
 use crate::sentc_app_entities::{AppCustomerAccess, CUSTOMER_OWNER_TYPE_GROUP, CUSTOMER_OWNER_TYPE_USER};

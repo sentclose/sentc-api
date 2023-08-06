@@ -22,7 +22,7 @@ use sentc_crypto_common::user::{
 	UserUpdateServerInput,
 	VerifyLoginInput,
 };
-use server_api_common::customer::{
+use server_dashboard_common::customer::{
 	CustomerAppList,
 	CustomerData,
 	CustomerDoneLoginOutput,

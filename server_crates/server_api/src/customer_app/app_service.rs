@@ -3,7 +3,7 @@ use std::future::Future;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::{AppId, CustomerId, GroupId};
-use server_api_common::app::{
+use server_dashboard_common::app::{
 	AppFileOptionsInput,
 	AppGroupOption,
 	AppJwtRegisterOutput,
@@ -12,7 +12,7 @@ use server_api_common::app::{
 	AppRegisterOutput,
 	FILE_STORAGE_OWN,
 };
-use server_api_common::customer::CustomerAppList;
+use server_dashboard_common::customer::CustomerAppList;
 
 use crate::customer_app::{app_model, generate_tokens};
 use crate::file::file_service;

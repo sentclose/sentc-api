@@ -7,7 +7,7 @@ use rustgram_server_util::res::{echo, echo_success, AppRes, JRes, ServerSuccessO
 use rustgram_server_util::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
 use sentc_crypto_common::file::{FileNameUpdate, FilePartRegisterOutput, FileRegisterInput, FileRegisterOutput};
 use sentc_crypto_common::FileId;
-use server_api_common::app::{FILE_STORAGE_OWN, FILE_STORAGE_SENTC};
+use server_dashboard_common::app::{FILE_STORAGE_OWN, FILE_STORAGE_SENTC};
 
 use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use crate::file::file_entities::{FileMetaData, FilePartListItem};
