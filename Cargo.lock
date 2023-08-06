@@ -2477,19 +2477,9 @@ dependencies = [
  "sentc-crypto-light-full",
  "serde",
  "serde_json",
- "server_api_common",
+ "server_dashboard_common",
  "tokio",
  "totp-rs",
-]
-
-[[package]]
-name = "server_api_common"
-version = "0.1.0"
-dependencies = [
- "rustgram-server-util",
- "sentc-crypto-common 0.9.4",
- "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -2508,6 +2498,16 @@ dependencies = [
  "rustgram-server-util",
  "server_api",
  "tokio",
+]
+
+[[package]]
+name = "server_dashboard_common"
+version = "0.1.0"
+dependencies = [
+ "rustgram-server-util",
+ "sentc-crypto-common 0.9.4",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

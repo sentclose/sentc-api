@@ -9,7 +9,7 @@ edition = "2021"
 # the server outputs for the frontend to handle
 sentc-crypto-common = {path = "../../sdk-common" }
 
-server_api_common = {path = "../server_api_common", default-features = false, features = ["server"]}
+server_dashboard_common = {path = "../server_dashboard_common", default-features = false, features = ["server"]}
 
 encrypted_at_rest_root = {path = "../encrypted_at_rest_root"}
 
@@ -83,8 +83,8 @@ sentc-crypto-light-full.workspace=true
 
 [features]
 default = ["mysql"]
-mysql = ["rustgram-server-util/mysql","server_api_common/mysql"]
-sqlite = ["rustgram-server-util/sqlite","server_api_common/sqlite"]
+mysql = ["rustgram-server-util/mysql","server_dashboard_common/mysql"]
+sqlite = ["rustgram-server-util/sqlite","server_dashboard_common/sqlite"]
 
 # When enabled send the custumor resgistration mail
 send_mail = ["lettre"]
