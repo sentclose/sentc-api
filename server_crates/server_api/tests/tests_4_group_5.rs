@@ -7,8 +7,8 @@ use sentc_crypto::util::public::{handle_general_server_response, handle_server_r
 use sentc_crypto_common::group::{GroupCreateOutput, GroupInviteReqList, GroupLightServerData, GroupNewMemberLightInput, GroupServerData};
 use sentc_crypto_common::{GroupId, UserId};
 use serde_json::to_string;
-use server_api_common::app::AppRegisterOutput;
-use server_api_common::customer::CustomerDoneLoginOutput;
+use server_dashboard_common::app::AppRegisterOutput;
+use server_dashboard_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{auth_header, create_app, create_test_customer, create_test_user, customer_delete, delete_app, delete_user, get_url};

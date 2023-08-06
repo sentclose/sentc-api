@@ -5,8 +5,8 @@ use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto_common::user::{OtpRecoveryKeysOutput, OtpRegister};
 use sentc_crypto_common::UserId;
-use server_api_common::app::AppRegisterOutput;
-use server_api_common::customer::CustomerDoneLoginOutput;
+use server_dashboard_common::app::AppRegisterOutput;
+use server_dashboard_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
 use totp_rs::{Algorithm, Secret, TOTP};
 

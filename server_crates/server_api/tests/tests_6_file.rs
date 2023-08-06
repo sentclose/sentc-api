@@ -11,8 +11,8 @@ use sentc_crypto::SdkError;
 use sentc_crypto_common::file::FileRegisterOutput;
 use sentc_crypto_common::{GroupId, ServerOutput};
 use server_api::sentc_file_worker;
-use server_api_common::app::AppRegisterOutput;
-use server_api_common::customer::CustomerDoneLoginOutput;
+use server_dashboard_common::app::AppRegisterOutput;
+use server_dashboard_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{

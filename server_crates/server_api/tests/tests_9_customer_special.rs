@@ -4,7 +4,7 @@ use rustgram_server_util::error::ServerErrorCodes;
 use sentc_crypto_common::user::{RegisterData, UserDeviceRegisterInput};
 use sentc_crypto_common::ServerOutput;
 use server_api::util::api_res::ApiErrorCodes;
-use server_api_common::customer::{CustomerData, CustomerRegisterData, CustomerRegisterOutput};
+use server_dashboard_common::customer::{CustomerData, CustomerRegisterData, CustomerRegisterOutput};
 
 use crate::test_fn::{get_captcha, get_url};
 

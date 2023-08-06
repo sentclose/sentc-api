@@ -12,8 +12,8 @@ use sentc_crypto_common::group::{GroupAcceptJoinReqServerOutput, GroupInviteServ
 use sentc_crypto_common::{GroupId, UserId};
 use serde_json::to_string;
 use server_api::util::api_res::ApiErrorCodes;
-use server_api_common::app::{AppGroupOption, AppRegisterOutput};
-use server_api_common::customer::CustomerDoneLoginOutput;
+use server_dashboard_common::app::{AppGroupOption, AppRegisterOutput};
+use server_dashboard_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{

@@ -8,8 +8,8 @@ use sentc_crypto::util::public::{handle_general_server_response, handle_server_r
 use sentc_crypto_common::content::{ContentCreateOutput, ContentItemAccess, ListContentItem};
 use sentc_crypto_common::group::GroupCreateOutput;
 use sentc_crypto_common::{ContentId, GroupId, UserId};
-use server_api_common::app::AppRegisterOutput;
-use server_api_common::customer::CustomerDoneLoginOutput;
+use server_dashboard_common::app::AppRegisterOutput;
+use server_dashboard_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{

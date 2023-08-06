@@ -6,8 +6,8 @@ use sentc_crypto::sdk_common::crypto::GeneratedSymKeyHeadServerOutput;
 use sentc_crypto::sdk_common::ServerOutput;
 use sentc_crypto_common::crypto::GeneratedSymKeyHeadServerRegisterOutput;
 use sentc_crypto_common::SymKeyId;
-use server_api_common::app::AppRegisterOutput;
-use server_api_common::customer::CustomerDoneLoginOutput;
+use server_dashboard_common::app::AppRegisterOutput;
+use server_dashboard_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{auth_header, create_app, create_group, create_test_customer, create_test_user, customer_delete, get_group, get_url};
