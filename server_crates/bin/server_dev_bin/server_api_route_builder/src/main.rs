@@ -25,15 +25,15 @@ fn main_routes()
 fn file_routes()
 {
 	route_parser::start(
-		"server_crates/bin/server_bin/src/file/routes.yml".to_string(),
-		"server_crates/bin/server_bin/src/file/routes.rs".to_string(),
+		"server_crates/server_api_file/routes.yml".to_string(),
+		"server_crates/server_api_file/src/routes.rs".to_string(),
 	);
 }
 
 fn customer_routes()
 {
 	route_parser::start(
-		"server_crates/bin/server_bin/src/customer/routes.yml".to_string(),
-		"server_crates/bin/server_bin/src/customer/routes.rs".to_string(),
+		"server_crates/server_api_customer/routes.yml".to_string(),
+		"server_crates/server_api_customer/src/routes.rs".to_string(),
 	);
 }

@@ -6,7 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-server_api = {path = "../../server_api", default-features = false}
+server_api_customer = {path = "../../server_api_customer", default-features = false}
+server_api_common = {path = "../../server_api_common", default-features = false}
 
 tokio = {workspace = true}
 
@@ -14,5 +15,5 @@ rustgram-server-util = {workspace = true}
 
 [features]
 default = ["mysql"]
-mysql = ["server_api/mysql"]
-sqlite = ["server_api/sqlite"]
+mysql = ["server_api_customer/mysql","server_api_common/mysql"]
+sqlite = ["server_api_customer/sqlite","server_api_common/sqlite"]

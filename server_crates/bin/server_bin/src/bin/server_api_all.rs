@@ -1,8 +1,8 @@
 use std::env;
 
-use server_api::{rest_routes, start};
-use server_bin::customer::customer_routes;
-use server_bin::file::file_routes;
+use server_api::rest_routes;
+use server_api_customer::customer_routes;
+use server_api_file::file_routes;
 use server_bin::server_dashboard_backend;
 
 /**
@@ -11,11 +11,14 @@ merge every server into one
 #[tokio::main]
 pub async fn main()
 {
-	start().await;
+	server_api_common::start().await;
+	server_api_customer::start().await;
 	server_dashboard_backend::start().await;
 
 	//routes from the rest api
-	let mut router = rest_routes();
+	let mut router = server_api_common::rest_routes();
+
+	rest_routes(&mut router);
 
 	//the static files from the dash board
 	server_dashboard_backend::routes(&mut router);

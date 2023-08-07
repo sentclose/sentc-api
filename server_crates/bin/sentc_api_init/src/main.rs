@@ -3,14 +3,14 @@ use std::fs::File;
 use std::io::Read;
 
 use rustgram_server_util::db::{exec_string_non_param, query_first_non_param, StringEntity};
-use server_api::SENTC_ROOT_APP;
+use server_api_common::SENTC_ROOT_APP;
 
 #[tokio::main]
 async fn main()
 {
 	let args: Vec<String> = env::args().collect();
 
-	server_api::start().await;
+	server_api_common::start().await;
 
 	if let Some(a) = args.get(1) {
 		//if arg set then do the requested
@@ -35,14 +35,14 @@ async fn create_root_app()
 {
 	//check the server root app
 
-	let root_exists = server_api::sentc_customer_app_service::check_app_exists(SENTC_ROOT_APP, SENTC_ROOT_APP)
+	let root_exists = server_api_customer::customer_app::app_service::check_app_exists(SENTC_ROOT_APP, SENTC_ROOT_APP)
 		.await
 		.unwrap();
 
 	if !root_exists {
 		println!("--------");
 		println!("Root app not exists, trying to create it, please wait.");
-		server_api::sentc_customer_app_service::create_sentc_root_app()
+		server_api_customer::customer_app::app_service::create_sentc_root_app()
 			.await
 			.unwrap();
 		println!("Root app successfully created.");

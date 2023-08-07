@@ -6,11 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-server_api = {path = "../../../server_api", default-features = false}
+server_api_common = {path = "../../../server_api_common", default-features = false}
+server_api_file = {path = "../../../server_api_file", default-features = false}
 
 tokio = {workspace = true}
 
 [features]
-default = ["server_api/default"]
-mysql = ["server_api/mysql"]
-sqlite = ["server_api/sqlite"]
+default = ["server_api_common/default", "server_api_file/default"]
+mysql = ["server_api_common/mysql", "server_api_file/mysql"]
+sqlite = ["server_api_common/sqlite","server_api_file/sqlite"]

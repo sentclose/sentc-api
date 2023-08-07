@@ -1,14 +1,14 @@
 use std::env;
 use std::time::Duration;
 
-use server_api::sentc_customer_app_service;
+use server_api_customer::customer_app::app_service;
 
 const INTERVAL_SEC: u64 = 60 * 30;
 
 #[tokio::main]
 async fn main()
 {
-	server_api::start().await;
+	server_api_common::start().await;
 
 	let demo_app_id = env::var("SENTC_APP_DEMO_ID").unwrap();
 
@@ -19,6 +19,6 @@ async fn main()
 
 		println!("reset demo worker worker started");
 
-		tokio::spawn(sentc_customer_app_service::reset(demo_app_id.clone()));
+		tokio::spawn(app_service::reset(demo_app_id.clone()));
 	}
 }

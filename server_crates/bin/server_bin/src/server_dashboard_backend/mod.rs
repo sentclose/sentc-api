@@ -9,7 +9,7 @@ use rustgram::{r, Request, Response, Router};
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::file::{FileHandler, LocalStorage};
 use rustgram_server_util::url_helper::get_name_param_from_req;
-use server_api::util::api_res::ApiErrorCodes;
+use server_api_common::ApiErrorCodes;
 use tokio::sync::OnceCell;
 
 static LOCAL_FILE_HANDLER: OnceCell<Box<LocalStorage>> = OnceCell::const_new();

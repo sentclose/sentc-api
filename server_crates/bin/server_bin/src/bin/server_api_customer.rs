@@ -1,13 +1,13 @@
 use std::env;
 
 use rustgram::{r, Router};
-use server_api::{cors_handler, index_handler, not_found_handler, start};
-use server_bin::customer::customer_routes;
+use server_api_common::{cors_handler, index_handler, not_found_handler};
+use server_api_customer::customer_routes;
 
 #[tokio::main]
 pub async fn main()
 {
-	start().await;
+	server_api_customer::start().await;
 
 	let mut router = Router::new(not_found_handler);
 

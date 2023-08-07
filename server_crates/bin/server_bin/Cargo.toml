@@ -8,6 +8,10 @@ default-run = "server_api_all"
 
 [dependencies]
 server_api = {version = "*", path = "../../server_api", default-features = false}
+server_api_common = {version = "*", path = "../../server_api_common", default-features = false}
+server_api_file = {path = "../../server_api_file", default-features = false}
+server_api_customer = {path = "../../server_api_customer", default-features = false}
+
 rustgram-server-util = {workspace = true}
 
 rustgram = {workspace = true}
@@ -20,4 +24,4 @@ default = ["mysql"]
 mysql = ["rustgram-server-util/mysql"]
 sqlite = ["rustgram-server-util/sqlite"]
 
-send_mail = ["server_api/send_mail"]
+send_mail = ["server_api_customer/send_mail"]
