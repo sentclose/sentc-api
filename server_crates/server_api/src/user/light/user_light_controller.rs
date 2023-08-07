@@ -9,10 +9,10 @@ use sentc_crypto_common::user::{
 	VerifyLoginInput,
 	VerifyLoginLightOutput,
 };
+use server_api_common::customer_app::{check_endpoint_with_app_options, get_app_data_from_req, Endpoint};
+use server_api_common::user::get_jwt_data_from_param;
 
-use crate::sentc_app_utils::{check_endpoint_with_app_options, get_app_data_from_req, Endpoint};
 use crate::sentc_user_entities::LoginForcedLightOutput;
-use crate::sentc_user_jwt_service::get_jwt_data_from_param;
 use crate::user::light::user_light_service;
 
 pub(crate) async fn register_light(mut req: Request) -> JRes<RegisterServerOutput>

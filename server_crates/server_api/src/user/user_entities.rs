@@ -11,28 +11,6 @@ use crate::sentc_group_entities::GroupHmacData;
 pub const SERVER_RANDOM_VALUE: (&str, &str) = ("zx4AKPCMHkeZnh21ciQ62w==", sentc_crypto::util::public::ARGON_2_OUTPUT);
 
 //__________________________________________________________________________________________________
-//Jwt
-
-#[derive(Serialize, Deserialize)]
-pub struct UserJwtEntity
-{
-	pub id: UserId,
-	pub device_id: DeviceId,
-	pub group_id: GroupId,
-	pub fresh: bool,
-}
-
-//__________________________________________________________________________________________________
-//Captcha
-
-#[derive(DB)]
-pub struct CaptchaEntity
-{
-	pub solution: String,
-	pub time: u128,
-}
-
-//__________________________________________________________________________________________________
 //User login data
 
 #[derive(Serialize, Deserialize, DB)]

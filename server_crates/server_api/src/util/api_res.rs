@@ -5,37 +5,6 @@ pub enum ApiErrorCodes
 {
 	Core(CoreErrorCodes),
 
-	PageNotFound,
-
-	JsonToString,
-	JsonParse,
-
-	InputTooBig,
-
-	UnexpectedTime,
-
-	NoDbConnection,
-	DbQuery,
-	DbExecute,
-	DbBulkInsert,
-	DbTx,
-
-	JwtNotFound,
-	JwtWrongFormat,
-	JwtValidation,
-	JwtCreation,
-	JwtKeyCreation,
-	JwtKeyNotFound,
-
-	NoParameter,
-
-	EmailSend,
-	EmailMessage,
-
-	CustomerWrongAppToken,
-	CustomerEmailValidate,
-	CustomerNotFound,
-	CustomerEmailTokenValid,
 	CustomerEmailSyntax,
 	CustomerDisable,
 
@@ -50,9 +19,8 @@ pub enum ApiErrorCodes
 	SaltError,
 	RefreshToken,
 
-	AppTokenNotFound,
 	AppTokenWrongFormat,
-	AppNotFound,
+
 	AppAction,
 
 	GroupUserNotFound,
@@ -81,26 +49,9 @@ pub enum ApiErrorCodes
 
 	KeyNotFound,
 
-	FileSessionNotFound,
-	FileSessionExpired,
-	FileNotFound,
-	FileUploadAllowed,
-	FileAccess,
-
-	CaptchaCreate,
-	CaptchaNotFound,
-	CaptchaTooOld,
-	CaptchaWrong,
-
 	ContentItemNotSet,
 	ContentItemTooBig,
 	ContentCreateItemTooManyCat,
-
-	ContentSearchableItemRefNotSet,
-	ContentSearchableItemRefTooBig,
-	ContentSearchableNoHashes,
-	ContentSearchableTooManyHashes,
-	ContentSearchableQueryMissing,
 
 	ToTpSecretDecode,
 	ToTpGet,
@@ -122,35 +73,6 @@ impl ServerErrorCodes for ApiErrorCodes
 		match self {
 			ApiErrorCodes::Core(core) => core.get_int_code(),
 
-			ApiErrorCodes::PageNotFound => 404,
-
-			ApiErrorCodes::JsonToString => 10,
-			ApiErrorCodes::JsonParse => 11,
-			ApiErrorCodes::InputTooBig => 12,
-			ApiErrorCodes::UnexpectedTime => 12,
-
-			ApiErrorCodes::NoDbConnection => 20,
-			ApiErrorCodes::DbQuery => 21,
-			ApiErrorCodes::DbExecute => 22,
-			ApiErrorCodes::DbBulkInsert => 23,
-			ApiErrorCodes::DbTx => 24,
-
-			ApiErrorCodes::JwtValidation => 30,
-			ApiErrorCodes::JwtNotFound => 31,
-			ApiErrorCodes::JwtWrongFormat => 32,
-			ApiErrorCodes::JwtCreation => 33,
-			ApiErrorCodes::JwtKeyCreation => 34,
-			ApiErrorCodes::JwtKeyNotFound => 35,
-
-			ApiErrorCodes::NoParameter => 40,
-
-			ApiErrorCodes::EmailSend => 50,
-			ApiErrorCodes::EmailMessage => 51,
-
-			ApiErrorCodes::CustomerWrongAppToken => 60,
-			ApiErrorCodes::CustomerEmailValidate => 61,
-			ApiErrorCodes::CustomerNotFound => 62,
-			ApiErrorCodes::CustomerEmailTokenValid => 63,
 			ApiErrorCodes::CustomerEmailSyntax => 64,
 			ApiErrorCodes::CustomerDisable => 65,
 
@@ -165,9 +87,8 @@ impl ServerErrorCodes for ApiErrorCodes
 			ApiErrorCodes::UserDeviceNotFound => 116,
 			ApiErrorCodes::UserKeysNotFound => 117,
 
-			ApiErrorCodes::AppTokenNotFound => 200,
 			ApiErrorCodes::AppTokenWrongFormat => 201,
-			ApiErrorCodes::AppNotFound => 202,
+
 			ApiErrorCodes::AppAction => 203,
 
 			ApiErrorCodes::GroupUserNotFound => 300,
@@ -196,26 +117,9 @@ impl ServerErrorCodes for ApiErrorCodes
 
 			ApiErrorCodes::KeyNotFound => 400,
 
-			ApiErrorCodes::FileSessionNotFound => 510,
-			ApiErrorCodes::FileSessionExpired => 511,
-			ApiErrorCodes::FileNotFound => 512,
-			ApiErrorCodes::FileUploadAllowed => 520,
-			ApiErrorCodes::FileAccess => 521,
-
-			ApiErrorCodes::CaptchaCreate => 600,
-			ApiErrorCodes::CaptchaNotFound => 601,
-			ApiErrorCodes::CaptchaTooOld => 602,
-			ApiErrorCodes::CaptchaWrong => 603,
-
 			ApiErrorCodes::ContentItemNotSet => 700,
 			ApiErrorCodes::ContentItemTooBig => 701,
 			ApiErrorCodes::ContentCreateItemTooManyCat => 702,
-
-			ApiErrorCodes::ContentSearchableItemRefNotSet => 800,
-			ApiErrorCodes::ContentSearchableItemRefTooBig => 801,
-			ApiErrorCodes::ContentSearchableNoHashes => 802,
-			ApiErrorCodes::ContentSearchableTooManyHashes => 803,
-			ApiErrorCodes::ContentSearchableQueryMissing => 810,
 
 			ApiErrorCodes::ToTpSecretDecode => 900,
 			ApiErrorCodes::ToTpGet => 901,

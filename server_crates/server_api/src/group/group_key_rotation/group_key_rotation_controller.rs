@@ -4,12 +4,11 @@ use rustgram_server_util::input_helper::{bytes_to_json, get_raw_body};
 use rustgram_server_util::res::{echo, echo_success, JRes, ServerSuccessOutput};
 use rustgram_server_util::url_helper::get_name_param_from_req;
 use sentc_crypto_common::group::{DoneKeyRotationData, KeyRotationData, KeyRotationStartServerOutput};
+use server_api_common::customer_app::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
+use server_api_common::group::get_group_user_data_from_req;
 
-use crate::customer_app::app_util::{check_endpoint_with_req, Endpoint};
-use crate::group::get_group_user_data_from_req;
 use crate::group::group_entities::GroupKeyUpdate;
 use crate::group::group_key_rotation::group_key_rotation_service;
-use crate::sentc_app_utils::{check_endpoint_with_app_options, get_app_data_from_req};
 use crate::user::user_service;
 use crate::util::api_res::ApiErrorCodes;
 

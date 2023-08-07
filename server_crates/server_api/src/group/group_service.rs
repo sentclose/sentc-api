@@ -4,13 +4,13 @@ use rustgram_server_util::cache;
 use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::group::{CreateData, GroupLightServerData, GroupUserAccessBy};
 use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
+use server_api_common::group::group_entities::InternalGroupDataComplete;
+use server_api_common::util::get_group_cache_key;
 
-use crate::file::file_service;
-use crate::group::group_entities::{GroupChildrenList, GroupServerData, GroupUserKeys, InternalGroupDataComplete};
+use crate::group::group_entities::{GroupChildrenList, GroupServerData, GroupUserKeys};
 use crate::group::group_model;
 use crate::sentc_group_entities::{GroupHmacData, GroupSortableData};
 use crate::sentc_user_entities::UserPublicKeyDataEntity;
-use crate::util::get_group_cache_key;
 
 pub fn create_group_light<'a>(
 	app_id: impl Into<AppId> + 'a,
@@ -61,7 +61,7 @@ pub async fn delete_group(app_id: &str, group_id: &str, user_rank: i32) -> AppRe
 	let children = group_model::delete(app_id, group_id, user_rank).await?;
 
 	//children incl. the deleted group
-	file_service::delete_file_for_group(app_id, group_id, children).await?;
+	server_api_common::file::delete_file_for_group(app_id, group_id, children).await?;
 
 	let key_group = get_group_cache_key(app_id, group_id);
 	cache::delete(key_group.as_str()).await?;

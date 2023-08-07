@@ -33,14 +33,13 @@ use sentc_crypto_common::user::{
 	UserUpdateServerInput,
 	VerifyLoginInput,
 };
+use server_api_common::customer_app::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
+use server_api_common::user::get_jwt_data_from_param;
 
-use crate::customer_app::app_util::{check_endpoint_with_app_options, get_app_data_from_req, Endpoint};
 use crate::group::group_entities::{GroupKeyUpdate, GroupUserKeys};
 use crate::group::{group_key_rotation_service, group_user_service};
-use crate::sentc_app_utils::check_endpoint_with_req;
 use crate::sentc_user_entities::{DoneLoginServerOutput, DoneLoginServerReturn, LoginForcedOutput, VerifyLoginOutput};
 use crate::user::auth::auth_service;
-use crate::user::jwt::get_jwt_data_from_param;
 use crate::user::user_entities::{UserDeviceList, UserInitEntity, UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
 use crate::user::user_service::UserAction;
 use crate::user::{user_model, user_service};
