@@ -21,6 +21,7 @@ use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::user::{ChangePasswordData, KeyDerivedData, MasterKey, ResetPasswordData};
 use sentc_crypto_common::{AppId, DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, UserId};
 
+use crate::sentc_user_entities::VerifyLoginEntity;
 use crate::user::user_entities::{UserDeviceList, UserPublicKeyDataEntity, UserRefreshTokenCheck, UserVerifyKeyDataEntity};
 use crate::user::user_service::UserAction;
 use crate::util::api_res::ApiErrorCodes;
@@ -726,4 +727,30 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 	);
 
 	(sql_keys, key_params)
+}
+
+pub(super) async fn get_login_data_for_forced_action(
+	app_id: impl Into<AppId>,
+	user_identifier: impl Into<String>,
+) -> AppRes<Option<VerifyLoginEntity>>
+{
+	//get info about the user from the user name
+
+	//language=SQL
+	let sql = r"
+SELECT 
+    ud.id as k_id,
+    user_id,
+    user_group_id
+FROM 
+    sentc_user u, 
+    sentc_user_device ud
+WHERE 
+    user_id = u.id AND 
+    ud.device_identifier = ? AND 
+    u.app_id = ?";
+
+	let out: Option<VerifyLoginEntity> = query_first(sql, set_params!(user_identifier.into(), app_id.into())).await?;
+
+	Ok(out)
 }

@@ -68,16 +68,20 @@ pub(crate) fn routes(router: &mut Router)
 		"/api/v1/user/reset_pw_light",
 		r(crate::user::reset_password_light).add(server_api_common::middleware::app_token::app_token_transform),
 	);
-	router.delete(
-		"/api/v1/user/force/:user_id",
+	router.put(
+		"/api/v1/user/forced/delete",
 		r(crate::user::delete_user).add(server_api_common::middleware::app_token::app_token_transform),
 	);
+	router.put(
+		"/api/v1/user/forced/disable_otp",
+		r(crate::user::disable_otp_forced).add(server_api_common::middleware::app_token::app_token_transform),
+	);
 	router.post(
-		"/api/v1/user/force/login",
+		"/api/v1/user/forced/login",
 		r(crate::user::verify_login_forced).add(server_api_common::middleware::app_token::app_token_transform),
 	);
 	router.post(
-		"/api/v1/user/force/login_light",
+		"/api/v1/user/forced/login_light",
 		r(crate::user::verify_login_light_forced).add(server_api_common::middleware::app_token::app_token_transform),
 	);
 	router.put(

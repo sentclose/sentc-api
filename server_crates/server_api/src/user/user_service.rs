@@ -441,11 +441,6 @@ pub async fn delete(user: &UserJwtEntity, app_id: impl Into<AppId>) -> AppRes<()
 	Ok(())
 }
 
-pub fn delete_from_server<'a>(user_id: impl Into<UserId> + 'a, app_id: impl Into<AppId> + 'a) -> impl Future<Output = AppRes<()>> + 'a
-{
-	user_model::delete(user_id, app_id)
-}
-
 pub async fn delete_device(user: &UserJwtEntity, app_id: impl Into<AppId>, device_id: impl Into<DeviceId>) -> AppRes<()>
 {
 	let app_id = app_id.into();
