@@ -1,0 +1,39 @@
+[package]
+name = "server_api_common"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rustgram.workspace=true
+rustgram-server-util.workspace=true
+tokio.workspace=true
+
+sentc-crypto-common = {path = "../../sdk-common" }
+
+server_dashboard_common = {path = "../server_dashboard_common", default-features = false, features = ["server"]}
+
+encrypted_at_rest_root = {path = "../encrypted_at_rest_root"}
+
+ring.workspace=true
+
+base64.workspace=true
+
+rand.workspace=true
+
+serde.workspace=true
+serde_json.workspace=true
+
+hyper = {workspace = true}
+
+jsonwebtoken.workspace=true
+
+dotenv.workspace=true
+
+captcha = "0.0.9"
+
+[features]
+default = ["mysql"]
+mysql = ["rustgram-server-util/mysql","server_dashboard_common/mysql"]
+sqlite = ["rustgram-server-util/sqlite","server_dashboard_common/sqlite"]

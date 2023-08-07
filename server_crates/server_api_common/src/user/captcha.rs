@@ -6,7 +6,7 @@ use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::AppId;
 
 use crate::user::user_model;
-use crate::util::api_res::ApiErrorCodes;
+use crate::ApiErrorCodes;
 
 pub async fn captcha(app_id: impl Into<AppId>) -> AppRes<(String, String)>
 {

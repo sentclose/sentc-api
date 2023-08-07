@@ -13,13 +13,12 @@ use rustgram_server_util::res::AppRes;
 use rustgram_server_util::url_helper::get_name_param_from_req;
 use sentc_crypto_common::GroupId;
 
-use crate::customer_app::app_util::get_app_data_from_req;
+use crate::customer_app::get_app_data_from_req;
 use crate::group::group_entities::{InternalGroupData, InternalGroupDataComplete, InternalUserGroupData, InternalUserGroupDataFromParent};
 use crate::group::group_model;
-use crate::user::jwt::get_jwt_data_from_param;
-use crate::util::api_res::ApiErrorCodes;
+use crate::user::get_jwt_data_from_param;
 use crate::util::{get_group_cache_key, get_group_user_cache_key, get_group_user_parent_ref_key};
-use crate::SENTC_ROOT_APP;
+use crate::{ApiErrorCodes, SENTC_ROOT_APP};
 
 pub struct GroupMiddleware<S>
 {
@@ -303,10 +302,7 @@ async fn get_group_user(
 						rank: parent_ref.rank,
 						//only set the ref to parent group here
 						get_values_from_parent: Some(parent_ref.get_values_from_parent),
-						get_values_from_group_as_member: match group_as_member_id {
-							Some(v) => Some(v.to_string()),
-							None => None,
-						},
+						get_values_from_group_as_member: group_as_member_id.map(|v| v.to_string()),
 					}
 				},
 			};

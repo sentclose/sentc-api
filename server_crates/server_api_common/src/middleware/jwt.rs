@@ -12,12 +12,11 @@ use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::input_helper::{bytes_to_json, json_to_string};
 use sentc_crypto_common::AppId;
 
-use crate::sentc_app_utils::get_app_data_from_req;
+use crate::customer_app::get_app_data_from_req;
 use crate::user::jwt::auth;
-use crate::user::user_entities::UserJwtEntity;
-use crate::util::api_res::ApiErrorCodes;
+use crate::user::user_entity::UserJwtEntity;
 use crate::util::get_user_jwt_key;
-use crate::SENTC_ROOT_APP;
+use crate::{ApiErrorCodes, SENTC_ROOT_APP};
 
 const BEARER: &str = "Bearer ";
 

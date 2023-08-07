@@ -4,7 +4,6 @@ use std::str::FromStr;
 use jsonwebtoken::{decode, decode_header, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use ring::rand;
 use ring::signature::{self, KeyPair};
-use rustgram::Request;
 use rustgram_server_util::cache::{CacheVariant, LONG_TTL};
 use rustgram_server_util::db::id_handling::check_id_format;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
@@ -15,41 +14,14 @@ use sentc_crypto_common::user::Claims;
 use sentc_crypto_common::{AppId, DeviceId, GroupId, UserId};
 
 use crate::customer_app::app_entities::AppJwt;
-use crate::user::user_entities::UserJwtEntity;
-use crate::user::{user_model, user_service};
-use crate::util::api_res::ApiErrorCodes;
+use crate::user::user_entity::UserJwtEntity;
+use crate::user::user_model;
 use crate::util::{get_app_jwt_sign_key, get_app_jwt_verify_key, get_user_in_app_key};
+use crate::ApiErrorCodes;
 
 pub const JWT_ALG: &str = "ES384";
 
-#[allow(clippy::collapsible_match)]
-pub fn get_jwt_data_from_param(req: &Request) -> Result<&UserJwtEntity, ServerCoreError>
-{
-	match req.extensions().get::<Option<UserJwtEntity>>() {
-		Some(p) => {
-			//p should always be some for non optional jwt
-			match p {
-				Some(p1) => Ok(p1),
-				None => {
-					Err(ServerCoreError::new_msg(
-						400,
-						ApiErrorCodes::JwtNotFound,
-						"No valid jwt",
-					))
-				},
-			}
-		},
-		None => {
-			Err(ServerCoreError::new_msg(
-				400,
-				ApiErrorCodes::JwtNotFound,
-				"No valid jwt",
-			))
-		},
-	}
-}
-
-pub(crate) async fn create_jwt(
+pub async fn create_jwt(
 	internal_user_id: impl Into<UserId>,
 	device_id: impl Into<DeviceId>,
 	customer_jwt_data: &AppJwt,
@@ -292,11 +264,11 @@ async fn get_user_in_app(app_id: impl Into<String>, user_id: impl Into<String>) 
 			}
 		},
 		None => {
-			match user_service::get_user_group_id(app_id, user_id).await? {
+			match user_model::get_user_group_id(app_id, user_id).await? {
 				Some(u) => {
-					cache::add(cache_key, json_to_string(&CacheVariant::Some(&u.0))?, LONG_TTL).await?;
+					cache::add(cache_key, json_to_string(&CacheVariant::Some(&u))?, LONG_TTL).await?;
 
-					Ok(u.0)
+					Ok(u)
 				},
 				None => {
 					//cache wrong user in app too
