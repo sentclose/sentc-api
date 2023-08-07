@@ -723,7 +723,6 @@ dependencies = [
 name = "encrypted_at_rest_root"
 version = "0.1.0"
 dependencies = [
- "dotenv",
  "rustgram-server-util",
  "sentc-crypto",
  "tokio",

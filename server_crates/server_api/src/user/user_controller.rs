@@ -1,7 +1,7 @@
 use rustgram::Request;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::input_helper::{bytes_to_json, get_raw_body};
-use rustgram_server_util::res::{echo, echo_success, JRes, ServerSuccessOutput};
+use rustgram_server_util::res::{echo, echo_success, AppRes, JRes, ServerSuccessOutput};
 use rustgram_server_util::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_time_from_url_param};
 use sentc_crypto_common::group::{
 	DoneKeyRotationData,
@@ -15,7 +15,6 @@ use sentc_crypto_common::user::{
 	DoneLoginLightServerOutput,
 	DoneLoginServerInput,
 	JwtRefreshInput,
-	LoginForcedInput,
 	OtpInput,
 	OtpRecoveryKeysOutput,
 	OtpRegister,
@@ -27,14 +26,18 @@ use sentc_crypto_common::user::{
 	UserDeviceDoneRegisterInput,
 	UserDeviceRegisterInput,
 	UserDeviceRegisterOutput,
+	UserForcedAction,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
 	UserJwtInfo,
 	UserUpdateServerInput,
 	VerifyLoginInput,
 };
+use sentc_crypto_common::AppId;
 use server_api_common::customer_app::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use server_api_common::user::get_jwt_data_from_param;
+use server_api_common::user::user_entity::UserJwtEntity;
+use server_api_common::util::hash_token_to_string;
 
 use crate::group::group_entities::{GroupKeyUpdate, GroupUserKeys};
 use crate::group::{group_key_rotation_service, group_user_service};
@@ -230,7 +233,7 @@ pub(crate) async fn verify_login_forced(mut req: Request) -> JRes<LoginForcedOut
 	//Fn to skip the login process and just return the user data
 
 	let body = get_raw_body(&mut req).await?;
-	let user_identifier: LoginForcedInput = bytes_to_json(&body)?;
+	let user_identifier: UserForcedAction = bytes_to_json(&body)?;
 
 	let app_data = get_app_data_from_req(&req)?;
 	check_endpoint_with_app_options(app_data, Endpoint::ForceServer)?;
@@ -574,16 +577,50 @@ pub(crate) async fn get_user_data_from_jwt(req: Request) -> JRes<UserJwtInfo>
 
 //__________________________________________________________________________________________________
 
-pub(crate) async fn delete_user(req: Request) -> JRes<ServerSuccessOutput>
+async fn prepare_user_forced_action(app_id: impl Into<AppId>, user_identifier: impl Into<String>) -> AppRes<UserJwtEntity>
+{
+	let identifier = hash_token_to_string(user_identifier.into().as_bytes())?;
+
+	let user_data = user_model::get_login_data_for_forced_action(app_id, identifier)
+		.await?
+		.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::UserNotFound, "User not found"))?;
+
+	Ok(UserJwtEntity {
+		id: user_data.user_id,
+		device_id: user_data.device_id,
+		group_id: user_data.user_group_id,
+		fresh: true, //must be a fresh jwt
+	})
+}
+
+pub(crate) async fn delete_user(mut req: Request) -> JRes<ServerSuccessOutput>
 {
 	//this deletes the user from server without the jwt
 
-	let user_id = get_name_param_from_req(&req, "user_id")?;
-	let app_data = get_app_data_from_req(&req)?;
+	let body = get_raw_body(&mut req).await?;
+	let user_identifier: UserForcedAction = bytes_to_json(&body)?;
 
+	let app_data = get_app_data_from_req(&req)?;
 	check_endpoint_with_app_options(app_data, Endpoint::ForceServer)?;
 
-	user_service::delete_from_server(user_id, &app_data.app_data.app_id).await?;
+	let jwt = prepare_user_forced_action(&app_data.app_data.app_id, user_identifier.user_identifier).await?;
+
+	user_service::delete(&jwt, &app_data.app_data.app_id).await?;
+
+	echo_success()
+}
+
+pub(crate) async fn disable_otp_forced(mut req: Request) -> JRes<ServerSuccessOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+	let user_identifier: UserForcedAction = bytes_to_json(&body)?;
+
+	let app_data = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(app_data, Endpoint::ForceServer)?;
+
+	let jwt = prepare_user_forced_action(&app_data.app_data.app_id, user_identifier.user_identifier).await?;
+
+	user_service::disable_otp(&jwt).await?;
 
 	echo_success()
 }

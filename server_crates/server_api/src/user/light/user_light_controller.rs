@@ -2,10 +2,10 @@ use rustgram::Request;
 use rustgram_server_util::input_helper::{bytes_to_json, get_raw_body};
 use rustgram_server_util::res::{echo, echo_success, JRes, ServerSuccessOutput};
 use sentc_crypto_common::user::{
-	LoginForcedInput,
 	RegisterServerOutput,
 	UserDeviceDoneRegisterInputLight,
 	UserDeviceRegisterInput,
+	UserForcedAction,
 	VerifyLoginInput,
 	VerifyLoginLightOutput,
 };
@@ -61,7 +61,7 @@ pub(crate) async fn verify_login_light_forced(mut req: Request) -> JRes<LoginFor
 	//Fn to skip the login process and just return the user data
 
 	let body = get_raw_body(&mut req).await?;
-	let user_identifier: LoginForcedInput = bytes_to_json(&body)?;
+	let user_identifier: UserForcedAction = bytes_to_json(&body)?;
 
 	let app_data = get_app_data_from_req(&req)?;
 	check_endpoint_with_app_options(app_data, Endpoint::ForceServer)?;

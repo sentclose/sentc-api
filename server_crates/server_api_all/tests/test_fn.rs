@@ -18,7 +18,7 @@ use sentc_crypto::sdk_core::SymKey;
 use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::sdk_utils::{handle_general_server_response, handle_server_response};
 use sentc_crypto_common::group::{GroupKeyServerOutput, KeyRotationStartServerOutput};
-use sentc_crypto_common::user::{CaptchaCreateOutput, CaptchaInput, UserDeviceRegisterInput};
+use sentc_crypto_common::user::{CaptchaCreateOutput, CaptchaInput, UserDeviceRegisterInput, UserForcedAction};
 use sentc_crypto_common::{CustomerId, GroupId, ServerOutput, UserId};
 use server_dashboard_common::app::{AppFileOptionsInput, AppJwtRegisterOutput, AppOptions, AppRegisterInput, AppRegisterOutput};
 use server_dashboard_common::customer::{CustomerData, CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput};
@@ -332,13 +332,18 @@ pub async fn register_user(app_secret_token: &str, username: &str, password: &st
 		.unwrap()
 }
 
-pub async fn delete_user(app_secret_token: &str, user_id: &str)
+pub async fn delete_user(app_secret_token: &str, user_identifier: String)
 {
-	let url = get_url("api/v1/user/force/".to_owned() + user_id);
+	let input = UserForcedAction {
+		user_identifier,
+	};
+
+	let url = get_url("api/v1/user/forced/delete".to_owned());
 	let client = reqwest::Client::new();
 	let res = client
-		.delete(url)
+		.put(url)
 		.header("x-sentc-app-token", app_secret_token)
+		.body(serde_json::to_string(&input).unwrap())
 		.send()
 		.await
 		.unwrap();

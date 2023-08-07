@@ -10,7 +10,4 @@ tokio = {workspace = true}
 
 sentc-crypto = {workspace=true}
 
-# dotenv vars
-dotenv = {workspace = true}
-
 rustgram-server-util = {workspace = true}
