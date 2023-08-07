@@ -1,0 +1,56 @@
+prefix: "/api"
+routes:
+  - group:
+      p: "/v1"
+      gr:
+        #_______________________________________________________________________________________________________________
+        # normal file handling
+        - group:
+            p: "/file"
+            mw:
+              - server_api_common::middleware::app_token::app_token_transform
+            gr:
+              #_________________________________________________________________________________________________________
+              # routes req a jwt
+              - group:
+                  p: ""
+                  mw:
+                    - server_api_common::middleware::jwt::jwt_transform
+                  gr:
+                    - post: {p: "", s: crate::file_controller::register_file}
+                    - put: {p: "/:file_id", s: crate::file_controller::update_file_name}
+                    - delete: {p: "/:file_id", s: crate::file_controller::delete_file}
+              - get:
+                  p: "/:file_id"
+                  s: crate::file_controller::get_file
+                  mw:
+                    - server_api_common::middleware::jwt::jwt_optional_transform
+              - get: {p: "/:file_id/part_fetch/:last_sequence", s: crate::file_controller::get_parts}
+              #_________________________________________________________________________________________________________
+              # group for file parts
+              - group:
+                  p: "/part"
+                  gr:
+                    - get: {p: "/:part_id", s: crate::file_controller::download_part}
+                    - delete: {p: "/:part_id", s: crate::file_controller::delete_registered_file_part}
+                    - group:
+                        p: "/:session_id/:seq/:end"
+                        mw:
+                          - server_api_common::middleware::jwt::jwt_transform
+                        gr:
+                          # Upload to our backend
+                          - post: {p: "", s: crate::file_controller::upload_part}
+                          # upload to customer backend and register the part
+                          - patch: {p: "", s: crate::file_controller::register_file_part}
+        #_______________________________________________________________________________________________________________
+        # handle file in group
+        - group:
+            p: "/group/:group_id/file"
+            mw:
+              - server_api_common::middleware::group::group_transform
+              - server_api_common::middleware::jwt::jwt_transform
+              - server_api_common::middleware::app_token::app_token_transform
+            gr:
+              - post: {p: "", s: crate::file_controller::register_file_in_group}
+              - get: {p: "/:file_id", s: crate::file_controller::get_file_in_group}
+              - delete: {p: "/:file_id", s: crate::file_controller::delete_file_in_group}

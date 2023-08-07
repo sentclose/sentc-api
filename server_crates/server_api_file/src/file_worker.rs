@@ -5,8 +5,8 @@ use rustgram_server_util::get_time;
 use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::{AppId, PartId};
 
-use crate::file::file_entities::{FileExternalStorageUrl, FilePartListItemDelete};
-use crate::file::file_model;
+use crate::file_entities::{FileExternalStorageUrl, FilePartListItemDelete};
+use crate::file_model;
 
 pub async fn start() -> AppRes<()>
 {

@@ -1,15 +1,11 @@
-use std::future::Future;
-
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::file::{BelongsToType, FileRegisterInput, FileRegisterOutput};
-use sentc_crypto_common::{AppId, CustomerId, FileId, GroupId};
+use sentc_crypto_common::{AppId, FileId, GroupId};
+use server_api_common::group::group_entities::InternalGroupDataComplete;
 
-use crate::file::file_entities::FileMetaData;
-use crate::file::file_model;
-use crate::group::group_entities::InternalGroupDataComplete;
-use crate::user::user_service;
-use crate::util::api_res::ApiErrorCodes;
+use crate::file_entities::FileMetaData;
+use crate::{file_model, ApiErrorCodes};
 
 //same values as in file entity
 pub(super) const FILE_BELONGS_TO_TYPE_NONE: i32 = 0;
@@ -34,7 +30,7 @@ pub async fn register_file(input: FileRegisterInput, app_id: &str, user_id: &str
 			match &input.belongs_to_id {
 				None => (FILE_BELONGS_TO_TYPE_NONE, None),
 				Some(id) => {
-					let check = user_service::check_user_in_app_by_user_id(app_id, id).await?;
+					let check = server_api_common::user::check_user_in_app_by_user_id(app_id, id).await?;
 
 					if !check {
 						return Err(ServerCoreError::new_msg(
@@ -217,31 +213,4 @@ pub async fn delete_file(file_id: impl Into<FileId>, app_id: impl Into<AppId>, u
 	file_model::delete_file(app_id, file_id).await?;
 
 	Ok(())
-}
-
-#[allow(clippy::needless_lifetimes)]
-pub fn delete_file_for_customer<'a>(customer_id: impl Into<CustomerId> + 'a) -> impl Future<Output = AppRes<()>> + 'a
-{
-	file_model::delete_files_for_customer(customer_id)
-}
-
-#[allow(clippy::needless_lifetimes)]
-pub fn delete_file_for_customer_group<'a>(group_id: impl Into<GroupId> + 'a) -> impl Future<Output = AppRes<()>> + 'a
-{
-	file_model::delete_files_for_customer_group(group_id)
-}
-
-#[allow(clippy::needless_lifetimes)]
-pub fn delete_file_for_app<'a>(app_id: impl Into<AppId> + 'a) -> impl Future<Output = AppRes<()>> + 'a
-{
-	file_model::delete_files_for_app(app_id)
-}
-
-pub fn delete_file_for_group<'a>(
-	app_id: impl Into<AppId> + 'a,
-	group_id: impl Into<GroupId> + 'a,
-	children: Vec<String>,
-) -> impl Future<Output = AppRes<()>> + 'a
-{
-	file_model::delete_files_for_group(app_id, group_id, children)
 }
