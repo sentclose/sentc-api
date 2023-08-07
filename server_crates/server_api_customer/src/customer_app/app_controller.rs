@@ -6,6 +6,9 @@ use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::input_helper::{bytes_to_json, get_raw_body};
 use rustgram_server_util::res::{echo, echo_success, AppRes, JRes, ServerSuccessOutput};
 use rustgram_server_util::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params};
+use server_api_common::user::get_jwt_data_from_param;
+use server_api_common::user::jwt::create_jwt_keys;
+use server_api_common::util::{get_app_jwt_sign_key, get_app_jwt_verify_key, hash_token_to_string, APP_TOKEN_CACHE, HASH_ALG};
 use server_dashboard_common::app::{
 	AppDetails,
 	AppFileOptionsInput,
@@ -19,14 +22,10 @@ use server_dashboard_common::app::{
 };
 
 use crate::customer::{customer_model, customer_util};
-use crate::customer_app::app_service::check_file_options;
+use crate::customer_app::app_entities::AppCustomerAccess;
+use crate::customer_app::app_service::{check_file_options, check_group_options};
 use crate::customer_app::{app_model, app_service, generate_tokens};
-use crate::file::file_service;
-use crate::sentc_app_entities::AppCustomerAccess;
-use crate::sentc_customer_app_service::check_group_options;
-use crate::user::jwt::{create_jwt_keys, get_jwt_data_from_param};
-use crate::util::api_res::ApiErrorCodes;
-use crate::util::{get_app_jwt_sign_key, get_app_jwt_verify_key, hash_token_to_string, APP_TOKEN_CACHE, HASH_ALG};
+use crate::ApiErrorCodes;
 
 pub async fn get_jwt_details(req: Request) -> JRes<Vec<AppJwtData>>
 {
@@ -43,7 +42,7 @@ pub async fn get_app_details(req: Request) -> JRes<AppDetails>
 
 	let (details, options, file_options, group_options) = tokio::try_join!(
 		app_model::get_app_view(&app_general_data.app_id, app_general_data.owner_type),
-		app_model::get_app_options(&app_general_data.app_id),
+		server_api_common::customer_app::get_app_options(&app_general_data.app_id),
 		app_model::get_app_file_options(&app_general_data.app_id),
 		app_model::get_app_group_options(&app_general_data.app_id)
 	)?;
@@ -227,7 +226,7 @@ pub async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 
 	app_model::delete(&app_general_data.app_id).await?;
 
-	file_service::delete_file_for_app(&app_general_data.app_id).await?;
+	server_api_common::file::delete_file_for_app(&app_general_data.app_id).await?;
 
 	echo_success()
 }

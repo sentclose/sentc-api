@@ -22,6 +22,13 @@ use sentc_crypto_common::user::{
 	UserUpdateServerInput,
 	VerifyLoginInput,
 };
+use server_api::sentc_group_user_service::NewUserType;
+use server_api::sentc_user_entities::{DoneLoginServerOutput, DoneLoginServerReturn};
+use server_api::{sentc_auth_service, sentc_group_service, sentc_group_user_service, sentc_user_light_service, sentc_user_service};
+use server_api_common::customer_app::get_app_data_from_req;
+use server_api_common::group::{get_group_user_data_from_req, GROUP_TYPE_NORMAL};
+use server_api_common::user::get_jwt_data_from_param;
+use server_api_common::SENTC_ROOT_APP;
 use server_dashboard_common::customer::{
 	CustomerAppList,
 	CustomerData,
@@ -37,27 +44,19 @@ use server_dashboard_common::customer::{
 	CustomerUpdateInput,
 };
 
+use crate::customer::customer_entities::CustomerGroupMemberFetch;
 use crate::customer::{customer_model, customer_util};
 #[cfg(feature = "send_mail")]
 use crate::customer::{send_mail, EmailTopic};
 use crate::customer_app::app_service;
-use crate::customer_app::app_util::get_app_data_from_req;
-use crate::file::file_service;
-use crate::group::{group_service, group_user_service};
-use crate::sentc_customer_entities::CustomerGroupMemberFetch;
-use crate::sentc_group_user_service::NewUserType;
-use crate::sentc_user_entities::{DoneLoginServerOutput, DoneLoginServerReturn};
-use crate::user::jwt::get_jwt_data_from_param;
-use crate::util::api_res::ApiErrorCodes;
-use crate::util::email;
-use crate::{get_group_user_data_from_req, user, GROUP_TYPE_NORMAL, SENTC_ROOT_APP};
+use crate::{email, ApiErrorCodes};
 
 pub async fn customer_captcha(req: Request) -> JRes<CaptchaCreateOutput>
 {
 	//in extra controller fn because we need the internal app id
 	let app_data = get_app_data_from_req(&req)?;
 
-	let (id, png) = user::captcha::captcha(&app_data.app_data.app_id).await?;
+	let (id, png) = server_api_common::user::captcha::captcha(&app_data.app_data.app_id).await?;
 
 	echo(CaptchaCreateOutput {
 		captcha_id: id,
@@ -84,7 +83,7 @@ pub async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 	let app_data = get_app_data_from_req(&req)?;
 
 	//check the captcha
-	user::captcha::validate_captcha(
+	server_api_common::user::captcha::validate_captcha(
 		&app_data.app_data.app_id,
 		register_data.captcha_input.captcha_id,
 		register_data.captcha_input.captcha_solution,
@@ -103,7 +102,7 @@ pub async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 		));
 	}
 
-	let out = user::light::user_light_service::register_light(&app_data.app_data.app_id, register_data.register_data, false).await?;
+	let out = sentc_user_light_service::register_light(&app_data.app_data.app_id, register_data.register_data, false).await?;
 	let customer_id = out.user_id;
 
 	//send the normal token via email
@@ -176,7 +175,7 @@ pub async fn prepare_login(mut req: Request) -> JRes<PrepareLoginSaltServerOutpu
 
 	let app_data = get_app_data_from_req(&req)?;
 
-	let out = user::auth::auth_service::prepare_login(app_data, &user_identifier.user_identifier).await?;
+	let out = sentc_auth_service::prepare_login(app_data, &user_identifier.user_identifier).await?;
 
 	echo(out)
 }
@@ -187,7 +186,7 @@ pub async fn done_login(mut req: Request) -> JRes<DoneLoginServerReturn>
 	let done_login: DoneLoginServerInput = bytes_to_json(&body)?;
 	let app_data = get_app_data_from_req(&req)?;
 
-	let out = user::auth::auth_service::done_login(app_data, done_login).await?;
+	let out = sentc_auth_service::done_login(app_data, done_login).await?;
 
 	echo(out)
 }
@@ -199,7 +198,7 @@ pub async fn validate_mfa(mut req: Request) -> JRes<DoneLoginServerOutput>
 
 	let app_data = get_app_data_from_req(&req)?;
 
-	let out = user::auth::auth_service::validate_mfa(app_data, input).await?;
+	let out = sentc_auth_service::validate_mfa(app_data, input).await?;
 
 	echo(out)
 }
@@ -211,7 +210,7 @@ pub async fn validate_recovery_otp(mut req: Request) -> JRes<DoneLoginServerOutp
 
 	let app_data = get_app_data_from_req(&req)?;
 
-	let out = user::auth::auth_service::validate_recovery_otp(app_data, input).await?;
+	let out = sentc_auth_service::validate_recovery_otp(app_data, input).await?;
 
 	echo(out)
 }
@@ -222,7 +221,7 @@ pub async fn verify_login(mut req: Request) -> JRes<CustomerDoneLoginOutput>
 	let done_login: VerifyLoginInput = bytes_to_json(&body)?;
 	let app_data = get_app_data_from_req(&req)?;
 
-	let (verify, data) = user::light::user_light_service::verify_login_light(app_data, done_login).await?;
+	let (verify, data) = sentc_user_light_service::verify_login_light(app_data, done_login).await?;
 
 	let customer_data = customer_model::get_customer_data(&data.user_id).await?;
 
@@ -239,7 +238,7 @@ pub async fn refresh_jwt(mut req: Request) -> JRes<DoneLoginLightServerOutput>
 	let app_data = get_app_data_from_req(&req)?;
 	let user = get_jwt_data_from_param(&req)?;
 
-	let out = user::user_service::refresh_jwt(app_data, &user.device_id, input).await?;
+	let out = sentc_user_service::refresh_jwt(app_data, &user.device_id, input).await?;
 
 	echo(out)
 }
@@ -252,10 +251,10 @@ pub async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 
 	let app_data = get_app_data_from_req(&req)?;
 
-	user::user_service::delete(user, &app_data.app_data.app_id).await?;
+	sentc_user_service::delete(user, &app_data.app_data.app_id).await?;
 
 	//files must be deleted before customer delete. we need the apps for the customer
-	file_service::delete_file_for_customer(user.id.as_str()).await?;
+	server_api_common::file::delete_file_for_customer(user.id.as_str()).await?;
 
 	customer_model::delete(&user.id).await?;
 
@@ -287,7 +286,7 @@ pub async fn update(mut req: Request) -> JRes<ServerSuccessOutput>
 	let app_data = get_app_data_from_req(&req)?;
 
 	//update in user table too
-	user::user_service::update(
+	sentc_user_service::update(
 		user,
 		&app_data.app_data.app_id,
 		UserUpdateServerInput {
@@ -318,7 +317,7 @@ pub async fn change_password(mut req: Request) -> JRes<ServerSuccessOutput>
 	let app_data = get_app_data_from_req(&req)?;
 
 	//the jwt can only be created at our backend
-	user::user_service::change_password(user, &app_data.app_data.app_id, update_data).await?;
+	sentc_user_service::change_password(user, &app_data.app_data.app_id, update_data).await?;
 
 	echo_success()
 }
@@ -334,7 +333,7 @@ pub async fn prepare_reset_password(mut req: Request) -> JRes<ServerSuccessOutpu
 	let app_data = get_app_data_from_req(&req)?;
 
 	//check the captcha
-	user::captcha::validate_captcha(
+	server_api_common::user::captcha::validate_captcha(
 		&app_data.app_data.app_id,
 		data.captcha_input.captcha_id,
 		data.captcha_input.captcha_solution,
@@ -384,7 +383,7 @@ pub async fn done_reset_password(mut req: Request) -> JRes<ServerSuccessOutput>
 
 	let token_data = customer_model::get_email_by_token(input.token).await?;
 
-	user::light::user_light_service::reset_password_light(
+	sentc_user_light_service::reset_password_light(
 		SENTC_ROOT_APP,
 		UserDeviceRegisterInput {
 			master_key: input.reset_password_data.master_key,
@@ -417,7 +416,7 @@ pub async fn register_otp(req: Request) -> JRes<OtpRegister>
 	let customer = get_jwt_data_from_param(&req)?;
 	let app_data = get_app_data_from_req(&req)?;
 
-	let out = user::user_service::register_otp(&app_data.app_data.app_id, &customer.id).await?;
+	let out = sentc_user_service::register_otp(&app_data.app_data.app_id, &customer.id).await?;
 
 	echo(out)
 }
@@ -427,7 +426,7 @@ pub async fn reset_otp(req: Request) -> JRes<OtpRegister>
 	let app_data = get_app_data_from_req(&req)?;
 	let user = get_jwt_data_from_param(&req)?;
 
-	let out = user::user_service::reset_otp(&app_data.app_data.app_id, user).await?;
+	let out = sentc_user_service::reset_otp(&app_data.app_data.app_id, user).await?;
 
 	echo(out)
 }
@@ -436,7 +435,7 @@ pub async fn disable_otp(req: Request) -> JRes<ServerSuccessOutput>
 {
 	let user = get_jwt_data_from_param(&req)?;
 
-	user::user_service::disable_otp(user).await?;
+	sentc_user_service::disable_otp(user).await?;
 
 	echo_success()
 }
@@ -445,7 +444,7 @@ pub async fn get_otp_recovery_keys(req: Request) -> JRes<OtpRecoveryKeysOutput>
 {
 	let user = get_jwt_data_from_param(&req)?;
 
-	let out = user::user_service::get_otp_recovery_keys(user).await?;
+	let out = sentc_user_service::get_otp_recovery_keys(user).await?;
 
 	echo(out)
 }
@@ -494,7 +493,7 @@ pub async fn create_customer_group(mut req: Request) -> JRes<GroupCreateOutput>
 
 	customer_util::check_customer_valid(&user.id).await?;
 
-	let group_id = group_service::create_group_light(SENTC_ROOT_APP, &user.id, GROUP_TYPE_NORMAL, None, None, None, false).await?;
+	let group_id = sentc_group_service::create_group_light(SENTC_ROOT_APP, &user.id, GROUP_TYPE_NORMAL, None, None, None, false).await?;
 
 	let input: CustomerGroupCreateInput = bytes_to_json(&body)?;
 
@@ -560,7 +559,7 @@ pub async fn invite_customer_group_member(mut req: Request) -> JRes<ServerSucces
 
 	let input: GroupNewMemberLightInput = bytes_to_json(&body)?;
 
-	group_user_service::invite_auto_light(group_data, input, user_to_invite, NewUserType::Normal).await?;
+	sentc_group_user_service::invite_auto_light(group_data, input, user_to_invite, NewUserType::Normal).await?;
 
 	echo_success()
 }
@@ -569,14 +568,14 @@ pub async fn delete_customer_group(req: Request) -> JRes<ServerSuccessOutput>
 {
 	let group_data = get_group_user_data_from_req(&req)?;
 
-	group_service::delete_group(
+	sentc_group_service::delete_group(
 		&group_data.group_data.app_id,
 		&group_data.group_data.id,
 		group_data.user_data.rank,
 	)
 	.await?;
 
-	file_service::delete_file_for_customer(&group_data.group_data.id).await?;
+	server_api_common::file::delete_file_for_customer(&group_data.group_data.id).await?;
 
 	//all apps are deleted via trigger
 	customer_model::delete_customer_group(&group_data.group_data.id).await?;
@@ -590,7 +589,7 @@ pub async fn delete_group_user(req: Request) -> JRes<ServerSuccessOutput>
 
 	let user_to_kick = get_name_param_from_req(&req, "user_id")?;
 
-	group_user_service::kick_user_from_group(group_data, user_to_kick).await?;
+	sentc_group_user_service::kick_user_from_group(group_data, user_to_kick).await?;
 
 	echo_success()
 }
@@ -603,7 +602,7 @@ pub async fn update_member(mut req: Request) -> JRes<ServerSuccessOutput>
 
 	let input: GroupChangeRankServerInput = bytes_to_json(&body)?;
 
-	group_user_service::change_rank(group_data, input.changed_user_id, input.new_rank).await?;
+	sentc_group_user_service::change_rank(group_data, input.changed_user_id, input.new_rank).await?;
 
 	echo_success()
 }
@@ -628,7 +627,7 @@ pub async fn get_group_member_list(req: Request) -> JRes<CustomerGroupMemberFetc
 	let last_fetched_time = get_name_param_from_params(params, "last_fetched_time")?;
 	let last_fetched_time = get_time_from_url_param(last_fetched_time)?;
 
-	let list_fetch = group_user_service::get_group_member(
+	let list_fetch = sentc_group_user_service::get_group_member(
 		&group_data.group_data.id,
 		&group_data.user_data.user_id,
 		last_fetched_time,

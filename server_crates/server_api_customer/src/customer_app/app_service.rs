@@ -3,6 +3,9 @@ use std::future::Future;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::{AppId, CustomerId, GroupId};
+use server_api_common::user::jwt::create_jwt_keys;
+use server_api_common::util::{hash_token_to_string, HASH_ALG};
+use server_api_common::SENTC_ROOT_APP;
 use server_dashboard_common::app::{
 	AppFileOptionsInput,
 	AppGroupOption,
@@ -15,12 +18,7 @@ use server_dashboard_common::app::{
 use server_dashboard_common::customer::CustomerAppList;
 
 use crate::customer_app::{app_model, generate_tokens};
-use crate::file::file_service;
-use crate::sentc_app_entities::AppData;
-use crate::user::jwt::create_jwt_keys;
-use crate::util::api_res::ApiErrorCodes;
-use crate::util::{hash_token_to_string, HASH_ALG};
-use crate::SENTC_ROOT_APP;
+use crate::ApiErrorCodes;
 
 /*
    (
@@ -133,7 +131,7 @@ pub async fn reset(app_id: impl Into<AppId>) -> AppRes<()>
 
 	app_model::reset(&app_id).await?;
 
-	file_service::delete_file_for_app(app_id).await?;
+	server_api_common::file::delete_file_for_app(app_id).await?;
 
 	Ok(())
 }
@@ -207,11 +205,6 @@ pub fn get_all_apps_group<'a>(
 ) -> impl Future<Output = AppRes<Vec<CustomerAppList>>> + 'a
 {
 	app_model::get_all_apps_group(group_id, last_fetched_time, last_app_id)
-}
-
-pub fn get_app_data_from_id<'a>(id: impl Into<AppId> + 'a) -> impl Future<Output = AppRes<AppData>> + 'a
-{
-	app_model::get_app_data_from_id(id)
 }
 
 pub fn check_app_exists<'a>(app_id: impl Into<AppId> + 'a, customer_id: impl Into<CustomerId> + 'a) -> impl Future<Output = AppRes<bool>> + 'a

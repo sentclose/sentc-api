@@ -4,7 +4,7 @@ use rustgram_server_util::res::AppRes;
 
 use crate::customer::customer_entities::RegisterEmailStatus;
 use crate::customer::{customer_model, EmailTopic};
-use crate::util::email::send_mail::send_mail_registration;
+use crate::email::send_mail::send_mail_registration;
 
 /**
 Send the validation email.

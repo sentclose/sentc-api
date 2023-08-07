@@ -3,8 +3,7 @@
 use rustgram_server_util::DB;
 use sentc_crypto_common::{CustomerId, DeviceId, UserId};
 use serde::{Deserialize, Serialize};
-
-use crate::sentc_group_entities::GroupUserListItem;
+use server_api::sentc_group_entities::GroupUserListItem;
 
 #[cfg(feature = "send_mail")]
 pub(crate) enum RegisterEmailStatus

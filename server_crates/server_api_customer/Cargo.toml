@@ -1,0 +1,44 @@
+[package]
+name = "server_api_customer"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sentc-crypto-common = {path = "../../sdk-common" }
+
+server_api = {path = "../server_api", default-features = false}
+
+server_api_common = {path = "../server_api_common", default-features = false }
+
+encrypted_at_rest_root = {path = "../encrypted_at_rest_root"}
+
+server_dashboard_common = {path = "../server_dashboard_common", default-features = false, features = ["server"]}
+
+rustgram.workspace=true
+rustgram-server-util.workspace=true
+
+serde.workspace=true
+
+rand.workspace=true
+
+tokio.workspace=true
+
+base64.workspace=true
+
+#_______________________________________________________________________________________________________________________
+#send emails
+lettre = { version = "0.10.0-rc.6", default-features = false, features = ["smtp-transport", "tokio1-rustls-tls", "hostname", "builder"], optional = true }
+
+#_______________________________________________________________________________________________________________________
+#regex
+regex = "1.6.0"
+
+[features]
+default = ["mysql"]
+mysql = ["rustgram-server-util/mysql","server_api_common/mysql","server_dashboard_common/mysql","server_api/mysql"]
+sqlite = ["rustgram-server-util/sqlite","server_api_common/sqlite","server_dashboard_common/sqlite","server_api/sqlite"]
+
+# When enabled send the custumor resgistration mail
+send_mail = ["lettre"]

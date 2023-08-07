@@ -2,12 +2,11 @@ pub mod app_controller;
 pub mod app_entities;
 pub(crate) mod app_model;
 pub mod app_service;
-pub mod app_util;
 
 use rand::RngCore;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 
-use crate::util::api_res::ApiErrorCodes;
+use crate::ApiErrorCodes;
 
 fn generate_tokens() -> Result<([u8; 50], [u8; 30]), ServerCoreError>
 {

@@ -3,14 +3,13 @@ use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params, set_params_vec_outer};
 use sentc_crypto_common::{CustomerId, GroupId, UserId};
+use server_api_common::group::group_entities::InternalUserGroupData;
 use server_dashboard_common::customer::{CustomerData, CustomerGroupCreateInput, CustomerGroupList, CustomerUpdateInput};
 
 #[cfg(feature = "send_mail")]
 use crate::customer::customer_entities::RegisterEmailStatus;
-use crate::customer::customer_entities::{CustomerDataByEmailEntity, CustomerDataEntity, CustomerEmailByToken, CustomerEmailToken};
-use crate::sentc_customer_entities::CustomerList;
-use crate::sentc_group_entities::InternalUserGroupData;
-use crate::util::api_res::ApiErrorCodes;
+use crate::customer::customer_entities::{CustomerDataByEmailEntity, CustomerDataEntity, CustomerEmailByToken, CustomerEmailToken, CustomerList};
+use crate::ApiErrorCodes;
 
 pub(super) async fn check_customer_valid(customer_id: impl Into<CustomerId>) -> AppRes<I32Entity>
 {

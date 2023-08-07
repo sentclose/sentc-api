@@ -3,7 +3,7 @@ use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::CustomerId;
 
 use crate::customer::customer_model;
-use crate::util::api_res::ApiErrorCodes;
+use crate::ApiErrorCodes;
 
 pub(crate) async fn check_customer_valid(customer_id: impl Into<CustomerId>) -> AppRes<()>
 {
