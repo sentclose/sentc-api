@@ -9,6 +9,8 @@ edition = "2021"
 # the server outputs for the frontend to handle
 sentc-crypto-common = {path = "../../sdk-common" }
 
+server_api_common = {path = "../server_api_common", default-features = false }
+
 server_dashboard_common = {path = "../server_dashboard_common", default-features = false, features = ["server"]}
 
 encrypted_at_rest_root = {path = "../encrypted_at_rest_root"}
@@ -32,17 +34,17 @@ async-trait = {workspace = true}
 serde_json = {workspace = true}
 serde = {workspace = true}
 
-chrono = "0.4"
+chrono.workspace=true
 
 #_______________________________________________________________________________________________________________________
 # jwt handling
-jsonwebtoken = { version = "8.1.1", default-features = false }
+jsonwebtoken.workspace=true
 # ring crypto to crate jwt keys
-ring = { version = "0.16.5", features = ["std"] }
+ring.workspace=true
 # base64 to encode and decode the jwt key
-base64 = "0.13.0"
+base64.workspace=true
 
-rand = "0.8.5"
+rand.workspace=true
 
 #_______________________________________________________________________________________________________________________
 # totp handling
@@ -57,21 +59,12 @@ totp-rs = "5.0"
 captcha = "0.0.9"
 
 #_______________________________________________________________________________________________________________________
-#send emails
-lettre = { version = "0.10.0-rc.6", default-features = false, features = ["smtp-transport", "tokio1-rustls-tls", "hostname", "builder"], optional = true }
-
-#_______________________________________________________________________________________________________________________
-#regex
-regex = "1.6.0"
-
-#_______________________________________________________________________________________________________________________
 # salt creation on server
 # to get it from ssh: write this in your ~/.cargo/config.toml:
 # [net]
 # git-fetch-with-cli = true
 sentc-crypto = {workspace=true}
 
-reqwest = {version = "0.11.18", default-features = false, features=["rustls-tls"]}
 #_______________________________________________________________________________________________________________________
 
 [dev-dependencies]
@@ -81,10 +74,10 @@ sentc-crypto-light = {workspace=true, features=["server_test"]}
 sentc-crypto-full  = {workspace=true}
 sentc-crypto-light-full.workspace=true
 
+reqwest = {version = "0.11.18", default-features = false, features=["rustls-tls"]}
+server_api_file = {path = "../server_api_file", default-features = false}
+
 [features]
 default = ["mysql"]
-mysql = ["rustgram-server-util/mysql","server_dashboard_common/mysql"]
-sqlite = ["rustgram-server-util/sqlite","server_dashboard_common/sqlite"]
-
-# When enabled send the custumor resgistration mail
-send_mail = ["lettre"]
+mysql = ["rustgram-server-util/mysql","server_api_common/mysql","server_dashboard_common/mysql","server_api_file/mysql"]
+sqlite = ["rustgram-server-util/sqlite","server_api_common/sqlite","server_dashboard_common/sqlite", "server_api_file/sqlite"]
