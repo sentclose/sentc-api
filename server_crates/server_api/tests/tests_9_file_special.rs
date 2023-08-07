@@ -5,7 +5,6 @@ use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto_common::file::FilePartRegisterOutput;
 use sentc_crypto_common::{FileId, PartId};
-use server_api::sentc_file_worker;
 use server_dashboard_common::app::{AppFileOptionsInput, AppOptions, AppRegisterInput, AppRegisterOutput, FILE_STORAGE_OWN};
 use server_dashboard_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
@@ -234,9 +233,9 @@ async fn delete_file_worker()
 	std::env::set_var("LOCAL_STORAGE_PATH", "../../storage");
 	std::env::set_var("DB_PATH", std::env::var("DB_PATH_TEST").unwrap());
 
-	server_api::start().await;
+	server_api_common::start().await;
 
-	sentc_file_worker::start().await.unwrap();
+	server_api_file::file_worker::start().await.unwrap();
 }
 
 async fn clean_up()
@@ -415,6 +414,7 @@ async fn test_0_large_file()
 
 	assert_eq!(file.len(), downloaded_file.len());
 
+	#[allow(clippy::needless_range_loop)]
 	for i in 0..downloaded_file.len() {
 		let org = file[i];
 		let decrypted = file[i];
@@ -432,7 +432,7 @@ async fn test_0_large_file()
 	std::env::set_var("LOCAL_STORAGE_PATH", "../../storage");
 	std::env::set_var("DB_PATH", std::env::var("DB_PATH_TEST").unwrap());
 
-	server_api::start().await;
+	server_api_common::start().await;
 
-	sentc_file_worker::start().await.unwrap();
+	server_api_file::file_worker::start().await.unwrap();
 }

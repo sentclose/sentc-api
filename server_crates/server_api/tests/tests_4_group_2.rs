@@ -535,7 +535,7 @@ async fn test_14_z_connect_conn_group_to_other_conn_group_by_service()
 
 	let conn_group1 = &con_groups[0];
 
-	server_api::start().await;
+	server_api_common::start().await;
 	//change path for sqlite because test files are executed from a different dir than the normal api
 	std::env::set_var("DB_PATH", std::env::var("DB_PATH_TEST").unwrap());
 

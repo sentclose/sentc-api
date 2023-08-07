@@ -10,7 +10,6 @@ use sentc_crypto::util::public::{handle_general_server_response, handle_server_r
 use sentc_crypto::SdkError;
 use sentc_crypto_common::file::FileRegisterOutput;
 use sentc_crypto_common::{GroupId, ServerOutput};
-use server_api::sentc_file_worker;
 use server_dashboard_common::app::AppRegisterOutput;
 use server_dashboard_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
@@ -885,7 +884,7 @@ async fn test_20_delete_a_file()
 		let time = rustgram_server_util::get_time().unwrap();
 
 		//the deleted time should be in the past
-		assert!(!(deleted_file.deleted_at > time));
+		assert!(deleted_file.deleted_at <= time);
 
 		//from file model: FILE_STATUS_TO_DELETE
 		assert_eq!(deleted_file.status, 0);
@@ -1007,7 +1006,7 @@ async fn test_21_delete_file_via_group_delete()
 		let time = rustgram_server_util::get_time().unwrap();
 
 		//the deleted time should be in the past
-		assert!(!(deleted_file.deleted_at > time));
+		assert!(deleted_file.deleted_at <= time);
 
 		//from file model: FILE_STATUS_TO_DELETE
 		assert_eq!(deleted_file.status, 0);
@@ -1026,7 +1025,7 @@ async fn test_21_delete_file_via_group_delete()
 		let deleted_file = deleted_file.unwrap();
 
 		//the deleted time should be in the past
-		assert!(!(deleted_file.deleted_at > time));
+		assert!(deleted_file.deleted_at <= time);
 
 		//from file model: FILE_STATUS_TO_DELETE
 		assert_eq!(deleted_file.status, 0);
@@ -1275,7 +1274,7 @@ async fn zzz_test_worker_delete()
 	std::env::set_var("LOCAL_STORAGE_PATH", "../../storage");
 	std::env::set_var("DB_PATH", std::env::var("DB_PATH_TEST").unwrap());
 
-	server_api::start().await;
+	server_api_common::start().await;
 
-	sentc_file_worker::start().await.unwrap();
+	server_api_file::file_worker::start().await.unwrap();
 }

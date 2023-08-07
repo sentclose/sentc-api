@@ -617,7 +617,7 @@ async fn test_16_reset_customer_password()
 	env::set_var("DB_PATH", env::var("DB_PATH_TEST").unwrap());
 
 	//get the token -> in real app the token gets send by email.
-	server_api::start().await;
+	server_api_common::start().await;
 
 	//language=SQL
 	let sql = "SELECT email_token FROM sentc_customer WHERE id = ?";
