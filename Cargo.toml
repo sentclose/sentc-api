@@ -1,7 +1,6 @@
 [workspace]
 members = [
     # bin
-    "server_crates/bin/server_bin",
     "server_crates/bin/worker/worker_manual",
     "server_crates/bin/worker/worker_cron",
     "server_crates/bin/sentc_api_init",
@@ -15,9 +14,11 @@ members = [
     # lib
     "sdk-common",
     "server_crates/server_api",
+    "server_crates/server_api_all",
     "server_crates/server_api_common",
     "server_crates/server_api_customer",
     "server_crates/server_api_file",
+    "server_crates/server_dashboard_backend",
     "server_crates/server_dashboard_common",
     "server_crates/encrypted_at_rest_root"
 ]
@@ -67,3 +68,7 @@ chrono = "0.4"
 
 # jwt handling
 jsonwebtoken = { version = "8.1.1", default-features = false }
+
+reqwest = {version = "0.11.18", default-features = false, features=["rustls-tls"]}
+
+totp-rs = "5.0"

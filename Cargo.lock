@@ -2455,18 +2455,30 @@ dependencies = [
 name = "server_api"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "base32",
  "base64 0.13.0",
- "captcha",
  "chrono",
- "dotenv",
  "encrypted_at_rest_root",
  "hyper",
- "jsonwebtoken",
+ "rand",
+ "rustgram",
+ "rustgram-server-util",
+ "sentc-crypto",
+ "sentc-crypto-common 0.9.4",
+ "serde",
+ "server_api_common",
+ "tokio",
+ "totp-rs",
+]
+
+[[package]]
+name = "server_api_all"
+version = "0.1.0"
+dependencies = [
+ "dotenv",
+ "hyper",
  "rand",
  "reqwest",
- "ring",
  "rustgram",
  "rustgram-server-util",
  "sentc-crypto",
@@ -2476,8 +2488,11 @@ dependencies = [
  "sentc-crypto-light-full",
  "serde",
  "serde_json",
+ "server_api",
  "server_api_common",
+ "server_api_customer",
  "server_api_file",
+ "server_dashboard_backend",
  "server_dashboard_common",
  "tokio",
  "totp-rs",
@@ -2546,16 +2561,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "server_bin"
+name = "server_dashboard_backend"
 version = "0.1.0"
 dependencies = [
  "hyper",
  "rustgram",
  "rustgram-server-util",
- "server_api",
  "server_api_common",
- "server_api_customer",
- "server_api_file",
  "tokio",
 ]
 
