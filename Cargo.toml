@@ -15,6 +15,9 @@ members = [
     # lib
     "sdk-common",
     "server_crates/server_api",
+    "server_crates/server_api_common",
+    "server_crates/server_api_customer",
+    "server_crates/server_api_file",
     "server_crates/server_dashboard_common",
     "server_crates/encrypted_at_rest_root"
 ]
@@ -53,3 +56,14 @@ sentc-crypto-light-full = {git = "https://github.com/sentclose/sentc.git", rev="
 # json handling
 serde_json = {version = "1.0.81", default-features = false, features = ["alloc"]}
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
+
+ring = { version = "0.16.5", features = ["std"] }
+
+base64 = "0.13.0"
+
+rand = "0.8.5"
+
+chrono = "0.4"
+
+# jwt handling
+jsonwebtoken = { version = "8.1.1", default-features = false }
