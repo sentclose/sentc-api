@@ -553,7 +553,7 @@ async fn test_14_z_connect_conn_group_to_other_conn_group_by_service()
 		app_data.app_id.to_string(),
 		"",
 		CreateData::from_string(&group_input).unwrap(),
-		server_api::GROUP_TYPE_NORMAL,
+		server_api_common::group::GROUP_TYPE_NORMAL,
 		None,
 		Some(0),
 		Some(group_1.group_id.clone()),
@@ -594,8 +594,8 @@ async fn test_14_z_connect_conn_group_to_other_conn_group_by_service()
 
 	let input = GroupKeysForNewMemberServerInput::from_string(&invite).unwrap();
 
-	let group_data = server_api::sentc_group_entities::InternalGroupDataComplete {
-		group_data: server_api::sentc_group_entities::InternalGroupData {
+	let group_data = server_api_common::group::group_entities::InternalGroupDataComplete {
+		group_data: server_api_common::group::group_entities::InternalGroupData {
 			id: conn_group1.group_id.to_string(),
 			app_id: app_data.app_id.to_string(),
 			parent: None,
@@ -603,7 +603,7 @@ async fn test_14_z_connect_conn_group_to_other_conn_group_by_service()
 			invite: 1,                //must be true
 			is_connected_group: true, //no err when calling this fn directly
 		},
-		user_data: server_api::sentc_group_entities::InternalUserGroupData {
+		user_data: server_api_common::group::group_entities::InternalUserGroupData {
 			user_id: "".to_string(),
 			real_user_id: "".to_string(),
 			joined_time: 0,

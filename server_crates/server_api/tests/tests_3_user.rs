@@ -1,6 +1,6 @@
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
-use rustgram_server_util::error::ServerErrorCodes;
+use rustgram_server_util::error::{CoreErrorCodes, ServerErrorCodes};
 use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, KeyRotationInput};
 use sentc_crypto::sdk_common::user::UserDeviceRegisterOutput;
@@ -1476,7 +1476,7 @@ async fn test_41_not_register_user_with_wrong_input()
 
 	assert!(!error.status);
 	assert!(error.result.is_none());
-	assert_eq!(error.err_code.unwrap(), ApiErrorCodes::JsonParse.get_int_code());
+	assert_eq!(error.err_code.unwrap(), CoreErrorCodes::JsonParse.get_int_code());
 
 	//check err in sdk
 	match sentc_crypto::user::done_register(body.as_str()) {
