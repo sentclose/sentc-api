@@ -3,7 +3,7 @@
 use reqwest::header::AUTHORIZATION;
 use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto_common::user::{LoginForcedInput, OtpRecoveryKeysOutput, OtpRegister};
+use sentc_crypto_common::user::{OtpRecoveryKeysOutput, OtpRegister, UserForcedAction};
 use sentc_crypto_common::UserId;
 use server_dashboard_common::app::AppRegisterOutput;
 use server_dashboard_common::customer::CustomerDoneLoginOutput;
@@ -629,7 +629,7 @@ async fn test_22_forced_login()
 
 	let url = get_url("api/v1/user/force/login".to_owned());
 
-	let input = LoginForcedInput {
+	let input = UserForcedAction {
 		user_identifier: user.username.clone(),
 	};
 
@@ -656,7 +656,7 @@ async fn test_23_forced_login_light()
 
 	let url = get_url("api/v1/user/force/login_light".to_owned());
 
-	let input = LoginForcedInput {
+	let input = UserForcedAction {
 		user_identifier: user.username.clone(),
 	};
 
@@ -712,7 +712,7 @@ async fn zzz_clean_up()
 	let user = &USER_TEST_STATE.get().unwrap().read().await;
 	let customer_jwt = &user.customer_data.verify.jwt;
 
-	delete_user(&user.app_data.secret_token, &user.user_data.user_id).await;
+	delete_user(&user.app_data.secret_token, user.username.clone()).await;
 
 	delete_app(customer_jwt, user.app_data.app_id.as_str()).await;
 

@@ -1718,7 +1718,7 @@ async fn test_32_not_leave_groups_without_rights()
 	let body = res.text().await.unwrap();
 
 	//delete the test user before checking because after the user wont get deleted when there are still errors
-	delete_user(secret_token, &user_id).await;
+	delete_user(secret_token, "hi_123".to_string()).await;
 
 	let server_err = get_server_error_from_normal_res(&body);
 
@@ -1817,7 +1817,7 @@ async fn zzz_clean_up()
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 
 	for user in users.iter() {
-		delete_user(secret_token, &user.user_data.user_id).await;
+		delete_user(secret_token, user.username.clone()).await;
 	}
 
 	let customer_jwt = &CUSTOMER_TEST_STATE.get().unwrap().read().await.verify.jwt;
