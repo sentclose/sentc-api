@@ -37,6 +37,7 @@ use sentc_crypto_common::AppId;
 use server_api_common::customer_app::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use server_api_common::user::get_jwt_data_from_param;
 use server_api_common::user::user_entity::UserJwtEntity;
+use server_api_common::util::hash_token_to_string;
 
 use crate::group::group_entities::{GroupKeyUpdate, GroupUserKeys};
 use crate::group::{group_key_rotation_service, group_user_service};
@@ -578,7 +579,9 @@ pub(crate) async fn get_user_data_from_jwt(req: Request) -> JRes<UserJwtInfo>
 
 async fn prepare_user_forced_action(app_id: impl Into<AppId>, user_identifier: impl Into<String>) -> AppRes<UserJwtEntity>
 {
-	let user_data = user_model::get_login_data_for_forced_action(app_id, user_identifier)
+	let identifier = hash_token_to_string(user_identifier.into().as_bytes())?;
+
+	let user_data = user_model::get_login_data_for_forced_action(app_id, identifier)
 		.await?
 		.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::UserNotFound, "User not found"))?;
 
