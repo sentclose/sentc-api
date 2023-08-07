@@ -3,11 +3,11 @@ use rustgram_server_util::input_helper::{bytes_to_json, get_raw_body};
 use rustgram_server_util::res::{echo, echo_success, JRes, ServerSuccessOutput};
 use rustgram_server_util::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_time_from_url_param};
 use sentc_crypto_common::crypto::{GeneratedSymKeyHeadServerInput, GeneratedSymKeyHeadServerRegisterOutput};
+use server_api_common::customer_app::{check_endpoint_with_app_options, get_app_data_from_req, Endpoint};
+use server_api_common::user::get_jwt_data_from_param;
 
-use crate::customer_app::app_util::{check_endpoint_with_app_options, get_app_data_from_req, Endpoint};
 use crate::key_management::key_entity::SymKeyEntity;
 use crate::key_management::key_model;
-use crate::user::jwt::get_jwt_data_from_param;
 
 pub async fn register_sym_key(mut req: Request) -> JRes<GeneratedSymKeyHeadServerRegisterOutput>
 {

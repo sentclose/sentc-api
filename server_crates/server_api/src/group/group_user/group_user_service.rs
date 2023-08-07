@@ -5,13 +5,14 @@ use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::group::{GroupKeysForNewMember, GroupKeysForNewMemberServerInput, GroupNewMemberLightInput};
 use sentc_crypto_common::{AppId, GroupId, UserId};
+use server_api_common::group::group_entities::InternalGroupDataComplete;
+use server_api_common::util::get_group_user_cache_key;
 
-use crate::group::group_entities::{GroupInviteReq, InternalGroupDataComplete};
+use crate::group::group_entities::GroupInviteReq;
 use crate::group::group_model;
 use crate::group::group_user::group_user_model;
 use crate::sentc_group_entities::GroupUserListItem;
 use crate::util::api_res::ApiErrorCodes;
-use crate::util::get_group_user_cache_key;
 
 pub enum InsertNewUserType
 {
@@ -284,7 +285,7 @@ pub async fn leave_group(group_data: &InternalGroupDataComplete, real_user_id: O
 
 		//do this check everytime with db look up
 		// because the rank in the group data only shows the relative rank in the connected group, not the real rank in the group.
-		let group_as_member_user_data = group_model::get_internal_group_user_data(g_a_m, id).await?;
+		let group_as_member_user_data = server_api_common::group::get_internal_group_user_data(g_a_m, id).await?;
 
 		match group_as_member_user_data {
 			Some(data) => {

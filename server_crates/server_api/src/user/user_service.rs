@@ -23,18 +23,21 @@ use sentc_crypto_common::user::{
 	VerifyLoginInput,
 };
 use sentc_crypto_common::{AppId, DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, SymKeyId, UserId};
+use server_api_common::customer_app::app_entities::AppData;
+use server_api_common::group::group_entities::{InternalGroupData, InternalGroupDataComplete, InternalUserGroupData};
+use server_api_common::group::GROUP_TYPE_USER;
+use server_api_common::user::jwt::create_jwt;
+use server_api_common::user::user_entity::UserJwtEntity;
+use server_api_common::util::{get_user_in_app_key, hash_token_to_string};
 
-use crate::group::group_entities::{GroupUserKeys, InternalGroupData, InternalGroupDataComplete, InternalUserGroupData};
+use crate::group::group_entities::GroupUserKeys;
 use crate::group::group_user_service::NewUserType;
-use crate::group::{group_service, group_user_service, GROUP_TYPE_USER};
-use crate::sentc_app_entities::AppData;
+use crate::group::{group_service, group_user_service};
 use crate::sentc_user_entities::{LoginForcedOutput, UserPublicKeyDataEntity, UserVerifyKeyDataEntity, VerifyLoginOutput};
 use crate::user::auth::auth_service::{auth_user, verify_login_forced_internally, verify_login_internally};
-use crate::user::jwt::create_jwt;
-use crate::user::user_entities::{UserDeviceList, UserInitEntity, UserJwtEntity};
+use crate::user::user_entities::{UserDeviceList, UserInitEntity};
 use crate::user::{otp, user_model};
 use crate::util::api_res::ApiErrorCodes;
-use crate::util::{get_user_in_app_key, hash_token_to_string};
 
 pub enum UserAction
 {
@@ -79,11 +82,6 @@ pub fn get_group_key_rotations_in_actual_month<'a>(
 ) -> impl Future<Output = AppRes<i32>> + 'a
 {
 	user_model::get_group_key_rotations_in_actual_month(app_id, group_id)
-}
-
-pub fn check_user_in_app_by_user_id<'a>(app_id: impl Into<AppId> + 'a, user_id: impl Into<UserId> + 'a) -> impl Future<Output = AppRes<bool>> + 'a
-{
-	user_model::check_user_in_app(app_id, user_id)
 }
 
 pub fn get_user_group_id<'a>(

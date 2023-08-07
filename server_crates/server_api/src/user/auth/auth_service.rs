@@ -6,15 +6,15 @@ use rustgram_server_util::res::AppRes;
 use sentc_crypto::sdk_core::HashedAuthenticationKey;
 use sentc_crypto_common::user::{DoneLoginServerInput, OtpInput, PrepareLoginSaltServerOutput, VerifyLoginInput};
 use sentc_crypto_common::AppId;
+use server_api_common::customer_app::app_entities::AppData;
+use server_api_common::user::jwt::create_jwt;
+use server_api_common::util::hash_token_to_string;
 
-use crate::sentc_app_entities::AppData;
 use crate::sentc_user_entities::{DoneLoginServerOutput, DoneLoginServerReturn, VerifyLoginEntity, VerifyLoginForcedEntity, SERVER_RANDOM_VALUE};
-use crate::sentc_user_jwt_service::create_jwt;
 use crate::sentc_user_service::create_refresh_token;
 use crate::user::auth::auth_model;
 use crate::user::otp;
 use crate::util::api_res::ApiErrorCodes;
-use crate::util::hash_token_to_string;
 
 pub fn prepare_login<'a>(app_data: &'a AppData, user_identifier: &'a str) -> impl Future<Output = AppRes<PrepareLoginSaltServerOutput>> + 'a
 {

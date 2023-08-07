@@ -7,12 +7,13 @@ use rustgram_server_util::res::{echo, echo_success, JRes, ServerSuccessOutput};
 use rustgram_server_util::url_helper::{get_name_param_from_params, get_name_param_from_req, get_params, get_time_from_url_param};
 use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDataCheckUpdateServerOutput};
 use sentc_crypto_common::GroupId;
+use server_api_common::customer_app::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
+use server_api_common::group::{get_group_user_data_from_req, GROUP_TYPE_NORMAL};
+use server_api_common::user::get_jwt_data_from_param;
 
-use crate::customer_app::app_util::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
 use crate::group::group_entities::{GroupChildrenList, GroupServerData, GroupUserKeys, ListGroups};
 use crate::group::group_user_service::NewUserType;
-use crate::group::{get_group_user_data_from_req, group_model, group_service, GROUP_TYPE_NORMAL};
-use crate::user::jwt::get_jwt_data_from_param;
+use crate::group::{group_model, group_service};
 use crate::user::user_entities::UserPublicKeyDataEntity;
 use crate::util::api_res::ApiErrorCodes;
 

@@ -1,0 +1,14 @@
+[package]
+name = "server_dashboard_backend"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+server_api_common = {path = "../server_api_common", default-features = false}
+rustgram-server-util = {workspace = true}
+
+rustgram = {workspace = true}
+tokio = {workspace = true}
+hyper = {workspace = true}

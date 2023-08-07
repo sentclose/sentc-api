@@ -1,4 +1,3 @@
-base_mw: "middleware"
 prefix: "/api"
 routes:
   # api v1 routes
@@ -10,7 +9,7 @@ routes:
         - group:
             p: ""
             mw:
-              - app_token::app_token_transform
+              - server_api_common::middleware::app_token::app_token_transform
             gr:
               - get: { p: "/user/:user_id/public_key", s: crate::user::get_public_key_data }
               - get: { p: "/user/:user_id/public_key/:key_id", s: crate::user::get_public_key_by_id }
@@ -36,7 +35,7 @@ routes:
               - group:
                   p: ""
                   mw:
-                    - jwt::jwt_expire_transform
+                    - server_api_common::middleware::jwt::jwt_expire_transform
                   gr:
                     - put: {p: "/refresh", s: crate::user::refresh_jwt}
                     - post: {p: "/init", s: crate::user::init_user}
@@ -51,12 +50,12 @@ routes:
                               p: ""
                               s: crate::key_management::register_sym_key
                               mw:
-                                - jwt::jwt_transform
+                                - server_api_common::middleware::jwt::jwt_transform
                           - delete:
                               p: "/:key_id"
                               s: crate::key_management::delete_sym_key
                               mw:
-                                - jwt::jwt_transform
+                                - server_api_common::middleware::jwt::jwt_transform
 
                           - get: { p: "/master_key/:master_key_id/:last_fetched_time/:last_key_id", s: crate::key_management::get_all_sym_keys_to_master_key }
                           - get: { p: "/:key_id", s: crate::key_management::get_sym_key_by_id }
@@ -65,8 +64,8 @@ routes:
         - group:
             p: ""
             mw:
-              - jwt::jwt_transform
-              - app_token::app_token_transform
+              - server_api_common::middleware::jwt::jwt_transform
+              - server_api_common::middleware::app_token::app_token_transform
             gr:
               #_________________________________________________________________________________________________________
               # user routes in the user mod
@@ -133,7 +132,7 @@ routes:
                     - group:
                         p: "/group/:group_id"
                         mw:
-                          - group::group_transform
+                          - server_api_common::middleware::group::group_transform
                         gr:
                           - post: { p: "", s: crate::content_management::create_group_content }
 
@@ -172,7 +171,7 @@ routes:
                     - group:
                         p: "/:group_id"
                         mw:
-                          - group::group_transform
+                          - server_api_common::middleware::group::group_transform
                         gr:
                           - get: { p: "", s: crate::group::get_user_group_data }
                           - get: {p: "/light", s: crate::group::get_user_group_light_data}

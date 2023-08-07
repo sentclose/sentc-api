@@ -7,7 +7,6 @@ use sentc_crypto_common::group::GroupKeysForNewMember;
 use sentc_crypto_common::{AppId, GroupId, UserId};
 
 use crate::group::group_entities::{GroupInviteReq, GroupJoinReq, GroupUserListItem, GROUP_INVITE_TYPE_INVITE_REQ, GROUP_INVITE_TYPE_JOIN_REQ};
-use crate::group::group_model;
 use crate::group::group_model::check_group_rank;
 use crate::group::group_user_service::{InsertNewUserType, NewUserType};
 use crate::sentc_group_entities::GroupUserInvitesAndJoinReq;
@@ -906,7 +905,7 @@ async fn check_user_in_group(group_id: impl Into<GroupId>, user_id: impl Into<Us
 	}
 
 	//check if the user is in a parent group
-	let exists = group_model::get_user_from_parent_groups(group_id, user_id).await?;
+	let exists = server_api_common::group::get_user_from_parent_groups(group_id, user_id).await?;
 
 	match exists {
 		Some(_) => Ok(true),

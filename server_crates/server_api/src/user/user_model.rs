@@ -21,50 +21,13 @@ use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::user::{ChangePasswordData, KeyDerivedData, MasterKey, ResetPasswordData};
 use sentc_crypto_common::{AppId, DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, UserId};
 
-use crate::user::user_entities::{CaptchaEntity, UserDeviceList, UserPublicKeyDataEntity, UserRefreshTokenCheck, UserVerifyKeyDataEntity};
+use crate::user::user_entities::{UserDeviceList, UserPublicKeyDataEntity, UserRefreshTokenCheck, UserVerifyKeyDataEntity};
 use crate::user::user_service::UserAction;
 use crate::util::api_res::ApiErrorCodes;
 use crate::util::get_begin_of_month;
 
-pub(super) async fn get_jwt_sign_key(kid: impl Into<String>) -> AppRes<Option<String>>
-{
-	//language=SQL
-	let sql = "SELECT sign_key FROM sentc_app_jwt_keys WHERE id = ?";
-
-	let sign_key: Option<StringEntity> = query_first(sql, set_params!(kid.into())).await?;
-
-	//decrypt the sign key with ear root
-	match sign_key {
-		Some(sk) => Ok(Some(encrypted_at_rest_root::decrypt(&sk.0).await?)),
-		None => Ok(None),
-	}
-}
-
-pub(super) async fn get_jwt_verify_key(kid: impl Into<String>) -> AppRes<Option<String>>
-{
-	//language=SQL
-	let sql = "SELECT verify_key FROM sentc_app_jwt_keys WHERE id = ?";
-
-	let sign_key: Option<StringEntity> = query_first(sql, set_params!(kid.into())).await?;
-
-	Ok(sign_key.map(|i| i.0))
-}
-
 //__________________________________________________________________________________________________
 //user
-
-pub(super) async fn check_user_in_app(app_id: impl Into<AppId>, user_id: impl Into<UserId>) -> AppRes<bool>
-{
-	//language=SQL
-	let sql = "SELECT 1 FROM sentc_user WHERE id = ? AND app_id = ? LIMIT 1";
-
-	let exists: Option<I64Entity> = query_first(sql, set_params!(user_id.into(), app_id.into())).await?;
-
-	match exists {
-		Some(_) => Ok(true),
-		None => Ok(false),
-	}
-}
 
 pub(super) async fn check_user_exists(app_id: impl Into<AppId>, user_identifier: impl Into<String>) -> AppRes<bool>
 {
@@ -704,47 +667,6 @@ pub(super) async fn get_group_key_rotations_in_actual_month(app_id: impl Into<Ap
 	.unwrap_or(TupleEntity(0));
 
 	Ok(out.0)
-}
-
-//__________________________________________________________________________________________________
-
-pub(super) async fn save_captcha_solution(app_id: impl Into<AppId>, solution: String) -> AppRes<String>
-{
-	let time = get_time()?;
-	let captcha_id = create_id();
-
-	//language=SQL
-	let sql = "INSERT INTO sentc_captcha (id, app_id, solution, time) VALUES (?,?,?,?)";
-
-	exec(
-		sql,
-		set_params!(captcha_id.clone(), app_id.into(), solution, time.to_string()),
-	)
-	.await?;
-
-	Ok(captcha_id)
-}
-
-pub(super) async fn get_captcha_solution(id: impl Into<String>, app_id: impl Into<AppId>) -> AppRes<Option<CaptchaEntity>>
-{
-	//language=SQL
-	let sql = "SELECT solution, time FROM sentc_captcha WHERE id = ? AND app_id = ?";
-
-	let out: Option<CaptchaEntity> = query_first(sql, set_params!(id.into(), app_id.into())).await?;
-
-	Ok(out)
-}
-
-pub(super) async fn delete_captcha(app_id: impl Into<AppId>, id: String) -> AppRes<()>
-{
-	//owned id because we got the id from the input
-
-	//language=SQL
-	let sql = "DELETE FROM sentc_captcha WHERE id = ? AND app_id = ?";
-
-	exec(sql, set_params!(id, app_id.into())).await?;
-
-	Ok(())
 }
 
 pub(super) fn prepare_register_device(

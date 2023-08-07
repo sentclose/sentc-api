@@ -9,7 +9,7 @@ edition = "2021"
 # the server outputs for the frontend to handle
 sentc-crypto-common = {path = "../../sdk-common" }
 
-server_dashboard_common = {path = "../server_dashboard_common", default-features = false, features = ["server"]}
+server_api_common = {path = "../server_api_common", default-features = false }
 
 encrypted_at_rest_root = {path = "../encrypted_at_rest_root"}
 
@@ -21,28 +21,17 @@ tokio = {workspace = true}
 
 rustgram = {workspace = true}
 
-# dotenv vars
-dotenv = {workspace = true}
-
-# for caching trait
-async-trait = {workspace = true}
-
 #_______________________________________________________________________________________________________________________
 # json handling
-serde_json = {workspace = true}
 serde = {workspace = true}
 
-chrono = "0.4"
+chrono.workspace=true
 
 #_______________________________________________________________________________________________________________________
-# jwt handling
-jsonwebtoken = { version = "8.1.1", default-features = false }
-# ring crypto to crate jwt keys
-ring = { version = "0.16.5", features = ["std"] }
-# base64 to encode and decode the jwt key
-base64 = "0.13.0"
 
-rand = "0.8.5"
+base64.workspace=true
+
+rand.workspace=true
 
 #_______________________________________________________________________________________________________________________
 # totp handling
@@ -50,19 +39,7 @@ rand = "0.8.5"
 # base32 to encode the totp secret to make it more readable for humans than base64
 base32 = "0.4.0"
 
-totp-rs = "5.0"
-
-#_______________________________________________________________________________________________________________________
-# captcha
-captcha = "0.0.9"
-
-#_______________________________________________________________________________________________________________________
-#send emails
-lettre = { version = "0.10.0-rc.6", default-features = false, features = ["smtp-transport", "tokio1-rustls-tls", "hostname", "builder"], optional = true }
-
-#_______________________________________________________________________________________________________________________
-#regex
-regex = "1.6.0"
+totp-rs.workspace=true
 
 #_______________________________________________________________________________________________________________________
 # salt creation on server
@@ -71,20 +48,7 @@ regex = "1.6.0"
 # git-fetch-with-cli = true
 sentc-crypto = {workspace=true}
 
-reqwest = {version = "0.11.18", default-features = false, features=["rustls-tls"]}
-#_______________________________________________________________________________________________________________________
-
-[dev-dependencies]
-
-sentc-crypto = {workspace=true, features=["server_test"]}
-sentc-crypto-light = {workspace=true, features=["server_test"]}
-sentc-crypto-full  = {workspace=true}
-sentc-crypto-light-full.workspace=true
-
 [features]
 default = ["mysql"]
-mysql = ["rustgram-server-util/mysql","server_dashboard_common/mysql"]
-sqlite = ["rustgram-server-util/sqlite","server_dashboard_common/sqlite"]
-
-# When enabled send the custumor resgistration mail
-send_mail = ["lettre"]
+mysql = ["rustgram-server-util/mysql","server_api_common/mysql"]
+sqlite = ["rustgram-server-util/sqlite","server_api_common/sqlite"]

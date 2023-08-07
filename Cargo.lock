@@ -2384,7 +2384,8 @@ name = "sentc_api_init"
 version = "0.1.0"
 dependencies = [
  "rustgram-server-util",
- "server_api",
+ "server_api_common",
+ "server_api_customer",
  "tokio",
 ]
 
@@ -2454,20 +2455,30 @@ dependencies = [
 name = "server_api"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "base32",
  "base64 0.13.0",
- "captcha",
  "chrono",
- "dotenv",
  "encrypted_at_rest_root",
  "hyper",
- "jsonwebtoken",
- "lettre",
  "rand",
- "regex",
+ "rustgram",
+ "rustgram-server-util",
+ "sentc-crypto",
+ "sentc-crypto-common 0.9.4",
+ "serde",
+ "server_api_common",
+ "tokio",
+ "totp-rs",
+]
+
+[[package]]
+name = "server_api_all"
+version = "0.1.0"
+dependencies = [
+ "dotenv",
+ "hyper",
+ "rand",
  "reqwest",
- "ring",
  "rustgram",
  "rustgram-server-util",
  "sentc-crypto",
@@ -2477,9 +2488,69 @@ dependencies = [
  "sentc-crypto-light-full",
  "serde",
  "serde_json",
+ "server_api",
+ "server_api_common",
+ "server_api_customer",
+ "server_api_file",
+ "server_dashboard_backend",
  "server_dashboard_common",
  "tokio",
  "totp-rs",
+]
+
+[[package]]
+name = "server_api_common"
+version = "0.1.0"
+dependencies = [
+ "base64 0.13.0",
+ "captcha",
+ "dotenv",
+ "encrypted_at_rest_root",
+ "hyper",
+ "jsonwebtoken",
+ "rand",
+ "ring",
+ "rustgram",
+ "rustgram-server-util",
+ "sentc-crypto-common 0.9.4",
+ "serde",
+ "serde_json",
+ "server_dashboard_common",
+ "tokio",
+]
+
+[[package]]
+name = "server_api_customer"
+version = "0.1.0"
+dependencies = [
+ "base64 0.13.0",
+ "encrypted_at_rest_root",
+ "lettre",
+ "rand",
+ "regex",
+ "rustgram",
+ "rustgram-server-util",
+ "sentc-crypto-common 0.9.4",
+ "serde",
+ "server_api",
+ "server_api_common",
+ "server_dashboard_common",
+ "tokio",
+]
+
+[[package]]
+name = "server_api_file"
+version = "0.1.0"
+dependencies = [
+ "reqwest",
+ "rustgram",
+ "rustgram-server-util",
+ "sentc-crypto-common 0.9.4",
+ "serde",
+ "serde_json",
+ "server_api_common",
+ "server_dashboard_common",
+ "tokio",
 ]
 
 [[package]]
@@ -2490,13 +2561,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "server_bin"
+name = "server_dashboard_backend"
 version = "0.1.0"
 dependencies = [
  "hyper",
  "rustgram",
  "rustgram-server-util",
- "server_api",
+ "server_api_common",
  "tokio",
 ]
 
@@ -3257,7 +3328,9 @@ version = "0.1.0"
 dependencies = [
  "dotenv",
  "rustgram-server-util",
- "server_api",
+ "server_api_common",
+ "server_api_customer",
+ "server_api_file",
  "tokio",
 ]
 
@@ -3265,7 +3338,8 @@ dependencies = [
 name = "worker_manual"
 version = "0.1.0"
 dependencies = [
- "server_api",
+ "server_api_common",
+ "server_api_file",
  "tokio",
 ]
 

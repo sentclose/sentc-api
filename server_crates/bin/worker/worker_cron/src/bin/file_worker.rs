@@ -1,13 +1,11 @@
 use std::time::Duration;
 
-use server_api::sentc_file_worker;
-
 const INTERVAL_SEC: u64 = 60 * 60;
 
 #[tokio::main]
 async fn main()
 {
-	server_api::start().await;
+	server_api_common::start().await;
 
 	let mut interval = tokio::time::interval(Duration::from_secs(INTERVAL_SEC));
 
@@ -16,6 +14,6 @@ async fn main()
 
 		println!("file worker started");
 
-		tokio::spawn(sentc_file_worker::start());
+		tokio::spawn(server_api_file::file_worker::start());
 	}
 }
