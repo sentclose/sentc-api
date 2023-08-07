@@ -627,7 +627,7 @@ async fn test_22_forced_login()
 
 	let user = USER_TEST_STATE.get().unwrap().read().await;
 
-	let url = get_url("api/v1/user/force/login".to_owned());
+	let url = get_url("api/v1/user/forced/login".to_owned());
 
 	let input = UserForcedAction {
 		user_identifier: user.username.clone(),
@@ -636,7 +636,6 @@ async fn test_22_forced_login()
 	let client = reqwest::Client::new();
 	let res = client
 		.post(url)
-		.header(AUTHORIZATION, auth_header(&user.user_data.jwt))
 		.header("x-sentc-app-token", &user.app_data.secret_token)
 		.body(serde_json::to_string(&input).unwrap())
 		.send()
@@ -654,7 +653,7 @@ async fn test_23_forced_login_light()
 
 	let user = USER_TEST_STATE.get().unwrap().read().await;
 
-	let url = get_url("api/v1/user/force/login_light".to_owned());
+	let url = get_url("api/v1/user/forced/login_light".to_owned());
 
 	let input = UserForcedAction {
 		user_identifier: user.username.clone(),
@@ -663,7 +662,6 @@ async fn test_23_forced_login_light()
 	let client = reqwest::Client::new();
 	let res = client
 		.post(url)
-		.header(AUTHORIZATION, auth_header(&user.user_data.jwt))
 		.header("x-sentc-app-token", &user.app_data.secret_token)
 		.body(serde_json::to_string(&input).unwrap())
 		.send()
@@ -695,6 +693,59 @@ async fn test_24_disable_otp()
 
 #[tokio::test]
 async fn test_25_login_normal_after_disable_otp()
+{
+	let user = USER_TEST_STATE.get().unwrap().read().await;
+
+	let keys = login_user(&user.app_data.public_token, &user.username, &user.pw).await;
+
+	assert_eq!(
+		user.user_data.device_keys.private_key.key_id,
+		keys.device_keys.private_key.key_id
+	);
+}
+
+#[tokio::test]
+async fn test_26_disable_otp_forced()
+{
+	//first enable otp
+	let user = USER_TEST_STATE.get().unwrap().read().await;
+
+	let url = get_url("api/v1/user/register_otp".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.patch(url)
+		.header(AUTHORIZATION, auth_header(&user.user_data.jwt))
+		.header("x-sentc-app-token", &user.app_data.public_token)
+		.send()
+		.await
+		.unwrap();
+	let body = res.text().await.unwrap();
+
+	let _out: OtpRegister = handle_server_response(&body).unwrap();
+
+	//now disable it via forced
+	let url = get_url("api/v1/user/forced/disable_otp".to_owned());
+
+	let input = UserForcedAction {
+		user_identifier: user.username.clone(),
+	};
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.body(serde_json::to_string(&input).unwrap())
+		.send()
+		.await
+		.unwrap();
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(&body).unwrap();
+}
+
+#[tokio::test]
+async fn test_26_login_normal_after_disable_otp_forced()
 {
 	let user = USER_TEST_STATE.get().unwrap().read().await;
 

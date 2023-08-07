@@ -338,7 +338,7 @@ pub async fn delete_user(app_secret_token: &str, user_identifier: String)
 		user_identifier,
 	};
 
-	let url = get_url("api/v1/user/force/delete".to_owned());
+	let url = get_url("api/v1/user/forced/delete".to_owned());
 	let client = reqwest::Client::new();
 	let res = client
 		.put(url)
