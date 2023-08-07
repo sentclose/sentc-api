@@ -1,0 +1,48 @@
+[package]
+name = "server_api_all"
+version = "0.1.0"
+edition = "2021"
+default-run = "server_api_all"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+server_api = {path = "../server_api", default-features = false}
+server_api_common = {path = "../server_api_common", default-features = false}
+server_api_file = {path = "../server_api_file", default-features = false}
+server_api_customer = {path = "../server_api_customer", default-features = false}
+server_dashboard_backend = {path = "../server_dashboard_backend"}
+
+rustgram-server-util = {workspace = true}
+
+rustgram = {workspace = true}
+tokio = {workspace = true}
+hyper = {workspace = true}
+
+[dev-dependencies]
+
+sentc-crypto = {workspace=true, features=["server_test"]}
+sentc-crypto-light = {workspace=true, features=["server_test"]}
+sentc-crypto-full  = {workspace=true}
+sentc-crypto-light-full.workspace=true
+
+sentc-crypto-common = {path = "../../sdk-common" }
+server_dashboard_common = {path = "../server_dashboard_common", default-features = false, features = ["server"]}
+
+reqwest.workspace=true
+
+serde_json = {workspace = true}
+serde = {workspace = true}
+
+totp-rs.workspace=true
+
+rand.workspace=true
+
+dotenv.workspace=true
+
+[features]
+default = ["mysql"]
+mysql = ["rustgram-server-util/mysql"]
+sqlite = ["rustgram-server-util/sqlite"]
+
+send_mail = ["server_api_customer/send_mail"]

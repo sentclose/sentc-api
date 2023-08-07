@@ -11,8 +11,6 @@ sentc-crypto-common = {path = "../../sdk-common" }
 
 server_api_common = {path = "../server_api_common", default-features = false }
 
-server_dashboard_common = {path = "../server_dashboard_common", default-features = false, features = ["server"]}
-
 encrypted_at_rest_root = {path = "../encrypted_at_rest_root"}
 
 rustgram-server-util = {workspace = true}
@@ -23,25 +21,14 @@ tokio = {workspace = true}
 
 rustgram = {workspace = true}
 
-# dotenv vars
-dotenv = {workspace = true}
-
-# for caching trait
-async-trait = {workspace = true}
-
 #_______________________________________________________________________________________________________________________
 # json handling
-serde_json = {workspace = true}
 serde = {workspace = true}
 
 chrono.workspace=true
 
 #_______________________________________________________________________________________________________________________
-# jwt handling
-jsonwebtoken.workspace=true
-# ring crypto to crate jwt keys
-ring.workspace=true
-# base64 to encode and decode the jwt key
+
 base64.workspace=true
 
 rand.workspace=true
@@ -52,11 +39,7 @@ rand.workspace=true
 # base32 to encode the totp secret to make it more readable for humans than base64
 base32 = "0.4.0"
 
-totp-rs = "5.0"
-
-#_______________________________________________________________________________________________________________________
-# captcha
-captcha = "0.0.9"
+totp-rs.workspace=true
 
 #_______________________________________________________________________________________________________________________
 # salt creation on server
@@ -65,19 +48,7 @@ captcha = "0.0.9"
 # git-fetch-with-cli = true
 sentc-crypto = {workspace=true}
 
-#_______________________________________________________________________________________________________________________
-
-[dev-dependencies]
-
-sentc-crypto = {workspace=true, features=["server_test"]}
-sentc-crypto-light = {workspace=true, features=["server_test"]}
-sentc-crypto-full  = {workspace=true}
-sentc-crypto-light-full.workspace=true
-
-reqwest = {version = "0.11.18", default-features = false, features=["rustls-tls"]}
-server_api_file = {path = "../server_api_file", default-features = false}
-
 [features]
 default = ["mysql"]
-mysql = ["rustgram-server-util/mysql","server_api_common/mysql","server_dashboard_common/mysql","server_api_file/mysql"]
-sqlite = ["rustgram-server-util/sqlite","server_api_common/sqlite","server_dashboard_common/sqlite", "server_api_file/sqlite"]
+mysql = ["rustgram-server-util/mysql","server_api_common/mysql"]
+sqlite = ["rustgram-server-util/sqlite","server_api_common/sqlite"]
