@@ -3,7 +3,6 @@ use std::env;
 use server_api::rest_routes;
 use server_api_customer::customer_routes;
 use server_api_file::file_routes;
-use server_bin::server_dashboard_backend;
 
 /**
 merge every server into one
