@@ -1,7 +1,5 @@
 use std::env;
 
-use rustgram::{r, Router};
-use server_api_common::{cors_handler, index_handler, not_found_handler};
 use server_api_customer::customer_routes;
 
 #[tokio::main]
