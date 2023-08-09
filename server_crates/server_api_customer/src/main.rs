@@ -9,14 +9,9 @@ pub async fn main()
 {
 	server_api_customer::start().await;
 
-	let mut router = Router::new(not_found_handler);
+	let mut router = server_api_common::rest_routes();
 
 	customer_routes(&mut router);
-
-	router.get("/", r(index_handler));
-
-	//cors route
-	router.options("/*all", r(cors_handler));
 
 	let addr = format!(
 		"{}:{}",
