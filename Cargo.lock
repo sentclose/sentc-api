@@ -2280,12 +2280,12 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto"
-version = "0.9.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=2317ea01a846490fe64ae41a8069bd5cfdad679f#2317ea01a846490fe64ae41a8069bd5cfdad679f"
+version = "0.10.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=ad3a44c59bae5867c5a2a95a7f066890673904ca#ad3a44c59bae5867c5a2a95a7f066890673904ca"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
- "sentc-crypto-common 0.9.4 (git+https://github.com/sentclose/sentc-common.git?rev=46f582557017a2510d454d3781a2087659a6a776)",
+ "sentc-crypto-common 0.10.0 (git+https://github.com/sentclose/sentc-common.git?rev=de513a82b0200b476d9592ba1de38c73c6a32354)",
  "sentc-crypto-core",
  "sentc-crypto-utils",
  "serde",
@@ -2294,7 +2294,7 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-common"
-version = "0.9.4"
+version = "0.10.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -2302,8 +2302,8 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-common"
-version = "0.9.4"
-source = "git+https://github.com/sentclose/sentc-common.git?rev=46f582557017a2510d454d3781a2087659a6a776#46f582557017a2510d454d3781a2087659a6a776"
+version = "0.10.0"
+source = "git+https://github.com/sentclose/sentc-common.git?rev=de513a82b0200b476d9592ba1de38c73c6a32354#de513a82b0200b476d9592ba1de38c73c6a32354"
 dependencies = [
  "serde",
  "serde_json",
@@ -2311,8 +2311,8 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-core"
-version = "0.9.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=2317ea01a846490fe64ae41a8069bd5cfdad679f#2317ea01a846490fe64ae41a8069bd5cfdad679f"
+version = "0.10.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=ad3a44c59bae5867c5a2a95a7f066890673904ca#ad3a44c59bae5867c5a2a95a7f066890673904ca"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -2328,11 +2328,11 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-full"
-version = "0.9.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=2317ea01a846490fe64ae41a8069bd5cfdad679f#2317ea01a846490fe64ae41a8069bd5cfdad679f"
+version = "0.10.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=ad3a44c59bae5867c5a2a95a7f066890673904ca#ad3a44c59bae5867c5a2a95a7f066890673904ca"
 dependencies = [
  "sentc-crypto",
- "sentc-crypto-common 0.9.4 (git+https://github.com/sentclose/sentc-common.git?rev=46f582557017a2510d454d3781a2087659a6a776)",
+ "sentc-crypto-common 0.10.0 (git+https://github.com/sentclose/sentc-common.git?rev=de513a82b0200b476d9592ba1de38c73c6a32354)",
  "sentc-crypto-utils",
  "serde",
  "serde_json",
@@ -2340,12 +2340,12 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-light"
-version = "0.9.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=2317ea01a846490fe64ae41a8069bd5cfdad679f#2317ea01a846490fe64ae41a8069bd5cfdad679f"
+version = "0.10.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=ad3a44c59bae5867c5a2a95a7f066890673904ca#ad3a44c59bae5867c5a2a95a7f066890673904ca"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
- "sentc-crypto-common 0.9.4 (git+https://github.com/sentclose/sentc-common.git?rev=46f582557017a2510d454d3781a2087659a6a776)",
+ "sentc-crypto-common 0.10.0 (git+https://github.com/sentclose/sentc-common.git?rev=de513a82b0200b476d9592ba1de38c73c6a32354)",
  "sentc-crypto-core",
  "sentc-crypto-utils",
  "serde",
@@ -2354,10 +2354,10 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-light-full"
-version = "0.9.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=2317ea01a846490fe64ae41a8069bd5cfdad679f#2317ea01a846490fe64ae41a8069bd5cfdad679f"
+version = "0.10.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=ad3a44c59bae5867c5a2a95a7f066890673904ca#ad3a44c59bae5867c5a2a95a7f066890673904ca"
 dependencies = [
- "sentc-crypto-common 0.9.4 (git+https://github.com/sentclose/sentc-common.git?rev=46f582557017a2510d454d3781a2087659a6a776)",
+ "sentc-crypto-common 0.10.0 (git+https://github.com/sentclose/sentc-common.git?rev=de513a82b0200b476d9592ba1de38c73c6a32354)",
  "sentc-crypto-light",
  "sentc-crypto-utils",
  "serde",
@@ -2366,13 +2366,13 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-utils"
-version = "0.9.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=2317ea01a846490fe64ae41a8069bd5cfdad679f#2317ea01a846490fe64ae41a8069bd5cfdad679f"
+version = "0.10.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=ad3a44c59bae5867c5a2a95a7f066890673904ca#ad3a44c59bae5867c5a2a95a7f066890673904ca"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
  "reqwest",
- "sentc-crypto-common 0.9.4 (git+https://github.com/sentclose/sentc-common.git?rev=46f582557017a2510d454d3781a2087659a6a776)",
+ "sentc-crypto-common 0.10.0 (git+https://github.com/sentclose/sentc-common.git?rev=de513a82b0200b476d9592ba1de38c73c6a32354)",
  "sentc-crypto-core",
  "serde",
  "serde_json",
@@ -2463,7 +2463,7 @@ dependencies = [
  "rustgram",
  "rustgram-server-util",
  "sentc-crypto",
- "sentc-crypto-common 0.9.4",
+ "sentc-crypto-common 0.10.0",
  "serde",
  "server_api_common",
  "tokio",
@@ -2481,7 +2481,7 @@ dependencies = [
  "rustgram",
  "rustgram-server-util",
  "sentc-crypto",
- "sentc-crypto-common 0.9.4",
+ "sentc-crypto-common 0.10.0",
  "sentc-crypto-full",
  "sentc-crypto-light",
  "sentc-crypto-light-full",
@@ -2511,7 +2511,7 @@ dependencies = [
  "ring",
  "rustgram",
  "rustgram-server-util",
- "sentc-crypto-common 0.9.4",
+ "sentc-crypto-common 0.10.0",
  "serde",
  "serde_json",
  "server_dashboard_common",
@@ -2529,7 +2529,7 @@ dependencies = [
  "regex",
  "rustgram",
  "rustgram-server-util",
- "sentc-crypto-common 0.9.4",
+ "sentc-crypto-common 0.10.0",
  "serde",
  "server_api",
  "server_api_common",
@@ -2544,7 +2544,7 @@ dependencies = [
  "reqwest",
  "rustgram",
  "rustgram-server-util",
- "sentc-crypto-common 0.9.4",
+ "sentc-crypto-common 0.10.0",
  "serde",
  "serde_json",
  "server_api_common",
@@ -2575,7 +2575,7 @@ name = "server_dashboard_common"
 version = "0.1.0"
 dependencies = [
  "rustgram-server-util",
- "sentc-crypto-common 0.9.4",
+ "sentc-crypto-common 0.10.0",
  "serde",
  "serde_json",
 ]
