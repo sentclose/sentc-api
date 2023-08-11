@@ -42,38 +42,38 @@ CREATE TABLE `sentc_app` (
 --
 -- Trigger `sentc_app`
 --
-DELIMITER $$
+
 CREATE TRIGGER `delete_app_content` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_content WHERE app_id = OLD.id
-$$
-DELIMITER ;
-DELIMITER $$
+
+;
+
 CREATE TRIGGER `delete_app_jwt` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_app_jwt_keys WHERE app_id = OLD.id
-$$
-DELIMITER ;
-DELIMITER $$
+
+;
+
 CREATE TRIGGER `delete_file_options` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_file_options WHERE app_id = OLD.id
-$$
-DELIMITER ;
-DELIMITER $$
+
+;
+
 CREATE TRIGGER `delete_group` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_group WHERE app_id = OLD.id
-$$
-DELIMITER ;
-DELIMITER $$
+
+;
+
 CREATE TRIGGER `delete_group_options` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_app_group_options WHERE app_id = OLD.id
-$$
-DELIMITER ;
-DELIMITER $$
+
+;
+
 CREATE TRIGGER `delete_keys` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_sym_key_management WHERE app_id = OLD.id
-$$
-DELIMITER ;
-DELIMITER $$
+
+;
+
 CREATE TRIGGER `delete_options` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_app_options WHERE app_id = OLD.id
-$$
-DELIMITER ;
-DELIMITER $$
+
+;
+
 CREATE TRIGGER `delete_user` AFTER DELETE ON `sentc_app` FOR EACH ROW DELETE FROM sentc_user WHERE app_id = OLD.id
-$$
-DELIMITER ;
+
+;
 
 -- --------------------------------------------------------
 
@@ -212,10 +212,10 @@ CREATE TABLE `sentc_customer` (
 --
 -- Trigger `sentc_customer`
 --
-DELIMITER $$
+
 CREATE TRIGGER `delete_app` AFTER DELETE ON `sentc_customer` FOR EACH ROW DELETE FROM sentc_app WHERE owner_id = OLD.id AND owner_type = 0
-$$
-DELIMITER ;
+
+;
 
 -- --------------------------------------------------------
 
@@ -232,10 +232,10 @@ CREATE TABLE `sentc_customer_group` (
 --
 -- Trigger `sentc_customer_group`
 --
-DELIMITER $$
+
 CREATE TRIGGER `delete_customer_group_apps` AFTER DELETE ON `sentc_customer_group` FOR EACH ROW DELETE FROM sentc_app WHERE owner_id = OLD.sentc_group_id AND owner_type = 1
-$$
-DELIMITER ;
+
+;
 
 -- --------------------------------------------------------
 
@@ -261,14 +261,14 @@ CREATE TABLE `sentc_file` (
 --
 -- Trigger `sentc_file`
 --
-DELIMITER $$
+
 CREATE TRIGGER `file_delete_parts` AFTER DELETE ON `sentc_file` FOR EACH ROW DELETE FROM sentc_file_part WHERE file_id = OLD.id
-$$
-DELIMITER ;
-DELIMITER $$
+
+;
+
 CREATE TRIGGER `file_session_delete` AFTER DELETE ON `sentc_file` FOR EACH ROW DELETE FROM sentc_file_session WHERE file_id = OLD.id
-$$
-DELIMITER ;
+
+;
 
 -- --------------------------------------------------------
 
@@ -333,26 +333,26 @@ CREATE TABLE `sentc_group` (
 --
 -- Trigger `sentc_group`
 --
-DELIMITER $$
+
 CREATE TRIGGER `group_delete_hmac_keys` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_hmac_keys WHERE group_id = OLD.id
-$$
-DELIMITER ;
-DELIMITER $$
+
+;
+
 CREATE TRIGGER `group_delete_invites` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = OLD.id
-$$
-DELIMITER ;
-DELIMITER $$
+
+;
+
 CREATE TRIGGER `group_delete_keys` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_keys WHERE group_id = OLD.id
-$$
-DELIMITER ;
-DELIMITER $$
+
+;
+
 CREATE TRIGGER `group_delete_sortable_keys` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_sortable_keys WHERE group_id = OLD.id
-$$
-DELIMITER ;
-DELIMITER $$
+
+;
+
 CREATE TRIGGER `group_delete_user` AFTER DELETE ON `sentc_group` FOR EACH ROW DELETE FROM sentc_group_user WHERE group_id = OLD.id
-$$
-DELIMITER ;
+
+;
 
 -- --------------------------------------------------------
 
@@ -433,14 +433,14 @@ CREATE TABLE `sentc_group_user` (
 --
 -- Trigger `sentc_group_user`
 --
-DELIMITER $$
+
 CREATE TRIGGER `group_user_delete_key_rotation_keys` AFTER DELETE ON `sentc_group_user` FOR EACH ROW DELETE FROM sentc_group_user_key_rotation WHERE user_id = OLD.user_id AND group_id = OLD.group_id
-$$
-DELIMITER ;
-DELIMITER $$
+
+;
+
 CREATE TRIGGER `group_user_delete_user_keys` AFTER DELETE ON `sentc_group_user` FOR EACH ROW DELETE FROM sentc_group_user_keys WHERE user_id = OLD.user_id AND group_id = OLD.group_id
-$$
-DELIMITER ;
+
+;
 
 -- --------------------------------------------------------
 
@@ -534,14 +534,14 @@ CREATE TABLE `sentc_user` (
 --
 -- Trigger `sentc_user`
 --
-DELIMITER $$
+
 CREATE TRIGGER `user_delete_otp` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_otp_recovery WHERE user_id = OLD.id
-$$
-DELIMITER ;
-DELIMITER $$
+
+;
+
 CREATE TRIGGER `user_delete_user_device` AFTER DELETE ON `sentc_user` FOR EACH ROW DELETE FROM sentc_user_device WHERE user_id = OLD.id
-$$
-DELIMITER ;
+
+;
 
 -- --------------------------------------------------------
 
@@ -587,14 +587,14 @@ CREATE TABLE `sentc_user_device` (
 --
 -- Trigger `sentc_user_device`
 --
-DELIMITER $$
+
 CREATE TRIGGER `user_delete_challenge` AFTER DELETE ON `sentc_user_device` FOR EACH ROW DELETE FROM sentc_user_device_challenge WHERE device_id = OLD.id
-$$
-DELIMITER ;
-DELIMITER $$
+
+;
+
 CREATE TRIGGER `user_delete_jwt_refresh` AFTER DELETE ON `sentc_user_device` FOR EACH ROW DELETE FROM sentc_user_token WHERE device_id = OLD.id
-$$
-DELIMITER ;
+
+;
 
 -- --------------------------------------------------------
 
