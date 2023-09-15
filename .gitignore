@@ -1,5 +1,6 @@
 /target
 /target_sqlite
+/target_linux
 /dist
 .idea/
 storage/
