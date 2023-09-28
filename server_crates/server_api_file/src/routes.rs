@@ -47,14 +47,12 @@ pub(crate) fn routes(router: &mut Router)
 	router.post(
 		"/api/v1/file/part/:session_id/:seq/:end",
 		r(crate::file_controller::upload_part)
-			.add(server_api_common::middleware::jwt::jwt_transform)
+			.add(server_api_common::middleware::jwt::jwt_expire_transform)
 			.add(server_api_common::middleware::app_token::app_token_transform),
 	);
 	router.patch(
-		"/api/v1/file/part/:session_id/:seq/:end",
-		r(crate::file_controller::register_file_part)
-			.add(server_api_common::middleware::jwt::jwt_transform)
-			.add(server_api_common::middleware::app_token::app_token_transform),
+		"/api/v1/file/part/:session_id/:seq/:end/:user_id",
+		r(crate::file_controller::register_file_part).add(server_api_common::middleware::app_token::app_token_transform),
 	);
 	router.post(
 		"/api/v1/group/:group_id/file",

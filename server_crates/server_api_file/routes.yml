@@ -35,13 +35,11 @@ routes:
                     - delete: {p: "/:part_id", s: crate::file_controller::delete_registered_file_part}
                     - group:
                         p: "/:session_id/:seq/:end"
-                        mw:
-                          - server_api_common::middleware::jwt::jwt_transform
                         gr:
                           # Upload to our backend
-                          - post: {p: "", s: crate::file_controller::upload_part}
+                          - post: {p: "", s: crate::file_controller::upload_part, mw: [server_api_common::middleware::jwt::jwt_expire_transform]}
                           # upload to customer backend and register the part
-                          - patch: {p: "", s: crate::file_controller::register_file_part}
+                          - patch: {p: "/:user_id", s: crate::file_controller::register_file_part}
         #_______________________________________________________________________________________________________________
         # handle file in group
         - group:

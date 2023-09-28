@@ -93,10 +93,12 @@ pub async fn register_file_part(req: Request) -> JRes<FilePartRegisterOutput>
 		));
 	}
 
-	let user = get_jwt_data_from_param(&req)?;
+	//no jwt needed for force server req
+	let user_id = get_name_param_from_req(&req, "user_id")?;
+
 	let app_id = &app.app_data.app_id;
 
-	let (file_id, _chunk_size, sequence, end) = check_session(&req, app_id, &user.id).await?;
+	let (file_id, _chunk_size, sequence, end) = check_session(&req, app_id, user_id).await?;
 
 	let part_id = create_id();
 
