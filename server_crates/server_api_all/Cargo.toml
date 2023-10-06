@@ -19,27 +19,6 @@ rustgram = {workspace = true}
 tokio = {workspace = true}
 hyper = {workspace = true}
 
-[dev-dependencies]
-
-sentc-crypto = {workspace=true, features=["server_test"]}
-sentc-crypto-light = {workspace=true, features=["server_test"]}
-sentc-crypto-full  = {workspace=true}
-sentc-crypto-light-full.workspace=true
-
-sentc-crypto-common = {path = "../../sdk-common" }
-server_dashboard_common = {path = "../server_dashboard_common", default-features = false, features = ["server"]}
-
-reqwest.workspace=true
-
-serde_json = {workspace = true}
-serde = {workspace = true}
-
-totp-rs.workspace=true
-
-rand.workspace=true
-
-dotenv.workspace=true
-
 [features]
 default = ["mysql"]
 mysql = ["rustgram-server-util/mysql"]
