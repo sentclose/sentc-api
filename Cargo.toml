@@ -11,6 +11,7 @@ members = [
     "server_crates/bin/server_dev_bin/server_api_route_builder",
     #"server_crates/bin/server_dev_bin/server_api_init",
     #"server_crates/bin/server_dev_bin/dummy_server",
+    "server_crates/server_api_integration_tests",
 
     # lib
     "sdk-common",
@@ -38,7 +39,7 @@ dotenv = "0.15.0"
 # for caching trait
 async-trait = "0.1.56"
 
-rustgram-server-util = {git= "https://gitlab.com/grammm/rustgram/rustgram-server-util.git", rev = "3bbbda45ffd669a809f6de6920b9fc214d83b6e0", default-features = false, features = ["derive_macro", "static_var"]}
+rustgram-server-util = {git= "https://gitlab.com/grammm/rustgram/rustgram-server-util.git", rev = "a1ccc9bb89d94d96b9454c1620d208339130da72", default-features = false, features = ["derive_macro", "static_var"]}
 
 #_______________________________________________________________________________________________________________________
 
