@@ -6,13 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-server_api = {path = "../server_api", default-features = false}
-server_api_common = {path = "../server_api_common", default-features = false}
-server_api_file = {path = "../server_api_file", default-features = false}
-
-rustgram-server-util = {workspace = true}
-tokio = {workspace = true}
-hyper = {workspace = true}
 
 [dev-dependencies]
 
@@ -20,6 +13,15 @@ sentc-crypto = {workspace=true, features=["server_test"]}
 sentc-crypto-light = {workspace=true, features=["server_test"]}
 sentc-crypto-full  = {workspace=true}
 sentc-crypto-light-full.workspace=true
+
+server_api = {path = "../server_api", default-features = false}
+server_api_common = {path = "../server_api_common", default-features = false}
+server_api_file = {path = "../server_api_file", default-features = false}
+
+rustgram-server-util = {workspace = true}
+
+tokio = {workspace = true}
+hyper = {workspace = true}
 
 sentc-crypto-common = {path = "../../sdk-common" }
 server_dashboard_common = {path = "../server_dashboard_common", default-features = false, features = ["server"]}
