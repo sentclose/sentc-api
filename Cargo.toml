@@ -43,16 +43,16 @@ rustgram-server-util = {git= "https://gitlab.com/grammm/rustgram/rustgram-server
 
 #_______________________________________________________________________________________________________________________
 
-sentc-crypto = {git = "https://github.com/sentclose/sentc.git", rev="ad3a44c59bae5867c5a2a95a7f066890673904ca", default-features = false, features = ["rust", "server"]}
+sentc-crypto = {git = "https://github.com/sentclose/sentc.git", rev="02c9cabc018a8c8d624da6e4805e766f09815bb0", default-features = false, features = ["rust", "server"]}
 #sentc-crypto = {path = "../../sdk/crypto", default-features = false, features = ["rust", "server"]} # for local dev
 
-sentc-crypto-full = {git = "https://github.com/sentclose/sentc.git", rev="ad3a44c59bae5867c5a2a95a7f066890673904ca", default-features = false, features = ["rust", "rustls"]}
+sentc-crypto-full = {git = "https://github.com/sentclose/sentc.git", rev="02c9cabc018a8c8d624da6e4805e766f09815bb0", default-features = false, features = ["rust", "rustls"]}
 #sentc-crypto-full = {path = "../../sdk/crypto_full", default-features = false, features = ["rust", "rustls"]} # for local dev
 
-sentc-crypto-light = {git = "https://github.com/sentclose/sentc.git", rev="ad3a44c59bae5867c5a2a95a7f066890673904ca", default-features = false, features = ["rust"]}
+sentc-crypto-light = {git = "https://github.com/sentclose/sentc.git", rev="02c9cabc018a8c8d624da6e4805e766f09815bb0", default-features = false, features = ["rust"]}
 #sentc-crypto-light = {path = "../../sdk/crypto_light", default-features = false, features = ["rust"]} # for local dev
 
-sentc-crypto-light-full = {git = "https://github.com/sentclose/sentc.git", rev="ad3a44c59bae5867c5a2a95a7f066890673904ca", default-features = false, features = ["rust", "rustls"]}
+sentc-crypto-light-full = {git = "https://github.com/sentclose/sentc.git", rev="02c9cabc018a8c8d624da6e4805e766f09815bb0", default-features = false, features = ["rust", "rustls"]}
 #sentc-crypto-light-full = {path = "../../sdk/crypto_light_full", default-features = false, features = ["rust", "rustls"]} # for local dev
 
 #_______________________________________________________________________________________________________________________
