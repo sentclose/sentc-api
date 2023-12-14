@@ -84,6 +84,50 @@ pub(crate) fn routes(router: &mut Router)
 		"/api/v1/user/forced/login_light",
 		r(crate::user::verify_login_light_forced).add(server_api_common::middleware::app_token::app_token_transform),
 	);
+	router.delete(
+		"/api/v1/group/forced",
+		r(crate::group::delete_forced).add(server_api_common::middleware::app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/group/forced/:user_id",
+		r(crate::group::create_force)
+			.add(server_api_common::middleware::user_check_force::user_check_force_transform)
+			.add(server_api_common::middleware::app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/group/forced/:user_id/light",
+		r(crate::group::create_light_force)
+			.add(server_api_common::middleware::user_check_force::user_check_force_transform)
+			.add(server_api_common::middleware::app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/group/forced/:user_id/:group_id/child",
+		r(crate::group::create_child_group_force)
+			.add(server_api_common::middleware::group::group_force_transform)
+			.add(server_api_common::middleware::user_check_force::user_check_force_transform)
+			.add(server_api_common::middleware::app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/group/forced/:user_id/:group_id/child/light",
+		r(crate::group::create_child_group_light_force)
+			.add(server_api_common::middleware::group::group_force_transform)
+			.add(server_api_common::middleware::user_check_force::user_check_force_transform)
+			.add(server_api_common::middleware::app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/group/forced/:user_id/:group_id/connected",
+		r(crate::group::create_connected_group_from_group_force)
+			.add(server_api_common::middleware::group::group_force_transform)
+			.add(server_api_common::middleware::user_check_force::user_check_force_transform)
+			.add(server_api_common::middleware::app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/group/forced/:user_id/:group_id/connected/light",
+		r(crate::group::create_connected_group_from_group_light_force)
+			.add(server_api_common::middleware::group::group_force_transform)
+			.add(server_api_common::middleware::user_check_force::user_check_force_transform)
+			.add(server_api_common::middleware::app_token::app_token_transform),
+	);
 	router.put(
 		"/api/v1/refresh",
 		r(crate::user::refresh_jwt)

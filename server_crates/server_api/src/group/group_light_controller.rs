@@ -95,6 +95,75 @@ async fn create_group_light(
 }
 
 //__________________________________________________________________________________________________
+
+pub fn create_light_force(req: Request) -> impl Future<Output = JRes<GroupCreateOutput>>
+{
+	create_group_force_light(req, None, None, None, false)
+}
+
+pub async fn create_child_group_light_force(req: Request) -> JRes<GroupCreateOutput>
+{
+	//this is called in the group mw from the parent group id
+	let group_data = get_group_user_data_from_req(&req)?;
+	let parent_group_id = Some(group_data.group_data.id.to_string());
+	let user_rank = Some(group_data.user_data.rank);
+
+	//a connected group can also got children but these children will be a connected group too
+	let is_connected_group = group_data.group_data.is_connected_group;
+
+	create_group_force_light(req, parent_group_id, user_rank, None, is_connected_group).await
+}
+
+pub async fn create_connected_group_from_group_light_force(req: Request) -> JRes<GroupCreateOutput>
+{
+	//the same as parent group, but this time with the group as member, not as parent
+	let group_data = get_group_user_data_from_req(&req)?;
+	let connected_group_id = Some(group_data.group_data.id.to_string());
+	let user_rank = Some(group_data.user_data.rank);
+
+	if group_data.group_data.is_connected_group {
+		return Err(ServerCoreError::new_msg(
+			400,
+			ApiErrorCodes::GroupConnectedFromConnected,
+			"Can't create a connected group from a connected group",
+		));
+	}
+
+	create_group_force_light(req, None, user_rank, connected_group_id, true).await
+}
+
+async fn create_group_force_light(
+	req: Request,
+	parent_group_id: Option<GroupId>,
+	user_rank: Option<i32>,
+	connected_group: Option<GroupId>,
+	is_connected_group: bool,
+) -> JRes<GroupCreateOutput>
+{
+	let app = get_app_data_from_req(&req)?;
+
+	check_endpoint_with_app_options(app, Endpoint::ForceServer)?;
+
+	//user id not from jwt but from url param
+	let user_id = get_name_param_from_req(&req, "user_id")?;
+
+	let group_id = group_service::create_group_light(
+		&app.app_data.app_id,
+		user_id,
+		GROUP_TYPE_NORMAL,
+		parent_group_id,
+		user_rank,
+		connected_group,
+		is_connected_group,
+	)
+	.await?;
+
+	echo(GroupCreateOutput {
+		group_id,
+	})
+}
+
+//__________________________________________________________________________________________________
 //user light
 //no re invite here because this is only used when the keys are broken and light got no keys
 //no normal join req. no keys are involved for the req, just for the accept
