@@ -39,5 +39,5 @@ dotenv.workspace=true
 
 [features]
 default = ["mysql"]
-mysql = ["rustgram-server-util/mysql"]
-sqlite = ["rustgram-server-util/sqlite"]
+mysql = ["rustgram-server-util/mysql", "server_api/mysql", "server_api_common/mysql", "server_api_file/mysql"]
+sqlite = ["rustgram-server-util/sqlite", "server_api/sqlite", "server_api_common/sqlite", "server_api_file/sqlite"]

@@ -35,6 +35,28 @@ routes:
 
                     - post: { p: "/login", s: crate::user::verify_login_forced }
                     - post: { p: "/login_light", s: crate::user::verify_login_light_forced }
+
+              - group:
+                  p: "/group/forced"
+                  gr:
+                    - delete: {p: "", s: crate::group::delete_forced}
+                    - group:
+                        p: "/:user_id"
+                        mw:
+                          - server_api_common::middleware::user_check_force::user_check_force_transform
+                        gr:
+                          - post: { p: "", s: crate::group::create_force }
+                          - post: { p: "/light", s: crate::group::create_light_force }
+
+                          - group:
+                              p: "/:group_id"
+                              mw:
+                                - server_api_common::middleware::group::group_force_transform
+                              gr:
+                                - post: { p: "/child", s: crate::group::create_child_group_force }
+                                - post: { p: "/child/light", s: crate::group::create_child_group_light_force }
+                                - post: { p: "/connected", s: crate::group::create_connected_group_from_group_force }
+                                - post: { p: "/connected/light", s: crate::group::create_connected_group_from_group_light_force }
               #_________________________________________________________________________________________________________
               # group with exp jwt mw -> the jwt can be exp for this routes
               - group:

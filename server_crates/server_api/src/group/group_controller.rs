@@ -8,7 +8,7 @@ use rustgram_server_util::url_helper::{get_name_param_from_params, get_name_para
 use sentc_crypto_common::group::{CreateData, GroupCreateOutput, GroupDataCheckUpdateServerOutput};
 use sentc_crypto_common::GroupId;
 use server_api_common::customer_app::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
-use server_api_common::group::{get_group_user_data_from_req, GROUP_TYPE_NORMAL};
+use server_api_common::group::{get_group_user_data_from_req, get_internal_group_data, GROUP_TYPE_NORMAL};
 use server_api_common::user::get_jwt_data_from_param;
 
 use crate::group::group_entities::{GroupChildrenList, GroupServerData, GroupUserKeys, ListGroups};
@@ -108,6 +108,86 @@ async fn create_group(
 	echo(out)
 }
 
+//__________________________________________________________________________________________________
+//force create
+
+pub fn create_force(req: Request) -> impl Future<Output = JRes<GroupCreateOutput>>
+{
+	create_group_force(req, None, None, None, false)
+}
+
+pub async fn create_child_group_force(req: Request) -> JRes<GroupCreateOutput>
+{
+	//this is called in the group mw from the parent group id
+	let group_data = get_group_user_data_from_req(&req)?;
+	let parent_group_id = Some(group_data.group_data.id.to_string());
+	let user_rank = Some(group_data.user_data.rank);
+
+	//a connected group can also got children but these children will be a connected group too
+	let is_connected_group = group_data.group_data.is_connected_group;
+
+	create_group_force(req, parent_group_id, user_rank, None, is_connected_group).await
+}
+
+pub async fn create_connected_group_from_group_force(req: Request) -> JRes<GroupCreateOutput>
+{
+	//the same as parent group, but this time with the group as member, not as parent
+	let group_data = get_group_user_data_from_req(&req)?;
+	let connected_group_id = Some(group_data.group_data.id.to_string());
+	let user_rank = Some(group_data.user_data.rank);
+
+	if group_data.group_data.is_connected_group {
+		return Err(ServerCoreError::new_msg(
+			400,
+			ApiErrorCodes::GroupConnectedFromConnected,
+			"Can't create a connected group from a connected group",
+		));
+	}
+
+	create_group_force(req, None, user_rank, connected_group_id, true).await
+}
+
+async fn create_group_force(
+	mut req: Request,
+	parent_group_id: Option<GroupId>,
+	user_rank: Option<i32>,
+	connected_group: Option<GroupId>,
+	is_connected_group: bool,
+) -> JRes<GroupCreateOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+
+	let app = get_app_data_from_req(&req)?;
+
+	check_endpoint_with_app_options(app, Endpoint::ForceServer)?;
+
+	//user id not from jwt but from url param
+	let user_id = get_name_param_from_req(&req, "user_id")?;
+
+	let input: CreateData = bytes_to_json(&body)?;
+
+	let group_id = group_service::create_group(
+		&app.app_data.app_id,
+		user_id,
+		input,
+		GROUP_TYPE_NORMAL,
+		parent_group_id,
+		user_rank,
+		connected_group,
+		is_connected_group,
+	)
+	.await?
+	.0;
+
+	let out = GroupCreateOutput {
+		group_id,
+	};
+
+	echo(out)
+}
+
+//__________________________________________________________________________________________________
+
 pub async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 {
 	check_endpoint_with_req(&req, Endpoint::GroupDelete)?;
@@ -120,6 +200,21 @@ pub async fn delete(req: Request) -> JRes<ServerSuccessOutput>
 		group_data.user_data.rank,
 	)
 	.await?;
+
+	echo_success()
+}
+
+pub async fn delete_forced(req: Request) -> JRes<ServerSuccessOutput>
+{
+	check_endpoint_with_req(&req, Endpoint::ForceServer)?;
+
+	let app_data = get_app_data_from_req(&req)?;
+
+	let group_id = get_name_param_from_req(&req, "group_id")?;
+
+	get_internal_group_data(&app_data.app_data.app_id, group_id).await?;
+
+	group_service::delete_group(&app_data.app_data.app_id, group_id, 0).await?;
 
 	echo_success()
 }

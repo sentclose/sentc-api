@@ -92,6 +92,84 @@ pub fn group_app_transform<S>(inner: S) -> GroupCustomerMiddleware<S>
 
 //__________________________________________________________________________________________________
 
+pub struct GroupForceMiddleware<S>
+{
+	inner: Arc<S>,
+}
+
+impl<S> Service<Request> for GroupForceMiddleware<S>
+where
+	S: Service<Request, Output = Response>,
+{
+	type Output = S::Output;
+	type Future = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
+
+	fn call(&self, mut req: Request) -> Self::Future
+	{
+		let next = self.inner.clone();
+
+		Box::pin(async move {
+			match get_group_from_req_without_jwt(&mut req, None).await {
+				Ok(_) => {},
+				Err(e) => return e.into_response(),
+			}
+
+			next.call(req).await
+		})
+	}
+}
+
+pub fn group_force_transform<S>(inner: S) -> GroupForceMiddleware<S>
+{
+	GroupForceMiddleware {
+		inner: Arc::new(inner),
+	}
+}
+
+//__________________________________________________________________________________________________
+
+async fn get_group_from_req_without_jwt(req: &mut Request, app_id: Option<&str>) -> AppRes<()>
+{
+	let app_id = match app_id {
+		Some(a) => a,
+		None => {
+			let app = get_app_data_from_req(req)?;
+
+			&app.app_data.app_id
+		},
+	};
+
+	//user id not from jwt but from url param
+	let user_id = get_name_param_from_req(req, "user_id")?;
+
+	let group_id = get_name_param_from_req(req, "group_id")?;
+
+	check_id_format(group_id)?;
+
+	//when access a group as group member not normal member
+	let headers = req.headers();
+	let group_as_member_id = match headers.get("x-sentc-group-access-id") {
+		Some(v) => {
+			let v = match std::str::from_utf8(v.as_bytes()) {
+				Ok(v) => {
+					check_id_format(v)?;
+					Some(v)
+				},
+				Err(_e) => None,
+			};
+
+			v
+		},
+		None => None,
+	};
+
+	let group_data = get_group(app_id, group_id, user_id, group_as_member_id).await?;
+
+	req.extensions_mut().insert(group_data);
+
+	Ok(())
+}
+
 async fn get_group_from_req(req: &mut Request, app_id: Option<&str>) -> AppRes<()>
 {
 	let app_id = match app_id {
