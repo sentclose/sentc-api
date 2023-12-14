@@ -3,9 +3,9 @@ use std::future::Future;
 use rustgram::Request;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
-use sentc_crypto_common::{GroupId, UserId};
+use sentc_crypto_common::{AppId, GroupId, UserId};
 
-use crate::group::group_entities::{InternalGroupDataComplete, InternalUserGroupData, InternalUserGroupDataFromParent};
+use crate::group::group_entities::{InternalGroupData, InternalGroupDataComplete, InternalUserGroupData, InternalUserGroupDataFromParent};
 use crate::ApiErrorCodes;
 
 pub mod group_entities;
@@ -42,4 +42,12 @@ pub fn get_internal_group_user_data<'a>(
 ) -> impl Future<Output = AppRes<Option<InternalUserGroupData>>> + 'a
 {
 	group_model::get_internal_group_user_data(group_id, user_id)
+}
+
+pub fn get_internal_group_data<'a>(
+	app_id: impl Into<AppId> + 'a,
+	group_id: impl Into<GroupId> + 'a,
+) -> impl Future<Output = AppRes<InternalGroupData>> + 'a
+{
+	group_model::get_internal_group_data(app_id, group_id)
 }
