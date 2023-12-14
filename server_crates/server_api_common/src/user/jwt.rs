@@ -243,7 +243,7 @@ async fn get_verify_key(key_id: &str) -> AppRes<String>
 	}
 }
 
-async fn get_user_in_app(app_id: impl Into<String>, user_id: impl Into<String>) -> AppRes<GroupId>
+pub async fn get_user_in_app(app_id: impl Into<String>, user_id: impl Into<String>) -> AppRes<GroupId>
 {
 	let app_id = app_id.into();
 	let user_id = user_id.into();
