@@ -39,7 +39,7 @@ routes:
               - group:
                   p: "/group/forced"
                   gr:
-                    - delete: {p: "", s: crate::group::delete_forced}
+                    - delete: {p: "/:group_id", s: crate::group::delete_forced}
                     - group:
                         p: "/:user_id"
                         mw:

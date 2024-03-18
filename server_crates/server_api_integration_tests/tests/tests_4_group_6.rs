@@ -3,7 +3,9 @@
 use reqwest::header::AUTHORIZATION;
 use sentc_crypto::entities::group::GroupKeyData;
 use sentc_crypto::entities::user::UserDataInt as UserDataIntFull;
-use sentc_crypto::util::public::handle_server_response;
+use sentc_crypto::sdk_utils::error::SdkUtilError;
+use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
+use sentc_crypto::SdkError;
 use sentc_crypto_common::group::{GroupCreateOutput, GroupLightServerData};
 use sentc_crypto_common::{GroupId, UserId};
 use sentc_crypto_light::UserDataInt as UserDataIntLight;
@@ -202,6 +204,89 @@ async fn test_10_create_group()
 			}
 		})
 		.await;
+}
+
+#[tokio::test]
+async fn test_10_delete_group()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+
+	let mut group = GROUP_TEST_STATE.get().unwrap().write().await;
+	let creator = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &creator[0];
+
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(get_url("api/v1/group/forced/".to_owned() + &group.group_id))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(&body).unwrap();
+
+	//fetch the group
+	let url = get_url("api/v1/group/".to_owned() + &group.group_id);
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(&creator.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	match sentc_crypto::group::get_group_data(body.as_str()) {
+		Err(SdkError::Util(SdkUtilError::ServerErr(s, _))) => {
+			assert_eq!(s, 310);
+		},
+		_ => {
+			panic!("Must be error")
+		},
+	}
+
+	//now create the group again for the other tests
+	let group_input = sentc_crypto::group::prepare_create(&creator.user_data.user_keys[0].public_key).unwrap();
+
+	let url = get_url("api/v1/group/forced/".to_owned() + &creator.user_id);
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", secret_token)
+		.body(group_input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let out_1: GroupCreateOutput = handle_server_response(&body).unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + &out_1.group_id);
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(&creator.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let data = sentc_crypto::group::get_group_data(body.as_str()).unwrap();
+
+	let mut decrypted_group_keys = Vec::with_capacity(data.keys.len());
+
+	for key in data.keys {
+		decrypted_group_keys.push(sentc_crypto::group::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, key).unwrap());
+	}
+
+	group.group_id = out_1.group_id;
+	group.decrypted_group_keys = decrypted_group_keys;
 }
 
 #[tokio::test]

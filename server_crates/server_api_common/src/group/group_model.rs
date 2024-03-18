@@ -12,18 +12,9 @@ pub(crate) async fn get_internal_group_data(app_id: impl Into<AppId>, group_id: 
 {
 	//language=SQL
 	let sql = "SELECT id as group_id, app_id, parent, time, invite, is_connected_group FROM sentc_group WHERE app_id = ? AND id = ? AND type = ?";
-	let group: Option<InternalGroupData> = query_first(sql, set_params!(app_id.into(), group_id.into(), GROUP_TYPE_NORMAL)).await?;
-
-	match group {
-		Some(d) => Ok(d),
-		None => {
-			Err(ServerCoreError::new_msg(
-				400,
-				ApiErrorCodes::GroupAccess,
-				"No access to this group",
-			))
-		},
-	}
+	query_first(sql, set_params!(app_id.into(), group_id.into(), GROUP_TYPE_NORMAL))
+		.await?
+		.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::GroupAccess, "No access to this group"))
 }
 
 pub(crate) async fn get_user_from_parent_groups(
@@ -64,16 +55,12 @@ SELECT group_id, time, `rank` FROM sentc_group_user WHERE user_id = ? AND group_
 ) LIMIT 1
 ";
 
-	let group_data: Option<InternalUserGroupDataFromParent> = query_first(sql, set_params!(user_id.into(), group_id.into())).await?;
-
-	Ok(group_data)
+	query_first(sql, set_params!(user_id.into(), group_id.into())).await
 }
 
 pub(crate) async fn get_internal_group_user_data(group_id: impl Into<GroupId>, user_id: impl Into<UserId>) -> AppRes<Option<InternalUserGroupData>>
 {
 	//language=SQL
 	let sql = "SELECT user_id, time, `rank` FROM sentc_group_user WHERE group_id = ? AND user_id = ?";
-	let group_data: Option<InternalUserGroupData> = query_first(sql, set_params!(group_id.into(), user_id.into())).await?;
-
-	Ok(group_data)
+	query_first(sql, set_params!(group_id.into(), user_id.into())).await
 }
