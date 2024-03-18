@@ -85,7 +85,7 @@ pub(crate) fn routes(router: &mut Router)
 		r(crate::user::verify_login_light_forced).add(server_api_common::middleware::app_token::app_token_transform),
 	);
 	router.delete(
-		"/api/v1/group/forced",
+		"/api/v1/group/forced/:group_id",
 		r(crate::group::delete_forced).add(server_api_common::middleware::app_token::app_token_transform),
 	);
 	router.post(
