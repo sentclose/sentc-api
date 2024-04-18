@@ -1040,9 +1040,9 @@ checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 
 [[package]]
 name = "h2"
-version = "0.3.21"
+version = "0.3.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91fc23aa11be92976ef4729127f1a74adf36d8436f7816b185d18df956790833"
+checksum = "81fe527a889e1532da5c525686d96d4c2e74cdd345badf8dfef9f6b39dd5f5e8"
 dependencies = [
  "bytes",
  "fnv",
@@ -1050,7 +1050,7 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "http",
- "indexmap 1.9.3",
+ "indexmap 2.0.2",
  "slab",
  "tokio",
  "tokio-util",
@@ -1462,9 +1462,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.148"
+version = "0.2.153"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9cdc71e17332e86d2e1d38c1f99edcb6288ee11b815fb1a4b049eaa2114d369b"
+checksum = "9c198f91728a82281a64e1f4f9eeb25d82cb32a5de251c6bd1b5154d63a8e7bd"
 
 [[package]]
 name = "libloading"
@@ -1599,9 +1599,9 @@ dependencies = [
 
 [[package]]
 name = "mio"
-version = "0.8.8"
+version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "927a765cd3fc26206e66b296465fa9d3e5ab003e651c1b3c060e7956d96b19d2"
+checksum = "a4a650543ca06a924e8b371db273b2756685faae30f8487da1b56505a8f78b0c"
 dependencies = [
  "libc",
  "log",
@@ -2331,8 +2331,8 @@ dependencies = [
 
 [[package]]
 name = "rustgram-server-util"
-version = "0.1.9"
-source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=a1ccc9bb89d94d96b9454c1620d208339130da72#a1ccc9bb89d94d96b9454c1620d208339130da72"
+version = "0.2.0"
+source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=a4f28192c05c136225bb174c1dc21138f0cbfd42#a4f28192c05c136225bb174c1dc21138f0cbfd42"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2356,10 +2356,10 @@ dependencies = [
 [[package]]
 name = "rustgram-server-util-macros"
 version = "0.1.8"
-source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=a1ccc9bb89d94d96b9454c1620d208339130da72#a1ccc9bb89d94d96b9454c1620d208339130da72"
+source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=a4f28192c05c136225bb174c1dc21138f0cbfd42#a4f28192c05c136225bb174c1dc21138f0cbfd42"
 dependencies = [
  "quote",
- "syn 2.0.38",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -2840,9 +2840,9 @@ dependencies = [
 
 [[package]]
 name = "shlex"
-version = "1.2.0"
+version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7cee0529a6d40f580e7a5e6c495c8fbfe21b7b52795ed4bb5e62cdf92bc6380"
+checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "signal-hook-registry"
