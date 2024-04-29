@@ -630,8 +630,12 @@ pub(super) async fn save_user_action(app_id: impl Into<AppId>, user_id: impl Int
 {
 	let time = get_time()?;
 
+	#[cfg(feature = "mysql")]
 	//language=SQL
-	let sql = "INSERT INTO sentc_user_action_log (user_id, time, action_id, app_id, amount) VALUES (?,?,?,?,?)";
+	let sql = "INSERT IGNORE INTO sentc_user_action_log (user_id, time, action_id, app_id, amount) VALUES (?,?,?,?,?)";
+
+	#[cfg(feature = "sqlite")]
+	let sql = "INSERT OR IGNORE INTO sentc_user_action_log (user_id, time, action_id, app_id, amount) VALUES (?,?,?,?,?)";
 
 	exec(
 		sql,
