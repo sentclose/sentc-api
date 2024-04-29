@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
@@ -1059,6 +1060,8 @@ async fn test_21_key_rotation_with_multiple_keys()
 		None,
 	)
 	.await;
+
+	tokio::time::sleep(Duration::from_millis(200)).await;
 
 	let url = get_url("api/v1/group/".to_owned() + group_to_connect.group_id.as_str() + "/key_rotation");
 	let client = reqwest::Client::new();

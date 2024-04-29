@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use rustgram_server_util::error::{CoreErrorCodes, ServerErrorCodes};
@@ -1248,6 +1250,8 @@ async fn test_26_user_group_key_rotation()
 async fn test_27_done_key_rotation_for_other_device()
 {
 	//fetch user group key and done it for 2nd device
+
+	tokio::time::sleep(Duration::from_millis(200)).await;
 
 	let user = USER_TEST_STATE.get().unwrap().read().await;
 	let jwt = &user.user_data_1.as_ref().unwrap().jwt; //use the jwt from the main device
