@@ -2332,7 +2332,7 @@ dependencies = [
 [[package]]
 name = "rustgram-server-util"
 version = "0.2.0"
-source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=a4f28192c05c136225bb174c1dc21138f0cbfd42#a4f28192c05c136225bb174c1dc21138f0cbfd42"
+source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=c670247b2cf8e73b07eb63c9ce6255cdbef2f3c0#c670247b2cf8e73b07eb63c9ce6255cdbef2f3c0"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2356,7 +2356,7 @@ dependencies = [
 [[package]]
 name = "rustgram-server-util-macros"
 version = "0.1.8"
-source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=a4f28192c05c136225bb174c1dc21138f0cbfd42#a4f28192c05c136225bb174c1dc21138f0cbfd42"
+source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=c670247b2cf8e73b07eb63c9ce6255cdbef2f3c0#c670247b2cf8e73b07eb63c9ce6255cdbef2f3c0"
 dependencies = [
  "quote",
  "syn 1.0.109",

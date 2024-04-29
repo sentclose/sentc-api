@@ -39,7 +39,7 @@ dotenv = "0.15.0"
 # for caching trait
 async-trait = "0.1.56"
 
-rustgram-server-util = {git= "https://gitlab.com/grammm/rustgram/rustgram-server-util.git", rev = "a4f28192c05c136225bb174c1dc21138f0cbfd42", default-features = false, features = ["derive_macro", "static_var"]}
+rustgram-server-util = {git= "https://gitlab.com/grammm/rustgram/rustgram-server-util.git", rev = "c670247b2cf8e73b07eb63c9ce6255cdbef2f3c0", default-features = false, features = ["derive_macro", "static_var"]}
 
 #_______________________________________________________________________________________________________________________
 
