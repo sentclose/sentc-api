@@ -143,7 +143,7 @@ pub async fn register(app_id: impl Into<AppId>, register_input: RegisterData) ->
 	//update creator public key id in group data (with the device id), this is needed to know what public key was used to encrypt the group key
 	group_data.creator_public_key_id = device_id.to_string();
 
-	//create user group, insert the device not the suer id because the devices are in the group not the user!
+	//create user group, insert the device not the user id because the devices are in the group not the user!
 	let group_id = group_service::create_group(
 		&app_id,
 		&device_id,
@@ -158,7 +158,7 @@ pub async fn register(app_id: impl Into<AppId>, register_input: RegisterData) ->
 	.0;
 
 	//delete the user in app check cache from the jwt mw
-	//it can happened that a user id was used before which doesn't exist yet
+	//it can happen that a user id was used before which doesn't exist yet
 	let cache_key = get_user_in_app_key(&app_id, &user_id);
 	cache::delete(&cache_key).await?;
 
