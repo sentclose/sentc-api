@@ -39,6 +39,7 @@ use server_api_common::user::get_jwt_data_from_param;
 use server_api_common::user::user_entity::UserJwtEntity;
 use server_api_common::util::hash_token_to_string;
 
+use crate::check_user_group_keys_set;
 use crate::group::group_entities::{GroupKeyUpdate, GroupUserKeys};
 use crate::group::{group_key_rotation_service, group_user_service};
 use crate::sentc_user_entities::{DoneLoginServerOutput, DoneLoginServerReturn, LoginForcedOutput, VerifyLoginOutput};
@@ -214,7 +215,7 @@ pub(crate) async fn validate_recovery_otp(mut req: Request) -> JRes<DoneLoginSer
 
 pub(crate) async fn verify_login(mut req: Request) -> JRes<VerifyLoginOutput>
 {
-	//return here the jwt and the refresh token when he challenge was correct.
+	//return here the jwt and the refresh token when the challenge was correct.
 
 	let body = get_raw_body(&mut req).await?;
 	let done_login: VerifyLoginInput = bytes_to_json(&body)?;
@@ -512,13 +513,12 @@ pub(crate) async fn user_group_key_rotation(mut req: Request) -> JRes<KeyRotatio
 
 	let input: KeyRotationData = bytes_to_json(&body)?;
 
-	if input.public_key_sig.is_none() || input.verify_key.is_none() || input.encrypted_sign_key.is_none() || input.keypair_sign_alg.is_none() {
-		return Err(ServerCoreError::new_msg(
-			400,
-			ApiErrorCodes::UserKeysNotFound,
-			"User keys not found. Make sure to create the user group.",
-		));
-	}
+	check_user_group_keys_set!(
+		input.encrypted_sign_key,
+		input.verify_key,
+		input.public_key_sig,
+		input.keypair_sign_alg
+	);
 
 	let out = group_key_rotation_service::start_key_rotation(
 		&app_data.app_data.app_id,

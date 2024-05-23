@@ -39,6 +39,19 @@ use crate::user::user_entities::{UserDeviceList, UserInitEntity};
 use crate::user::{otp, user_model};
 use crate::util::api_res::ApiErrorCodes;
 
+#[macro_export]
+macro_rules! check_user_group_keys_set {
+	($encrypted_sign_key:expr, $verify_key:expr, $public_key_sig:expr, $keypair_sign_alg:expr) => {
+		if $public_key_sig.is_none() || $verify_key.is_none() || $encrypted_sign_key.is_none() || $keypair_sign_alg.is_none() {
+			return Err(ServerCoreError::new_msg(
+				400,
+				ApiErrorCodes::UserKeysNotFound,
+				"User keys not found. Make sure to create the user group.",
+			));
+		}
+	};
+}
+
 pub enum UserAction
 {
 	Login,
@@ -110,17 +123,12 @@ pub async fn register(app_id: impl Into<AppId>, register_input: RegisterData) ->
 {
 	let mut group_data = register_input.group;
 
-	if group_data.public_key_sig.is_none() ||
-		group_data.verify_key.is_none() ||
-		group_data.encrypted_sign_key.is_none() ||
-		group_data.keypair_sign_alg.is_none()
-	{
-		return Err(ServerCoreError::new_msg(
-			400,
-			ApiErrorCodes::UserKeysNotFound,
-			"User keys not found. Make sure to create the user group.",
-		));
-	}
+	check_user_group_keys_set!(
+		group_data.encrypted_sign_key,
+		group_data.verify_key,
+		group_data.public_key_sig,
+		group_data.keypair_sign_alg
+	);
 
 	let device_data = register_input.device;
 
@@ -150,7 +158,7 @@ pub async fn register(app_id: impl Into<AppId>, register_input: RegisterData) ->
 	.0;
 
 	//delete the user in app check cache from the jwt mw
-	//it can happened that a user id was used before which doesn't exists yet
+	//it can happened that a user id was used before which doesn't exist yet
 	let cache_key = get_user_in_app_key(&app_id, &user_id);
 	cache::delete(&cache_key).await?;
 
@@ -531,7 +539,7 @@ pub fn reset_password<'a>(
 	input: ResetPasswordData,
 ) -> impl Future<Output = AppRes<()>> + 'a
 {
-	//no fresh jwt here because the user can't login and get a fresh jwt without the password
+	//no fresh jwt here because the user can't log in and get a fresh jwt without the password
 	//but still needs a valid jwt. jwt refresh is possible without a password!
 
 	user_model::reset_password(user_id, device_id, input)
