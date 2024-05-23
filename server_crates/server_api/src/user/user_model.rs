@@ -185,8 +185,8 @@ WHERE
 /**
 # Update the group user id
 
-For register we don't know the group id of the user group.
-The service must create a group first and then we can update the group id
+For register, we don't know the group id of the user group.
+The service must create a group first, and then we can update the group id
 */
 pub(super) async fn register_update_user_group_id(app_id: impl Into<AppId>, user_id: impl Into<UserId>, group_id: GroupId) -> AppRes<()>
 {
@@ -446,18 +446,9 @@ pub(super) async fn reset_password(user_id: impl Into<UserId>, device_id: impl I
 	//language=SQL
 	let sql = "SELECT app_id FROM sentc_user_device WHERE id = ? ORDER BY time DESC LIMIT 1";
 
-	let row: Option<StringEntity> = query_first(sql, set_params!(device_id.clone())).await?;
-
-	let row = match row {
-		Some(r) => r,
-		None => {
-			return Err(ServerCoreError::new_msg(
-				400,
-				ApiErrorCodes::UserNotFound,
-				"No keys to update",
-			))
-		},
-	};
+	let row: StringEntity = query_first(sql, set_params!(device_id.clone()))
+		.await?
+		.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::UserNotFound, "No keys to update"))?;
 
 	//language=SQL
 	let sql = r"
@@ -738,7 +729,7 @@ pub(super) async fn get_login_data_for_forced_action(
 	user_identifier: impl Into<String>,
 ) -> AppRes<Option<VerifyLoginEntity>>
 {
-	//get info about the user from the user name
+	//get info about the user from the username
 
 	//language=SQL
 	let sql = r"
