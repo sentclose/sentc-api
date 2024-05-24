@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cp target_sqlite/release/file_worker ./file_worker && \
     cp target_sqlite/release/sentc_api_init ./sentc_api_init
 
-FROM debian:bullseye-slim
+FROM debian:stable-slim
 
 ENV SERVER_PORT=3002
 ENV SERVER_HOST=0.0.0.0

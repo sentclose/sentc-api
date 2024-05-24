@@ -9,7 +9,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     # Copy executable out of the cache so it is available in the final image.
     cp target/release/sentc_api_key_gen ./sentc_api_key_gen
 
-FROM debian:bullseye-slim
+FROM debian:stable-slim
 
 COPY --from=builder /app/sentc_api_key_gen /
 
