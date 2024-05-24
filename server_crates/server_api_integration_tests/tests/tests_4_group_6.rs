@@ -14,6 +14,7 @@ use server_dashboard_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{
+	add_user_by_invite,
 	auth_header,
 	create_app,
 	create_test_customer,
@@ -25,6 +26,7 @@ use crate::test_fn::{
 	get_group,
 	get_group_from_group_as_member,
 	get_url,
+	login_user,
 };
 
 mod test_fn;
@@ -94,7 +96,7 @@ async fn aaa_init_global_test()
 	let secret_token_str = secret_token.as_str();
 	let public_token_str = public_token.as_str();
 
-	for i in 0..1 {
+	for i in 0..2 {
 		let username = "hi".to_string() + i.to_string().as_str();
 
 		let (user_id, key_data) = create_test_user(secret_token_str, public_token_str, username.as_str(), user_pw).await;
@@ -489,6 +491,118 @@ async fn test_16_create_connected_group_light()
 }
 
 //__________________________________________________________________________________________________
+//user reset test here to test what will happen if the user is in a group
+#[tokio::test]
+async fn test_user_force_reset()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+	let user = &users[1];
+
+	//1. invite the 2nd user to a group
+	add_user_by_invite(
+		secret_token,
+		&creator.user_data.jwt,
+		&group.group_id,
+		&group.decrypted_group_keys,
+		&user.user_id,
+		&user.user_data.jwt,
+		&user
+			.user_data
+			.user_keys
+			.first()
+			.unwrap()
+			.exported_public_key,
+		&user.user_data.user_keys.first().unwrap().private_key,
+	)
+	.await;
+
+	//2. reset the 2nd user
+	let input = sentc_crypto::user::register(&user.username, "123456789").unwrap();
+
+	let url = get_url("api/v1/user/forced/reset_user".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header("x-sentc-app-token", secret_token)
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(&body).unwrap();
+
+	//3. test login with new user pw
+
+	//not login with old pw
+	let err = sentc_crypto_full::user::login(get_base_url(), secret_token, &user.username, &user.pw).await;
+
+	if let Err(SdkError::Util(SdkUtilError::ServerErr(e, _))) = err {
+		assert_eq!(e, 112);
+	} else {
+		panic!("Should be an error");
+	}
+
+	let out = login_user(secret_token, &user.username, "123456789").await;
+
+	//must be the same user id
+	assert_eq!(out.user_id, user.user_id);
+
+	//4. test group fetch (should be error)
+
+	let data = sentc_crypto_full::group::get_group(get_base_url(), secret_token, &out.jwt, &group.group_id, None)
+		.await
+		.unwrap();
+
+	//now decrypting keys should fail because the user has got new keys
+
+	for key in data.keys {
+		let error = sentc_crypto::group::decrypt_group_keys(&out.user_keys.first().unwrap().private_key, key);
+
+		if let Err(_e) = error {
+		} else {
+			panic!("Must be decryption error");
+		}
+	}
+
+	//5. re invite user to group
+	let join_res = sentc_crypto_full::group::invite_user(
+		get_base_url(),
+		secret_token,
+		&creator.user_data.jwt,
+		&group.group_id,
+		&out.user_id,
+		1,
+		None,
+		1,
+		false,
+		false,
+		true,
+		&out.user_keys.first().unwrap().exported_public_key,
+		&[&group.decrypted_group_keys.first().unwrap().group_key],
+		None,
+	)
+	.await
+	.unwrap();
+
+	assert_eq!(join_res, None);
+
+	//6. now fetch group as normal
+	get_group(
+		secret_token,
+		&out.jwt,
+		&group.group_id,
+		&out.user_keys.first().unwrap().private_key,
+		false,
+	)
+	.await;
+}
+//__________________________________________________________________________________________________
 
 #[tokio::test]
 async fn zzz_clean_up()
@@ -498,12 +612,6 @@ async fn zzz_clean_up()
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
-
-	for user in users.iter() {
-		delete_user(secret_token, user.username.clone()).await;
-	}
-
-	let users = USERS_TEST_STATE_LIGHT.get().unwrap().read().await;
 
 	for user in users.iter() {
 		delete_user(secret_token, user.username.clone()).await;

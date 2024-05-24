@@ -257,6 +257,42 @@ pub(super) async fn register(
 	Ok((user_id, device_id))
 }
 
+pub(super) async fn reset_user(
+	app_id: impl Into<AppId>,
+	user_id: impl Into<UserId>,
+	device_identifier: String,
+	master_key: MasterKey,
+	derived: KeyDerivedData,
+) -> AppRes<DeviceId>
+{
+	let app_id = app_id.into();
+	let user_id = user_id.into();
+
+	//first delete all devices from the user. the user group keys will be changed.
+	// the old are not valid anymore which means that old devices can't access the new keys either
+	//language=SQL
+	let sql = "DELETE FROM sentc_user_device WHERE user_id = ? AND app_id = ?";
+
+	exec(sql, set_params!(user_id.clone(), app_id.clone())).await?;
+
+	let device_id = create_id();
+	let time = get_time()?;
+	let (sql_keys, key_params) = prepare_register_device(
+		&device_id,
+		&user_id,
+		app_id,
+		time,
+		device_identifier,
+		master_key,
+		derived,
+		None,
+	);
+
+	exec(sql_keys, key_params).await?;
+
+	Ok(device_id)
+}
+
 pub(super) async fn register_device(
 	app_id: impl Into<AppId>,
 	device_identifier: String,

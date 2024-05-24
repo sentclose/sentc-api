@@ -12,7 +12,7 @@ use sentc_crypto::entities::group::{GroupKeyData, GroupOutData};
 use sentc_crypto::entities::keys::{HmacKeyFormatInt, PrivateKeyFormatInt, PublicKeyFormatInt, SortableKeyFormatInt, SymKeyFormatInt};
 use sentc_crypto::entities::user::{UserDataInt, UserKeyDataInt};
 use sentc_crypto::sdk_common::file::FileData;
-use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupHmacData, GroupInviteServerOutput, GroupSortableData};
+use sentc_crypto::sdk_common::group::{GroupHmacData, GroupSortableData};
 use sentc_crypto::sdk_common::user::UserPublicKeyData;
 use sentc_crypto::sdk_core::SymKey;
 use sentc_crypto::sdk_utils::error::SdkUtilError;
@@ -436,7 +436,7 @@ pub async fn create_child_group_from_group_as_member(
 
 pub fn decrypt_group_hmac_keys(first_group_key: &SymKeyFormatInt, hmac_keys: Vec<GroupHmacData>) -> Vec<HmacKeyFormatInt>
 {
-	//its important to use the sdk common version here and not from the api
+	//it's important to use the sdk common version here and not from the api
 
 	let mut decrypted_hmac_keys = Vec::with_capacity(hmac_keys.len());
 
@@ -449,7 +449,7 @@ pub fn decrypt_group_hmac_keys(first_group_key: &SymKeyFormatInt, hmac_keys: Vec
 
 pub fn decrypt_group_sortable_keys(first_group_key: &SymKeyFormatInt, keys: Vec<GroupSortableData>) -> Vec<SortableKeyFormatInt>
 {
-	//its important to use the sdk common version here and not from the api
+	//it's important to use the sdk common version here and not from the api
 
 	let mut decrypted_keys = Vec::with_capacity(keys.len());
 
@@ -554,26 +554,28 @@ pub async fn add_user_by_invite(
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(user_to_add_public_key, &group_keys_ref, false, None).unwrap();
+	let join_res = sentc_crypto_full::group::invite_user(
+		get_base_url(),
+		secret_token,
+		jwt,
+		group_id,
+		user_to_invite_id,
+		1,
+		None,
+		1,
+		true,
+		false,
+		false,
+		user_to_add_public_key,
+		&group_keys_ref,
+		None,
+	)
+	.await
+	.unwrap();
 
-	let url = get_url("api/v1/group/".to_owned() + group_id + "/invite_auto/" + user_to_invite_id);
+	assert_eq!(join_res, None);
 
-	let client = reqwest::Client::new();
-	let res = client
-		.put(url)
-		.header(AUTHORIZATION, auth_header(jwt))
-		.header("x-sentc-app-token", secret_token)
-		.body(invite)
-		.send()
-		.await
-		.unwrap();
-
-	let body = res.text().await.unwrap();
-
-	let join_res: GroupAcceptJoinReqServerOutput = handle_server_response(body.as_str()).unwrap();
-	assert_eq!(join_res.session_id, None);
-
-	//accept the invite, no need to accept the invite -> we using auto invite here
+	//no need to accept the invite -> we're using auto invite here
 
 	let data = get_group(
 		secret_token,
@@ -608,27 +610,28 @@ pub async fn add_user_by_invite_as_group_as_member(
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(user_to_add_public_key, &group_keys_ref, false, None).unwrap();
+	let join_res = sentc_crypto_full::group::invite_user(
+		get_base_url(),
+		secret_token,
+		jwt,
+		group_id,
+		user_to_invite_id,
+		1,
+		None,
+		1,
+		true,
+		false,
+		false,
+		user_to_add_public_key,
+		&group_keys_ref,
+		Some(group_with_access),
+	)
+	.await
+	.unwrap();
 
-	let url = get_url("api/v1/group/".to_owned() + group_id + "/invite_auto/" + user_to_invite_id);
+	assert_eq!(join_res, None);
 
-	let client = reqwest::Client::new();
-	let res = client
-		.put(url)
-		.header(AUTHORIZATION, auth_header(jwt))
-		.header("x-sentc-app-token", secret_token)
-		.header("x-sentc-group-access-id", group_with_access)
-		.body(invite)
-		.send()
-		.await
-		.unwrap();
-
-	let body = res.text().await.unwrap();
-
-	let join_res: GroupAcceptJoinReqServerOutput = handle_server_response(body.as_str()).unwrap();
-	assert_eq!(join_res.session_id, None);
-
-	//accept the invite, no need to accept the invite -> we using auto invite here
+	//no need to accept the invite -> we're using auto invite here
 
 	let data = get_group(
 		secret_token,
@@ -663,29 +666,26 @@ pub async fn add_group_by_invite(
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(group_to_invite_exported_public_key, &group_keys_ref, false, None).unwrap();
+	let join_res = sentc_crypto_full::group::invite_user(
+		get_base_url(),
+		secret_token,
+		jwt,
+		group_id,
+		group_to_invite_id,
+		1,
+		None,
+		1,
+		true,
+		true,
+		false,
+		group_to_invite_exported_public_key,
+		&group_keys_ref,
+		group_as_member_id,
+	)
+	.await
+	.unwrap();
 
-	let url = get_url("api/v1/group/".to_owned() + group_id + "/invite_group_auto/" + group_to_invite_id);
-
-	let client = reqwest::Client::new();
-	let res = client
-		.put(url)
-		.header(AUTHORIZATION, auth_header(jwt))
-		.header("x-sentc-app-token", secret_token)
-		.body(invite);
-
-	let res = match group_as_member_id {
-		Some(id) => res.header("x-sentc-group-access-id", id),
-		None => res,
-	};
-
-	let res = res.send().await.unwrap();
-
-	let body = res.text().await.unwrap();
-
-	let invite_res: GroupInviteServerOutput = handle_server_response(&body).unwrap();
-
-	assert_eq!(invite_res.session_id, None);
+	assert_eq!(join_res, None);
 
 	get_group_from_group_as_member(
 		secret_token,
