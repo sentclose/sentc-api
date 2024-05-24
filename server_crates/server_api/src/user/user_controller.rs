@@ -1,4 +1,5 @@
 use rustgram::Request;
+use rustgram_server_util::cache;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::input_helper::{bytes_to_json, get_raw_body};
 use rustgram_server_util::res::{echo, echo_success, AppRes, JRes, ServerSuccessOutput};
@@ -35,13 +36,14 @@ use sentc_crypto_common::user::{
 };
 use sentc_crypto_common::AppId;
 use server_api_common::customer_app::{check_endpoint_with_app_options, check_endpoint_with_req, get_app_data_from_req, Endpoint};
+use server_api_common::group::GROUP_TYPE_USER;
 use server_api_common::user::get_jwt_data_from_param;
 use server_api_common::user::user_entity::UserJwtEntity;
-use server_api_common::util::hash_token_to_string;
+use server_api_common::util::{get_user_in_app_key, hash_token_to_string};
 
 use crate::check_user_group_keys_set;
 use crate::group::group_entities::{GroupKeyUpdate, GroupUserKeys};
-use crate::group::{group_key_rotation_service, group_user_service};
+use crate::group::{group_key_rotation_service, group_service, group_user_service};
 use crate::sentc_user_entities::{DoneLoginServerOutput, DoneLoginServerReturn, LoginForcedOutput, VerifyLoginOutput};
 use crate::user::auth::auth_service;
 use crate::user::user_entities::{UserDeviceList, UserInitEntity, UserPublicKeyDataEntity, UserVerifyKeyDataEntity};
@@ -621,6 +623,67 @@ pub(crate) async fn disable_otp_forced(mut req: Request) -> JRes<ServerSuccessOu
 	let jwt = prepare_user_forced_action(&app_data.app_data.app_id, user_identifier.user_identifier).await?;
 
 	user_service::disable_otp(&jwt).await?;
+
+	echo_success()
+}
+
+pub(crate) async fn reset_user(mut req: Request) -> JRes<ServerSuccessOutput>
+{
+	let body = get_raw_body(&mut req).await?;
+	let app_data = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(app_data, Endpoint::ForceServer)?;
+	let app_id = &app_data.app_data.app_id;
+	let input: RegisterData = bytes_to_json(&body)?;
+
+	let jwt = prepare_user_forced_action(app_id, &input.device.device_identifier).await?;
+
+	//delete all devices and update the user group
+	let mut group_data = input.group;
+
+	check_user_group_keys_set!(
+		group_data.encrypted_sign_key,
+		group_data.verify_key,
+		group_data.public_key_sig,
+		group_data.keypair_sign_alg
+	);
+
+	let device_data = input.device;
+	let identifier = hash_token_to_string(device_data.device_identifier.as_bytes())?;
+
+	let device_id = user_model::reset_user(
+		app_id,
+		&jwt.id,
+		identifier,
+		device_data.master_key,
+		device_data.derived,
+	)
+	.await?;
+
+	group_data.creator_public_key_id = device_id.to_string();
+
+	//delete the old group
+	group_service::delete_user_group(app_id, &jwt.group_id).await?;
+
+	//create user group, insert the device not the user id because the devices are in the group not the user!
+	let group_id = group_service::create_group(
+		app_id,
+		&device_id,
+		group_data,
+		GROUP_TYPE_USER,
+		None,
+		None,
+		None,
+		false,
+	)
+	.await?
+	.0;
+
+	//delete the user in app check cache from the jwt mw
+	let cache_key = get_user_in_app_key(app_id, &jwt.id);
+	cache::delete(&cache_key).await?;
+
+	//now update the user group id
+	user_model::register_update_user_group_id(app_id, &jwt.id, group_id).await?;
 
 	echo_success()
 }

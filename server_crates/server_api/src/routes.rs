@@ -73,6 +73,10 @@ pub(crate) fn routes(router: &mut Router)
 		r(crate::user::delete_user).add(server_api_common::middleware::app_token::app_token_transform),
 	);
 	router.put(
+		"/api/v1/user/forced/reset_user",
+		r(crate::user::reset_user).add(server_api_common::middleware::app_token::app_token_transform),
+	);
+	router.put(
 		"/api/v1/user/forced/disable_otp",
 		r(crate::user::disable_otp_forced).add(server_api_common::middleware::app_token::app_token_transform),
 	);
