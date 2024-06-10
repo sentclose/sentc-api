@@ -296,7 +296,7 @@ async fn test_13_update_customer()
 	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
-	//it should not login with the old email
+	//it should not log in with the old email
 
 	let url = get_url("api/v1/customer/prepare_login".to_owned());
 
@@ -417,7 +417,7 @@ async fn test_14_change_password()
 	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
-	//should not login with wrong password
+	//should not log in with wrong password
 
 	let url = get_url("api/v1/customer/prepare_login".to_owned());
 
@@ -537,7 +537,7 @@ async fn test_15_change_password_again_from_pw_change()
 	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
-	//should not login with wrong password
+	//should not log in with wrong password
 
 	let url = get_url("api/v1/customer/prepare_login".to_owned());
 
@@ -650,7 +650,7 @@ async fn test_16_reset_customer_password()
 	sentc_crypto::util::public::handle_general_server_response(body.as_str()).unwrap();
 
 	//______________________________________________________________________________________________
-	//should not login with old pw
+	//should not log in with old pw
 
 	let url = get_url("api/v1/customer/prepare_login".to_owned());
 

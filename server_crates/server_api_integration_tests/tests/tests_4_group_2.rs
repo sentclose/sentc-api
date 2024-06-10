@@ -775,7 +775,7 @@ async fn test_18_create_child_group_from_con_group()
 	let private_key = &keys.private_group_key;
 	let jwt = &creator_group_to_connect.user_data.jwt;
 
-	//this user should got the right rank
+	//this user should get the right rank
 	let group_id = create_child_group_from_group_as_member(
 		secret_token.as_str(),
 		public_key,
@@ -1720,7 +1720,7 @@ async fn test_32_not_leave_groups_without_rights()
 
 	let body = res.text().await.unwrap();
 
-	//delete the test user before checking because after the user wont get deleted when there are still errors
+	//delete the test user before checking because after the user won't get deleted when there are still errors
 	delete_user(secret_token, "hi_123".to_string()).await;
 
 	let server_err = get_server_error_from_normal_res(&body);

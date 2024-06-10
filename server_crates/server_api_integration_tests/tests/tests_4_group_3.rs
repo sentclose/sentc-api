@@ -28,7 +28,7 @@ use crate::test_fn::{
 mod test_fn;
 
 /**
-This tests are all about child group of a child group of a parent and so on
+These tests are all about child group of a child group of a parent and so on
 */
 
 pub struct UserState

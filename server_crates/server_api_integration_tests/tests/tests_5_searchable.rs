@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use sentc_crypto::entities::group::GroupKeyData;
-use sentc_crypto::entities::keys::HmacKeyFormatInt;
+use sentc_crypto::entities::keys::HmacKey;
 use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto_common::{GroupId, UserId};
 use server_dashboard_common::app::AppRegisterOutput;
@@ -40,7 +40,7 @@ pub struct GroupState
 	pub group_id: GroupId,
 	pub group_member: Vec<UserId>,
 	pub decrypted_group_keys: HashMap<UserId, Vec<GroupKeyData>>,
-	pub searchable_keys: Vec<HmacKeyFormatInt>,
+	pub searchable_keys: Vec<HmacKey>,
 }
 
 const STR: &str = "123*+^êéèüöß@€&$ 👍 🚀 😎";
@@ -154,7 +154,9 @@ async fn test_10_create_searchable_full()
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
 	let group = &groups[0];
 
-	let out = sentc_crypto::crypto_searchable::create_searchable_raw(&group.searchable_keys[0], STR, true, None).unwrap();
+	let out = &group.searchable_keys[0]
+		.create_searchable_raw(STR, true, None)
+		.unwrap();
 
 	assert_eq!(out.len(), 1);
 }
@@ -165,7 +167,9 @@ async fn test_11_create_searchable()
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
 	let group = &groups[0];
 
-	let out = sentc_crypto::crypto_searchable::create_searchable_raw(&group.searchable_keys[0], STR, false, None).unwrap();
+	let out = &group.searchable_keys[0]
+		.create_searchable_raw(STR, false, None)
+		.unwrap();
 
 	assert_eq!(out.len(), 39);
 }
@@ -177,17 +181,17 @@ async fn test_12_search_item_full()
 	let group = &groups[0];
 	let key = &group.searchable_keys[0];
 
-	let out = sentc_crypto::crypto_searchable::create_searchable_raw(key, STR, true, None).unwrap();
+	let out = key.create_searchable_raw(STR, true, None).unwrap();
 
 	assert_eq!(out.len(), 1);
 
-	let search_str = sentc_crypto::crypto_searchable::search(key, "123").unwrap();
+	let search_str = key.search("123").unwrap();
 
-	//should not contains only a part of the word because we used full
+	//should not contain only a part of the word because we used full
 	assert!(!out.contains(&search_str));
 
-	//but should contains the full word
-	let search_str = sentc_crypto::crypto_searchable::search(key, STR).unwrap();
+	//but should contain the full word
+	let search_str = key.search(STR).unwrap();
 
 	assert!(out.contains(&search_str));
 }
@@ -199,11 +203,11 @@ async fn test_13_search_item()
 	let group = &groups[0];
 	let key = &group.searchable_keys[0];
 
-	let out = sentc_crypto::crypto_searchable::create_searchable_raw(key, STR, false, None).unwrap();
+	let out = key.create_searchable_raw(STR, false, None).unwrap();
 	assert_eq!(out.len(), 39);
 
 	//now get the output of the prepare search
-	let search_str = sentc_crypto::crypto_searchable::search(key, "123").unwrap();
+	let search_str = key.search("123").unwrap();
 	assert!(out.contains(&search_str));
 }
 
@@ -217,11 +221,11 @@ async fn test_14_not_search_item_with_different_keys()
 	let group2 = &groups[1];
 	let key2 = &group2.searchable_keys[0];
 
-	let out = sentc_crypto::crypto_searchable::create_searchable_raw(key, STR, false, None).unwrap();
+	let out = key.create_searchable_raw(STR, false, None).unwrap();
 
-	let search_str = sentc_crypto::crypto_searchable::search(key, "123").unwrap();
+	let search_str = key.search("123").unwrap();
 
-	let search_str2 = sentc_crypto::crypto_searchable::search(key2, "123").unwrap();
+	let search_str2 = key2.search("123").unwrap();
 
 	assert_ne!(search_str, search_str2);
 

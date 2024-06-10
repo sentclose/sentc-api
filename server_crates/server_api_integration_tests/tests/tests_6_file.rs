@@ -389,7 +389,9 @@ async fn test_12_update_file_name()
 
 	let file_data: FileData = handle_server_response(body.as_str()).unwrap();
 
-	let decrypted_name = sentc_crypto::crypto::decrypt_string_symmetric(file_key, file_data.encrypted_file_name.unwrap().as_str(), None).unwrap();
+	let decrypted_name = file_key
+		.decrypt_string(file_data.encrypted_file_name.unwrap().as_str(), None)
+		.unwrap();
 
 	assert_eq!(decrypted_name, "Hello 123");
 }
@@ -1148,7 +1150,7 @@ async fn test_30_chunked_filed()
 	let mut end = chunk_size;
 	let mut current_chunk = 0;
 
-	let mut next_key = sentc_crypto::sdk_core::SymKey::Aes(Default::default());
+	let mut next_key = None;
 
 	while start < file.len() {
 		current_chunk += 1;
@@ -1165,11 +1167,11 @@ async fn test_30_chunked_filed()
 		let encrypted_res = if current_chunk == 1 {
 			sentc_crypto::file::encrypt_file_part_start(&file_key, part, None).unwrap()
 		} else {
-			sentc_crypto::file::encrypt_file_part(&next_key, part, None).unwrap()
+			sentc_crypto::file::encrypt_file_part(&next_key.unwrap(), part, None).unwrap()
 		};
 
 		let encrypted_part = encrypted_res.0;
-		next_key = encrypted_res.1;
+		next_key = Some(encrypted_res.1);
 
 		let url = get_url(
 			"api/v1/file/part/".to_string() + session_id.as_str() + "/" + current_chunk.to_string().as_str() + "/" + is_end.to_string().as_str(),
@@ -1214,7 +1216,7 @@ async fn test_31_download_chunked_file()
 
 	let mut file: Vec<u8> = Vec::new();
 
-	let mut next_key = sentc_crypto::sdk_core::SymKey::Aes(Default::default());
+	let mut next_key = None;
 
 	for (i, part) in parts.iter().enumerate() {
 		let part_id = &part.part_id;
@@ -1233,12 +1235,12 @@ async fn test_31_download_chunked_file()
 				part_id,
 				state.user_data.jwt.as_str(),
 				state.app_data.public_token.as_str(),
-				&next_key,
+				&next_key.unwrap(),
 			)
 			.await
 		};
 
-		next_key = decrypted_part.1;
+		next_key = Some(decrypted_part.1);
 		let mut decrypted_part = decrypted_part.0;
 
 		file.append(&mut decrypted_part);

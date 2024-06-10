@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
 use sentc_crypto::entities::group::GroupKeyData;
-use sentc_crypto::entities::keys::SortableKeyFormatInt;
+use sentc_crypto::entities::keys::SortableKey;
 use sentc_crypto::entities::user::UserDataInt;
+use sentc_crypto::sdk_core::cryptomat::SortableKey as CoreSort;
 use sentc_crypto_common::{GroupId, UserId};
 use server_dashboard_common::app::AppRegisterOutput;
 use server_dashboard_common::customer::CustomerDoneLoginOutput;
@@ -41,7 +42,7 @@ pub struct GroupState
 	pub group_id: GroupId,
 	pub group_member: Vec<UserId>,
 	pub decrypted_group_keys: HashMap<UserId, Vec<GroupKeyData>>,
-	pub sortable_keys: Vec<SortableKeyFormatInt>,
+	pub sortable_keys: Vec<SortableKey>,
 }
 
 #[tokio::test]
@@ -154,9 +155,9 @@ async fn test_10_encrypt_number()
 {
 	let key = &GROUP_TEST_STATE.get().unwrap().read().await[0].sortable_keys[0];
 
-	let a = sentc_crypto::crypto_sortable::encrypt_raw_number(key, 262).unwrap();
-	let b = sentc_crypto::crypto_sortable::encrypt_raw_number(key, 263).unwrap();
-	let c = sentc_crypto::crypto_sortable::encrypt_raw_number(key, 65321).unwrap();
+	let a = key.encrypt_sortable(262).unwrap();
+	let b = key.encrypt_sortable(263).unwrap();
+	let c = key.encrypt_sortable(65321).unwrap();
 
 	assert!(a < b);
 	assert!(b < c);
@@ -173,9 +174,9 @@ async fn test_11_encrypt_number_with_other_group()
 	let key = &GROUP_TEST_STATE.get().unwrap().read().await[1].sortable_keys[0];
 	let n = NUMBERS.get().unwrap().read().await;
 
-	let a = sentc_crypto::crypto_sortable::encrypt_raw_number(key, 262).unwrap();
-	let b = sentc_crypto::crypto_sortable::encrypt_raw_number(key, 263).unwrap();
-	let c = sentc_crypto::crypto_sortable::encrypt_raw_number(key, 65321).unwrap();
+	let a = key.encrypt_sortable(262).unwrap();
+	let b = key.encrypt_sortable(263).unwrap();
+	let c = key.encrypt_sortable(65321).unwrap();
 
 	assert!(a < b);
 	assert!(b < c);
@@ -194,7 +195,7 @@ async fn test_12_encrypt_string()
 	let mut encrypted_vars = vec![];
 
 	for v in STR_VALUES {
-		encrypted_vars.push(sentc_crypto::crypto_sortable::encrypt_raw_string(key, v).unwrap())
+		encrypted_vars.push(key.encrypt_raw_string(v, None).unwrap())
 	}
 
 	//check
@@ -212,9 +213,11 @@ async fn test_20_with_generated_key()
 {
 	const KEY: &str = r#"{"Ope16":{"key":"5kGPKgLQKmuZeOWQyJ7vOg==","key_id":"1876b629-5795-471f-9704-0cac52eaf9a1"}}"#;
 
-	let a = sentc_crypto::crypto_sortable::encrypt_raw_number(&KEY.parse().unwrap(), 262).unwrap();
-	let b = sentc_crypto::crypto_sortable::encrypt_raw_number(&KEY.parse().unwrap(), 263).unwrap();
-	let c = sentc_crypto::crypto_sortable::encrypt_raw_number(&KEY.parse().unwrap(), 65321).unwrap();
+	let key: SortableKey = KEY.parse().unwrap();
+
+	let a = key.encrypt_sortable(262).unwrap();
+	let b = key.encrypt_sortable(263).unwrap();
+	let c = key.encrypt_sortable(65321).unwrap();
 
 	assert!(a < b);
 	assert!(b < c);
