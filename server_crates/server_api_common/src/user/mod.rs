@@ -15,7 +15,7 @@ pub(crate) mod user_model;
 
 pub fn get_jwt_data_from_param(req: &Request) -> Result<&UserJwtEntity, ServerCoreError>
 {
-	//p should always be some for non optional jwt
+	//p should always be some for non-optional jwt
 	match req.extensions().get::<Option<UserJwtEntity>>() {
 		Some(Some(p)) => Ok(p),
 		_ => {
