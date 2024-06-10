@@ -6,10 +6,10 @@ use std::env;
 
 pub use encrypt::{decrypt, decrypt_with_key, encrypt, encrypt_with_key};
 pub use key_gen::{export_key, generate_and_export_new_key, generate_new_key};
-use sentc_crypto::entities::keys::{SymKeyFormatExport, SymKeyFormatInt};
+use sentc_crypto::entities::keys::{SymKeyFormatExport, SymmetricKey};
 use tokio::sync::{OnceCell, RwLock, RwLockReadGuard};
 
-static CRYPTO_ROOT_KEY: OnceCell<RwLock<SymKeyFormatInt>> = OnceCell::const_new();
+static CRYPTO_ROOT_KEY: OnceCell<RwLock<SymmetricKey>> = OnceCell::const_new();
 
 pub async fn init_crypto()
 {
@@ -20,7 +20,7 @@ pub async fn init_crypto()
 		.await;
 }
 
-pub async fn get_key_map<'a>() -> RwLockReadGuard<'a, SymKeyFormatInt>
+pub async fn get_key_map<'a>() -> RwLockReadGuard<'a, SymmetricKey>
 {
 	CRYPTO_ROOT_KEY.get().unwrap().read().await
 }
@@ -32,7 +32,7 @@ The root key should be base64 encoded.
 
 Use a fake key id.
 */
-async fn init_private_crypto() -> RwLock<SymKeyFormatInt>
+async fn init_private_crypto() -> RwLock<SymmetricKey>
 {
 	let key = env::var("ROOT_KEY").unwrap();
 

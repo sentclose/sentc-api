@@ -1,5 +1,5 @@
 use rustgram_server_util::res::AppRes;
-use sentc_crypto::entities::keys::SymKeyFormatInt;
+use sentc_crypto::entities::keys::SymmetricKey;
 
 use crate::error::SentcSdkErrorWrapper;
 use crate::CRYPTO_ROOT_KEY;
@@ -11,9 +11,10 @@ pub async fn encrypt(data: &str) -> AppRes<String>
 	encrypt_with_key(&key, data)
 }
 
-pub fn encrypt_with_key(key: &SymKeyFormatInt, data: &str) -> AppRes<String>
+pub fn encrypt_with_key(key: &SymmetricKey, data: &str) -> AppRes<String>
 {
-	sentc_crypto::crypto::encrypt_string_symmetric(key, data, None).map_err(|e| SentcSdkErrorWrapper(e).into())
+	key.encrypt_string(data, None)
+		.map_err(|e| SentcSdkErrorWrapper(e.into()).into())
 }
 
 pub async fn decrypt(encrypted: &str) -> AppRes<String>
@@ -23,7 +24,8 @@ pub async fn decrypt(encrypted: &str) -> AppRes<String>
 	decrypt_with_key(&key, encrypted)
 }
 
-pub fn decrypt_with_key(key: &SymKeyFormatInt, encrypted: &str) -> AppRes<String>
+pub fn decrypt_with_key(key: &SymmetricKey, encrypted: &str) -> AppRes<String>
 {
-	sentc_crypto::crypto::decrypt_string_symmetric(key, encrypted, None).map_err(|e| SentcSdkErrorWrapper(e).into())
+	key.decrypt_string(encrypted, None)
+		.map_err(|e| SentcSdkErrorWrapper(e.into()).into())
 }

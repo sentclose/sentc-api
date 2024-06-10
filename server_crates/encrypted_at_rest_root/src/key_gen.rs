@@ -1,16 +1,17 @@
-use sentc_crypto::entities::keys::{SymKeyFormatExport, SymKeyFormatInt};
+use sentc_crypto::entities::keys::{SymKeyFormatExport, SymmetricKey};
+use sentc_crypto::sdk_core::cryptomat::SymKeyGen;
 
-pub fn generate_new_key() -> SymKeyFormatInt
+pub fn generate_new_key() -> SymmetricKey
 {
-	let key = sentc_crypto::sdk_core::crypto::generate_symmetric().unwrap();
+	let key = sentc_crypto::sdk_core::SymmetricKey::generate().unwrap();
 
-	SymKeyFormatInt {
-		key: key.key,
+	SymmetricKey {
+		key,
 		key_id: "n".to_string(),
 	}
 }
 
-pub fn export_key(key: SymKeyFormatInt) -> String
+pub fn export_key(key: SymmetricKey) -> String
 {
 	let new_key: SymKeyFormatExport = key.into();
 
