@@ -1559,7 +1559,7 @@ async fn test_33_get_key_with_pagination()
 		group_keys.push(sentc_crypto::group::decrypt_group_keys(&user.user_data.user_keys[0].private_key, group_keys_fetch).unwrap());
 	}
 
-	//normally use len() - 1 but this time we wont fake a pagination, so we don't use the last item
+	//normally use len() - 1 but this time we won't fake a pagination, so we don't use the last item
 	let latest_fetched_id = group_keys[group_keys.len() - 2].group_key.key_id.as_str();
 	let last_fetched_time = group_keys[group_keys.len() - 2].time;
 
@@ -1967,7 +1967,7 @@ async fn test_40_key_rotation_in_child_group_by_user()
 	.await;
 
 	//______________________________________________________________________________________________
-	//done key rotation for the parent group member, should used the newest group keys for key rotation
+	//done key rotation for the parent group member, should use the newest group keys for key rotation
 	let new_group_data_for_parent = done_key_rotation(
 		secret_token,
 		creator.user_data.jwt.as_str(),
@@ -2072,7 +2072,7 @@ async fn test_41_key_rotation_with_multiple_user_keys()
 	//only one key here, even when the user got multiple keys in his/her user group
 	assert_eq!(out.len(), 1);
 
-	//no need to done the rotation. this test is all about the right key count
+	//no need to do the rotation. this test is all about the right key count
 }
 
 //__________________________________________________________________________________________________
@@ -2182,7 +2182,7 @@ async fn test_43_get_all_groups_to_user()
 	assert_eq!(out[0].group_id, group_2);
 	assert_eq!(out[1].group_id, group_3);
 
-	//test groups are deleted by the clean up fn
+	//test groups are deleted by the cleanup fn
 }
 
 //__________________________________________________________________________________________________

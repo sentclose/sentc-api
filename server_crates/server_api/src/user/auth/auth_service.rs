@@ -62,7 +62,7 @@ pub(crate) async fn prepare_done_login(app_id: impl Into<AppId>, identifier: imp
 }
 
 /**
-After successful login return the user keys so they can be decrypted in the client
+After successful login return the user keys, so they can be decrypted in the client
  */
 pub async fn done_login(app_data: &AppData, done_login: DoneLoginServerInput) -> AppRes<DoneLoginServerReturn>
 {

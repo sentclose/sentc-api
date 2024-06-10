@@ -344,7 +344,7 @@ async fn test_0_large_file()
 	let mut end = chunk_size;
 	let mut current_chunk = 0;
 
-	let mut next_key = sentc_crypto::sdk_core::SymKey::Aes(Default::default());
+	let mut next_key = None;
 
 	while start < file.len() {
 		current_chunk += 1;
@@ -361,11 +361,11 @@ async fn test_0_large_file()
 		let encrypted_res = if current_chunk == 1 {
 			sentc_crypto::file::encrypt_file_part_start(&file_key, part, None).unwrap()
 		} else {
-			sentc_crypto::file::encrypt_file_part(&next_key, part, None).unwrap()
+			sentc_crypto::file::encrypt_file_part(&next_key.unwrap(), part, None).unwrap()
 		};
 
 		let encrypted_part = encrypted_res.0;
-		next_key = encrypted_res.1;
+		next_key = Some(encrypted_res.1);
 
 		let url = get_url(
 			"api/v1/file/part/".to_string() + session_id.as_str() + "/" + current_chunk.to_string().as_str() + "/" + is_end.to_string().as_str(),
@@ -394,7 +394,7 @@ async fn test_0_large_file()
 
 	let mut downloaded_file: Vec<u8> = Vec::new();
 
-	let mut next_key = sentc_crypto::sdk_core::SymKey::Aes(Default::default());
+	let mut next_key = None;
 
 	for (i, part) in parts.iter().enumerate() {
 		let part_id = &part.part_id;
@@ -403,10 +403,10 @@ async fn test_0_large_file()
 		let decrypted_part = if i == 0 {
 			get_and_decrypt_file_part_start(part_id, &key_data.jwt, &public_token, &file_key).await
 		} else {
-			get_and_decrypt_file_part(part_id, &key_data.jwt, &public_token, &next_key).await
+			get_and_decrypt_file_part(part_id, &key_data.jwt, &public_token, &next_key.unwrap()).await
 		};
 
-		next_key = decrypted_part.1;
+		next_key = Some(decrypted_part.1);
 		let mut decrypted_part = decrypted_part.0;
 
 		downloaded_file.append(&mut decrypted_part);

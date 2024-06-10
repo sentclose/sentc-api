@@ -1,6 +1,6 @@
 use reqwest::header::AUTHORIZATION;
 use sentc_crypto::entities::group::GroupKeyData;
-use sentc_crypto::entities::keys::SymKeyFormatInt;
+use sentc_crypto::entities::keys::SymmetricKey;
 use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::sdk_common::crypto::GeneratedSymKeyHeadServerOutput;
 use sentc_crypto::sdk_common::ServerOutput;
@@ -18,7 +18,7 @@ pub struct SymKeyData
 {
 	pub id: SymKeyId,
 	pub server_out: Option<GeneratedSymKeyHeadServerOutput>,
-	pub sym_key: Option<SymKeyFormatInt>,
+	pub sym_key: Option<SymmetricKey>,
 }
 
 pub struct KeyState
@@ -149,9 +149,9 @@ async fn test_11_get_key_by_id()
 	//test the key
 	let text = "hello";
 
-	let encrypted = sentc_crypto::crypto::encrypt_string_symmetric(&sym_key, text, None).unwrap();
+	let encrypted = sym_key.encrypt_string(text, None).unwrap();
 
-	let decrypted = sentc_crypto::crypto::decrypt_string_symmetric(&sym_key, &encrypted, None).unwrap();
+	let decrypted = sym_key.decrypt_string(&encrypted, None).unwrap();
 
 	assert_eq!(decrypted, text);
 
@@ -233,9 +233,9 @@ async fn test_13_get_key_from_master_key()
 	let text = "hello";
 
 	for sym_key in sym_keys.0 {
-		let encrypted = sentc_crypto::crypto::encrypt_string_symmetric(&sym_key, text, None).unwrap();
+		let encrypted = sym_key.encrypt_string(text, None).unwrap();
 
-		let decrypted = sentc_crypto::crypto::decrypt_string_symmetric(&sym_key, &encrypted, None).unwrap();
+		let decrypted = sym_key.decrypt_string(&encrypted, None).unwrap();
 
 		assert_eq!(decrypted, text);
 	}

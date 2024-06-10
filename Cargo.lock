@@ -1954,10 +1954,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "pqc_kyber"
+name = "pqc_kyber_edit"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b23e1823e8a78ad67990c5cb843d5eba75ab3b8a44d041f3814fde89463dc6f"
+checksum = "088a1bf8edbf96c692ec3b41246b1995c6da7579bf5f4c94958b87f071d94fc4"
 dependencies = [
  "aes 0.8.3",
  "ctr 0.9.2",
@@ -2483,8 +2483,8 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto"
-version = "0.11.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=02c9cabc018a8c8d624da6e4805e766f09815bb0#02c9cabc018a8c8d624da6e4805e766f09815bb0"
+version = "0.12.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=15a91d0f2241b9720f1f2f520f484c305b038be1#15a91d0f2241b9720f1f2f520f484c305b038be1"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -2514,8 +2514,8 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-core"
-version = "0.11.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=02c9cabc018a8c8d624da6e4805e766f09815bb0#02c9cabc018a8c8d624da6e4805e766f09815bb0"
+version = "0.12.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=15a91d0f2241b9720f1f2f520f484c305b038be1#15a91d0f2241b9720f1f2f520f484c305b038be1"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -2525,7 +2525,7 @@ dependencies = [
  "hmac",
  "ope",
  "pqc_dilithium_edit",
- "pqc_kyber",
+ "pqc_kyber_edit",
  "rand_core 0.6.4",
  "sha2 0.10.8",
  "x25519-dalek",
@@ -2533,8 +2533,8 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-full"
-version = "0.11.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=02c9cabc018a8c8d624da6e4805e766f09815bb0#02c9cabc018a8c8d624da6e4805e766f09815bb0"
+version = "0.12.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=15a91d0f2241b9720f1f2f520f484c305b038be1#15a91d0f2241b9720f1f2f520f484c305b038be1"
 dependencies = [
  "sentc-crypto",
  "sentc-crypto-common 0.10.0 (git+https://github.com/sentclose/sentc-common.git?rev=de513a82b0200b476d9592ba1de38c73c6a32354)",
@@ -2545,8 +2545,8 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-light"
-version = "0.11.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=02c9cabc018a8c8d624da6e4805e766f09815bb0#02c9cabc018a8c8d624da6e4805e766f09815bb0"
+version = "0.12.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=15a91d0f2241b9720f1f2f520f484c305b038be1#15a91d0f2241b9720f1f2f520f484c305b038be1"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -2559,8 +2559,8 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-light-full"
-version = "0.11.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=02c9cabc018a8c8d624da6e4805e766f09815bb0#02c9cabc018a8c8d624da6e4805e766f09815bb0"
+version = "0.12.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=15a91d0f2241b9720f1f2f520f484c305b038be1#15a91d0f2241b9720f1f2f520f484c305b038be1"
 dependencies = [
  "sentc-crypto-common 0.10.0 (git+https://github.com/sentclose/sentc-common.git?rev=de513a82b0200b476d9592ba1de38c73c6a32354)",
  "sentc-crypto-light",
@@ -2571,8 +2571,8 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-utils"
-version = "0.11.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=02c9cabc018a8c8d624da6e4805e766f09815bb0#02c9cabc018a8c8d624da6e4805e766f09815bb0"
+version = "0.12.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=15a91d0f2241b9720f1f2f520f484c305b038be1#15a91d0f2241b9720f1f2f520f484c305b038be1"
 dependencies = [
  "base64ct",
  "pem-rfc7468",

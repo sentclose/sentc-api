@@ -68,7 +68,7 @@ async fn aaa_init_global_test()
 	//create here an app
 	let app_data = create_app(customer_jwt).await;
 
-	//this fn must be execute first!
+	//this fn must be executed first!
 	USER_TEST_STATE
 		.get_or_init(|| {
 			async move {
@@ -456,7 +456,7 @@ async fn test_17_change_user_pw()
 	handle_general_server_response(&body).unwrap();
 
 	//______________________________________________________________________________________________
-	//try to login with old pw
+	//try to log in with old pw
 	let url = get_url("api/v1/prepare_login".to_owned());
 
 	let prep_server_input = sentc_crypto_light::user::prepare_login_start(username.as_str()).unwrap();
@@ -497,7 +497,7 @@ async fn test_17_change_user_pw()
 	//login with new password
 	let login = login_user_light(public_token, username, new_pw).await;
 
-	//the the new key data
+	//the new key data
 	user.user_data = Some(login);
 	user.pw = new_pw.to_string();
 }
@@ -572,7 +572,7 @@ async fn test_18_reset_password()
 	//test login with new pw
 	let login = login_user_light(secret_token, username, new_pw).await;
 
-	//the the new key data
+	//the new key data
 	user.user_data = Some(login);
 	user.pw = new_pw.to_string();
 }
@@ -873,7 +873,7 @@ async fn test_28_delete_device()
 
 	handle_general_server_response(body.as_str()).unwrap();
 
-	//should not login with the deleted device
+	//should not log in with the deleted device
 	let url = get_url("api/v1/prepare_login".to_owned());
 
 	let prep_server_input = sentc_crypto_light::user::prepare_login_start("device_1").unwrap();
@@ -943,7 +943,7 @@ async fn test_29_not_delete_the_last_device()
 	assert_eq!(server_err, 115);
 }
 
-//do user tests before this one!
+//do user test before this one!
 
 #[tokio::test]
 async fn test_40_user_delete()

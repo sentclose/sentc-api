@@ -980,7 +980,7 @@ async fn test_42_key_rotation_limit()
 
 	for _ in 0..2 {
 		// this way is not correct because the old pre group key is used for each rotation.
-		// this should be avoid in prod but for the test it is ok
+		// this should be avoided in prod but for the test it is ok
 		let (_, _new_keys) = key_rotation(
 			secret_token,
 			user.user_data.jwt.as_str(),

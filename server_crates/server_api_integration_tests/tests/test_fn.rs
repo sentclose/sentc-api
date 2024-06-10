@@ -9,12 +9,12 @@ use reqwest::StatusCode;
 use rustgram_server_util::db::mysql_async_export::prelude::Queryable;
 use rustgram_server_util::db::StringEntity;
 use sentc_crypto::entities::group::{GroupKeyData, GroupOutData};
-use sentc_crypto::entities::keys::{HmacKeyFormatInt, PrivateKeyFormatInt, PublicKeyFormatInt, SortableKeyFormatInt, SymKeyFormatInt};
+use sentc_crypto::entities::keys::{HmacKey, PublicKey, SecretKey, SortableKey, SymmetricKey};
 use sentc_crypto::entities::user::{UserDataInt, UserKeyDataInt};
 use sentc_crypto::sdk_common::file::FileData;
 use sentc_crypto::sdk_common::group::{GroupHmacData, GroupSortableData};
 use sentc_crypto::sdk_common::user::UserPublicKeyData;
-use sentc_crypto::sdk_core::SymKey;
+use sentc_crypto::sdk_core::SymmetricKey as CoreSymmetricKey;
 use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::sdk_utils::{handle_general_server_response, handle_server_response};
 use sentc_crypto_common::group::{GroupKeyServerOutput, KeyRotationStartServerOutput};
@@ -397,7 +397,7 @@ pub async fn create_test_user(secret_token: &str, public_token: &str, username: 
 	(user_id, key_data)
 }
 
-pub async fn create_group(secret_token: &str, creator_public_key: &PublicKeyFormatInt, parent_group_id: Option<GroupId>, jwt: &str) -> GroupId
+pub async fn create_group(secret_token: &str, creator_public_key: &PublicKey, parent_group_id: Option<GroupId>, jwt: &str) -> GroupId
 {
 	match parent_group_id {
 		Some(i) => {
@@ -415,7 +415,7 @@ pub async fn create_group(secret_token: &str, creator_public_key: &PublicKeyForm
 
 pub async fn create_child_group_from_group_as_member(
 	secret_token: &str,
-	creator_public_key: &PublicKeyFormatInt,
+	creator_public_key: &PublicKey,
 	parent_group_id: &str,
 	jwt: &str,
 	group_to_access: &str,
@@ -434,7 +434,7 @@ pub async fn create_child_group_from_group_as_member(
 	.unwrap()
 }
 
-pub fn decrypt_group_hmac_keys(first_group_key: &SymKeyFormatInt, hmac_keys: Vec<GroupHmacData>) -> Vec<HmacKeyFormatInt>
+pub fn decrypt_group_hmac_keys(first_group_key: &SymmetricKey, hmac_keys: Vec<GroupHmacData>) -> Vec<HmacKey>
 {
 	//it's important to use the sdk common version here and not from the api
 
@@ -447,7 +447,7 @@ pub fn decrypt_group_hmac_keys(first_group_key: &SymKeyFormatInt, hmac_keys: Vec
 	decrypted_hmac_keys
 }
 
-pub fn decrypt_group_sortable_keys(first_group_key: &SymKeyFormatInt, keys: Vec<GroupSortableData>) -> Vec<SortableKeyFormatInt>
+pub fn decrypt_group_sortable_keys(first_group_key: &SymmetricKey, keys: Vec<GroupSortableData>) -> Vec<SortableKey>
 {
 	//it's important to use the sdk common version here and not from the api
 
@@ -460,13 +460,8 @@ pub fn decrypt_group_sortable_keys(first_group_key: &SymKeyFormatInt, keys: Vec<
 	decrypted_keys
 }
 
-pub async fn get_group(
-	secret_token: &str,
-	jwt: &str,
-	group_id: &str,
-	private_key: &PrivateKeyFormatInt,
-	key_update: bool,
-) -> (GroupOutData, Vec<GroupKeyData>)
+pub async fn get_group(secret_token: &str, jwt: &str, group_id: &str, private_key: &SecretKey, key_update: bool)
+	-> (GroupOutData, Vec<GroupKeyData>)
 {
 	let data = sentc_crypto_full::group::get_group(get_base_url(), secret_token, jwt, group_id, None)
 		.await
@@ -504,7 +499,7 @@ pub async fn get_group_from_group_as_member(
 	jwt: &str,
 	group_id: &str,
 	group_to_access: &str,
-	private_group_key: &PrivateKeyFormatInt,
+	private_group_key: &SecretKey,
 ) -> (GroupOutData, Vec<GroupKeyData>)
 {
 	let data = sentc_crypto_full::group::get_group(get_base_url(), secret_token, jwt, group_id, Some(group_to_access))
@@ -545,7 +540,7 @@ pub async fn add_user_by_invite(
 	user_to_invite_id: &str,
 	user_to_invite_jwt: &str,
 	user_to_add_public_key: &UserPublicKeyData,
-	user_to_add_private_key: &PrivateKeyFormatInt,
+	user_to_add_private_key: &SecretKey,
 ) -> (GroupOutData, Vec<GroupKeyData>)
 {
 	let mut group_keys_ref = vec![];
@@ -601,7 +596,7 @@ pub async fn add_user_by_invite_as_group_as_member(
 	user_to_invite_id: &str,
 	user_to_invite_jwt: &str,
 	user_to_add_public_key: &UserPublicKeyData,
-	user_to_add_private_key: &PrivateKeyFormatInt,
+	user_to_add_private_key: &SecretKey,
 ) -> (GroupOutData, Vec<GroupKeyData>)
 {
 	let mut group_keys_ref = vec![];
@@ -656,7 +651,7 @@ pub async fn add_group_by_invite(
 	group_to_invite_id: &str,
 	group_to_invite_exported_public_key: &UserPublicKeyData,
 	group_to_invite_member_jwt: &str,
-	group_to_invite_private_key: &PrivateKeyFormatInt,
+	group_to_invite_private_key: &SecretKey,
 	group_as_member_id: Option<&str>,
 ) -> (GroupOutData, Vec<GroupKeyData>)
 {
@@ -701,9 +696,9 @@ pub async fn key_rotation(
 	secret_token: &str,
 	jwt: &str,
 	group_id: &str,
-	pre_group_key: &SymKeyFormatInt,
-	invoker_public_key: &PublicKeyFormatInt,
-	invoker_private_key: &PrivateKeyFormatInt,
+	pre_group_key: &SymmetricKey,
+	invoker_public_key: &PublicKey,
+	invoker_private_key: &SecretKey,
 	group_as_member_id: Option<&str>,
 ) -> (GroupOutData, Vec<GroupKeyData>)
 {
@@ -748,9 +743,9 @@ pub async fn done_key_rotation(
 	secret_token: &str,
 	jwt: &str,
 	group_id: &str,
-	pre_group_key: &SymKeyFormatInt,
-	public_key: &PublicKeyFormatInt,
-	private_key: &PrivateKeyFormatInt,
+	pre_group_key: &SymmetricKey,
+	public_key: &PublicKey,
+	private_key: &SecretKey,
 	group_as_member_id: Option<&str>,
 ) -> Vec<GroupKeyData>
 {
@@ -837,9 +832,9 @@ pub async fn done_key_rotation(
 pub async fn user_key_rotation(
 	secret_token: &str,
 	jwt: &str,
-	pre_group_key: &SymKeyFormatInt,
-	device_invoker_public_key: &PublicKeyFormatInt,
-	device_invoker_private_key: &PrivateKeyFormatInt,
+	pre_group_key: &SymmetricKey,
+	device_invoker_public_key: &PublicKey,
+	device_invoker_private_key: &SecretKey,
 ) -> UserKeyDataInt
 {
 	let input = sentc_crypto::group::key_rotation(
@@ -933,14 +928,14 @@ pub async fn get_file_part(part_id: &str, jwt: &str, token: &str) -> Vec<u8>
 	res.bytes().await.unwrap().to_vec()
 }
 
-pub async fn get_and_decrypt_file_part(part_id: &str, jwt: &str, token: &str, file_key: &SymKey) -> (Vec<u8>, SymKey)
+pub async fn get_and_decrypt_file_part(part_id: &str, jwt: &str, token: &str, file_key: &CoreSymmetricKey) -> (Vec<u8>, CoreSymmetricKey)
 {
 	let buffer = get_file_part(part_id, jwt, token).await;
 
 	sentc_crypto::file::decrypt_file_part(file_key, &buffer, None).unwrap()
 }
 
-pub async fn get_and_decrypt_file_part_start(part_id: &str, jwt: &str, token: &str, file_key: &SymKeyFormatInt) -> (Vec<u8>, SymKey)
+pub async fn get_and_decrypt_file_part_start(part_id: &str, jwt: &str, token: &str, file_key: &SymmetricKey) -> (Vec<u8>, CoreSymmetricKey)
 {
 	let buffer = get_file_part(part_id, jwt, token).await;
 

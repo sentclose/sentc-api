@@ -147,7 +147,7 @@ async fn jwt_check(req: &mut Request, optional: bool, check_exp: bool, app_id: A
 		},
 	};
 
-	//for non optional this is always Some
+	//for non-optional this is always Some
 	req.extensions_mut().insert(user);
 
 	Ok(())
@@ -212,7 +212,7 @@ async fn validate(app_id: AppId, jwt: &str, check_exp: bool) -> Result<UserJwtEn
 			let entity = CacheVariant::Some(entity);
 
 			if check_exp {
-				//only add the jwt to cache for exp able jwt's
+				//only add the jwt to cache for exp able jwt
 				//ttl should end for this cache -1 sec before the actual token exp
 				cache::add(cache_key, json_to_string(&entity)?, exp - 1).await?;
 			}

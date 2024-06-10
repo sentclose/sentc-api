@@ -357,7 +357,7 @@ async fn test_17_update_app_options()
 
 	let body = res.text().await.unwrap();
 
-	//normally user register result but it's an err so it's ok to use the default
+	//normally user register result, but it's an err, so it's ok to use the default
 	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
 	assert!(!out.status);
