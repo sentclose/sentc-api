@@ -1,11 +1,9 @@
 //Force group fn
 
 use reqwest::header::AUTHORIZATION;
-use sentc_crypto::entities::group::GroupKeyData;
-use sentc_crypto::entities::user::UserDataInt as UserDataIntFull;
 use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::SdkError;
+use sentc_crypto::{SdkError, StdGroup, StdGroupKeyData, StdUser, StdUserDataInt as UserDataIntFull};
 use sentc_crypto_common::group::{GroupCreateOutput, GroupLightServerData};
 use sentc_crypto_common::{GroupId, UserId};
 use sentc_crypto_light::UserDataInt as UserDataIntLight;
@@ -42,7 +40,7 @@ pub struct UserState
 pub struct GroupState
 {
 	pub group_id: GroupId,
-	pub decrypted_group_keys: Vec<GroupKeyData>,
+	pub decrypted_group_keys: Vec<StdGroupKeyData>,
 }
 
 static CUSTOMER_TEST_STATE: OnceCell<RwLock<CustomerDoneLoginOutput>> = OnceCell::const_new();
@@ -122,15 +120,15 @@ async fn aaa_init_global_test()
 	for i in 0..1 {
 		let username = "hi1".to_string() + i.to_string().as_str();
 
-		let user_id = sentc_crypto_light_full::user::register(get_base_url(), secret_token_str, &username, user_pw)
+		let user_id = sentc_crypto_light::util_req_full::user::register(get_base_url(), secret_token_str, &username, user_pw)
 			.await
 			.unwrap();
 
-		let out = sentc_crypto_light_full::user::login(get_base_url(), public_token_str, &username, user_pw)
+		let out = sentc_crypto_light::util_req_full::user::login(get_base_url(), public_token_str, &username, user_pw)
 			.await
 			.unwrap();
 
-		let key_data = if let sentc_crypto_light_full::user::PreLoginOut::Direct(d) = out {
+		let key_data = if let sentc_crypto_light::util_req_full::user::PreLoginOut::Direct(d) = out {
 			d
 		} else {
 			panic!("No mfa excepted");
@@ -161,7 +159,7 @@ async fn test_10_create_group()
 	let creator = USERS_TEST_STATE.get().unwrap().read().await;
 	let creator = &creator[0];
 
-	let group_input = sentc_crypto::group::prepare_create(&creator.user_data.user_keys[0].public_key).unwrap();
+	let group_input = StdGroup::prepare_create(&creator.user_data.user_keys[0].public_key).unwrap();
 
 	let url = get_url("api/v1/group/forced/".to_owned() + &creator.user_id);
 	let client = reqwest::Client::new();
@@ -193,7 +191,7 @@ async fn test_10_create_group()
 	let mut decrypted_group_keys = Vec::with_capacity(data.keys.len());
 
 	for key in data.keys {
-		decrypted_group_keys.push(sentc_crypto::group::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, key).unwrap());
+		decrypted_group_keys.push(StdGroup::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, key).unwrap());
 	}
 
 	GROUP_TEST_STATE
@@ -252,7 +250,7 @@ async fn test_10_delete_group()
 	}
 
 	//now create the group again for the other tests
-	let group_input = sentc_crypto::group::prepare_create(&creator.user_data.user_keys[0].public_key).unwrap();
+	let group_input = StdGroup::prepare_create(&creator.user_data.user_keys[0].public_key).unwrap();
 
 	let url = get_url("api/v1/group/forced/".to_owned() + &creator.user_id);
 	let client = reqwest::Client::new();
@@ -284,7 +282,7 @@ async fn test_10_delete_group()
 	let mut decrypted_group_keys = Vec::with_capacity(data.keys.len());
 
 	for key in data.keys {
-		decrypted_group_keys.push(sentc_crypto::group::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, key).unwrap());
+		decrypted_group_keys.push(StdGroup::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, key).unwrap());
 	}
 
 	group.group_id = out_1.group_id;
@@ -351,7 +349,7 @@ async fn test_13_create_child_group()
 	let group_public_key = &group.decrypted_group_keys[0].public_group_key;
 	let group_private_key = &group.decrypted_group_keys[0].private_group_key;
 
-	let group_input = sentc_crypto::group::prepare_create(group_public_key).unwrap();
+	let group_input = StdGroup::prepare_create(group_public_key).unwrap();
 
 	let url = get_url("api/v1/group/forced/".to_owned() + &creator.user_id + "/" + &group.group_id + "/child");
 	let client = reqwest::Client::new();
@@ -427,7 +425,7 @@ async fn test_15_create_connected_group()
 	let group_public_key = &group.decrypted_group_keys[0].public_group_key;
 	let group_private_key = &group.decrypted_group_keys[0].private_group_key;
 
-	let group_input = sentc_crypto::group::prepare_create(group_public_key).unwrap();
+	let group_input = StdGroup::prepare_create(group_public_key).unwrap();
 
 	let url = get_url("api/v1/group/forced/".to_owned() + &creator.user_id + "/" + &group.group_id + "/connected");
 	let client = reqwest::Client::new();
@@ -521,7 +519,7 @@ async fn test_user_force_reset()
 	.await;
 
 	//2. reset the 2nd user
-	let input = sentc_crypto::user::register(&user.username, "123456789").unwrap();
+	let input = StdUser::register(&user.username, "123456789").unwrap();
 
 	let url = get_url("api/v1/user/forced/reset_user".to_owned());
 
@@ -540,7 +538,7 @@ async fn test_user_force_reset()
 	//3. test login with new user pw
 
 	//not login with old pw
-	let err = sentc_crypto_full::user::login(get_base_url(), secret_token, &user.username, &user.pw).await;
+	let err = StdUser::login(get_base_url(), secret_token, &user.username, &user.pw).await;
 
 	if let Err(SdkError::Util(SdkUtilError::ServerErr(e, _))) = err {
 		assert_eq!(e, 112);
@@ -555,14 +553,14 @@ async fn test_user_force_reset()
 
 	//4. test group fetch (should be error)
 
-	let data = sentc_crypto_full::group::get_group(get_base_url(), secret_token, &out.jwt, &group.group_id, None)
+	let data = sentc_crypto::util_req_full::group::get_group(get_base_url(), secret_token, &out.jwt, &group.group_id, None)
 		.await
 		.unwrap();
 
 	//now decrypting keys should fail because the user has got new keys
 
 	for key in data.keys {
-		let error = sentc_crypto::group::decrypt_group_keys(&out.user_keys.first().unwrap().private_key, key);
+		let error = StdGroup::decrypt_group_keys(&out.user_keys.first().unwrap().private_key, key);
 
 		if let Err(_e) = error {
 		} else {
@@ -571,7 +569,7 @@ async fn test_user_force_reset()
 	}
 
 	//5. re invite user to group
-	let join_res = sentc_crypto_full::group::invite_user(
+	let join_res = StdGroup::invite_user(
 		get_base_url(),
 		secret_token,
 		&creator.user_data.jwt,

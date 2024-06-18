@@ -3,12 +3,12 @@ use std::time::Duration;
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use rustgram_server_util::error::{CoreErrorCodes, ServerErrorCodes};
-use sentc_crypto::entities::user::UserDataInt;
+use sentc_crypto::crypto::mimic_keys::FakeSignKeyWrapper;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, KeyRotationInput};
 use sentc_crypto::sdk_common::user::UserDeviceRegisterOutput;
 use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::SdkError;
+use sentc_crypto::{SdkError, StdGroup, StdUser, StdUserDataInt};
 use sentc_crypto_common::group::{GroupKeyServerOutput, KeyRotationStartServerOutput};
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{
@@ -56,8 +56,8 @@ pub struct UserState
 	pub username: String,
 	pub pw: String,
 	pub user_id: UserId,
-	pub user_data: Option<UserDataInt>,
-	pub user_data_1: Option<UserDataInt>, //for the 2nd device
+	pub user_data: Option<StdUserDataInt>,
+	pub user_data_1: Option<StdUserDataInt>, //for the 2nd device
 	pub app_data: AppRegisterOutput,
 	pub customer_data: CustomerDoneLoginOutput,
 }
@@ -144,7 +144,7 @@ async fn test_11_user_register()
 
 	let url = get_url("api/v1/register".to_owned());
 
-	let input = sentc_crypto::user::register(username, pw).unwrap();
+	let input = StdUser::register(username, pw).unwrap();
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -223,7 +223,7 @@ async fn test_13_user_register_failed_username_exists()
 
 	let url = get_url("api/v1/register".to_owned());
 
-	let input = sentc_crypto::user::register(username, pw).unwrap();
+	let input = StdUser::register(username, pw).unwrap();
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -285,7 +285,7 @@ async fn test_14_login()
 
 	let body = res.text().await.unwrap();
 
-	let (input, auth_key, derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
+	let (input, auth_key, derived_master_key) = StdUser::prepare_login(username, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/done_login".to_owned());
@@ -303,7 +303,7 @@ async fn test_14_login()
 
 	let keys = match sentc_crypto::user::check_done_login(&server_out).unwrap() {
 		sentc_crypto::sdk_common::user::DoneLoginServerReturn::Direct(d) => {
-			sentc_crypto::user::done_login(&derived_master_key, auth_key, username.to_string(), d).unwrap()
+			StdUser::done_login(&derived_master_key, auth_key, username.to_string(), d).unwrap()
 		},
 		sentc_crypto::sdk_common::user::DoneLoginServerReturn::Otp => {
 			panic!("No mfa excepted for user login test 1")
@@ -320,7 +320,7 @@ async fn test_14_login()
 		.unwrap();
 	let server_out = res.text().await.unwrap();
 
-	let keys = sentc_crypto::user::verify_login(&server_out, keys.user_id, keys.device_id, keys.device_keys).unwrap();
+	let keys = StdUser::verify_login(&server_out, keys.user_id, keys.device_id, keys.device_keys).unwrap();
 
 	user.user_data = Some(keys);
 }
@@ -348,7 +348,7 @@ async fn test_15_login_with_wrong_password()
 
 	let body = res.text().await.unwrap();
 
-	let (input, _auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
+	let (input, _auth_key, _derived_master_key) = StdUser::prepare_login(username, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/done_login".to_owned());
@@ -393,7 +393,7 @@ async fn test_15_login_with_wrong_challenge()
 
 	let body = res.text().await.unwrap();
 
-	let (input, auth_key, derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
+	let (input, auth_key, derived_master_key) = StdUser::prepare_login(username, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/done_login".to_owned());
@@ -411,7 +411,7 @@ async fn test_15_login_with_wrong_challenge()
 
 	let keys = match sentc_crypto::user::check_done_login(&server_out).unwrap() {
 		sentc_crypto::sdk_common::user::DoneLoginServerReturn::Direct(d) => {
-			sentc_crypto::user::done_login(&derived_master_key, auth_key, username.to_string(), d).unwrap()
+			StdUser::done_login(&derived_master_key, auth_key, username.to_string(), d).unwrap()
 		},
 		sentc_crypto::sdk_common::user::DoneLoginServerReturn::Otp => {
 			panic!("No mfa excepted for user login test 1")
@@ -514,7 +514,7 @@ async fn test_17_change_user_pw()
 	let body = res.text().await.unwrap();
 
 	//to still prep login from sdk to get the auth key for done login
-	let (input, auth_key, derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
+	let (input, auth_key, derived_master_key) = StdUser::prepare_login(username, pw, body.as_str()).unwrap();
 
 	let url = get_url("api/v1/done_login".to_owned());
 
@@ -532,7 +532,7 @@ async fn test_17_change_user_pw()
 	let (keys, done_login_out) = match sentc_crypto::user::check_done_login(&done_login_out).unwrap() {
 		sentc_crypto::sdk_common::user::DoneLoginServerReturn::Direct(d) => {
 			(
-				sentc_crypto::user::done_login(&derived_master_key, auth_key, username.to_string(), d.clone()).unwrap(),
+				StdUser::done_login(&derived_master_key, auth_key, username.to_string(), d.clone()).unwrap(),
 				d,
 			)
 		},
@@ -551,7 +551,7 @@ async fn test_17_change_user_pw()
 		.unwrap();
 	let server_out = res.text().await.unwrap();
 
-	let keys = sentc_crypto::user::verify_login(&server_out, keys.user_id, keys.device_id, keys.device_keys).unwrap();
+	let keys = StdUser::verify_login(&server_out, keys.user_id, keys.device_id, keys.device_keys).unwrap();
 
 	//2. login again to get a fresh jwt
 	let jwt = keys.jwt;
@@ -559,7 +559,7 @@ async fn test_17_change_user_pw()
 	//______________________________________________________________________________________________
 	//use a fresh jwt here
 
-	let input = sentc_crypto::user::change_password(pw, new_pw, body.as_str(), done_login_out).unwrap();
+	let input = StdUser::change_password(pw, new_pw, body.as_str(), done_login_out).unwrap();
 
 	let url = get_url("api/v1/user/update_pw".to_owned());
 	let client = reqwest::Client::new();
@@ -597,7 +597,7 @@ async fn test_17_change_user_pw()
 
 	let body = res.text().await.unwrap();
 
-	let (input, _auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
+	let (input, _auth_key, _derived_master_key) = StdUser::prepare_login(username, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/done_login".to_owned());
@@ -641,7 +641,7 @@ async fn test_18_reset_password()
 	let public_token = &user.app_data.public_token;
 
 	//use device keys for pw reset
-	let input = sentc_crypto::user::reset_password(
+	let input = StdUser::reset_password(
 		new_pw,
 		&key_data.device_keys.private_key,
 		&key_data.device_keys.sign_key,
@@ -683,7 +683,7 @@ async fn test_18_reset_password()
 
 	let body = res.text().await.unwrap();
 
-	let (input, _auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(username, old_pw, body.as_str()).unwrap();
+	let (input, _auth_key, _derived_master_key) = StdUser::prepare_login(username, old_pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/done_login".to_owned());
@@ -844,7 +844,7 @@ async fn test_21_get_user_public_data()
 	let verify_key = sentc_crypto::util::public::import_verify_key_from_string_into_format(&body).unwrap();
 
 	//verify the public key
-	let verify = sentc_crypto::user::verify_user_public_key(&verify_key, &public_key).unwrap();
+	let verify = StdUser::verify_user_public_key(&verify_key, &public_key).unwrap();
 
 	assert!(verify);
 }
@@ -994,7 +994,7 @@ async fn test_24_user_add_device()
 	let mut user = USER_TEST_STATE.get().unwrap().write().await;
 	let jwt = &user.user_data.as_ref().unwrap().jwt;
 
-	let input = sentc_crypto::user::prepare_register_device_start("device_1", "12345").unwrap();
+	let input = StdUser::prepare_register_device_start("device_1", "12345").unwrap();
 
 	let url = get_url("api/v1/user/prepare_register_device".to_owned());
 
@@ -1025,7 +1025,7 @@ async fn test_24_user_add_device()
 	}
 
 	//now transfer the output to the main device to add it
-	let (input, _) = sentc_crypto::user::prepare_register_device(body.as_str(), &group_keys_ref, false).unwrap();
+	let (input, _) = StdUser::prepare_register_device(body.as_str(), &group_keys_ref, false).unwrap();
 
 	let url = get_url("api/v1/user/done_register_device".to_owned());
 
@@ -1061,7 +1061,7 @@ async fn test_24_user_add_device()
 
 	let body = res.text().await.unwrap();
 
-	let (input, auth_key, derived_master_key) = sentc_crypto::user::prepare_login("device_1", "12345", body.as_str()).unwrap();
+	let (input, auth_key, derived_master_key) = StdUser::prepare_login("device_1", "12345", body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/done_login".to_owned());
@@ -1079,7 +1079,7 @@ async fn test_24_user_add_device()
 
 	let keys = match sentc_crypto::user::check_done_login(&done_login_out).unwrap() {
 		sentc_crypto::sdk_common::user::DoneLoginServerReturn::Direct(d) => {
-			sentc_crypto::user::done_login(&derived_master_key, auth_key, "device_1".to_string(), d).unwrap()
+			StdUser::done_login(&derived_master_key, auth_key, "device_1".to_string(), d).unwrap()
 		},
 		sentc_crypto::sdk_common::user::DoneLoginServerReturn::Otp => {
 			panic!("No mfa excepted for user login test 1")
@@ -1096,7 +1096,7 @@ async fn test_24_user_add_device()
 		.unwrap();
 	let server_out = res.text().await.unwrap();
 
-	let keys = sentc_crypto::user::verify_login(&server_out, keys.user_id, keys.device_id, keys.device_keys).unwrap();
+	let keys = StdUser::verify_login(&server_out, keys.user_id, keys.device_id, keys.device_keys).unwrap();
 
 	assert_ne!(
 		&keys.device_keys.private_key.key_id,
@@ -1167,11 +1167,11 @@ async fn test_26_user_group_key_rotation()
 	let pre_group_key = &user.user_data.as_ref().unwrap().user_keys[0].group_key;
 	let device_invoker_public_key = &user.user_data.as_ref().unwrap().device_keys.public_key;
 
-	let input = sentc_crypto::group::key_rotation(
+	let input = StdGroup::key_rotation(
 		pre_group_key,
 		device_invoker_public_key,
 		true,
-		None,
+		None::<&FakeSignKeyWrapper>,
 		"test".to_string(),
 	)
 	.unwrap();
@@ -1204,7 +1204,7 @@ async fn test_26_user_group_key_rotation()
 	let body = res.text().await.unwrap();
 	let _out: GroupKeyServerOutput = handle_server_response(body.as_str()).unwrap();
 
-	sentc_crypto::user::done_key_fetch(
+	StdUser::done_key_fetch(
 		&user.user_data.as_ref().unwrap().device_keys.private_key,
 		body.as_str(),
 	)
@@ -1277,7 +1277,7 @@ async fn test_27_done_key_rotation_for_other_device()
 
 	for key in out {
 		let key_id = key.new_group_key_id.clone();
-		let rotation_out = sentc_crypto::group::done_key_rotation(device_private_key, device_public_key, pre_group_key, key, None).unwrap();
+		let rotation_out = StdGroup::done_key_rotation(device_private_key, device_public_key, pre_group_key, key, None).unwrap();
 
 		//done for each key
 		let url = get_url("api/v1/user/user_keys/rotation/".to_owned() + key_id.as_str());
@@ -1349,7 +1349,7 @@ async fn test_28_delete_device()
 
 	let body = res.text().await.unwrap();
 
-	let (input, _auth_key, _derived_master_key) = sentc_crypto::user::prepare_login("device_1", "12345", body.as_str()).unwrap();
+	let (input, _auth_key, _derived_master_key) = StdUser::prepare_login("device_1", "12345", body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/done_login".to_owned());

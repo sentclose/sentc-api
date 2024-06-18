@@ -8,15 +8,16 @@ use reqwest::StatusCode;
 #[cfg(feature = "mysql")]
 use rustgram_server_util::db::mysql_async_export::prelude::Queryable;
 use rustgram_server_util::db::StringEntity;
-use sentc_crypto::entities::group::{GroupKeyData, GroupOutData};
-use sentc_crypto::entities::keys::{HmacKey, PublicKey, SecretKey, SortableKey, SymmetricKey};
-use sentc_crypto::entities::user::{UserDataInt, UserKeyDataInt};
+use sentc_crypto::crypto::mimic_keys::FakeSignKeyWrapper;
+use sentc_crypto::entities::group::GroupOutData;
 use sentc_crypto::sdk_common::file::FileData;
 use sentc_crypto::sdk_common::group::{GroupHmacData, GroupSortableData};
 use sentc_crypto::sdk_common::user::UserPublicKeyData;
-use sentc_crypto::sdk_core::SymmetricKey as CoreSymmetricKey;
 use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::sdk_utils::{handle_general_server_response, handle_server_response};
+use sentc_crypto::std_keys::core::SymmetricKey as CoreSymmetricKey;
+use sentc_crypto::std_keys::util::{HmacKey, PublicKey, SecretKey, SortableKey, SymmetricKey};
+use sentc_crypto::{group, StdFileEncryptor, StdGroup, StdGroupKeyData, StdPreLoginOut, StdUser, StdUserDataInt, StdUserKeyDataInt};
 use sentc_crypto_common::group::{GroupKeyServerOutput, KeyRotationStartServerOutput};
 use sentc_crypto_common::user::{CaptchaCreateOutput, CaptchaInput, UserDeviceRegisterInput, UserForcedAction};
 use sentc_crypto_common::{CustomerId, GroupId, ServerOutput, UserId};
@@ -327,7 +328,7 @@ pub async fn delete_app(customer_jwt: &str, app_id: &str)
 
 pub async fn register_user(app_secret_token: &str, username: &str, password: &str) -> UserId
 {
-	sentc_crypto_full::user::register(get_base_url(), app_secret_token, username, password)
+	StdUser::register_req(get_base_url(), app_secret_token, username, password)
 		.await
 		.unwrap()
 }
@@ -357,24 +358,24 @@ pub async fn delete_user(app_secret_token: &str, user_identifier: String)
 
 pub async fn login_user_light(public_token: &str, username: &str, pw: &str) -> sentc_crypto_light::UserDataInt
 {
-	let out = sentc_crypto_light_full::user::login(get_base_url(), public_token, username, pw)
+	let out = sentc_crypto_light::util_req_full::user::login(get_base_url(), public_token, username, pw)
 		.await
 		.unwrap();
 
-	if let sentc_crypto_light_full::user::PreLoginOut::Direct(d) = out {
+	if let sentc_crypto_light::util_req_full::user::PreLoginOut::Direct(d) = out {
 		d
 	} else {
 		panic!("No mfa excepted");
 	}
 }
 
-pub async fn login_user(public_token: &str, username: &str, pw: &str) -> UserDataInt
+pub async fn login_user(public_token: &str, username: &str, pw: &str) -> StdUserDataInt
 {
-	let out = sentc_crypto_full::user::login(get_base_url(), public_token, username, pw)
+	let out = StdUser::login(get_base_url(), public_token, username, pw)
 		.await
 		.unwrap();
 
-	if let sentc_crypto_full::user::PreLoginOut::Direct(d) = out {
+	if let StdPreLoginOut::Direct(d) = out {
 		d
 	} else {
 		panic!("No mfa excepted");
@@ -383,12 +384,12 @@ pub async fn login_user(public_token: &str, username: &str, pw: &str) -> UserDat
 
 pub async fn init_user(app_secret_token: &str, jwt: &str, refresh_token: &str) -> sentc_crypto::sdk_common::user::UserInitServerOutput
 {
-	sentc_crypto_full::user::init_user(get_base_url(), app_secret_token, jwt, refresh_token.to_string())
+	sentc_crypto::util_req_full::user::init_user(get_base_url(), app_secret_token, jwt, refresh_token.to_string())
 		.await
 		.unwrap()
 }
 
-pub async fn create_test_user(secret_token: &str, public_token: &str, username: &str, pw: &str) -> (UserId, UserDataInt)
+pub async fn create_test_user(secret_token: &str, public_token: &str, username: &str, pw: &str) -> (UserId, StdUserDataInt)
 {
 	//create test user
 	let user_id = register_user(secret_token, username, pw).await;
@@ -401,12 +402,12 @@ pub async fn create_group(secret_token: &str, creator_public_key: &PublicKey, pa
 {
 	match parent_group_id {
 		Some(i) => {
-			sentc_crypto_full::group::create_child_group(get_base_url(), secret_token, jwt, &i, 0, creator_public_key, None)
+			StdGroup::create_child_group(get_base_url(), secret_token, jwt, &i, 0, creator_public_key, None)
 				.await
 				.unwrap()
 		},
 		None => {
-			sentc_crypto_full::group::create(get_base_url(), secret_token, jwt, creator_public_key, None)
+			StdGroup::create(get_base_url(), secret_token, jwt, creator_public_key, None)
 				.await
 				.unwrap()
 		},
@@ -421,7 +422,7 @@ pub async fn create_child_group_from_group_as_member(
 	group_to_access: &str,
 ) -> GroupId
 {
-	sentc_crypto_full::group::create_child_group(
+	StdGroup::create_child_group(
 		get_base_url(),
 		secret_token,
 		jwt,
@@ -441,7 +442,7 @@ pub fn decrypt_group_hmac_keys(first_group_key: &SymmetricKey, hmac_keys: Vec<Gr
 	let mut decrypted_hmac_keys = Vec::with_capacity(hmac_keys.len());
 
 	for hmac_key in hmac_keys {
-		decrypted_hmac_keys.push(sentc_crypto::group::decrypt_group_hmac_key(first_group_key, hmac_key).unwrap());
+		decrypted_hmac_keys.push(StdGroup::decrypt_group_hmac_key(first_group_key, hmac_key).unwrap());
 	}
 
 	decrypted_hmac_keys
@@ -454,23 +455,28 @@ pub fn decrypt_group_sortable_keys(first_group_key: &SymmetricKey, keys: Vec<Gro
 	let mut decrypted_keys = Vec::with_capacity(keys.len());
 
 	for key in keys {
-		decrypted_keys.push(sentc_crypto::group::decrypt_group_sortable_key(first_group_key, key).unwrap());
+		decrypted_keys.push(StdGroup::decrypt_group_sortable_key(first_group_key, key).unwrap());
 	}
 
 	decrypted_keys
 }
 
-pub async fn get_group(secret_token: &str, jwt: &str, group_id: &str, private_key: &SecretKey, key_update: bool)
-	-> (GroupOutData, Vec<GroupKeyData>)
+pub async fn get_group(
+	secret_token: &str,
+	jwt: &str,
+	group_id: &str,
+	private_key: &SecretKey,
+	key_update: bool,
+) -> (GroupOutData, Vec<StdGroupKeyData>)
 {
-	let data = sentc_crypto_full::group::get_group(get_base_url(), secret_token, jwt, group_id, None)
+	let data = sentc_crypto::util_req_full::group::get_group(get_base_url(), secret_token, jwt, group_id, None)
 		.await
 		.unwrap();
 
 	let data_keys = data
 		.keys
 		.into_iter()
-		.map(|k| sentc_crypto::group::decrypt_group_keys(private_key, k).unwrap())
+		.map(|k| StdGroup::decrypt_group_keys(private_key, k).unwrap())
 		.collect();
 
 	assert_eq!(data.key_update, key_update);
@@ -500,16 +506,16 @@ pub async fn get_group_from_group_as_member(
 	group_id: &str,
 	group_to_access: &str,
 	private_group_key: &SecretKey,
-) -> (GroupOutData, Vec<GroupKeyData>)
+) -> (GroupOutData, Vec<StdGroupKeyData>)
 {
-	let data = sentc_crypto_full::group::get_group(get_base_url(), secret_token, jwt, group_id, Some(group_to_access))
+	let data = sentc_crypto::util_req_full::group::get_group(get_base_url(), secret_token, jwt, group_id, Some(group_to_access))
 		.await
 		.unwrap();
 
 	let data_keys = data
 		.keys
 		.into_iter()
-		.map(|k| sentc_crypto::group::decrypt_group_keys(private_group_key, k).unwrap())
+		.map(|k| StdGroup::decrypt_group_keys(private_group_key, k).unwrap())
 		.collect();
 
 	(
@@ -536,12 +542,12 @@ pub async fn add_user_by_invite(
 	secret_token: &str,
 	jwt: &str,
 	group_id: &str,
-	keys: &Vec<GroupKeyData>,
+	keys: &Vec<StdGroupKeyData>,
 	user_to_invite_id: &str,
 	user_to_invite_jwt: &str,
 	user_to_add_public_key: &UserPublicKeyData,
 	user_to_add_private_key: &SecretKey,
-) -> (GroupOutData, Vec<GroupKeyData>)
+) -> (GroupOutData, Vec<StdGroupKeyData>)
 {
 	let mut group_keys_ref = vec![];
 
@@ -549,7 +555,7 @@ pub async fn add_user_by_invite(
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let join_res = sentc_crypto_full::group::invite_user(
+	let join_res = StdGroup::invite_user(
 		get_base_url(),
 		secret_token,
 		jwt,
@@ -592,12 +598,12 @@ pub async fn add_user_by_invite_as_group_as_member(
 	jwt: &str,
 	group_id: &str,
 	group_with_access: &str,
-	keys: &Vec<GroupKeyData>,
+	keys: &Vec<StdGroupKeyData>,
 	user_to_invite_id: &str,
 	user_to_invite_jwt: &str,
 	user_to_add_public_key: &UserPublicKeyData,
 	user_to_add_private_key: &SecretKey,
-) -> (GroupOutData, Vec<GroupKeyData>)
+) -> (GroupOutData, Vec<StdGroupKeyData>)
 {
 	let mut group_keys_ref = vec![];
 
@@ -605,7 +611,7 @@ pub async fn add_user_by_invite_as_group_as_member(
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let join_res = sentc_crypto_full::group::invite_user(
+	let join_res = StdGroup::invite_user(
 		get_base_url(),
 		secret_token,
 		jwt,
@@ -647,13 +653,13 @@ pub async fn add_group_by_invite(
 	secret_token: &str,
 	jwt: &str,
 	group_id: &str,
-	keys: &Vec<GroupKeyData>,
+	keys: &Vec<StdGroupKeyData>,
 	group_to_invite_id: &str,
 	group_to_invite_exported_public_key: &UserPublicKeyData,
 	group_to_invite_member_jwt: &str,
 	group_to_invite_private_key: &SecretKey,
 	group_as_member_id: Option<&str>,
-) -> (GroupOutData, Vec<GroupKeyData>)
+) -> (GroupOutData, Vec<StdGroupKeyData>)
 {
 	let mut group_keys_ref = vec![];
 
@@ -661,7 +667,7 @@ pub async fn add_group_by_invite(
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let join_res = sentc_crypto_full::group::invite_user(
+	let join_res = StdGroup::invite_user(
 		get_base_url(),
 		secret_token,
 		jwt,
@@ -700,9 +706,16 @@ pub async fn key_rotation(
 	invoker_public_key: &PublicKey,
 	invoker_private_key: &SecretKey,
 	group_as_member_id: Option<&str>,
-) -> (GroupOutData, Vec<GroupKeyData>)
+) -> (GroupOutData, Vec<StdGroupKeyData>)
 {
-	let input = sentc_crypto::group::key_rotation(pre_group_key, invoker_public_key, false, None, "test".to_string()).unwrap();
+	let input = StdGroup::key_rotation(
+		pre_group_key,
+		invoker_public_key,
+		false,
+		None::<&FakeSignKeyWrapper>,
+		"test".to_string(),
+	)
+	.unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group_id + "/key_rotation");
 	let client = reqwest::Client::new();
@@ -747,7 +760,7 @@ pub async fn done_key_rotation(
 	public_key: &PublicKey,
 	private_key: &SecretKey,
 	group_as_member_id: Option<&str>,
-) -> Vec<GroupKeyData>
+) -> Vec<StdGroupKeyData>
 {
 	//get the data for the rotation
 
@@ -780,7 +793,7 @@ pub async fn done_key_rotation(
 	for key in out {
 		let key_id = key.new_group_key_id.clone();
 
-		let rotation_out = sentc_crypto::group::done_key_rotation(private_key, public_key, pre_group_key, key, None).unwrap();
+		let rotation_out = StdGroup::done_key_rotation(private_key, public_key, pre_group_key, key, None).unwrap();
 
 		//done the key rotation to save the new key
 		let url = get_url("api/v1/group/".to_owned() + group_id + "/key_rotation/" + key_id.as_str());
@@ -819,9 +832,9 @@ pub async fn done_key_rotation(
 
 		let body = res.text().await.unwrap();
 
-		let group_key_fetch = sentc_crypto::group::get_group_key_from_server_output(body.as_str()).unwrap();
+		let group_key_fetch = group::get_group_key_from_server_output(body.as_str()).unwrap();
 
-		new_keys.push(sentc_crypto::group::decrypt_group_keys(private_key, group_key_fetch).unwrap());
+		new_keys.push(StdGroup::decrypt_group_keys(private_key, group_key_fetch).unwrap());
 	}
 
 	new_keys
@@ -835,37 +848,24 @@ pub async fn user_key_rotation(
 	pre_group_key: &SymmetricKey,
 	device_invoker_public_key: &PublicKey,
 	device_invoker_private_key: &SecretKey,
-) -> UserKeyDataInt
+) -> StdUserKeyDataInt
 {
-	let input = sentc_crypto::group::key_rotation(
-		pre_group_key,
+	let key_id = StdUser::key_rotation(
+		get_base_url(),
+		secret_token,
+		jwt,
 		device_invoker_public_key,
-		true,
-		None,
-		"test".to_string(),
+		pre_group_key,
 	)
+	.await
 	.unwrap();
-
-	let url = get_url("api/v1/user/user_keys/rotation".to_string());
-	let client = reqwest::Client::new();
-	let res = client
-		.post(url)
-		.header(AUTHORIZATION, auth_header(jwt))
-		.header("x-sentc-app-token", secret_token)
-		.body(input)
-		.send()
-		.await
-		.unwrap();
-
-	let body = res.text().await.unwrap();
-	let key_out: KeyRotationStartServerOutput = handle_server_response(body.as_str()).unwrap();
 
 	//wait a bit to finish the key rotation in the sub thread
 	tokio::time::sleep(Duration::from_millis(50)).await;
 
 	//fetch the key by id
 
-	let url = get_url("api/v1/user/user_keys/key/".to_string() + key_out.key_id.as_str());
+	let url = get_url("api/v1/user/user_keys/key/".to_string() + &key_id);
 	let client = reqwest::Client::new();
 	let res = client
 		.get(url)
@@ -876,9 +876,9 @@ pub async fn user_key_rotation(
 		.unwrap();
 
 	let body = res.text().await.unwrap();
-	let _out: GroupKeyServerOutput = handle_server_response(body.as_str()).unwrap();
+	let _out: GroupKeyServerOutput = handle_server_response(&body).unwrap();
 
-	sentc_crypto::user::done_key_fetch(device_invoker_private_key, body.as_str()).unwrap()
+	StdUser::done_key_fetch(device_invoker_private_key, &body).unwrap()
 }
 
 //__________________________________________________________________________________________________
@@ -932,12 +932,12 @@ pub async fn get_and_decrypt_file_part(part_id: &str, jwt: &str, token: &str, fi
 {
 	let buffer = get_file_part(part_id, jwt, token).await;
 
-	sentc_crypto::file::decrypt_file_part(file_key, &buffer, None).unwrap()
+	StdFileEncryptor::decrypt_file_part(file_key, &buffer, None).unwrap()
 }
 
 pub async fn get_and_decrypt_file_part_start(part_id: &str, jwt: &str, token: &str, file_key: &SymmetricKey) -> (Vec<u8>, CoreSymmetricKey)
 {
 	let buffer = get_file_part(part_id, jwt, token).await;
 
-	sentc_crypto::file::decrypt_file_part_start(file_key, &buffer, None).unwrap()
+	StdFileEncryptor::decrypt_file_part_start(file_key, &buffer, None).unwrap()
 }

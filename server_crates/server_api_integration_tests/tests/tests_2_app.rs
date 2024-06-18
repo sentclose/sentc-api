@@ -4,6 +4,7 @@ use hyper::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use rustgram_server_util::error::ServerErrorCodes;
 use sentc_crypto::util::public::handle_server_response;
+use sentc_crypto::StdUser;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::RegisterServerOutput;
 use sentc_crypto_common::ServerOutput;
@@ -341,7 +342,7 @@ async fn test_17_update_app_options()
 	let username = "admin";
 	let pw = "12345";
 
-	let input = sentc_crypto::user::register(username, pw).unwrap();
+	let input = StdUser::register(username, pw).unwrap();
 
 	let url = get_url("api/v1/register".to_owned());
 
@@ -385,7 +386,7 @@ async fn test_17_update_app_options()
 
 	//now try register with public token
 
-	let input = sentc_crypto::user::register(username, pw).unwrap();
+	let input = StdUser::register(username, pw).unwrap();
 
 	let url = get_url("api/v1/register".to_owned());
 

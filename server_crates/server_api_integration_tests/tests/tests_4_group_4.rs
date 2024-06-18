@@ -3,11 +3,10 @@ use std::time::Duration;
 
 use reqwest::header::AUTHORIZATION;
 use rustgram_server_util::error::ServerErrorCodes;
-use sentc_crypto::entities::group::GroupKeyData;
-use sentc_crypto::entities::user::UserDataInt;
+use sentc_crypto::crypto::mimic_keys::FakeSignKeyWrapper;
 use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::SdkError;
+use sentc_crypto::{SdkError, StdGroup, StdGroupKeyData, StdUserDataInt};
 use sentc_crypto_common::group::{GroupAcceptJoinReqServerOutput, GroupInviteServerOutput, KeyRotationStartServerOutput};
 use sentc_crypto_common::{GroupId, UserId};
 use serde_json::to_string;
@@ -37,14 +36,14 @@ pub struct UserState
 	pub username: String,
 	pub pw: String,
 	pub user_id: UserId,
-	pub user_data: UserDataInt,
+	pub user_data: StdUserDataInt,
 }
 
 pub struct GroupState
 {
 	pub group_id: GroupId,
 	pub group_member: Vec<UserId>,
-	pub decrypted_group_keys: HashMap<UserId, Vec<GroupKeyData>>,
+	pub decrypted_group_keys: HashMap<UserId, Vec<StdGroupKeyData>>,
 }
 
 static CUSTOMER_TEST_STATE: OnceCell<RwLock<CustomerDoneLoginOutput>> = OnceCell::const_new();
@@ -166,7 +165,7 @@ async fn test_11_not_invite_user_with_wrong_rank()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(
+	let invite = StdGroup::prepare_group_keys_for_new_member(
 		&user_to_invite.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
@@ -224,7 +223,7 @@ async fn test_12_invite_user_with_rank()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(
+	let invite = StdGroup::prepare_group_keys_for_new_member(
 		&user_to_invite.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
@@ -288,7 +287,7 @@ async fn test_13_not_invite_user_with_higher_rank()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(
+	let invite = StdGroup::prepare_group_keys_for_new_member(
 		&user_to_invite.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
@@ -345,7 +344,7 @@ async fn test_14_invite_user_from_another_user_with_rank()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(
+	let invite = StdGroup::prepare_group_keys_for_new_member(
 		&user_to_invite.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
@@ -440,7 +439,7 @@ async fn test_15_not_accept_join_with_wrong_rank()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(
+	let invite = StdGroup::prepare_group_keys_for_new_member(
 		&user_to_invite.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
@@ -499,7 +498,7 @@ async fn test_16_not_accept_join_with_higher_rank()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(
+	let invite = StdGroup::prepare_group_keys_for_new_member(
 		&user_to_invite.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
@@ -558,7 +557,7 @@ async fn test_16_accept_join_with_rank()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(
+	let invite = StdGroup::prepare_group_keys_for_new_member(
 		&user_to_invite.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
@@ -624,7 +623,7 @@ async fn test_17_re_invite_user()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(
+	let invite = StdGroup::prepare_group_keys_for_new_member(
 		&user_to_invite.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
@@ -682,7 +681,7 @@ async fn test_20_do_signed_key_rotation()
 	let invoker_private_key = &user.user_data.user_keys[0].private_key;
 	let invoker_sign_key = &user.user_data.user_keys[0].sign_key;
 
-	let input = sentc_crypto::group::key_rotation(
+	let input = StdGroup::key_rotation(
 		pre_group_key,
 		invoker_public_key,
 		false,
@@ -764,7 +763,7 @@ async fn test_21_finished_signed_key_rotation_without_verify()
 	);
 
 	//not verify the keys
-	let rotation_out = sentc_crypto::group::done_key_rotation(
+	let rotation_out = StdGroup::done_key_rotation(
 		&user.user_data.user_keys[0].private_key,
 		&user.user_data.user_keys[0].public_key,
 		&group
@@ -847,7 +846,7 @@ async fn test_22_finished_signed_key_rotation_wit_verify()
 	);
 
 	//this time verify the keys
-	let rotation_out = sentc_crypto::group::done_key_rotation(
+	let rotation_out = StdGroup::done_key_rotation(
 		&user.user_data.user_keys[0].private_key,
 		&user.user_data.user_keys[0].public_key,
 		&group
@@ -931,7 +930,14 @@ async fn test_41_no_key_rotation_with_wrong_rank()
 	let pre_group_key = &group_keys.group_key;
 	let invoker_public_key = &user.user_data.user_keys[0].public_key;
 
-	let input = sentc_crypto::group::key_rotation(pre_group_key, invoker_public_key, false, None, "test".to_string()).unwrap();
+	let input = StdGroup::key_rotation(
+		pre_group_key,
+		invoker_public_key,
+		false,
+		None::<&FakeSignKeyWrapper>,
+		"test".to_string(),
+	)
+	.unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key_rotation");
 	let client = reqwest::Client::new();
@@ -996,7 +1002,14 @@ async fn test_42_key_rotation_limit()
 	}
 
 	//now test the 3rd rotation which should be fail
-	let input = sentc_crypto::group::key_rotation(pre_group_key, invoker_public_key, false, None, "test".to_string()).unwrap();
+	let input = StdGroup::key_rotation(
+		pre_group_key,
+		invoker_public_key,
+		false,
+		None::<&FakeSignKeyWrapper>,
+		"test".to_string(),
+	)
+	.unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key_rotation");
 	let client = reqwest::Client::new();
