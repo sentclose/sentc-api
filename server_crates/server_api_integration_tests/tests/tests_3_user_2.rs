@@ -3,6 +3,7 @@
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use rustgram_server_util::error::{CoreErrorCodes, ServerErrorCodes};
+use sentc_crypto::StdUser;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{
 	DoneLoginLightServerOutput,
@@ -245,7 +246,7 @@ async fn test_14_login()
 
 	let keys = match sentc_crypto_light::user::check_done_login(&server_out).unwrap() {
 		sentc_crypto_light::sdk_common::user::DoneLoginServerReturn::Direct(d) => {
-			sentc_crypto::user::done_login(&derived_master_key, auth_key, username.to_string(), d).unwrap()
+			StdUser::done_login(&derived_master_key, auth_key, username.to_string(), d).unwrap()
 		},
 		sentc_crypto_light::sdk_common::user::DoneLoginServerReturn::Otp => {
 			panic!("No mfa excepted for user login test 2")
@@ -409,7 +410,7 @@ async fn test_17_change_user_pw()
 	let (keys, done_body) = match sentc_crypto_light::user::check_done_login(&done_body).unwrap() {
 		sentc_crypto_light::sdk_common::user::DoneLoginServerReturn::Direct(d) => {
 			(
-				sentc_crypto::user::done_login(&derived_master_key, auth_key, username.to_string(), d.clone()).unwrap(),
+				StdUser::done_login(&derived_master_key, auth_key, username.to_string(), d.clone()).unwrap(),
 				d,
 			)
 		},
@@ -772,7 +773,7 @@ async fn test_24_user_add_device()
 
 	let keys = match sentc_crypto_light::user::check_done_login(&server_out).unwrap() {
 		sentc_crypto_light::sdk_common::user::DoneLoginServerReturn::Direct(d) => {
-			sentc_crypto::user::done_login(&derived_master_key, auth_key, "device_1".to_string(), d).unwrap()
+			StdUser::done_login(&derived_master_key, auth_key, "device_1".to_string(), d).unwrap()
 		},
 		sentc_crypto_light::sdk_common::user::DoneLoginServerReturn::Otp => {
 			panic!("No mfa excepted for user login test 2")

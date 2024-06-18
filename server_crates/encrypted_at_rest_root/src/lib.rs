@@ -6,7 +6,7 @@ use std::env;
 
 pub use encrypt::{decrypt, decrypt_with_key, encrypt, encrypt_with_key};
 pub use key_gen::{export_key, generate_and_export_new_key, generate_new_key};
-use sentc_crypto::entities::keys::{SymKeyFormatExport, SymmetricKey};
+use sentc_crypto_std_keys::util::{SymKeyFormatExport, SymmetricKey};
 use tokio::sync::{OnceCell, RwLock, RwLockReadGuard};
 
 static CRYPTO_ROOT_KEY: OnceCell<RwLock<SymmetricKey>> = OnceCell::const_new();

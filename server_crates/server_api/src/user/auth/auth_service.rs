@@ -3,7 +3,8 @@ use std::ptr;
 
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
-use sentc_crypto::sdk_core::HashedAuthenticationKey;
+use sentc_crypto::traverse_keys;
+use sentc_crypto::util::server::{encrypt_login_verify_challenge, generate_salt_from_base64_to_string, get_auth_keys_from_base64};
 use sentc_crypto_common::user::{DoneLoginServerInput, OtpInput, PrepareLoginSaltServerOutput, VerifyLoginInput};
 use sentc_crypto_common::AppId;
 use server_api_common::customer_app::app_entities::AppData;
@@ -38,10 +39,16 @@ pub(crate) async fn prepare_done_login(app_id: impl Into<AppId>, identifier: imp
 
 	let challenge = create_refresh_token()?;
 
-	let encrypted_challenge = sentc_crypto::util::server::encrypt_login_verify_challenge(
-		&device_keys.public_key_string,
-		&device_keys.keypair_encrypt_alg,
-		&challenge,
+	//TODO make req to key endpoint if the app owner added one
+
+	let encrypted_challenge = traverse_keys!(
+		encrypt_login_verify_challenge,
+		(
+			&device_keys.public_key_string,
+			&device_keys.keypair_encrypt_alg,
+			&challenge
+		),
+		[sentc_crypto_std_keys::util::SecretKey]
 	)
 	.map_err(|_e| {
 		ServerCoreError::new_msg(
@@ -197,8 +204,14 @@ async fn create_salt(app_id: impl Into<AppId>, user_identifier: &str) -> AppRes<
 		},
 	};
 
-	let salt_string = sentc_crypto::util::server::generate_salt_from_base64_to_string(client_random_value.as_str(), alg.as_str(), add_str)
-		.map_err(|_e| ServerCoreError::new_msg(401, ApiErrorCodes::SaltError, "Can't create salt"))?;
+	//TODO make req to key endpoint if the app owner added one
+
+	let salt_string = traverse_keys!(
+		generate_salt_from_base64_to_string,
+		(&client_random_value, &alg, add_str),
+		[sentc_crypto_std_keys::core::ClientRandomValue]
+	)
+	.map_err(|_| ServerCoreError::new_msg(401, ApiErrorCodes::SaltError, "Can't create salt"))?;
 
 	let out = PrepareLoginSaltServerOutput {
 		salt_string,
@@ -212,15 +225,30 @@ async fn create_salt(app_id: impl Into<AppId>, user_identifier: &str) -> AppRes<
 
 fn auth_user_private(auth_key: &str, hashed_user_auth_key: &str, alg: &str) -> AppRes<()>
 {
+	let server_hashed_auth_key = sentc_crypto::util::server::get_hashed_auth_key_from_string(hashed_user_auth_key).map_err(|_e| {
+		ServerCoreError::new_msg(
+			401,
+			ApiErrorCodes::AuthKeyFormat,
+			"The authentication key has a wrong format",
+		)
+	})?;
+
 	//hash the auth key and use the first 16 bytes
-	let (server_hashed_auth_key, hashed_client_key) = sentc_crypto::util::server::get_auth_keys_from_base64(auth_key, hashed_user_auth_key, alg)
-		.map_err(|_e| {
-			ServerCoreError::new_msg(
-				401,
-				ApiErrorCodes::AuthKeyFormat,
-				"The authentication key has a wrong format",
-			)
-		})?;
+
+	//TODO make req to key endpoint if the app owner added one
+
+	let hashed_client_key = traverse_keys!(
+		get_auth_keys_from_base64,
+		(auth_key, alg),
+		[sentc_crypto_std_keys::core::DeriveAuthKeyForAuth]
+	)
+	.map_err(|_| {
+		ServerCoreError::new_msg(
+			401,
+			ApiErrorCodes::AuthKeyFormat,
+			"The authentication key has a wrong format",
+		)
+	})?;
 
 	//check the keys
 	let check = compare_auth_keys(server_hashed_auth_key, hashed_client_key);
@@ -294,16 +322,10 @@ unsafe fn memeq(b1: *const u8, b2: *const u8, len: usize) -> bool
 		.eq(&0)
 }
 
-fn compare_auth_keys(left: HashedAuthenticationKey, right: HashedAuthenticationKey) -> bool
+fn compare_auth_keys(left: Vec<u8>, right: Vec<u8>) -> bool
 {
-	match (left, right) {
-		(HashedAuthenticationKey::Argon2(l), HashedAuthenticationKey::Argon2(r)) => {
-			//calling in unsafe block
-
-			unsafe {
-				//
-				memeq(l.as_ptr(), r.as_ptr(), 16)
-			}
-		},
+	unsafe {
+		//
+		memeq(left.as_ptr(), right.as_ptr(), 16)
 	}
 }

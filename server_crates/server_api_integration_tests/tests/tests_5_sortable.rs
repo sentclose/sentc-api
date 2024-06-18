@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use sentc_crypto::entities::group::GroupKeyData;
-use sentc_crypto::entities::keys::SortableKey;
-use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::sdk_core::cryptomat::SortableKey as CoreSort;
+use sentc_crypto::sdk_utils::cryptomat::SortableKeyWrapper;
+use sentc_crypto::std_keys::util::SortableKey;
+use sentc_crypto::{StdGroupKeyData, StdUserDataInt};
 use sentc_crypto_common::{GroupId, UserId};
 use server_dashboard_common::app::AppRegisterOutput;
 use server_dashboard_common::customer::CustomerDoneLoginOutput;
@@ -34,14 +34,14 @@ pub struct UserState
 	pub username: String,
 	pub pw: String,
 	pub user_id: UserId,
-	pub user_data: UserDataInt,
+	pub user_data: StdUserDataInt,
 }
 
 pub struct GroupState
 {
 	pub group_id: GroupId,
 	pub group_member: Vec<UserId>,
-	pub decrypted_group_keys: HashMap<UserId, Vec<GroupKeyData>>,
+	pub decrypted_group_keys: HashMap<UserId, Vec<StdGroupKeyData>>,
 	pub sortable_keys: Vec<SortableKey>,
 }
 

@@ -4,6 +4,7 @@ use reqwest::header::AUTHORIZATION;
 use rustgram_server_util::db::StringEntity;
 use rustgram_server_util::error::ServerErrorCodes;
 use sentc_crypto::util::public::handle_server_response;
+use sentc_crypto::StdUser;
 use sentc_crypto_common::user::UserDeviceRegisterInput;
 use sentc_crypto_common::ServerOutput;
 use sentc_crypto_light::sdk_common::user::DoneLoginServerReturn;
@@ -485,7 +486,7 @@ async fn test_15_change_password_again_from_pw_change()
 
 	let body = res.text().await.unwrap();
 
-	let (input, auth_key, derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
+	let (input, auth_key, derived_master_key) = StdUser::prepare_login(email, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/customer/done_login".to_owned());
@@ -554,7 +555,7 @@ async fn test_15_change_password_again_from_pw_change()
 	let body = res.text().await.unwrap();
 
 	//try login with the old pw
-	let (input, _auth_key, _derived_master_key) = sentc_crypto::user::prepare_login(email, pw, body.as_str()).unwrap();
+	let (input, _auth_key, _derived_master_key) = StdUser::prepare_login(email, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/customer/done_login".to_owned());

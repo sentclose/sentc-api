@@ -1,8 +1,8 @@
 //mfa tests
 
 use reqwest::header::AUTHORIZATION;
-use sentc_crypto::entities::user::UserDataInt;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
+use sentc_crypto::{StdUser, StdUserDataInt};
 use sentc_crypto_common::user::{OtpRecoveryKeysOutput, OtpRegister, UserForcedAction};
 use sentc_crypto_common::UserId;
 use server_dashboard_common::app::AppRegisterOutput;
@@ -30,7 +30,7 @@ pub struct UserState
 	pub username: String,
 	pub pw: String,
 	pub user_id: UserId,
-	pub user_data: UserDataInt,
+	pub user_data: StdUserDataInt,
 	pub app_data: AppRegisterOutput,
 	pub customer_data: CustomerDoneLoginOutput,
 	pub otp_secret: String,
@@ -122,7 +122,7 @@ async fn test_11_should_login_with_otp()
 
 	let body = res.text().await.unwrap();
 
-	let (input, auth_key, derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
+	let (input, auth_key, derived_master_key) = StdUser::prepare_login(username, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/done_login".to_owned());
@@ -166,7 +166,7 @@ async fn test_11_should_login_with_otp()
 
 	let server_out = res.text().await.unwrap();
 
-	let keys = sentc_crypto::user::done_validate_mfa(&derived_master_key, auth_key, username.clone(), &server_out).unwrap();
+	let keys = StdUser::done_validate_mfa(&derived_master_key, auth_key, username.clone(), &server_out).unwrap();
 
 	let url = get_url("api/v1/verify_login".to_owned());
 	let res = client
@@ -178,7 +178,7 @@ async fn test_11_should_login_with_otp()
 		.unwrap();
 	let server_out = res.text().await.unwrap();
 
-	let keys = sentc_crypto::user::verify_login(&server_out, keys.user_id, keys.device_id, keys.device_keys).unwrap();
+	let keys = StdUser::verify_login(&server_out, keys.user_id, keys.device_id, keys.device_keys).unwrap();
 
 	assert_eq!(
 		user.user_data.device_keys.private_key.key_id,
@@ -234,7 +234,7 @@ async fn test_13_login_with_recovery_key()
 
 	let body = res.text().await.unwrap();
 
-	let (input, auth_key, derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
+	let (input, auth_key, derived_master_key) = StdUser::prepare_login(username, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/done_login".to_owned());
@@ -252,7 +252,7 @@ async fn test_13_login_with_recovery_key()
 
 	let _r = sentc_crypto::user::check_done_login(&server_out).unwrap();
 
-	let keys = sentc_crypto_full::user::mfa_login(
+	let keys = StdUser::mfa_login(
 		get_base_url(),
 		&user.app_data.public_token,
 		&derived_master_key,
@@ -318,7 +318,7 @@ async fn test_15_not_use_key_again()
 
 	let body = res.text().await.unwrap();
 
-	let (input, auth_key, derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
+	let (input, auth_key, derived_master_key) = StdUser::prepare_login(username, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/done_login".to_owned());
@@ -336,7 +336,7 @@ async fn test_15_not_use_key_again()
 
 	let _r = sentc_crypto::user::check_done_login(&server_out).unwrap();
 
-	let keys = sentc_crypto_full::user::mfa_login(
+	let keys = StdUser::mfa_login(
 		get_base_url(),
 		&user.app_data.public_token,
 		&derived_master_key,
@@ -375,7 +375,7 @@ async fn test_16_test_with_all_keys()
 
 	let body = res.text().await.unwrap();
 
-	let (input, auth_key, derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
+	let (input, auth_key, derived_master_key) = StdUser::prepare_login(username, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/done_login".to_owned());
@@ -401,7 +401,7 @@ async fn test_16_test_with_all_keys()
 			continue;
 		}
 
-		let keys = sentc_crypto_full::user::mfa_login(
+		let keys = StdUser::mfa_login(
 			get_base_url(),
 			&user.app_data.public_token,
 			&derived_master_key,
@@ -489,7 +489,7 @@ async fn test_19_login_with_new_totp_secret()
 
 	let body = res.text().await.unwrap();
 
-	let (input, auth_key, derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
+	let (input, auth_key, derived_master_key) = StdUser::prepare_login(username, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/done_login".to_owned());
@@ -519,7 +519,7 @@ async fn test_19_login_with_new_totp_secret()
 
 	let token = totp.generate_current().unwrap();
 
-	let keys = sentc_crypto_full::user::mfa_login(
+	let keys = StdUser::mfa_login(
 		get_base_url(),
 		&user.app_data.public_token,
 		&derived_master_key,
@@ -561,7 +561,7 @@ async fn test_20_login_with_new_recovery_keys()
 
 	let body = res.text().await.unwrap();
 
-	let (input, auth_key, derived_master_key) = sentc_crypto::user::prepare_login(username, pw, body.as_str()).unwrap();
+	let (input, auth_key, derived_master_key) = StdUser::prepare_login(username, pw, body.as_str()).unwrap();
 
 	// //done login
 	let url = get_url("api/v1/done_login".to_owned());
@@ -579,7 +579,7 @@ async fn test_20_login_with_new_recovery_keys()
 
 	let _r = sentc_crypto::user::check_done_login(&server_out).unwrap();
 
-	let keys = sentc_crypto_full::user::mfa_login(
+	let keys = StdUser::mfa_login(
 		get_base_url(),
 		&user.app_data.public_token,
 		&derived_master_key,

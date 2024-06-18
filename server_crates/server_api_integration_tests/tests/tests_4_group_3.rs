@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
 use reqwest::header::AUTHORIZATION;
-use sentc_crypto::entities::group::{GroupKeyData, GroupOutData};
-use sentc_crypto::entities::user::UserDataInt;
+use sentc_crypto::entities::group::GroupOutData;
 use sentc_crypto::sdk_common::group::GroupCreateOutput;
 use sentc_crypto::util::public::handle_server_response;
+use sentc_crypto::{StdGroup, StdGroupKeyData, StdUserDataInt};
 use sentc_crypto_common::group::GroupInviteServerOutput;
 use sentc_crypto_common::{GroupId, UserId};
 use server_dashboard_common::app::AppRegisterOutput;
@@ -36,7 +36,7 @@ pub struct UserState
 	pub username: String,
 	pub pw: String,
 	pub user_id: UserId,
-	pub user_data: UserDataInt,
+	pub user_data: StdUserDataInt,
 }
 
 pub struct GroupState
@@ -44,7 +44,7 @@ pub struct GroupState
 	pub group_id: GroupId,
 	pub parent_id: Option<GroupId>,
 	pub group_data: GroupOutData,
-	pub decrypted_group_keys: HashMap<UserId, Vec<GroupKeyData>>,
+	pub decrypted_group_keys: HashMap<UserId, Vec<StdGroupKeyData>>,
 }
 
 static CUSTOMER_TEST_STATE: OnceCell<RwLock<CustomerDoneLoginOutput>> = OnceCell::const_new();
@@ -154,7 +154,7 @@ async fn test_01_create_groups()
 	//5. group. group 3 is connected as member to this group
 	let url = get_url("api/v1/group".to_owned() + "/" + &group_id_3 + "/connected");
 
-	let group_input = sentc_crypto::group::prepare_create(&group_3_data_for_creator[0].public_group_key).unwrap();
+	let group_input = StdGroup::prepare_create(&group_3_data_for_creator[0].public_group_key).unwrap();
 
 	let client = reqwest::Client::new();
 	let res = client
@@ -299,7 +299,7 @@ async fn test_12_connect_group_to_group_one()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(
+	let invite = StdGroup::prepare_group_keys_for_new_member(
 		&group_to_connect_to
 			.decrypted_group_keys
 			.get(user.user_id.as_str())
@@ -391,7 +391,7 @@ async fn test_20_access_connected_group_from_parent_group_directly_without_cache
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = sentc_crypto::group::prepare_group_keys_for_new_member(
+	let invite = StdGroup::prepare_group_keys_for_new_member(
 		&user_to_invite.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
