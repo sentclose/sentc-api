@@ -787,6 +787,7 @@ version = "0.1.0"
 dependencies = [
  "rustgram-server-util",
  "sentc-crypto",
+ "sentc-crypto-std-keys",
  "tokio",
 ]
 
@@ -2483,13 +2484,14 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto"
-version = "0.12.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=15a91d0f2241b9720f1f2f520f484c305b038be1#15a91d0f2241b9720f1f2f520f484c305b038be1"
+version = "0.13.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=1591e76f3fafb3aa4d7af40b97871a15fd5cc66d#1591e76f3fafb3aa4d7af40b97871a15fd5cc66d"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
  "sentc-crypto-common 0.10.0 (git+https://github.com/sentclose/sentc-common.git?rev=de513a82b0200b476d9592ba1de38c73c6a32354)",
  "sentc-crypto-core",
+ "sentc-crypto-std-keys",
  "sentc-crypto-utils",
  "serde",
  "serde_json",
@@ -2514,65 +2516,58 @@ dependencies = [
 
 [[package]]
 name = "sentc-crypto-core"
-version = "0.12.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=15a91d0f2241b9720f1f2f520f484c305b038be1#15a91d0f2241b9720f1f2f520f484c305b038be1"
+version = "0.13.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=1591e76f3fafb3aa4d7af40b97871a15fd5cc66d#1591e76f3fafb3aa4d7af40b97871a15fd5cc66d"
 dependencies = [
- "aes-gcm",
- "argon2",
- "curve25519-dalek",
- "ed25519-dalek",
- "hkdf",
- "hmac",
- "ope",
- "pqc_dilithium_edit",
- "pqc_kyber_edit",
  "rand_core 0.6.4",
  "sha2 0.10.8",
- "x25519-dalek",
-]
-
-[[package]]
-name = "sentc-crypto-full"
-version = "0.12.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=15a91d0f2241b9720f1f2f520f484c305b038be1#15a91d0f2241b9720f1f2f520f484c305b038be1"
-dependencies = [
- "sentc-crypto",
- "sentc-crypto-common 0.10.0 (git+https://github.com/sentclose/sentc-common.git?rev=de513a82b0200b476d9592ba1de38c73c6a32354)",
- "sentc-crypto-utils",
- "serde",
- "serde_json",
 ]
 
 [[package]]
 name = "sentc-crypto-light"
-version = "0.12.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=15a91d0f2241b9720f1f2f520f484c305b038be1#15a91d0f2241b9720f1f2f520f484c305b038be1"
+version = "0.13.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=1591e76f3fafb3aa4d7af40b97871a15fd5cc66d#1591e76f3fafb3aa4d7af40b97871a15fd5cc66d"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
  "sentc-crypto-common 0.10.0 (git+https://github.com/sentclose/sentc-common.git?rev=de513a82b0200b476d9592ba1de38c73c6a32354)",
  "sentc-crypto-core",
+ "sentc-crypto-std-keys",
  "sentc-crypto-utils",
  "serde",
  "serde_json",
 ]
 
 [[package]]
-name = "sentc-crypto-light-full"
-version = "0.12.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=15a91d0f2241b9720f1f2f520f484c305b038be1#15a91d0f2241b9720f1f2f520f484c305b038be1"
+name = "sentc-crypto-std-keys"
+version = "0.13.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=1591e76f3fafb3aa4d7af40b97871a15fd5cc66d#1591e76f3fafb3aa4d7af40b97871a15fd5cc66d"
 dependencies = [
+ "aes-gcm",
+ "argon2",
+ "base64ct",
+ "curve25519-dalek",
+ "ed25519-dalek",
+ "hkdf",
+ "hmac",
+ "ope",
+ "pem-rfc7468",
+ "pqc_dilithium_edit",
+ "pqc_kyber_edit",
+ "rand_core 0.6.4",
  "sentc-crypto-common 0.10.0 (git+https://github.com/sentclose/sentc-common.git?rev=de513a82b0200b476d9592ba1de38c73c6a32354)",
- "sentc-crypto-light",
+ "sentc-crypto-core",
  "sentc-crypto-utils",
  "serde",
  "serde_json",
+ "sha2 0.10.8",
+ "x25519-dalek",
 ]
 
 [[package]]
 name = "sentc-crypto-utils"
-version = "0.12.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=15a91d0f2241b9720f1f2f520f484c305b038be1#15a91d0f2241b9720f1f2f520f484c305b038be1"
+version = "0.13.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=1591e76f3fafb3aa4d7af40b97871a15fd5cc66d#1591e76f3fafb3aa4d7af40b97871a15fd5cc66d"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -2669,6 +2664,7 @@ dependencies = [
  "rustgram-server-util",
  "sentc-crypto",
  "sentc-crypto-common 0.10.0",
+ "sentc-crypto-std-keys",
  "serde",
  "server_api_common",
  "tokio",
@@ -2756,9 +2752,7 @@ dependencies = [
  "rustgram-server-util",
  "sentc-crypto",
  "sentc-crypto-common 0.10.0",
- "sentc-crypto-full",
  "sentc-crypto-light",
- "sentc-crypto-light-full",
  "serde",
  "serde_json",
  "server_api",
