@@ -1,5 +1,7 @@
 use rustgram_server_util::res::AppRes;
-use sentc_crypto::entities::keys::SymmetricKey;
+use sentc_crypto::crypto::mimic_keys::FakeSignKeyWrapper;
+use sentc_crypto::sdk_utils::cryptomat::SymKeyCrypto;
+use sentc_crypto_std_keys::util::SymmetricKey;
 
 use crate::error::SentcSdkErrorWrapper;
 use crate::CRYPTO_ROOT_KEY;
@@ -13,7 +15,7 @@ pub async fn encrypt(data: &str) -> AppRes<String>
 
 pub fn encrypt_with_key(key: &SymmetricKey, data: &str) -> AppRes<String>
 {
-	key.encrypt_string(data, None)
+	key.encrypt_string(data, None::<&FakeSignKeyWrapper>)
 		.map_err(|e| SentcSdkErrorWrapper(e.into()).into())
 }
 

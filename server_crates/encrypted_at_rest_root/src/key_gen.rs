@@ -1,9 +1,9 @@
-use sentc_crypto::entities::keys::{SymKeyFormatExport, SymmetricKey};
 use sentc_crypto::sdk_core::cryptomat::SymKeyGen;
+use sentc_crypto_std_keys::util::{SymKeyFormatExport, SymmetricKey};
 
 pub fn generate_new_key() -> SymmetricKey
 {
-	let key = sentc_crypto::sdk_core::SymmetricKey::generate().unwrap();
+	let key = sentc_crypto_std_keys::core::SymmetricKey::generate().unwrap();
 
 	SymmetricKey {
 		key,
