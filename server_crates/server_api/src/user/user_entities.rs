@@ -8,7 +8,10 @@ use crate::sentc_group_entities::GroupHmacData;
 
 //generated with browser console: btoa(String.fromCharCode.apply(null, window.crypto.getRandomValues(new Uint8Array(128/8))));
 //the value with the used alg
-pub const SERVER_RANDOM_VALUE: (&str, &str) = ("zx4AKPCMHkeZnh21ciQ62w==", sentc_crypto::util::public::ARGON_2_OUTPUT);
+pub const SERVER_RANDOM_VALUE: (&str, &str) = (
+	"zx4AKPCMHkeZnh21ciQ62w==",
+	sentc_crypto_std_keys::core::ARGON_2_OUTPUT,
+);
 
 //__________________________________________________________________________________________________
 //User login data

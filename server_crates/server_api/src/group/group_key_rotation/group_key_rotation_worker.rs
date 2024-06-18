@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
+use sentc_crypto::traverse_keys;
+use sentc_crypto::util::server::encrypt_ephemeral_group_key_with_public_key;
 use sentc_crypto_common::{AppId, GroupId, SymKeyId};
 
 use crate::group::group_entities::{KeyRotationWorkerKey, UserEphKeyOut, UserGroupPublicKeyData};
@@ -98,7 +100,7 @@ async fn loop_user(
 				group_key_rotation_model::get_user_and_public_key(group_id, key_id, last_time_fetched, &last_user_id).await?
 			},
 			(LoopType::GroupAsMember, Some(_)) => {
-				//Don't call the loop again with user group because user group wont get any group as member
+				//Don't call the loop again with user group because user group won't get any group as member
 				return Ok(0);
 			},
 		};
@@ -140,15 +142,21 @@ async fn loop_user(
 
 fn encrypt(eph_key: &KeyRotationWorkerKey, users: Vec<UserGroupPublicKeyData>) -> Vec<UserEphKeyOut>
 {
+	//TODO add new encrypt fn with request that does a req to encrypt all user keys when the app owner added an endpoint
+
 	let mut encrypted_keys: Vec<UserEphKeyOut> = Vec::with_capacity(users.len());
 
 	for user in users {
 		//encrypt with sdk -> import public key data from string
 
-		let encrypted_ephemeral_key = match sentc_crypto::util::server::encrypt_ephemeral_group_key_with_public_key(
-			user.public_key.as_str(),
-			user.public_key_alg.as_str(),
-			eph_key.encrypted_ephemeral_key.as_str(),
+		let encrypted_ephemeral_key = match traverse_keys!(
+			encrypt_ephemeral_group_key_with_public_key,
+			(
+				&user.public_key,
+				&user.public_key_alg,
+				&eph_key.encrypted_ephemeral_key
+			),
+			[sentc_crypto_std_keys::util::SecretKey]
 		) {
 			Ok(k) => k,
 			Err(e) => {
