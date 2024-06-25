@@ -41,6 +41,8 @@ pub(crate) async fn prepare_done_login(app_id: impl Into<AppId>, identifier: imp
 
 	//TODO make req to key endpoint if the app owner added one
 
+	//only rust keys without external c dep
+	#[cfg(not(feature = "external_c_keys"))]
 	let encrypted_challenge = traverse_keys!(
 		encrypt_login_verify_challenge,
 		(
@@ -49,8 +51,20 @@ pub(crate) async fn prepare_done_login(app_id: impl Into<AppId>, identifier: imp
 			&challenge
 		),
 		[sentc_crypto_std_keys::util::SecretKey]
-	)
-	.map_err(|_e| {
+	);
+
+	#[cfg(feature = "external_c_keys")]
+	let encrypted_challenge = traverse_keys!(
+		encrypt_login_verify_challenge,
+		(
+			&device_keys.public_key_string,
+			&device_keys.keypair_encrypt_alg,
+			&challenge
+		),
+		[sentc_crypto_std_keys::util::SecretKey, sentc_crypto_fips_keys::util::SecretKey]
+	);
+
+	let encrypted_challenge = encrypted_challenge.map_err(|_e| {
 		ServerCoreError::new_msg(
 			400,
 			ApiErrorCodes::AppTokenWrongFormat,
@@ -206,12 +220,24 @@ async fn create_salt(app_id: impl Into<AppId>, user_identifier: &str) -> AppRes<
 
 	//TODO make req to key endpoint if the app owner added one
 
+	#[cfg(not(feature = "external_c_keys"))]
 	let salt_string = traverse_keys!(
 		generate_salt_from_base64_to_string,
 		(&client_random_value, &alg, add_str),
 		[sentc_crypto_std_keys::core::ClientRandomValue]
-	)
-	.map_err(|_| ServerCoreError::new_msg(401, ApiErrorCodes::SaltError, "Can't create salt"))?;
+	);
+
+	#[cfg(feature = "external_c_keys")]
+	let salt_string = traverse_keys!(
+		generate_salt_from_base64_to_string,
+		(&client_random_value, &alg, add_str),
+		[
+			sentc_crypto_std_keys::core::ClientRandomValue,
+			sentc_crypto_fips_keys::core::pw_hash::ClientRandomValue
+		]
+	);
+
+	let salt_string = salt_string.map_err(|_| ServerCoreError::new_msg(401, ApiErrorCodes::SaltError, "Can't create salt"))?;
 
 	let out = PrepareLoginSaltServerOutput {
 		salt_string,
@@ -237,12 +263,24 @@ fn auth_user_private(auth_key: &str, hashed_user_auth_key: &str, alg: &str) -> A
 
 	//TODO make req to key endpoint if the app owner added one
 
+	#[cfg(not(feature = "external_c_keys"))]
 	let hashed_client_key = traverse_keys!(
 		get_auth_keys_from_base64,
 		(auth_key, alg),
 		[sentc_crypto_std_keys::core::DeriveAuthKeyForAuth]
-	)
-	.map_err(|_| {
+	);
+
+	#[cfg(feature = "external_c_keys")]
+	let hashed_client_key = traverse_keys!(
+		get_auth_keys_from_base64,
+		(auth_key, alg),
+		[
+			sentc_crypto_std_keys::core::DeriveAuthKeyForAuth,
+			sentc_crypto_fips_keys::core::pw_hash::DeriveAuthKeyForAuth
+		]
+	);
+
+	let hashed_client_key = hashed_client_key.map_err(|_| {
 		ServerCoreError::new_msg(
 			401,
 			ApiErrorCodes::AuthKeyFormat,

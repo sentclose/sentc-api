@@ -149,7 +149,8 @@ fn encrypt(eph_key: &KeyRotationWorkerKey, users: Vec<UserGroupPublicKeyData>) -
 	for user in users {
 		//encrypt with sdk -> import public key data from string
 
-		let encrypted_ephemeral_key = match traverse_keys!(
+		#[cfg(not(feature = "external_c_keys"))]
+		let encrypted_ephemeral_key = traverse_keys!(
 			encrypt_ephemeral_group_key_with_public_key,
 			(
 				&user.public_key,
@@ -157,7 +158,20 @@ fn encrypt(eph_key: &KeyRotationWorkerKey, users: Vec<UserGroupPublicKeyData>) -
 				&eph_key.encrypted_ephemeral_key
 			),
 			[sentc_crypto_std_keys::util::SecretKey]
-		) {
+		);
+
+		#[cfg(feature = "external_c_keys")]
+		let encrypted_ephemeral_key = traverse_keys!(
+			encrypt_ephemeral_group_key_with_public_key,
+			(
+				&user.public_key,
+				&user.public_key_alg,
+				&eph_key.encrypted_ephemeral_key
+			),
+			[sentc_crypto_std_keys::util::SecretKey, sentc_crypto_fips_keys::util::SecretKey]
+		);
+
+		let encrypted_ephemeral_key = match encrypted_ephemeral_key {
 			Ok(k) => k,
 			Err(e) => {
 				//don't interrupt when err, save it in the db and let the client handle it
