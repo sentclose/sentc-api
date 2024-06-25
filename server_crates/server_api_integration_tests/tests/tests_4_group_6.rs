@@ -3,7 +3,7 @@
 use reqwest::header::AUTHORIZATION;
 use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::{SdkError, StdGroup, StdGroupKeyData, StdUser, StdUserDataInt as UserDataIntFull};
+use sentc_crypto::SdkError;
 use sentc_crypto_common::group::{GroupCreateOutput, GroupLightServerData};
 use sentc_crypto_common::{GroupId, UserId};
 use sentc_crypto_light::UserDataInt as UserDataIntLight;
@@ -25,6 +25,10 @@ use crate::test_fn::{
 	get_group_from_group_as_member,
 	get_url,
 	login_user,
+	TestGroup,
+	TestGroupKeyData,
+	TestUser,
+	TestUserDataInt as UserDataIntFull,
 };
 
 mod test_fn;
@@ -40,7 +44,7 @@ pub struct UserState
 pub struct GroupState
 {
 	pub group_id: GroupId,
-	pub decrypted_group_keys: Vec<StdGroupKeyData>,
+	pub decrypted_group_keys: Vec<TestGroupKeyData>,
 }
 
 static CUSTOMER_TEST_STATE: OnceCell<RwLock<CustomerDoneLoginOutput>> = OnceCell::const_new();
@@ -159,7 +163,7 @@ async fn test_10_create_group()
 	let creator = USERS_TEST_STATE.get().unwrap().read().await;
 	let creator = &creator[0];
 
-	let group_input = StdGroup::prepare_create(&creator.user_data.user_keys[0].public_key).unwrap();
+	let group_input = TestGroup::prepare_create(&creator.user_data.user_keys[0].public_key).unwrap();
 
 	let url = get_url("api/v1/group/forced/".to_owned() + &creator.user_id);
 	let client = reqwest::Client::new();
@@ -191,7 +195,7 @@ async fn test_10_create_group()
 	let mut decrypted_group_keys = Vec::with_capacity(data.keys.len());
 
 	for key in data.keys {
-		decrypted_group_keys.push(StdGroup::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, key).unwrap());
+		decrypted_group_keys.push(TestGroup::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, key).unwrap());
 	}
 
 	GROUP_TEST_STATE
@@ -250,7 +254,7 @@ async fn test_10_delete_group()
 	}
 
 	//now create the group again for the other tests
-	let group_input = StdGroup::prepare_create(&creator.user_data.user_keys[0].public_key).unwrap();
+	let group_input = TestGroup::prepare_create(&creator.user_data.user_keys[0].public_key).unwrap();
 
 	let url = get_url("api/v1/group/forced/".to_owned() + &creator.user_id);
 	let client = reqwest::Client::new();
@@ -282,7 +286,7 @@ async fn test_10_delete_group()
 	let mut decrypted_group_keys = Vec::with_capacity(data.keys.len());
 
 	for key in data.keys {
-		decrypted_group_keys.push(StdGroup::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, key).unwrap());
+		decrypted_group_keys.push(TestGroup::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, key).unwrap());
 	}
 
 	group.group_id = out_1.group_id;
@@ -349,7 +353,7 @@ async fn test_13_create_child_group()
 	let group_public_key = &group.decrypted_group_keys[0].public_group_key;
 	let group_private_key = &group.decrypted_group_keys[0].private_group_key;
 
-	let group_input = StdGroup::prepare_create(group_public_key).unwrap();
+	let group_input = TestGroup::prepare_create(group_public_key).unwrap();
 
 	let url = get_url("api/v1/group/forced/".to_owned() + &creator.user_id + "/" + &group.group_id + "/child");
 	let client = reqwest::Client::new();
@@ -425,7 +429,7 @@ async fn test_15_create_connected_group()
 	let group_public_key = &group.decrypted_group_keys[0].public_group_key;
 	let group_private_key = &group.decrypted_group_keys[0].private_group_key;
 
-	let group_input = StdGroup::prepare_create(group_public_key).unwrap();
+	let group_input = TestGroup::prepare_create(group_public_key).unwrap();
 
 	let url = get_url("api/v1/group/forced/".to_owned() + &creator.user_id + "/" + &group.group_id + "/connected");
 	let client = reqwest::Client::new();
@@ -519,7 +523,7 @@ async fn test_user_force_reset()
 	.await;
 
 	//2. reset the 2nd user
-	let input = StdUser::register(&user.username, "123456789").unwrap();
+	let input = TestUser::register(&user.username, "123456789").unwrap();
 
 	let url = get_url("api/v1/user/forced/reset_user".to_owned());
 
@@ -538,7 +542,7 @@ async fn test_user_force_reset()
 	//3. test login with new user pw
 
 	//not login with old pw
-	let err = StdUser::login(get_base_url(), secret_token, &user.username, &user.pw).await;
+	let err = TestUser::login(get_base_url(), secret_token, &user.username, &user.pw).await;
 
 	if let Err(SdkError::Util(SdkUtilError::ServerErr(e, _))) = err {
 		assert_eq!(e, 112);
@@ -560,7 +564,7 @@ async fn test_user_force_reset()
 	//now decrypting keys should fail because the user has got new keys
 
 	for key in data.keys {
-		let error = StdGroup::decrypt_group_keys(&out.user_keys.first().unwrap().private_key, key);
+		let error = TestGroup::decrypt_group_keys(&out.user_keys.first().unwrap().private_key, key);
 
 		if let Err(_e) = error {
 		} else {
@@ -569,7 +573,7 @@ async fn test_user_force_reset()
 	}
 
 	//5. re invite user to group
-	let join_res = StdGroup::invite_user(
+	let join_res = TestGroup::invite_user(
 		get_base_url(),
 		secret_token,
 		&creator.user_data.jwt,

@@ -2,19 +2,34 @@ use std::env;
 
 use reqwest::header::AUTHORIZATION;
 use rustgram_server_util::db::StringEntity;
-use rustgram_server_util::error::ServerErrorCodes;
 use sentc_crypto::util::public::handle_server_response;
-use sentc_crypto::StdUser;
 use sentc_crypto_common::user::UserDeviceRegisterInput;
 use sentc_crypto_common::ServerOutput;
 use sentc_crypto_light::sdk_common::user::DoneLoginServerReturn;
-use server_api::util::api_res::ApiErrorCodes;
+use sentc_crypto_std_keys::core::PwHasherGetter;
+use sentc_crypto_std_keys::util::{HmacKey, PublicKey, SecretKey, SignKey, SortableKey, SymmetricKey, VerifyKey};
 use server_dashboard_common::customer::{CustomerData, CustomerDoneLoginOutput, CustomerRegisterData, CustomerRegisterOutput, CustomerUpdateInput};
 use tokio::sync::{OnceCell, RwLock};
 
 use crate::test_fn::{auth_header, get_captcha, get_url, login_customer};
 
 mod test_fn;
+
+pub type StdUser = sentc_crypto::user::User<
+	SymmetricKey,
+	SecretKey,
+	SignKey,
+	sentc_crypto_std_keys::core::HmacKey,
+	sentc_crypto_std_keys::core::SortKeys,
+	SymmetricKey,
+	SecretKey,
+	SignKey,
+	HmacKey,
+	SortableKey,
+	PublicKey,
+	VerifyKey,
+	PwHasherGetter,
+>;
 
 pub struct CustomerState
 {
@@ -82,10 +97,7 @@ async fn test_10_register_without_valid_email()
 	let out = ServerOutput::<CustomerRegisterOutput>::from_string(body.as_str()).unwrap();
 
 	assert!(!out.status);
-	assert_eq!(
-		out.err_code.unwrap(),
-		ApiErrorCodes::CustomerEmailSyntax.get_int_code()
-	);
+	assert_eq!(out.err_code.unwrap(), 64);
 }
 
 #[tokio::test]

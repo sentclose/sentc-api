@@ -7,7 +7,7 @@ use sentc_crypto::sdk_common::file::FileData;
 use sentc_crypto::sdk_utils::cryptomat::SymKeyCrypto;
 use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::{SdkError, StdFileEncryptor, StdGroupKeyData, StdKeyGenerator, StdUserDataInt};
+use sentc_crypto::SdkError;
 use sentc_crypto_common::file::FileRegisterOutput;
 use sentc_crypto_common::{GroupId, ServerOutput};
 use server_dashboard_common::app::AppRegisterOutput;
@@ -28,26 +28,30 @@ use crate::test_fn::{
 	get_group,
 	get_server_error_from_normal_res,
 	get_url,
+	TestFileEncryptor,
+	TestGroupKeyData,
+	TestKeyGenerator,
+	TestUserDataInt,
 };
 
 mod test_fn;
 
 pub struct GroupData
 {
-	keys: Vec<StdGroupKeyData>,
-	keys_2: Vec<StdGroupKeyData>, //for the 2nd user
+	keys: Vec<TestGroupKeyData>,
+	keys_2: Vec<TestGroupKeyData>, //for the 2nd user
 	id: GroupId,
 }
 
 pub struct TestData
 {
 	//user 1
-	pub user_data: StdUserDataInt,
+	pub user_data: TestUserDataInt,
 	pub username: String,
 	pub user_pw: String,
 
 	//user 2
-	pub user_data_1: StdUserDataInt,
+	pub user_data_1: TestUserDataInt,
 	pub username_1: String,
 	pub user_pw_1: String,
 
@@ -192,7 +196,7 @@ async fn test_10_upload_small_file_for_non_target()
 
 	let url = get_url("api/v1/file".to_string());
 
-	let (file_key, encrypted_key) = StdKeyGenerator::generate_non_register_sym_key(&state.group_data.keys[0].group_key).unwrap();
+	let (file_key, encrypted_key) = TestKeyGenerator::generate_non_register_sym_key(&state.group_data.keys[0].group_key).unwrap();
 	let encrypted_key_str = encrypted_key.to_string().unwrap();
 
 	//normally create a new sym key for a file but here it is ok
@@ -224,10 +228,10 @@ async fn test_10_upload_small_file_for_non_target()
 	let file = &state.test_file_small;
 
 	//no chunk needed
-	let (encrypted_small_file, next_key) = StdFileEncryptor::encrypt_file_part_start(&file_key, file, None::<&FakeSignKeyWrapper>).unwrap();
+	let (encrypted_small_file, next_key) = TestFileEncryptor::encrypt_file_part_start(&file_key, file, None::<&FakeSignKeyWrapper>).unwrap();
 
 	//should not upload the file from a different user
-	let (encrypted_small_file_1, _) = StdFileEncryptor::encrypt_file_part_start(&file_key, file, None::<&FakeSignKeyWrapper>).unwrap();
+	let (encrypted_small_file_1, _) = TestFileEncryptor::encrypt_file_part_start(&file_key, file, None::<&FakeSignKeyWrapper>).unwrap();
 
 	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/1/true");
 
@@ -272,7 +276,7 @@ async fn test_10_upload_small_file_for_non_target()
 	handle_general_server_response(body.as_str()).unwrap();
 
 	//should not upload a part with finished session
-	let (encrypted_small_file_2, _) = StdFileEncryptor::encrypt_file_part(&next_key, file, None::<&FakeSignKeyWrapper>).unwrap();
+	let (encrypted_small_file_2, _) = TestFileEncryptor::encrypt_file_part(&next_key, file, None::<&FakeSignKeyWrapper>).unwrap();
 
 	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/1/true");
 
@@ -319,7 +323,7 @@ async fn test_11_download_small_file_non_target()
 
 	let file_data: FileData = handle_server_response(body.as_str()).unwrap();
 
-	let file_key = StdKeyGenerator::done_fetch_sym_key(group_key, &file_data.encrypted_key, true).unwrap();
+	let file_key = TestKeyGenerator::done_fetch_sym_key(group_key, &file_data.encrypted_key, true).unwrap();
 
 	//download the part
 	let url = get_url("api/v1/file/part/".to_string() + &file_data.part_list[0].part_id);
@@ -334,7 +338,7 @@ async fn test_11_download_small_file_non_target()
 
 	let buffer = res.bytes().await.unwrap().to_vec();
 
-	let (decrypted_file, _) = StdFileEncryptor::decrypt_file_part_start(&file_key, &buffer, None).unwrap();
+	let (decrypted_file, _) = TestFileEncryptor::decrypt_file_part_start(&file_key, &buffer, None).unwrap();
 
 	let file = &state.test_file_small;
 
@@ -403,7 +407,7 @@ async fn test_12_upload_small_file_for_group()
 
 	let url = get_url("api/v1/group/".to_string() + &state.group_data.id + "/file");
 
-	let (file_key, encrypted_key) = StdKeyGenerator::generate_non_register_sym_key(&state.group_data.keys[0].group_key).unwrap();
+	let (file_key, encrypted_key) = TestKeyGenerator::generate_non_register_sym_key(&state.group_data.keys[0].group_key).unwrap();
 	let encrypted_key_str = encrypted_key.to_string().unwrap();
 
 	//normally create a new sym key for a file but here it is ok
@@ -435,7 +439,7 @@ async fn test_12_upload_small_file_for_group()
 	let file = &state.test_file_small;
 
 	//no chunk needed
-	let (encrypted_small_file, _) = StdFileEncryptor::encrypt_file_part_start(&file_key, file, None::<&FakeSignKeyWrapper>).unwrap();
+	let (encrypted_small_file, _) = TestFileEncryptor::encrypt_file_part_start(&file_key, file, None::<&FakeSignKeyWrapper>).unwrap();
 
 	//upload the file
 	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/1/true");
@@ -480,7 +484,7 @@ async fn test_13_get_file_in_group()
 
 	let file_data: FileData = handle_server_response(body.as_str()).unwrap();
 
-	let file_key = StdKeyGenerator::done_fetch_sym_key(group_key, &file_data.encrypted_key, true).unwrap();
+	let file_key = TestKeyGenerator::done_fetch_sym_key(group_key, &file_data.encrypted_key, true).unwrap();
 
 	//download the part
 	let url = get_url("api/v1/file/part/".to_string() + &file_data.part_list[0].part_id);
@@ -495,7 +499,7 @@ async fn test_13_get_file_in_group()
 
 	let buffer = res.bytes().await.unwrap().to_vec();
 
-	let (decrypted_file, _) = StdFileEncryptor::decrypt_file_part_start(&file_key, &buffer, None).unwrap();
+	let (decrypted_file, _) = TestFileEncryptor::decrypt_file_part_start(&file_key, &buffer, None).unwrap();
 
 	let file = &state.test_file_small;
 
@@ -542,7 +546,7 @@ async fn test_15_not_upload_file_in_a_group_without_access()
 
 	let url = get_url("api/v1/group/".to_string() + &state.group_data.id + "/file");
 
-	let (file_key, encrypted_key) = StdKeyGenerator::generate_non_register_sym_key(&state.group_data.keys[0].group_key).unwrap();
+	let (file_key, encrypted_key) = TestKeyGenerator::generate_non_register_sym_key(&state.group_data.keys[0].group_key).unwrap();
 	let encrypted_key_str = encrypted_key.to_string().unwrap();
 
 	//normally create a new sym key for a file but here it is ok
@@ -640,7 +644,7 @@ async fn test_17_file_access_from_parent_to_child_group()
 
 	let url = get_url("api/v1/group/".to_string() + &state.child_group_data.id + "/file");
 
-	let (file_key, encrypted_key) = StdKeyGenerator::generate_non_register_sym_key(&state.child_group_data.keys[0].group_key).unwrap();
+	let (file_key, encrypted_key) = TestKeyGenerator::generate_non_register_sym_key(&state.child_group_data.keys[0].group_key).unwrap();
 	let encrypted_key_str = encrypted_key.to_string().unwrap();
 
 	//normally create a new sym key for a file but here it is ok
@@ -672,7 +676,7 @@ async fn test_17_file_access_from_parent_to_child_group()
 	let file = &state.test_file_small;
 
 	//no chunk needed
-	let (encrypted_small_file, _) = StdFileEncryptor::encrypt_file_part_start(&file_key, file, None::<&FakeSignKeyWrapper>).unwrap();
+	let (encrypted_small_file, _) = TestFileEncryptor::encrypt_file_part_start(&file_key, file, None::<&FakeSignKeyWrapper>).unwrap();
 
 	//upload the file
 	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/1/true");
@@ -712,7 +716,7 @@ async fn test_18_access_the_child_group_file()
 	)
 	.await;
 
-	let file_key = StdKeyGenerator::done_fetch_sym_key(group_key, &file_data.encrypted_key, true).unwrap();
+	let file_key = TestKeyGenerator::done_fetch_sym_key(group_key, &file_data.encrypted_key, true).unwrap();
 
 	//download the part
 	let (decrypted_file, _) = get_and_decrypt_file_part_start(
@@ -1085,7 +1089,7 @@ async fn test_30_chunked_filed()
 
 	let url = get_url("api/v1/file".to_string());
 
-	let (file_key, encrypted_key) = StdKeyGenerator::generate_non_register_sym_key(&state.group_data.keys[0].group_key).unwrap();
+	let (file_key, encrypted_key) = TestKeyGenerator::generate_non_register_sym_key(&state.group_data.keys[0].group_key).unwrap();
 	let encrypted_key_str = encrypted_key.to_string().unwrap();
 
 	//normally create a new sym key for a file but here it is ok
@@ -1118,7 +1122,7 @@ async fn test_30_chunked_filed()
 
 	//should not upload a too large part
 	let too_large_part = &file[0..1024 * 1024 * 6];
-	let (encrypted_part, _next_key) = StdFileEncryptor::encrypt_file_part_start(&file_key, too_large_part, None::<&FakeSignKeyWrapper>).unwrap();
+	let (encrypted_part, _next_key) = TestFileEncryptor::encrypt_file_part_start(&file_key, too_large_part, None::<&FakeSignKeyWrapper>).unwrap();
 	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/0/false");
 
 	let client = reqwest::Client::new();
@@ -1165,9 +1169,9 @@ async fn test_30_chunked_filed()
 		let is_end = start >= file.len();
 
 		let encrypted_res = if current_chunk == 1 {
-			StdFileEncryptor::encrypt_file_part_start(&file_key, part, None::<&FakeSignKeyWrapper>).unwrap()
+			TestFileEncryptor::encrypt_file_part_start(&file_key, part, None::<&FakeSignKeyWrapper>).unwrap()
 		} else {
-			StdFileEncryptor::encrypt_file_part(&next_key.unwrap(), part, None::<&FakeSignKeyWrapper>).unwrap()
+			TestFileEncryptor::encrypt_file_part(&next_key.unwrap(), part, None::<&FakeSignKeyWrapper>).unwrap()
 		};
 
 		let encrypted_part = encrypted_res.0;
@@ -1210,7 +1214,7 @@ async fn test_31_download_chunked_file()
 	)
 	.await;
 
-	let file_key = StdKeyGenerator::done_fetch_sym_key(group_key, &file_data.encrypted_key, true).unwrap();
+	let file_key = TestKeyGenerator::done_fetch_sym_key(group_key, &file_data.encrypted_key, true).unwrap();
 
 	let parts = &file_data.part_list;
 

@@ -3,12 +3,11 @@ use std::time::Duration;
 
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
-use rustgram_server_util::error::ServerErrorCodes;
 use sentc_crypto::crypto::mimic_keys::FakeSignKeyWrapper;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupInviteServerOutput};
 use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::{SdkError, StdGroup, StdGroupKeyData, StdUserDataInt};
+use sentc_crypto::SdkError;
 use sentc_crypto_common::group::{
 	GroupChangeRankServerInput,
 	GroupChildrenList,
@@ -25,7 +24,6 @@ use sentc_crypto_common::group::{
 };
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::{GroupId, ServerOutput, UserId};
-use server_api::util::api_res::ApiErrorCodes;
 use server_dashboard_common::app::AppRegisterOutput;
 use server_dashboard_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
@@ -48,6 +46,9 @@ use crate::test_fn::{
 	init_user,
 	key_rotation,
 	user_key_rotation,
+	TestGroup,
+	TestGroupKeyData,
+	TestUserDataInt,
 };
 
 mod test_fn;
@@ -57,14 +58,14 @@ pub struct UserState
 	pub username: String,
 	pub pw: String,
 	pub user_id: UserId,
-	pub user_data: StdUserDataInt,
+	pub user_data: TestUserDataInt,
 }
 
 pub struct GroupState
 {
 	pub group_id: GroupId,
 	pub group_member: Vec<UserId>,
-	pub decrypted_group_keys: HashMap<UserId, Vec<StdGroupKeyData>>,
+	pub decrypted_group_keys: HashMap<UserId, Vec<TestGroupKeyData>>,
 }
 
 static CUSTOMER_TEST_STATE: OnceCell<RwLock<CustomerDoneLoginOutput>> = OnceCell::const_new();
@@ -159,7 +160,7 @@ async fn test_10_create_group()
 	let creator = USERS_TEST_STATE.get().unwrap().read().await;
 	let creator = &creator[0];
 
-	let group_input = StdGroup::prepare_create(&creator.user_data.user_keys[0].public_key).unwrap();
+	let group_input = TestGroup::prepare_create(&creator.user_data.user_keys[0].public_key).unwrap();
 
 	let url = get_url("api/v1/group".to_owned());
 	let client = reqwest::Client::new();
@@ -221,7 +222,7 @@ async fn test_11_get_group_data()
 	let mut data_keys_arr = Vec::with_capacity(data.keys.len());
 
 	for key in data.keys {
-		data_keys_arr.push(StdGroup::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, key).unwrap());
+		data_keys_arr.push(TestGroup::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, key).unwrap());
 	}
 
 	let hmac_keys = decrypt_group_hmac_keys(&data_keys_arr[0].group_key, data.hmac_keys);
@@ -461,7 +462,7 @@ async fn test_14_not_send_invite_or_join_when_invite_is_disabled()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = StdGroup::prepare_group_keys_for_new_member(
+	let invite = TestGroup::prepare_group_keys_for_new_member(
 		&user_to_invite.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
@@ -543,7 +544,7 @@ async fn test_16_invite_user()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = StdGroup::prepare_group_keys_for_new_member(
+	let invite = TestGroup::prepare_group_keys_for_new_member(
 		&user_to_invite.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
@@ -735,7 +736,7 @@ async fn test_21_invite_user_an_reject_invite()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = StdGroup::prepare_group_keys_for_new_member(
+	let invite = TestGroup::prepare_group_keys_for_new_member(
 		&user_to_invite.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
@@ -797,7 +798,7 @@ async fn test_21_invite_user_an_reject_invite()
 	let out = ServerOutput::<GroupServerData>::from_string(body.as_str()).unwrap();
 
 	assert!(!out.status);
-	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::GroupAccess.get_int_code());
+	assert_eq!(out.err_code.unwrap(), 310);
 }
 
 //__________________________________________________________________________________________________
@@ -882,7 +883,7 @@ async fn test_23_leave_group()
 	let out = ServerOutput::<GroupServerData>::from_string(body.as_str()).unwrap();
 
 	assert!(!out.status);
-	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::GroupAccess.get_int_code());
+	assert_eq!(out.err_code.unwrap(), 310);
 }
 
 //__________________________________________________________________________________________________
@@ -1237,7 +1238,7 @@ async fn test_29_no_join_req_when_user_is_in_parent_group()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = StdGroup::prepare_group_keys_for_new_member(
+	let invite = TestGroup::prepare_group_keys_for_new_member(
 		&creator.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
@@ -1306,7 +1307,7 @@ async fn test_30_accept_join_req()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let join = StdGroup::prepare_group_keys_for_new_member(
+	let join = TestGroup::prepare_group_keys_for_new_member(
 		&user_to_accept.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
@@ -1350,7 +1351,6 @@ async fn test_30_accept_join_req()
 #[tokio::test]
 async fn test_31_start_key_rotation()
 {
-	//
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let mut group = GROUP_TEST_STATE.get().unwrap().write().await;
 
@@ -1364,7 +1364,7 @@ async fn test_31_start_key_rotation()
 		.group_key;
 	let invoker_public_key = &user.user_data.user_keys[0].public_key;
 
-	let input = StdGroup::key_rotation(
+	let input = TestGroup::key_rotation(
 		pre_group_key,
 		invoker_public_key,
 		false,
@@ -1411,7 +1411,7 @@ async fn test_31_start_key_rotation()
 		.insert(user.user_id.to_string(), data_user_0.1);
 
 	//wait a bit to finish the key rotation in the sub thread
-	tokio::time::sleep(Duration::from_millis(50)).await;
+	tokio::time::sleep(Duration::from_millis(60)).await;
 }
 
 #[tokio::test]
@@ -1467,7 +1467,7 @@ async fn test_32_done_key_rotation_for_other_user()
 	for key in out {
 		let key_id = key.new_group_key_id.clone();
 
-		let rotation_out = StdGroup::done_key_rotation(
+		let rotation_out = TestGroup::done_key_rotation(
 			&user.user_data.user_keys[0].private_key,
 			&user.user_data.user_keys[0].public_key,
 			&group
@@ -1526,7 +1526,7 @@ async fn test_32_done_key_rotation_for_other_user()
 	let body = res.text().await.unwrap();
 	let new_key = sentc_crypto::group::get_group_key_from_server_output(body.as_str()).unwrap();
 
-	let _decrypted_key = StdGroup::decrypt_group_keys(&user.user_data.user_keys[0].private_key, new_key).unwrap();
+	let _decrypted_key = TestGroup::decrypt_group_keys(&user.user_data.user_keys[0].private_key, new_key).unwrap();
 }
 
 #[tokio::test]
@@ -1562,7 +1562,7 @@ async fn test_33_get_key_with_pagination()
 	let mut group_keys = Vec::with_capacity(group_keys_fetch.len());
 
 	for group_keys_fetch in group_keys_fetch {
-		group_keys.push(StdGroup::decrypt_group_keys(&user.user_data.user_keys[0].private_key, group_keys_fetch).unwrap());
+		group_keys.push(TestGroup::decrypt_group_keys(&user.user_data.user_keys[0].private_key, group_keys_fetch).unwrap());
 	}
 
 	//normally use len() - 1 but this time we won't fake a pagination, so we don't use the last item

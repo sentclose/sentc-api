@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
+#[cfg(feature = "std_keys")]
 use sentc_crypto::sdk_core::cryptomat::SortableKey as CoreSort;
 use sentc_crypto::sdk_utils::cryptomat::SortableKeyWrapper;
-use sentc_crypto::std_keys::util::SortableKey;
-use sentc_crypto::{StdGroupKeyData, StdUserDataInt};
 use sentc_crypto_common::{GroupId, UserId};
 use server_dashboard_common::app::AppRegisterOutput;
 use server_dashboard_common::customer::CustomerDoneLoginOutput;
@@ -19,6 +18,9 @@ use crate::test_fn::{
 	delete_app,
 	delete_user,
 	get_group,
+	TestGroupKeyData,
+	TestSortableKey,
+	TestUserDataInt,
 };
 
 mod test_fn;
@@ -34,17 +36,18 @@ pub struct UserState
 	pub username: String,
 	pub pw: String,
 	pub user_id: UserId,
-	pub user_data: StdUserDataInt,
+	pub user_data: TestUserDataInt,
 }
 
 pub struct GroupState
 {
 	pub group_id: GroupId,
 	pub group_member: Vec<UserId>,
-	pub decrypted_group_keys: HashMap<UserId, Vec<StdGroupKeyData>>,
-	pub sortable_keys: Vec<SortableKey>,
+	pub decrypted_group_keys: HashMap<UserId, Vec<TestGroupKeyData>>,
+	pub sortable_keys: Vec<TestSortableKey>,
 }
 
+#[cfg_attr(all(test, feature = "fips_keys"), ignore)]
 #[tokio::test]
 async fn aaa_init_global_test()
 {
@@ -150,6 +153,7 @@ async fn aaa_init_global_test()
 	NUMBERS.get_or_init(|| async { RwLock::new(vec![]) }).await;
 }
 
+#[cfg(feature = "std_keys")]
 #[tokio::test]
 async fn test_10_encrypt_number()
 {
@@ -168,6 +172,7 @@ async fn test_10_encrypt_number()
 	n.push(c);
 }
 
+#[cfg(feature = "std_keys")]
 #[tokio::test]
 async fn test_11_encrypt_number_with_other_group()
 {
@@ -186,6 +191,7 @@ async fn test_11_encrypt_number_with_other_group()
 	assert_ne!(c, n[2]);
 }
 
+#[cfg_attr(all(test, feature = "fips_keys"), ignore)]
 #[tokio::test]
 async fn test_12_encrypt_string()
 {
@@ -208,12 +214,13 @@ async fn test_12_encrypt_string()
 	}
 }
 
+#[cfg(feature = "std_keys")]
 #[tokio::test]
 async fn test_20_with_generated_key()
 {
 	const KEY: &str = r#"{"Ope16":{"key":"5kGPKgLQKmuZeOWQyJ7vOg==","key_id":"1876b629-5795-471f-9704-0cac52eaf9a1"}}"#;
 
-	let key: SortableKey = KEY.parse().unwrap();
+	let key: sentc_crypto_std_keys::util::SortableKey = KEY.parse().unwrap();
 
 	let a = key.encrypt_sortable(262).unwrap();
 	let b = key.encrypt_sortable(263).unwrap();
@@ -230,6 +237,7 @@ async fn test_20_with_generated_key()
 //__________________________________________________________________________________________________
 //clean up
 
+#[cfg_attr(all(test, feature = "fips_keys"), ignore)]
 #[tokio::test]
 async fn zzz_clean_up()
 {

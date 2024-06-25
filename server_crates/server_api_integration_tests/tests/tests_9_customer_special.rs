@@ -1,13 +1,10 @@
 use std::env;
 
-use rustgram_server_util::error::ServerErrorCodes;
-use sentc_crypto::StdUser;
 use sentc_crypto_common::user::{RegisterData, UserDeviceRegisterInput};
 use sentc_crypto_common::ServerOutput;
-use server_api::util::api_res::ApiErrorCodes;
 use server_dashboard_common::customer::{CustomerData, CustomerRegisterData, CustomerRegisterOutput};
 
-use crate::test_fn::{get_captcha, get_url};
+use crate::test_fn::{get_captcha, get_url, TestUser};
 
 mod test_fn;
 
@@ -67,7 +64,7 @@ async fn test_10_1_not_register_when_register_is_disabled()
 
 	let email = "hello@localhost.de".to_string();
 
-	let register_data = StdUser::register(email.as_str(), "12345").unwrap();
+	let register_data = TestUser::register(email.as_str(), "12345").unwrap();
 	let register_data = RegisterData::from_string(register_data.as_str()).unwrap();
 
 	let captcha_input = get_captcha().await;
@@ -96,5 +93,5 @@ async fn test_10_1_not_register_when_register_is_disabled()
 	let out = ServerOutput::<CustomerRegisterOutput>::from_string(body.as_str()).unwrap();
 
 	assert!(!out.status);
-	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::CustomerDisable.get_int_code());
+	assert_eq!(out.err_code.unwrap(), 65);
 }

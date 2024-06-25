@@ -3,7 +3,6 @@
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use rustgram_server_util::error::{CoreErrorCodes, ServerErrorCodes};
-use sentc_crypto::StdUser;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::{
 	DoneLoginLightServerOutput,
@@ -22,9 +21,10 @@ use sentc_crypto_light::error::SdkLightError;
 use sentc_crypto_light::sdk_utils::error::SdkUtilError;
 use sentc_crypto_light::sdk_utils::{handle_general_server_response, handle_server_response};
 use sentc_crypto_light::UserDataInt;
+use sentc_crypto_std_keys::core::PwHasherGetter;
+use sentc_crypto_std_keys::util::{HmacKey, PublicKey, SecretKey, SignKey, SortableKey, SymmetricKey, VerifyKey};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
-use server_api::util::api_res::ApiErrorCodes;
 use server_dashboard_common::app::AppRegisterOutput;
 use server_dashboard_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
@@ -43,6 +43,22 @@ use crate::test_fn::{
 };
 
 mod test_fn;
+
+pub type StdUser = sentc_crypto::user::User<
+	SymmetricKey,
+	SecretKey,
+	SignKey,
+	sentc_crypto_std_keys::core::HmacKey,
+	sentc_crypto_std_keys::core::SortKeys,
+	SymmetricKey,
+	SecretKey,
+	SignKey,
+	HmacKey,
+	SortableKey,
+	PublicKey,
+	VerifyKey,
+	PwHasherGetter,
+>;
 
 pub struct UserState
 {
@@ -184,7 +200,7 @@ async fn test_13_user_register_failed_username_exists()
 
 	assert!(!error.status);
 	assert!(error.result.is_none());
-	assert_eq!(error.err_code.unwrap(), ApiErrorCodes::UserExists.get_int_code());
+	assert_eq!(error.err_code.unwrap(), 101);
 
 	//check err in sdk
 	match sentc_crypto_light::user::done_register(body.as_str()) {
@@ -310,7 +326,7 @@ async fn test_15_login_with_wrong_password()
 
 	assert!(!login_output.status);
 	assert!(login_output.result.is_none());
-	assert_eq!(login_output.err_code.unwrap(), ApiErrorCodes::Login.get_int_code());
+	assert_eq!(login_output.err_code.unwrap(), 112);
 }
 
 #[tokio::test]
@@ -492,7 +508,7 @@ async fn test_17_change_user_pw()
 
 	assert!(!login_output.status);
 	assert!(login_output.result.is_none());
-	assert_eq!(login_output.err_code.unwrap(), ApiErrorCodes::Login.get_int_code());
+	assert_eq!(login_output.err_code.unwrap(), 112);
 
 	//______________________________________________________________________________________________
 	//login with new password
@@ -567,7 +583,7 @@ async fn test_18_reset_password()
 
 	assert!(!login_output.status);
 	assert!(login_output.result.is_none());
-	assert_eq!(login_output.err_code.unwrap(), ApiErrorCodes::Login.get_int_code());
+	assert_eq!(login_output.err_code.unwrap(), 112);
 
 	//______________________________________________________________________________________________
 	//test login with new pw
@@ -654,7 +670,7 @@ async fn test_22_refresh_jwt()
 	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
 	assert!(!out.status);
-	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::WrongJwtAction.get_int_code());
+	assert_eq!(out.err_code.unwrap(), 113);
 }
 
 #[tokio::test]
