@@ -2,7 +2,6 @@ use rand::RngCore;
 use reqwest::header::AUTHORIZATION;
 use sentc_crypto::crypto::mimic_keys::FakeSignKeyWrapper;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::{StdFileEncryptor, StdGroupKeyData, StdKeyGenerator, StdUserDataInt};
 use sentc_crypto_common::file::FilePartRegisterOutput;
 use sentc_crypto_common::{FileId, PartId};
 use server_dashboard_common::app::{AppFileOptionsInput, AppOptions, AppRegisterInput, AppRegisterOutput, FILE_STORAGE_OWN};
@@ -22,6 +21,10 @@ use crate::test_fn::{
 	get_group,
 	get_server_error_from_normal_res,
 	get_url,
+	TestFileEncryptor,
+	TestGroupKeyData,
+	TestKeyGenerator,
+	TestUserDataInt,
 };
 
 mod test_fn;
@@ -31,7 +34,7 @@ static TEST_STATE: OnceCell<RwLock<TestData>> = OnceCell::const_new();
 pub struct TestData
 {
 	//user 1
-	pub user_data: StdUserDataInt,
+	pub user_data: TestUserDataInt,
 	pub username: String,
 	pub user_pw: String,
 
@@ -40,7 +43,7 @@ pub struct TestData
 	pub file_part_ids: Vec<PartId>,
 	pub file_id: FileId,
 
-	pub keys: Vec<StdGroupKeyData>,
+	pub keys: Vec<TestGroupKeyData>,
 }
 
 async fn init_app()
@@ -122,7 +125,7 @@ async fn create_file()
 	let mut state = TEST_STATE.get().unwrap().write().await;
 	let group_key = &state.keys[0].group_key;
 
-	let (file_key, encrypted_key) = StdKeyGenerator::generate_non_register_sym_key(group_key).unwrap();
+	let (file_key, encrypted_key) = TestKeyGenerator::generate_non_register_sym_key(group_key).unwrap();
 	let encrypted_key_str = encrypted_key.to_string().unwrap();
 
 	let (input, _) = sentc_crypto::file::prepare_register_file(
@@ -308,7 +311,7 @@ async fn test_0_large_file()
 	//upload the file
 	let url = get_url("api/v1/file".to_string());
 
-	let (file_key, encrypted_key) = StdKeyGenerator::generate_non_register_sym_key(&group_keys[0].group_key).unwrap();
+	let (file_key, encrypted_key) = TestKeyGenerator::generate_non_register_sym_key(&group_keys[0].group_key).unwrap();
 	let encrypted_key_str = encrypted_key.to_string().unwrap();
 
 	let (input, _) = sentc_crypto::file::prepare_register_file(
@@ -359,9 +362,9 @@ async fn test_0_large_file()
 		let is_end = start >= file.len();
 
 		let encrypted_res = if current_chunk == 1 {
-			StdFileEncryptor::encrypt_file_part_start(&file_key, part, None::<&FakeSignKeyWrapper>).unwrap()
+			TestFileEncryptor::encrypt_file_part_start(&file_key, part, None::<&FakeSignKeyWrapper>).unwrap()
 		} else {
-			StdFileEncryptor::encrypt_file_part(&next_key.unwrap(), part, None::<&FakeSignKeyWrapper>).unwrap()
+			TestFileEncryptor::encrypt_file_part(&next_key.unwrap(), part, None::<&FakeSignKeyWrapper>).unwrap()
 		};
 
 		let encrypted_part = encrypted_res.0;

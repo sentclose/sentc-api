@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use reqwest::header::AUTHORIZATION;
 use rustgram_server_util::input_helper::json_to_string;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::{StdGroup, StdGroupKeyData, StdUserDataInt};
 use sentc_crypto_common::content::{ContentCreateOutput, ContentItemAccess, ListContentItem};
 use sentc_crypto_common::group::GroupCreateOutput;
 use sentc_crypto_common::{ContentId, GroupId, UserId};
@@ -25,6 +24,9 @@ use crate::test_fn::{
 	get_group,
 	get_group_from_group_as_member,
 	get_url,
+	TestGroup,
+	TestGroupKeyData,
+	TestUserDataInt,
 };
 
 mod test_fn;
@@ -50,14 +52,14 @@ pub struct UserState
 	pub username: String,
 	pub pw: String,
 	pub user_id: UserId,
-	pub user_data: StdUserDataInt,
+	pub user_data: TestUserDataInt,
 }
 
 pub struct GroupState
 {
 	pub group_id: GroupId,
 	pub group_member: Vec<UserId>,
-	pub decrypted_group_keys: HashMap<UserId, Vec<StdGroupKeyData>>,
+	pub decrypted_group_keys: HashMap<UserId, Vec<TestGroupKeyData>>,
 }
 
 pub struct ContentState
@@ -709,7 +711,7 @@ async fn test_21_create_groups()
 	.await;
 
 	//create a connected group for the child group
-	let group_input = StdGroup::prepare_create(&child_group_data.1[0].public_group_key).unwrap();
+	let group_input = TestGroup::prepare_create(&child_group_data.1[0].public_group_key).unwrap();
 	let url = get_url("api/v1/group".to_owned() + "/" + &child_group_id + "/connected");
 
 	let client = reqwest::Client::new();
@@ -760,7 +762,7 @@ async fn test_21_create_groups()
 
 	let url = get_url("api/v1/group".to_owned() + "/" + group_1.group_id.as_str() + "/connected");
 
-	let group_input = StdGroup::prepare_create(&group_1_keys.public_group_key).unwrap();
+	let group_input = TestGroup::prepare_create(&group_1_keys.public_group_key).unwrap();
 
 	let client = reqwest::Client::new();
 	let res = client

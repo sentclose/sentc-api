@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
 use sentc_crypto::sdk_utils::cryptomat::SearchableKeyWrapper;
-use sentc_crypto::std_keys::util::HmacKey;
-use sentc_crypto::{StdGroupKeyData, StdUserDataInt};
 use sentc_crypto_common::{GroupId, UserId};
 use server_dashboard_common::app::AppRegisterOutput;
 use server_dashboard_common::customer::CustomerDoneLoginOutput;
@@ -18,6 +16,9 @@ use crate::test_fn::{
 	delete_app,
 	delete_user,
 	get_group,
+	TestGroupKeyData,
+	TestHmacKey,
+	TestUserDataInt,
 };
 
 mod test_fn;
@@ -32,15 +33,15 @@ pub struct UserState
 	pub username: String,
 	pub pw: String,
 	pub user_id: UserId,
-	pub user_data: StdUserDataInt,
+	pub user_data: TestUserDataInt,
 }
 
 pub struct GroupState
 {
 	pub group_id: GroupId,
 	pub group_member: Vec<UserId>,
-	pub decrypted_group_keys: HashMap<UserId, Vec<StdGroupKeyData>>,
-	pub searchable_keys: Vec<HmacKey>,
+	pub decrypted_group_keys: HashMap<UserId, Vec<TestGroupKeyData>>,
+	pub searchable_keys: Vec<TestHmacKey>,
 }
 
 const STR: &str = "123*+^êéèüöß@€&$ 👍 🚀 😎";

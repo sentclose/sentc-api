@@ -3,15 +3,25 @@
 use hyper::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
-use sentc_crypto::StdUserDataInt;
 use sentc_crypto_common::group::{GroupCreateOutput, GroupInviteReqList, GroupLightServerData, GroupNewMemberLightInput, GroupServerData};
 use sentc_crypto_common::{GroupId, UserId};
+use sentc_crypto_light::UserDataInt;
 use serde_json::to_string;
 use server_dashboard_common::app::AppRegisterOutput;
 use server_dashboard_common::customer::CustomerDoneLoginOutput;
 use tokio::sync::{OnceCell, RwLock};
 
-use crate::test_fn::{auth_header, create_app, create_test_customer, create_test_user, customer_delete, delete_app, delete_user, get_url};
+use crate::test_fn::{
+	auth_header,
+	create_app,
+	create_test_customer,
+	customer_delete,
+	delete_app,
+	delete_user,
+	get_base_url,
+	get_url,
+	login_user_light,
+};
 
 mod test_fn;
 
@@ -20,7 +30,7 @@ pub struct UserState
 	pub username: String,
 	pub pw: String,
 	pub user_id: UserId,
-	pub user_data: StdUserDataInt,
+	pub user_data: UserDataInt,
 }
 
 pub struct GroupState
@@ -67,7 +77,10 @@ async fn aaa_init_global_test()
 	for i in 0..3 {
 		let username = "hi".to_string() + i.to_string().as_str();
 
-		let (user_id, key_data) = create_test_user(secret_token_str, public_token_str, username.as_str(), user_pw).await;
+		let user_id = sentc_crypto_light::util_req_full::user::register(get_base_url(), secret_token_str, &username, user_pw)
+			.await
+			.unwrap();
+		let key_data = login_user_light(public_token_str, &username, user_pw).await;
 
 		let user = UserState {
 			username,

@@ -2,13 +2,12 @@ use std::time::Duration;
 
 use hyper::header::AUTHORIZATION;
 use reqwest::StatusCode;
-use rustgram_server_util::error::ServerErrorCodes;
 use sentc_crypto::util::public::handle_server_response;
-use sentc_crypto::StdUser;
 use sentc_crypto_common::server_default::ServerSuccessOutput;
 use sentc_crypto_common::user::RegisterServerOutput;
 use sentc_crypto_common::ServerOutput;
-use server_api::util::api_res::ApiErrorCodes;
+use sentc_crypto_std_keys::core::PwHasherGetter;
+use sentc_crypto_std_keys::util::{HmacKey, PublicKey, SecretKey, SignKey, SortableKey, SymmetricKey, VerifyKey};
 use server_dashboard_common::app::{
 	AppDetails,
 	AppJwtData,
@@ -25,6 +24,22 @@ use tokio::sync::{OnceCell, RwLock};
 use crate::test_fn::{add_app_jwt_keys, auth_header, create_app, create_test_customer, customer_delete, delete_app, delete_app_jwt_key, get_url};
 
 mod test_fn;
+
+pub type StdUser = sentc_crypto::user::User<
+	SymmetricKey,
+	SecretKey,
+	SignKey,
+	sentc_crypto_std_keys::core::HmacKey,
+	sentc_crypto_std_keys::core::SortKeys,
+	SymmetricKey,
+	SecretKey,
+	SignKey,
+	HmacKey,
+	SortableKey,
+	PublicKey,
+	VerifyKey,
+	PwHasherGetter,
+>;
 
 pub struct AppState
 {
@@ -362,7 +377,7 @@ async fn test_17_update_app_options()
 	let out = ServerOutput::<ServerSuccessOutput>::from_string(body.as_str()).unwrap();
 
 	assert!(!out.status);
-	assert_eq!(out.err_code.unwrap(), ApiErrorCodes::AppAction.get_int_code());
+	assert_eq!(out.err_code.unwrap(), 203);
 
 	//change the app options to lax -> so we can register user via public token
 

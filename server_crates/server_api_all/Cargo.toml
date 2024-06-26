@@ -7,17 +7,17 @@ default-run = "server_api_all"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-server_api = {path = "../server_api", default-features = false}
-server_api_common = {path = "../server_api_common", default-features = false}
-server_api_file = {path = "../server_api_file", default-features = false}
-server_api_customer = {path = "../server_api_customer", default-features = false}
-server_dashboard_backend = {path = "../server_dashboard_backend"}
+server_api = { path = "../server_api", default-features = false }
+server_api_common = { path = "../server_api_common", default-features = false }
+server_api_file = { path = "../server_api_file", default-features = false }
+server_api_customer = { path = "../server_api_customer", default-features = false }
+server_dashboard_backend = { path = "../server_dashboard_backend" }
 
-rustgram-server-util = {workspace = true}
+rustgram-server-util = { workspace = true }
 
-rustgram = {workspace = true}
-tokio = {workspace = true}
-hyper = {workspace = true}
+rustgram = { workspace = true }
+tokio = { workspace = true }
+hyper = { workspace = true }
 
 [features]
 default = ["mysql"]
@@ -25,3 +25,4 @@ mysql = ["rustgram-server-util/mysql"]
 sqlite = ["rustgram-server-util/sqlite"]
 
 send_mail = ["server_api_customer/send_mail"]
+external_c_keys = ["server_api/external_c_keys"]

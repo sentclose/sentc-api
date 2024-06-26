@@ -9,10 +9,10 @@ edition = "2021"
 
 [dev-dependencies]
 
-sentc-crypto = { workspace = true, features = ["server_test", "full_rustls", "std_keys"] }
+sentc-crypto = { workspace = true, features = ["server_test", "full_rustls"] }
 sentc-crypto-light = { workspace = true, features = ["server_test", "full_rustls"] }
+sentc-crypto-std-keys.workspace = true # for light tests
 
-server_api = { path = "../server_api", default-features = false }
 server_api_common = { path = "../server_api_common", default-features = false }
 server_api_file = { path = "../server_api_file", default-features = false }
 
@@ -36,6 +36,9 @@ rand.workspace = true
 dotenv.workspace = true
 
 [features]
-default = ["mysql"]
-mysql = ["rustgram-server-util/mysql", "server_api/mysql", "server_api_common/mysql", "server_api_file/mysql"]
-sqlite = ["rustgram-server-util/sqlite", "server_api/sqlite", "server_api_common/sqlite", "server_api_file/sqlite"]
+default = ["mysql", "std_keys"]
+mysql = ["rustgram-server-util/mysql", "server_api_common/mysql", "server_api_file/mysql"]
+sqlite = ["rustgram-server-util/sqlite", "server_api_common/sqlite", "server_api_file/sqlite"]
+
+std_keys = ["sentc-crypto/std_keys"]
+fips_keys = ["sentc-crypto/fips_keys"]
