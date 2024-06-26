@@ -29,7 +29,7 @@ hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
 tokio-util = "0.7.2"
 
-rustgram = "0.2.0"
+rustgram = "0.2.1"
 
 # dotenv vars
 dotenv = "0.15.0"
@@ -37,7 +37,7 @@ dotenv = "0.15.0"
 # for caching trait
 async-trait = "0.1.56"
 
-rustgram-server-util = { git = "https://gitlab.com/grammm/rustgram/rustgram-server-util.git", rev = "50dae26fcd9f21e18cf2b28267f9743b9ec196c9", default-features = false, features = ["derive_macro", "static_var"] }
+rustgram-server-util = { git = "https://gitlab.com/grammm/rustgram/rustgram-server-util.git", rev = "0a9db6fbcca35f386aa55e7cb64ad5671360d42e", default-features = false, features = ["derive_macro", "static_var"] }
 
 #_______________________________________________________________________________________________________________________
 

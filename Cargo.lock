@@ -1521,6 +1521,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "linked-hash-map"
+version = "0.5.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0717cef1bc8b636c6e1c1bbdefc09e6322da8a9321966e8928ef80d20f7f770f"
+
+[[package]]
 name = "lock_api"
 version = "0.4.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2359,9 +2365,9 @@ checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "rustgram"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb3a69681015b543ba0aca3ccd96023fcbe89258caeb604d8b39933829cc3af9"
+checksum = "8bab5b87109f7a93b3df0763a73410e3c026886bc581836dac9661d68051ba75"
 dependencies = [
  "hyper",
  "matchit",
@@ -2372,7 +2378,7 @@ dependencies = [
 [[package]]
 name = "rustgram-server-util"
 version = "0.3.0"
-source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=50dae26fcd9f21e18cf2b28267f9743b9ec196c9#50dae26fcd9f21e18cf2b28267f9743b9ec196c9"
+source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=0a9db6fbcca35f386aa55e7cb64ad5671360d42e#0a9db6fbcca35f386aa55e7cb64ad5671360d42e"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2397,10 +2403,10 @@ dependencies = [
 [[package]]
 name = "rustgram-server-util-macros"
 version = "0.1.8"
-source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=50dae26fcd9f21e18cf2b28267f9743b9ec196c9#50dae26fcd9f21e18cf2b28267f9743b9ec196c9"
+source = "git+https://gitlab.com/grammm/rustgram/rustgram-server-util.git?rev=0a9db6fbcca35f386aa55e7cb64ad5671360d42e#0a9db6fbcca35f386aa55e7cb64ad5671360d42e"
 dependencies = [
  "quote",
- "syn 1.0.109",
+ "syn 2.0.68",
 ]
 
 [[package]]
@@ -2708,15 +2714,14 @@ dependencies = [
 
 [[package]]
 name = "serde_yaml"
-version = "0.9.30"
+version = "0.8.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1bf28c79a99f70ee1f1d83d10c875d2e70618417fda01ad1785e027579d9d38"
+checksum = "578a7433b776b56a35785ed5ce9a7e777ac0598aac5a6dd1b4b18a307c7fc71b"
 dependencies = [
- "indexmap 2.0.2",
- "itoa",
+ "indexmap 1.9.3",
  "ryu",
  "serde",
- "unsafe-libyaml",
+ "yaml-rust",
 ]
 
 [[package]]
@@ -3297,12 +3302,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "unsafe-libyaml"
-version = "0.2.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "673aac59facbab8a9007c7f6108d11f63b603f7cabff99fabf650fea5c32b861"
-
-[[package]]
 name = "untrusted"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3622,6 +3621,15 @@ dependencies = [
  "curve25519-dalek",
  "rand_core 0.6.4",
  "zeroize",
+]
+
+[[package]]
+name = "yaml-rust"
+version = "0.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56c1936c4cc7a1c9ab21a1ebb602eb942ba868cbd44a99cb7cdc5892335e1c85"
+dependencies = [
+ "linked-hash-map",
 ]
 
 [[package]]
