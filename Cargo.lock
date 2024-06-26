@@ -854,6 +854,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
+name = "foreign-types"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6f339eb8adc052cd2ca78910fda869aefa38d22d5cb648e6485e4d3fc06f3b1"
+dependencies = [
+ "foreign-types-shared",
+]
+
+[[package]]
+name = "foreign-types-shared"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
+
+[[package]]
 name = "form_urlencoded"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1806,10 +1821,48 @@ dependencies = [
 ]
 
 [[package]]
+name = "openssl"
+version = "0.10.64"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95a0481286a310808298130d22dd1fef0fa571e05a8f44ec801801e84b216b1f"
+dependencies = [
+ "bitflags 2.4.0",
+ "cfg-if",
+ "foreign-types",
+ "libc",
+ "once_cell",
+ "openssl-macros",
+ "openssl-sys",
+]
+
+[[package]]
+name = "openssl-macros"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a948666b637a0f465e8564c73e89d4dde00d72d4d473cc972f390fc3dcee7d9c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.38",
+]
+
+[[package]]
 name = "openssl-probe"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
+
+[[package]]
+name = "openssl-sys"
+version = "0.9.102"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c597637d56fbc83893a35eb0dd04b2b8e7a50c91e64e9493e398b5df4fb45fa2"
+dependencies = [
+ "cc",
+ "libc",
+ "pkg-config",
+ "vcpkg",
+]
 
 [[package]]
 name = "parking_lot"
@@ -2485,12 +2538,13 @@ dependencies = [
 [[package]]
 name = "sentc-crypto"
 version = "0.13.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=1591e76f3fafb3aa4d7af40b97871a15fd5cc66d#1591e76f3fafb3aa4d7af40b97871a15fd5cc66d"
+source = "git+https://github.com/sentclose/sentc.git?rev=5985e378422c481d838d16afcd725afaa6afab0b#5985e378422c481d838d16afcd725afaa6afab0b"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
  "sentc-crypto-common 0.10.0 (git+https://github.com/sentclose/sentc-common.git?rev=de513a82b0200b476d9592ba1de38c73c6a32354)",
  "sentc-crypto-core",
+ "sentc-crypto-fips-keys",
  "sentc-crypto-std-keys",
  "sentc-crypto-utils",
  "serde",
@@ -2517,16 +2571,32 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-core"
 version = "0.13.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=1591e76f3fafb3aa4d7af40b97871a15fd5cc66d#1591e76f3fafb3aa4d7af40b97871a15fd5cc66d"
+source = "git+https://github.com/sentclose/sentc.git?rev=5985e378422c481d838d16afcd725afaa6afab0b#5985e378422c481d838d16afcd725afaa6afab0b"
 dependencies = [
  "rand_core 0.6.4",
  "sha2 0.10.8",
 ]
 
 [[package]]
+name = "sentc-crypto-fips-keys"
+version = "0.13.0"
+source = "git+https://github.com/sentclose/sentc.git?rev=5985e378422c481d838d16afcd725afaa6afab0b#5985e378422c481d838d16afcd725afaa6afab0b"
+dependencies = [
+ "base64ct",
+ "digest 0.10.7",
+ "openssl",
+ "pem-rfc7468",
+ "sentc-crypto-common 0.10.0 (git+https://github.com/sentclose/sentc-common.git?rev=de513a82b0200b476d9592ba1de38c73c6a32354)",
+ "sentc-crypto-core",
+ "sentc-crypto-utils",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "sentc-crypto-light"
 version = "0.13.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=1591e76f3fafb3aa4d7af40b97871a15fd5cc66d#1591e76f3fafb3aa4d7af40b97871a15fd5cc66d"
+source = "git+https://github.com/sentclose/sentc.git?rev=5985e378422c481d838d16afcd725afaa6afab0b#5985e378422c481d838d16afcd725afaa6afab0b"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -2541,7 +2611,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-std-keys"
 version = "0.13.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=1591e76f3fafb3aa4d7af40b97871a15fd5cc66d#1591e76f3fafb3aa4d7af40b97871a15fd5cc66d"
+source = "git+https://github.com/sentclose/sentc.git?rev=5985e378422c481d838d16afcd725afaa6afab0b#5985e378422c481d838d16afcd725afaa6afab0b"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -2567,7 +2637,7 @@ dependencies = [
 [[package]]
 name = "sentc-crypto-utils"
 version = "0.13.0"
-source = "git+https://github.com/sentclose/sentc.git?rev=1591e76f3fafb3aa4d7af40b97871a15fd5cc66d#1591e76f3fafb3aa4d7af40b97871a15fd5cc66d"
+source = "git+https://github.com/sentclose/sentc.git?rev=5985e378422c481d838d16afcd725afaa6afab0b#5985e378422c481d838d16afcd725afaa6afab0b"
 dependencies = [
  "base64ct",
  "pem-rfc7468",
@@ -2664,6 +2734,7 @@ dependencies = [
  "rustgram-server-util",
  "sentc-crypto",
  "sentc-crypto-common 0.10.0",
+ "sentc-crypto-fips-keys",
  "sentc-crypto-std-keys",
  "serde",
  "server_api_common",
@@ -2753,9 +2824,9 @@ dependencies = [
  "sentc-crypto",
  "sentc-crypto-common 0.10.0",
  "sentc-crypto-light",
+ "sentc-crypto-std-keys",
  "serde",
  "serde_json",
- "server_api",
  "server_api_common",
  "server_api_file",
  "server_dashboard_common",
