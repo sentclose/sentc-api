@@ -1,5 +1,4 @@
 use std::future::Future;
-use std::pin::Pin;
 use std::sync::Arc;
 
 use rustgram::service::{IntoResponse, Service};
@@ -25,20 +24,19 @@ where
 	S: Service<Request, Output = Response>,
 {
 	type Output = S::Output;
-	type Future = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
 
-	fn call(&self, mut req: Request) -> Self::Future
+	fn call(&self, mut req: Request) -> impl Future<Output = Self::Output> + Send + 'static
 	{
 		let next = self.inner.clone();
 
-		Box::pin(async move {
+		async move {
 			match token_check(&mut req).await {
 				Ok(_) => {},
 				Err(e) => return e.into_response(),
 			}
 
 			next.call(req).await
-		})
+		}
 	}
 }
 
@@ -62,20 +60,19 @@ where
 	S: Service<Request, Output = Response>,
 {
 	type Output = S::Output;
-	type Future = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
 
-	fn call(&self, mut req: Request) -> Self::Future
+	fn call(&self, mut req: Request) -> impl Future<Output = Self::Output> + Send + 'static
 	{
 		let next = self.inner.clone();
 
-		Box::pin(async move {
+		async move {
 			match root_app_check(&mut req).await {
 				Ok(_) => {},
 				Err(e) => return e.into_response(),
 			}
 
 			next.call(req).await
-		})
+		}
 	}
 }
 
