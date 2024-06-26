@@ -1,5 +1,4 @@
 use std::future::Future;
-use std::pin::Pin;
 use std::sync::Arc;
 
 use hyper::header::AUTHORIZATION;
@@ -32,15 +31,14 @@ where
 	S: Service<Request, Output = Response>,
 {
 	type Output = S::Output;
-	type Future = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
 
-	fn call(&self, mut req: Request) -> Self::Future
+	fn call(&self, mut req: Request) -> impl Future<Output = Self::Output> + Send + 'static
 	{
 		let opt = self.optional;
 		let check_exp = self.check_exp;
 		let next = self.inner.clone();
 
-		Box::pin(async move {
+		async move {
 			//get the app id. the app mw should run first everytime when using the jwt mw
 			let app = match get_app_data_from_req(&req) {
 				Ok(app) => app.app_data.app_id.clone(),
@@ -53,7 +51,7 @@ where
 			}
 
 			next.call(req).await
-		})
+		}
 	}
 }
 
@@ -96,20 +94,19 @@ where
 	S: Service<Request, Output = Response>,
 {
 	type Output = S::Output;
-	type Future = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
 
-	fn call(&self, mut req: Request) -> Self::Future
+	fn call(&self, mut req: Request) -> impl Future<Output = Self::Output> + Send + 'static
 	{
 		let next = self.inner.clone();
 
-		Box::pin(async move {
+		async move {
 			match jwt_check(&mut req, false, true, SENTC_ROOT_APP.into()).await {
 				Ok(_) => {},
 				Err(e) => return e.into_response(),
 			}
 
 			next.call(req).await
-		})
+		}
 	}
 }
 

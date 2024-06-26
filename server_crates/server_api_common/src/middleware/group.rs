@@ -1,5 +1,4 @@
 use std::future::Future;
-use std::pin::Pin;
 use std::sync::Arc;
 
 use rustgram::service::{IntoResponse, Service};
@@ -30,20 +29,19 @@ where
 	S: Service<Request, Output = Response>,
 {
 	type Output = S::Output;
-	type Future = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
 
-	fn call(&self, mut req: Request) -> Self::Future
+	fn call(&self, mut req: Request) -> impl Future<Output = Self::Output> + Send + 'static
 	{
 		let next = self.inner.clone();
 
-		Box::pin(async move {
+		async move {
 			match get_group_from_req(&mut req, None).await {
 				Ok(_) => {},
 				Err(e) => return e.into_response(),
 			}
 
 			next.call(req).await
-		})
+		}
 	}
 }
 
@@ -66,20 +64,19 @@ where
 	S: Service<Request, Output = Response>,
 {
 	type Output = S::Output;
-	type Future = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
 
-	fn call(&self, mut req: Request) -> Self::Future
+	fn call(&self, mut req: Request) -> impl Future<Output = Self::Output> + Send + 'static
 	{
 		let next = self.inner.clone();
 
-		Box::pin(async move {
+		async move {
 			match get_group_from_req(&mut req, Some(SENTC_ROOT_APP)).await {
 				Ok(_) => {},
 				Err(e) => return e.into_response(),
 			}
 
 			next.call(req).await
-		})
+		}
 	}
 }
 
@@ -102,20 +99,19 @@ where
 	S: Service<Request, Output = Response>,
 {
 	type Output = S::Output;
-	type Future = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
 
-	fn call(&self, mut req: Request) -> Self::Future
+	fn call(&self, mut req: Request) -> impl Future<Output = Self::Output> + Send + 'static
 	{
 		let next = self.inner.clone();
 
-		Box::pin(async move {
+		async move {
 			match get_group_from_req_without_jwt(&mut req, None).await {
 				Ok(_) => {},
 				Err(e) => return e.into_response(),
 			}
 
 			next.call(req).await
-		})
+		}
 	}
 }
 
@@ -238,7 +234,7 @@ async fn load_group(app_id: &str, group_id: &str, user_id: &str, group_as_member
 	let key_group = get_group_cache_key(app_id, group_id);
 
 	//use to different caches, one for the group, the other for the group user.
-	//this is used because if a group gets deleted -> the cache of the user wont.
+	//this is used because if a group gets deleted -> the cache of the user won't.
 
 	let entity = match cache::get(key_group.as_str()).await? {
 		Some(j) => bytes_to_json(j.as_bytes())?,
@@ -331,8 +327,8 @@ Example usage:
 		 - check the model if user is a direct member (in this use case not)
 		 - search all parent groups via sql recursion if we found a parent group of this group where the user is member
 		 - if no group found -> cache it for 5 min (because we don't know when the user joined any of the parent groups)
-		 - if get the group values back
-		 - build a cache from this values and store it with a ref on the real group data
+		 - if you get the group values back
+		 - build a cache from these values and store it with a ref on the real group data
 			(this is important because when user joint a parent group later, then the cache from this child group is still wrong)
 		 - return the data
 	 - if in cache with a ref:
@@ -348,10 +344,7 @@ async fn get_group_user(
 ) -> AppRes<(InternalUserGroupData, bool)>
 {
 	//when the user wants to access the group by a group as member
-	let check_user_id = match group_as_member_id {
-		Some(v) => v,
-		None => user_id,
-	};
+	let check_user_id = group_as_member_id.unwrap_or(user_id);
 
 	let key_user = get_group_user_cache_key(app_id, group_id, check_user_id);
 
@@ -391,7 +384,7 @@ async fn get_group_user(
 			// if not direct member then work with reference to the parent group in get group fn
 			cache::add(key_user, json_to_string(&data)?, LONG_TTL).await?;
 
-			//when user is direct member or we checked the parent group ref (with the real data)
+			//when user is direct member, or we checked the parent group ref (with the real data)
 			//we don't need to look up again if this data is still valid.
 			(data, false)
 		},
