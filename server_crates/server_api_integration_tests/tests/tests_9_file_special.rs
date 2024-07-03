@@ -1,6 +1,5 @@
 use rand::RngCore;
 use reqwest::header::AUTHORIZATION;
-use sentc_crypto::crypto::mimic_keys::FakeSignKeyWrapper;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto_common::file::FilePartRegisterOutput;
 use sentc_crypto_common::{FileId, PartId};
@@ -362,9 +361,9 @@ async fn test_0_large_file()
 		let is_end = start >= file.len();
 
 		let encrypted_res = if current_chunk == 1 {
-			TestFileEncryptor::encrypt_file_part_start(&file_key, part, None::<&FakeSignKeyWrapper>).unwrap()
+			TestFileEncryptor::encrypt_file_part_start(&file_key, part, None).unwrap()
 		} else {
-			TestFileEncryptor::encrypt_file_part(&next_key.unwrap(), part, None::<&FakeSignKeyWrapper>).unwrap()
+			TestFileEncryptor::encrypt_file_part(&next_key.unwrap(), part, None).unwrap()
 		};
 
 		let encrypted_part = encrypted_res.0;

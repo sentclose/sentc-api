@@ -3,7 +3,6 @@ use std::time::Duration;
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
 use rustgram_server_util::error::{CoreErrorCodes, ServerErrorCodes};
-use sentc_crypto::crypto::mimic_keys::FakeSignKeyWrapper;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, KeyRotationInput};
 use sentc_crypto::sdk_common::user::UserDeviceRegisterOutput;
 use sentc_crypto::sdk_utils::error::SdkUtilError;
@@ -1173,7 +1172,7 @@ async fn test_26_user_group_key_rotation()
 		pre_group_key,
 		device_invoker_public_key,
 		true,
-		None::<&FakeSignKeyWrapper>,
+		None,
 		"test".to_string(),
 	)
 	.unwrap();

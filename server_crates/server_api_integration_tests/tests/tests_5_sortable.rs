@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-#[cfg(feature = "std_keys")]
+#[cfg(any(feature = "std_keys", feature = "rec_keys"))]
 use sentc_crypto::sdk_core::cryptomat::SortableKey as CoreSort;
 use sentc_crypto::sdk_utils::cryptomat::SortableKeyWrapper;
 use sentc_crypto_common::{GroupId, UserId};
@@ -153,15 +153,15 @@ async fn aaa_init_global_test()
 	NUMBERS.get_or_init(|| async { RwLock::new(vec![]) }).await;
 }
 
-#[cfg(feature = "std_keys")]
+#[cfg(any(feature = "std_keys", feature = "rec_keys"))]
 #[tokio::test]
 async fn test_10_encrypt_number()
 {
 	let key = &GROUP_TEST_STATE.get().unwrap().read().await[0].sortable_keys[0];
 
-	let a = key.encrypt_sortable(262).unwrap();
-	let b = key.encrypt_sortable(263).unwrap();
-	let c = key.encrypt_sortable(65321).unwrap();
+	let a = key.key.encrypt_sortable(262).unwrap();
+	let b = key.key.encrypt_sortable(263).unwrap();
+	let c = key.key.encrypt_sortable(65321).unwrap();
 
 	assert!(a < b);
 	assert!(b < c);
@@ -172,16 +172,16 @@ async fn test_10_encrypt_number()
 	n.push(c);
 }
 
-#[cfg(feature = "std_keys")]
+#[cfg(any(feature = "std_keys", feature = "rec_keys"))]
 #[tokio::test]
 async fn test_11_encrypt_number_with_other_group()
 {
 	let key = &GROUP_TEST_STATE.get().unwrap().read().await[1].sortable_keys[0];
 	let n = NUMBERS.get().unwrap().read().await;
 
-	let a = key.encrypt_sortable(262).unwrap();
-	let b = key.encrypt_sortable(263).unwrap();
-	let c = key.encrypt_sortable(65321).unwrap();
+	let a = key.key.encrypt_sortable(262).unwrap();
+	let b = key.key.encrypt_sortable(263).unwrap();
+	let c = key.key.encrypt_sortable(65321).unwrap();
 
 	assert!(a < b);
 	assert!(b < c);
@@ -222,9 +222,9 @@ async fn test_20_with_generated_key()
 
 	let key: sentc_crypto_std_keys::util::SortableKey = KEY.parse().unwrap();
 
-	let a = key.encrypt_sortable(262).unwrap();
-	let b = key.encrypt_sortable(263).unwrap();
-	let c = key.encrypt_sortable(65321).unwrap();
+	let a = key.key.encrypt_sortable(262).unwrap();
+	let b = key.key.encrypt_sortable(263).unwrap();
+	let c = key.key.encrypt_sortable(65321).unwrap();
 
 	assert!(a < b);
 	assert!(b < c);
