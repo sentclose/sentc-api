@@ -50,10 +50,11 @@ sentc-crypto = { workspace = true }
 
 sentc-crypto-std-keys.workspace = true
 sentc-crypto-fips-keys = { workspace = true, optional = true }
+sentc-crypto-rec-keys = { workspace = true, optional = true }
 
 [features]
 default = ["mysql"]
 mysql = ["rustgram-server-util/mysql", "server_api_common/mysql"]
 sqlite = ["rustgram-server-util/sqlite", "server_api_common/sqlite"]
 
-external_c_keys = ["sentc-crypto-fips-keys"]
+external_c_keys = ["sentc-crypto-fips-keys", "sentc-crypto-rec-keys"]
