@@ -168,7 +168,11 @@ fn encrypt(eph_key: &KeyRotationWorkerKey, users: Vec<UserGroupPublicKeyData>) -
 				&user.public_key_alg,
 				&eph_key.encrypted_ephemeral_key
 			),
-			[sentc_crypto_std_keys::util::SecretKey, sentc_crypto_fips_keys::util::SecretKey]
+			[
+				sentc_crypto_std_keys::util::SecretKey,
+				sentc_crypto_rec_keys::util::SecretKey,
+				sentc_crypto_fips_keys::util::SecretKey
+			]
 		);
 
 		let encrypted_ephemeral_key = match encrypted_ephemeral_key {

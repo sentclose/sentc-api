@@ -61,7 +61,11 @@ pub(crate) async fn prepare_done_login(app_id: impl Into<AppId>, identifier: imp
 			&device_keys.keypair_encrypt_alg,
 			&challenge
 		),
-		[sentc_crypto_std_keys::util::SecretKey, sentc_crypto_fips_keys::util::SecretKey]
+		[
+			sentc_crypto_std_keys::util::SecretKey,
+			sentc_crypto_rec_keys::util::SecretKey,
+			sentc_crypto_fips_keys::util::SecretKey
+		]
 	);
 
 	let encrypted_challenge = encrypted_challenge.map_err(|_e| {
@@ -233,6 +237,7 @@ async fn create_salt(app_id: impl Into<AppId>, user_identifier: &str) -> AppRes<
 		(&client_random_value, &alg, add_str),
 		[
 			sentc_crypto_std_keys::core::ClientRandomValue,
+			sentc_crypto_rec_keys::core::pw_hash::ClientRandomValue,
 			sentc_crypto_fips_keys::core::pw_hash::ClientRandomValue
 		]
 	);
@@ -276,6 +281,7 @@ fn auth_user_private(auth_key: &str, hashed_user_auth_key: &str, alg: &str) -> A
 		(auth_key, alg),
 		[
 			sentc_crypto_std_keys::core::DeriveAuthKeyForAuth,
+			sentc_crypto_rec_keys::core::pw_hash::DeriveAuthKeyForAuth,
 			sentc_crypto_fips_keys::core::pw_hash::DeriveAuthKeyForAuth
 		]
 	);

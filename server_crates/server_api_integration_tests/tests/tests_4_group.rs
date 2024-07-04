@@ -3,7 +3,6 @@ use std::time::Duration;
 
 use reqwest::header::AUTHORIZATION;
 use reqwest::StatusCode;
-use sentc_crypto::crypto::mimic_keys::FakeSignKeyWrapper;
 use sentc_crypto::sdk_common::group::{GroupAcceptJoinReqServerOutput, GroupInviteServerOutput};
 use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
@@ -1364,14 +1363,7 @@ async fn test_31_start_key_rotation()
 		.group_key;
 	let invoker_public_key = &user.user_data.user_keys[0].public_key;
 
-	let input = TestGroup::key_rotation(
-		pre_group_key,
-		invoker_public_key,
-		false,
-		None::<&FakeSignKeyWrapper>,
-		"test".to_string(),
-	)
-	.unwrap();
+	let input = TestGroup::key_rotation(pre_group_key, invoker_public_key, false, None, "test".to_string()).unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key_rotation");
 	let client = reqwest::Client::new();
@@ -1411,7 +1403,7 @@ async fn test_31_start_key_rotation()
 		.insert(user.user_id.to_string(), data_user_0.1);
 
 	//wait a bit to finish the key rotation in the sub thread
-	tokio::time::sleep(Duration::from_millis(60)).await;
+	tokio::time::sleep(Duration::from_millis(100)).await;
 }
 
 #[tokio::test]

@@ -2,7 +2,6 @@ use rand::RngCore;
 use reqwest::header::AUTHORIZATION;
 #[cfg(feature = "mysql")]
 use rustgram_server_util::db::mysql_async_export::prelude::Queryable;
-use sentc_crypto::crypto::mimic_keys::FakeSignKeyWrapper;
 use sentc_crypto::sdk_common::file::FileData;
 use sentc_crypto::sdk_utils::cryptomat::SymKeyCrypto;
 use sentc_crypto::sdk_utils::error::SdkUtilError;
@@ -228,10 +227,10 @@ async fn test_10_upload_small_file_for_non_target()
 	let file = &state.test_file_small;
 
 	//no chunk needed
-	let (encrypted_small_file, next_key) = TestFileEncryptor::encrypt_file_part_start(&file_key, file, None::<&FakeSignKeyWrapper>).unwrap();
+	let (encrypted_small_file, next_key) = TestFileEncryptor::encrypt_file_part_start(&file_key, file, None).unwrap();
 
 	//should not upload the file from a different user
-	let (encrypted_small_file_1, _) = TestFileEncryptor::encrypt_file_part_start(&file_key, file, None::<&FakeSignKeyWrapper>).unwrap();
+	let (encrypted_small_file_1, _) = TestFileEncryptor::encrypt_file_part_start(&file_key, file, None).unwrap();
 
 	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/1/true");
 
@@ -276,7 +275,7 @@ async fn test_10_upload_small_file_for_non_target()
 	handle_general_server_response(body.as_str()).unwrap();
 
 	//should not upload a part with finished session
-	let (encrypted_small_file_2, _) = TestFileEncryptor::encrypt_file_part(&next_key, file, None::<&FakeSignKeyWrapper>).unwrap();
+	let (encrypted_small_file_2, _) = TestFileEncryptor::encrypt_file_part(&next_key, file, None).unwrap();
 
 	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/1/true");
 
@@ -439,7 +438,7 @@ async fn test_12_upload_small_file_for_group()
 	let file = &state.test_file_small;
 
 	//no chunk needed
-	let (encrypted_small_file, _) = TestFileEncryptor::encrypt_file_part_start(&file_key, file, None::<&FakeSignKeyWrapper>).unwrap();
+	let (encrypted_small_file, _) = TestFileEncryptor::encrypt_file_part_start(&file_key, file, None).unwrap();
 
 	//upload the file
 	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/1/true");
@@ -676,7 +675,7 @@ async fn test_17_file_access_from_parent_to_child_group()
 	let file = &state.test_file_small;
 
 	//no chunk needed
-	let (encrypted_small_file, _) = TestFileEncryptor::encrypt_file_part_start(&file_key, file, None::<&FakeSignKeyWrapper>).unwrap();
+	let (encrypted_small_file, _) = TestFileEncryptor::encrypt_file_part_start(&file_key, file, None).unwrap();
 
 	//upload the file
 	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/1/true");
@@ -1122,7 +1121,7 @@ async fn test_30_chunked_filed()
 
 	//should not upload a too large part
 	let too_large_part = &file[0..1024 * 1024 * 6];
-	let (encrypted_part, _next_key) = TestFileEncryptor::encrypt_file_part_start(&file_key, too_large_part, None::<&FakeSignKeyWrapper>).unwrap();
+	let (encrypted_part, _next_key) = TestFileEncryptor::encrypt_file_part_start(&file_key, too_large_part, None).unwrap();
 	let url = get_url("api/v1/file/part/".to_string() + session_id.as_str() + "/0/false");
 
 	let client = reqwest::Client::new();
@@ -1169,9 +1168,9 @@ async fn test_30_chunked_filed()
 		let is_end = start >= file.len();
 
 		let encrypted_res = if current_chunk == 1 {
-			TestFileEncryptor::encrypt_file_part_start(&file_key, part, None::<&FakeSignKeyWrapper>).unwrap()
+			TestFileEncryptor::encrypt_file_part_start(&file_key, part, None).unwrap()
 		} else {
-			TestFileEncryptor::encrypt_file_part(&next_key.unwrap(), part, None::<&FakeSignKeyWrapper>).unwrap()
+			TestFileEncryptor::encrypt_file_part(&next_key.unwrap(), part, None).unwrap()
 		};
 
 		let encrypted_part = encrypted_res.0;

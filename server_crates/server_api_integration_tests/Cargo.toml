@@ -42,3 +42,4 @@ sqlite = ["rustgram-server-util/sqlite", "server_api_common/sqlite", "server_api
 
 std_keys = ["sentc-crypto/std_keys"]
 fips_keys = ["sentc-crypto/fips_keys"]
+rec_keys = ["sentc-crypto/rec_keys"]

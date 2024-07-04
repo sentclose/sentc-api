@@ -8,7 +8,6 @@ use reqwest::StatusCode;
 #[cfg(feature = "mysql")]
 use rustgram_server_util::db::mysql_async_export::prelude::Queryable;
 use rustgram_server_util::db::StringEntity;
-use sentc_crypto::crypto::mimic_keys::FakeSignKeyWrapper;
 use sentc_crypto::entities::group::GroupOutData;
 use sentc_crypto::group;
 use sentc_crypto::sdk_common::file::FileData;
@@ -27,66 +26,92 @@ use server_dashboard_common::customer::{CustomerData, CustomerDoneLoginOutput, C
 pub type TestUser = sentc_crypto::keys::std::StdUser;
 #[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 pub type TestUser = sentc_crypto::keys::fips::FipsUser;
+#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+pub type TestUser = sentc_crypto::keys::rec::RecUser;
 
 #[cfg(feature = "std_keys")]
 pub type TestUserDataInt = sentc_crypto::keys::std::StdUserDataInt;
 #[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 pub type TestUserDataInt = sentc_crypto::keys::fips::FipsUserDataInt;
+#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+pub type TestUserDataInt = sentc_crypto::keys::rec::RecUserDataInt;
 
 #[cfg(feature = "std_keys")]
 pub type TestUserKeyDataInt = sentc_crypto::keys::std::StdUserKeyDataInt;
 #[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 pub type TestUserKeyDataInt = sentc_crypto::keys::fips::FipsUserKeyDataInt;
+#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+pub type TestUserKeyDataInt = sentc_crypto::keys::rec::RecUserKeyDataInt;
 
 #[cfg(feature = "std_keys")]
 pub type TestGroup = sentc_crypto::keys::std::StdGroup;
 #[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 pub type TestGroup = sentc_crypto::keys::fips::FipsGroup;
+#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+pub type TestGroup = sentc_crypto::keys::rec::RecGroup;
 
 #[cfg(feature = "std_keys")]
 pub type TestFileEncryptor = sentc_crypto::keys::std::StdFileEncryptor;
 #[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 pub type TestFileEncryptor = sentc_crypto::keys::fips::FipsFileEncryptor;
+#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+pub type TestFileEncryptor = sentc_crypto::keys::rec::RecFileEncryptor;
 
 #[cfg(feature = "std_keys")]
 pub type TestKeyGenerator = sentc_crypto::keys::std::StdKeyGenerator;
 #[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 pub type TestKeyGenerator = sentc_crypto::keys::fips::FipsKeyGenerator;
+#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+pub type TestKeyGenerator = sentc_crypto::keys::rec::RecKeyGenerator;
 
 #[cfg(feature = "std_keys")]
 pub type TestGroupKeyData = sentc_crypto::keys::std::StdGroupKeyData;
 #[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 pub type TestGroupKeyData = sentc_crypto::keys::fips::FipsGroupKeyData;
+#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+pub type TestGroupKeyData = sentc_crypto::keys::rec::RecGroupKeyData;
 
 #[cfg(feature = "std_keys")]
 pub type TestPublicKey = sentc_crypto::std_keys::util::PublicKey;
 #[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 pub type TestPublicKey = sentc_crypto::fips_keys::util::PublicKey;
+#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+pub type TestPublicKey = sentc_crypto::rec_keys::util::PublicKey;
 
 #[cfg(feature = "std_keys")]
 pub type TestSymmetricKey = sentc_crypto::std_keys::util::SymmetricKey;
 #[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 pub type TestSymmetricKey = sentc_crypto::fips_keys::util::SymmetricKey;
+#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+pub type TestSymmetricKey = sentc_crypto::rec_keys::util::SymmetricKey;
 
 #[cfg(feature = "std_keys")]
 pub type TestSecretKey = sentc_crypto::std_keys::util::SecretKey;
 #[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 pub type TestSecretKey = sentc_crypto::fips_keys::util::SecretKey;
+#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+pub type TestSecretKey = sentc_crypto::rec_keys::util::SecretKey;
 
 #[cfg(feature = "std_keys")]
 pub type TestHmacKey = sentc_crypto_std_keys::util::HmacKey;
 #[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 pub type TestHmacKey = sentc_crypto::fips_keys::util::HmacKey;
+#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+pub type TestHmacKey = sentc_crypto::rec_keys::util::HmacKey;
 
 #[cfg(feature = "std_keys")]
 pub type TestSortableKey = sentc_crypto::std_keys::util::SortableKey;
 #[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 pub type TestSortableKey = sentc_crypto::fips_keys::util::SortableKey;
+#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+pub type TestSortableKey = sentc_crypto::rec_keys::util::SortableKey;
 
 #[cfg(feature = "std_keys")]
 pub type CoreSymmetricKey = sentc_crypto::std_keys::core::SymmetricKey;
 #[cfg(all(feature = "fips_keys", not(feature = "std_keys")))]
 pub type CoreSymmetricKey = sentc_crypto::fips_keys::core::sym::Aes256GcmKey;
+#[cfg(all(feature = "rec_keys", not(feature = "std_keys")))]
+pub type CoreSymmetricKey = sentc_crypto::rec_keys::core::sym::Aes256GcmKey;
 
 pub fn get_base_url() -> String
 {
@@ -772,14 +797,7 @@ pub async fn key_rotation(
 	group_as_member_id: Option<&str>,
 ) -> (GroupOutData, Vec<TestGroupKeyData>)
 {
-	let input = TestGroup::key_rotation(
-		pre_group_key,
-		invoker_public_key,
-		false,
-		None::<&FakeSignKeyWrapper>,
-		"test".to_string(),
-	)
-	.unwrap();
+	let input = TestGroup::key_rotation(pre_group_key, invoker_public_key, false, None, "test".to_string()).unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group_id + "/key_rotation");
 	let client = reqwest::Client::new();
@@ -805,7 +823,7 @@ pub async fn key_rotation(
 	let out = out.result.unwrap();
 
 	//wait a bit to finish the key rotation in the sub thread
-	tokio::time::sleep(Duration::from_millis(50)).await;
+	tokio::time::sleep(Duration::from_millis(100)).await;
 
 	match group_as_member_id {
 		Some(id) => get_group_from_group_as_member(secret_token, jwt, group_id, id, invoker_private_key).await,

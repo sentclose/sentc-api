@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use reqwest::header::AUTHORIZATION;
-use sentc_crypto::crypto::mimic_keys::FakeSignKeyWrapper;
 use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::SdkError;
@@ -718,7 +717,7 @@ async fn test_20_do_signed_key_rotation()
 	//the newest group key is first because of order by time
 	group_keys_list.push(new_keys.swap_remove(0));
 
-	tokio::time::sleep(Duration::from_millis(50)).await;
+	tokio::time::sleep(Duration::from_millis(100)).await;
 }
 
 #[tokio::test]
@@ -931,14 +930,7 @@ async fn test_41_no_key_rotation_with_wrong_rank()
 	let pre_group_key = &group_keys.group_key;
 	let invoker_public_key = &user.user_data.user_keys[0].public_key;
 
-	let input = TestGroup::key_rotation(
-		pre_group_key,
-		invoker_public_key,
-		false,
-		None::<&FakeSignKeyWrapper>,
-		"test".to_string(),
-	)
-	.unwrap();
+	let input = TestGroup::key_rotation(pre_group_key, invoker_public_key, false, None, "test".to_string()).unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key_rotation");
 	let client = reqwest::Client::new();
@@ -965,7 +957,7 @@ async fn test_41_no_key_rotation_with_wrong_rank()
 		},
 	}
 
-	tokio::time::sleep(Duration::from_millis(50)).await;
+	tokio::time::sleep(Duration::from_millis(100)).await;
 }
 
 #[tokio::test]
@@ -999,18 +991,11 @@ async fn test_42_key_rotation_limit()
 		)
 		.await;
 
-		tokio::time::sleep(Duration::from_millis(50)).await;
+		tokio::time::sleep(Duration::from_millis(100)).await;
 	}
 
 	//now test the 3rd rotation which should be fail
-	let input = TestGroup::key_rotation(
-		pre_group_key,
-		invoker_public_key,
-		false,
-		None::<&FakeSignKeyWrapper>,
-		"test".to_string(),
-	)
-	.unwrap();
+	let input = TestGroup::key_rotation(pre_group_key, invoker_public_key, false, None, "test".to_string()).unwrap();
 
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/key_rotation");
 	let client = reqwest::Client::new();
