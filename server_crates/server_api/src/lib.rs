@@ -4,18 +4,12 @@ use rustgram::Router;
 
 use crate::routes::routes;
 
-mod content_management;
 mod group;
 mod key_management;
 mod routes;
 mod user;
 pub mod util;
 
-pub use content_management::{
-	content_controller as sentc_content_controller,
-	content_entity as sentc_content_entities,
-	content_service as sentc_content_service,
-};
 pub use group::{
 	group_controller as sentc_group_controller,
 	group_entities as sentc_group_entities,
