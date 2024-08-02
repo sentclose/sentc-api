@@ -41,19 +41,19 @@ rustgram-server-util = { git = "https://gitlab.com/grammm/rustgram/rustgram-serv
 
 #_______________________________________________________________________________________________________________________
 
-sentc-crypto = { git = "https://github.com/sentclose/sentc.git", rev = "ed1f8bfb091fad88eba0ff16ed4d40fba17a3a3d", default-features = false, features = ["server"] }
+sentc-crypto = { git = "https://github.com/sentclose/sentc.git", rev = "615d8fb6f3d2a0779a9a6325c46adac31fd5b1a2", default-features = false, features = ["server"] }
 #sentc-crypto = { path = "../../sdk/crypto", default-features = false, features = ["server"] } # for local dev
 
-sentc-crypto-light = { git = "https://github.com/sentclose/sentc.git", rev = "ed1f8bfb091fad88eba0ff16ed4d40fba17a3a3d", default-features = false }
+sentc-crypto-light = { git = "https://github.com/sentclose/sentc.git", rev = "615d8fb6f3d2a0779a9a6325c46adac31fd5b1a2", default-features = false }
 #sentc-crypto-light = { path = "../../sdk/crypto_light", default-features = false } # for local dev
 
-sentc-crypto-std-keys = { git = "https://github.com/sentclose/sentc.git", rev = "ed1f8bfb091fad88eba0ff16ed4d40fba17a3a3d", features = ["full"] }
+sentc-crypto-std-keys = { git = "https://github.com/sentclose/sentc.git", rev = "615d8fb6f3d2a0779a9a6325c46adac31fd5b1a2", features = ["full"] }
 #sentc-crypto-std-keys = { path = "../../sdk/crypto_keys/crypto_std_keys", features = ["full"] } # for local dev
 
-sentc-crypto-fips-keys = { git = "https://github.com/sentclose/sentc.git", rev = "ed1f8bfb091fad88eba0ff16ed4d40fba17a3a3d", features = ["full"] }
+sentc-crypto-fips-keys = { git = "https://github.com/sentclose/sentc.git", rev = "615d8fb6f3d2a0779a9a6325c46adac31fd5b1a2", features = ["full"] }
 #sentc-crypto-fips-keys = { path = "../../sdk/crypto_keys/crypto_fips_keys", features = ["full"] } # for local dev
 
-sentc-crypto-rec-keys = { git = "https://github.com/sentclose/sentc.git", rev = "ed1f8bfb091fad88eba0ff16ed4d40fba17a3a3d", features = ["full"] }
+sentc-crypto-rec-keys = { git = "https://github.com/sentclose/sentc.git", rev = "615d8fb6f3d2a0779a9a6325c46adac31fd5b1a2", features = ["full"] }
 #sentc-crypto-rec-keys = { path = "../../sdk/crypto_keys/crypto_rec_keys", features = ["full"] } # for local dev
 
 #_______________________________________________________________________________________________________________________
