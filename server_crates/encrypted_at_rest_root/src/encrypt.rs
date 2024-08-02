@@ -14,7 +14,7 @@ pub async fn encrypt(data: &str) -> AppRes<String>
 
 pub fn encrypt_with_key(key: &SymmetricKey, data: &str) -> AppRes<String>
 {
-	key.encrypt_string(data, None)
+	key.encrypt_string(data)
 		.map_err(|e| SentcSdkErrorWrapper(e.into()).into())
 }
 
