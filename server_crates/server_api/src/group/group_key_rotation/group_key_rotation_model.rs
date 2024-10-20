@@ -52,7 +52,7 @@ INSERT INTO sentc_group_keys
      keypair_sign_alg,
      signed_by_user_id,
      signed_by_user_sign_key_id,
-     signed_by_user_sign_key_alg,
+     group_key_sig,
      public_key_sig,
      public_key_sig_key_id
      ) 
@@ -76,7 +76,7 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 		input.keypair_sign_alg,
 		input.signed_by_user_id,
 		input.signed_by_user_sign_key_id,
-		input.signed_by_user_sign_key_alg,
+		input.group_key_sig,
 		input.public_key_sig,
 		key_id.clone(),
 	);
@@ -121,7 +121,7 @@ INSERT INTO sentc_group_user_keys
 	Ok(key_id)
 }
 
-pub(super) async fn get_keys_for_key_update(
+pub async fn get_keys_for_key_update(
 	app_id: impl Into<AppId>,
 	group_id: impl Into<GroupId>,
 	user_id: impl Into<UserId>,
@@ -135,15 +135,12 @@ pub(super) async fn get_keys_for_key_update(
 SELECT 
     gk.id,
     error,
-    gkr.encrypted_ephemeral_key, 
+    gkr.encrypted_ephemeral_key,
     gkr.encrypted_eph_key_key_id,	-- the key id of the public key which was used to encrypt the eph key on the server
     encrypted_group_key_by_eph_key,
     previous_group_key_id,
     ephemeral_alg,
-    gk.time,
-    signed_by_user_id,
-    signed_by_user_sign_key_id,
-    signed_by_user_sign_key_alg
+    gk.time
 FROM 
     sentc_group_keys gk, 
     sentc_group_user_key_rotation gkr
@@ -153,12 +150,10 @@ WHERE user_id = ? AND
       key_id = gk.id
 ORDER BY gk.time";
 
-	let out: Vec<GroupKeyUpdate> = query(sql, set_params!(user_id.into(), group_id.into(), app_id.into())).await?;
-
-	Ok(out)
+	query(sql, set_params!(user_id.into(), group_id.into(), app_id.into())).await
 }
 
-pub(super) async fn done_key_rotation_for_user(
+pub async fn done_key_rotation_for_user(
 	group_id: impl Into<GroupId>,
 	user_id: impl Into<UserId>,
 	key_id: impl Into<SymKeyId>,
@@ -276,7 +271,7 @@ WHERE
 	.to_string();
 
 	let (sql1, params) = if last_fetched_time > 0 {
-		//there is a last fetched time time
+		//there is a last fetched time
 		let sql = sql + " AND gu.time <= ? AND (gu.time < ? OR (gu.time = ? AND gu.user_id > ?)) ORDER BY gu.time DESC, gu.user_id LIMIT 100";
 		(
 			sql,
@@ -344,7 +339,7 @@ WHERE
 	.to_string();
 
 	let (sql1, params) = if last_fetched_time > 0 {
-		//there is a last fetched time time
+		//there is a last fetched time
 		let sql = sql + " AND gu.time <= ? AND (gu.time < ? OR (gu.time = ? AND gu.user_id > ?)) ORDER BY gu.time DESC, gu.user_id LIMIT 100";
 		(
 			sql,
