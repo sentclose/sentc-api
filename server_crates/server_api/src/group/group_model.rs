@@ -25,7 +25,7 @@ use crate::util::api_res::ApiErrorCodes;
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn get_group_hmac(
+pub async fn get_group_hmac(
 	app_id: impl Into<AppId>,
 	group_id: impl Into<GroupId>,
 	last_fetched_time: u128,
@@ -58,12 +58,10 @@ WHERE group_id = ? AND app_id = ?"
 		(sql, set_params!(group_id.into(), app_id.into(),))
 	};
 
-	let data: Vec<GroupHmacData> = query_string(sql1, params).await?;
-
-	Ok(data)
+	query_string(sql1, params).await
 }
 
-pub(super) async fn get_group_sortable(
+pub async fn get_group_sortable(
 	app_id: impl Into<AppId>,
 	group_id: impl Into<GroupId>,
 	last_fetched_time: u128,
@@ -96,21 +94,19 @@ WHERE group_id = ? AND app_id = ?"
 		(sql, set_params!(group_id.into(), app_id.into(),))
 	};
 
-	let data: Vec<GroupSortableData> = query_string(sql1, params).await?;
-
-	Ok(data)
+	query_string(sql1, params).await
 }
 
 /**
 Get every other group keys with pagination.
 
-This keys are normally cached in the client, so it should be fetched once for each client.
+These keys are normally cached in the client, so it should be fetched once for each client.
 
 New keys from key update are fetched by the key update fn
 
 For child group: use the parent group id as user id.
 */
-pub(super) async fn get_user_group_keys(
+pub async fn get_user_group_keys(
 	app_id: impl Into<AppId>,
 	group_id: impl Into<GroupId>,
 	user_id: impl Into<UserId>,
@@ -121,7 +117,8 @@ pub(super) async fn get_user_group_keys(
 	//language=SQL
 	let sql = r"
 SELECT 
-    k_id,
+    k_id AS key_pair_id,
+    k_id AS group_key_id,
     encrypted_group_key, 
     group_key_alg, 
     encrypted_private_key,
@@ -129,9 +126,13 @@ SELECT
     private_key_pair_alg,
     uk.encrypted_group_key_key_id,
     k.time,
+    signed_by_user_id,
+    signed_by_user_sign_key_id,
+    group_key_sig,
     encrypted_sign_key,
     verify_key,
     keypair_sign_alg,
+    k_id AS keypair_sign_id,
     public_key_sig,
     public_key_sig_key_id
 FROM 
@@ -145,7 +146,7 @@ WHERE
 		.to_string();
 
 	let (sql1, params) = if last_fetched_time > 0 {
-		//there is a last fetched time time -> set the last fetched time to the params list
+		//there is a last fetched time -> set the last fetched time to the params list
 		let sql = sql + " AND k.time <= ? AND (k.time < ? OR (k.time = ? AND k_id > ?)) ORDER BY uk.time DESC, k_id LIMIT 50";
 
 		(
@@ -165,12 +166,10 @@ WHERE
 		(sql, set_params!(user_id.into(), group_id.into(), app_id.into(),))
 	};
 
-	let user_keys: Vec<GroupUserKeys> = query_string(sql1, params).await?;
-
-	Ok(user_keys)
+	query_string(sql1, params).await
 }
 
-pub(super) async fn get_user_group_key(
+pub async fn get_user_group_key(
 	app_id: impl Into<AppId>,
 	group_id: impl Into<GroupId>,
 	user_id: impl Into<UserId>,
@@ -180,7 +179,8 @@ pub(super) async fn get_user_group_key(
 	//language=SQL
 	let sql = r"
 SELECT 
-    k_id,
+    k_id AS key_pair_id,
+    k_id AS group_key_id,
     encrypted_group_key, 
     group_key_alg, 
     encrypted_private_key,
@@ -188,9 +188,13 @@ SELECT
     private_key_pair_alg,
     uk.encrypted_group_key_key_id,
     k.time,
+    signed_by_user_id,
+    signed_by_user_sign_key_id,
+    group_key_sig,
     encrypted_sign_key,
     verify_key,
     keypair_sign_alg,
+    k_id AS keypair_sign_id,
     public_key_sig,
     public_key_sig_key_id
 FROM 
@@ -203,30 +207,20 @@ WHERE
     k.id = k_id AND 
     app_id = ?";
 
-	let key: Option<GroupUserKeys> = query_first(
+	query_first(
 		sql,
 		set_params!(user_id.into(), group_id.into(), key_id.into(), app_id.into()),
 	)
-	.await?;
-
-	match key {
-		Some(k) => Ok(k),
-		None => {
-			Err(ServerCoreError::new_msg(
-				200,
-				ApiErrorCodes::GroupKeyNotFound,
-				"Group key not found",
-			))
-		},
-	}
+	.await?
+	.ok_or_else(|| ServerCoreError::new_msg(200, ApiErrorCodes::GroupKeyNotFound, "Group key not found"))
 }
 
 /**
-Get the info if there was a key update in the mean time
+Get the info if there was a key update in the meantime
 
 For child group: use the parent group id as user id.
 */
-pub(super) async fn check_for_key_update(app_id: impl Into<AppId>, user_id: impl Into<UserId>, group_id: impl Into<GroupId>) -> AppRes<bool>
+pub async fn check_for_key_update(app_id: impl Into<AppId>, user_id: impl Into<UserId>, group_id: impl Into<GroupId>) -> AppRes<bool>
 {
 	//check for key update
 	//language=SQL
@@ -287,12 +281,12 @@ fn prepare_create(
 	Ok((group_id, time, insert_user_id, user_type, group_connected))
 }
 
-pub(super) async fn create_light(
+pub async fn create_light(
 	app_id: impl Into<AppId>,
 	user_id: impl Into<UserId>,
+	group_type: i32,
 	parent_group_id: Option<GroupId>,
 	user_rank: Option<i32>,
-	group_type: i32,
 	connected_group: Option<GroupId>,
 	is_connected_group: bool,
 ) -> AppRes<GroupId>
@@ -332,7 +326,7 @@ INSERT INTO sentc_group
 		1
 	);
 
-	//insert he creator => rank = 0
+	//insert the creator => rank = 0
 	//handle parent group as the creator.
 
 	//language=SQL
@@ -360,13 +354,13 @@ INSERT INTO sentc_group
 	Ok(group_id)
 }
 
-pub(super) async fn create(
+pub async fn create(
 	app_id: impl Into<AppId>,
 	user_id: impl Into<UserId>,
 	data: CreateData,
+	group_type: i32,
 	parent_group_id: Option<GroupId>,
 	user_rank: Option<i32>,
-	group_type: i32,
 	connected_group: Option<GroupId>,
 	is_connected_group: bool,
 ) -> AppRes<(GroupId, SymKeyId)>
@@ -426,11 +420,11 @@ INSERT INTO sentc_group_keys
      keypair_sign_alg,
      signed_by_user_id,
      signed_by_user_sign_key_id,
-     signed_by_user_sign_key_alg,
+     group_key_sig,
      public_key_sig,
      public_key_sig_key_id
      ) 
-VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL,NULL,?,?)";
+VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 	let group_key_id = create_id(); //use the first group key id for the encrypted_hmac_encryption_key_id too
 
@@ -453,6 +447,9 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL,NULL,?,?)";
 		data.encrypted_sign_key,
 		data.verify_key,
 		data.keypair_sign_alg,
+		data.signed_by_user_id,
+		data.signed_by_user_sign_key_id,
+		data.group_key_sig,
 		data.public_key_sig,
 		group_key_id.clone(), //use here the normal key id because the sig was created by the new sign key
 	);
@@ -510,7 +507,7 @@ VALUES (?,?,?,?,?,?,?)
 		time.to_string(),
 	);
 
-	//insert he creator => rank = 0
+	//insert the creator => rank = 0
 	//handle parent group as the creator.
 
 	//language=SQL
@@ -578,7 +575,7 @@ VALUES (?,?,?,?,?,?,?)";
 	Ok((group_id, group_key_id))
 }
 
-pub(super) async fn delete_user_group(app_id: impl Into<AppId>, group_id: impl Into<GroupId>) -> AppRes<()>
+pub async fn delete_user_group(app_id: impl Into<AppId>, group_id: impl Into<GroupId>) -> AppRes<()>
 {
 	//don't delete children because user group won't have children
 
@@ -629,8 +626,8 @@ pub(super) async fn delete(app_id: impl Into<AppId>, group_id: impl Into<GroupId
 		exec_string(sql_delete_child, set_params_vec!(children)).await?;
 	}
 
-	//delete the rest of the user group keys, this is the rest from user invite but this wont get deleted when group user gets deleted
-	//important: do this after the delete!
+	//delete the rest of the user group keys, this is the rest from user invite but this won't get deleted when group user gets deleted
+	//important: do this after to delete!
 
 	//language=SQL
 	let sql = "DELETE FROM sentc_group_user_keys WHERE group_id = ?";
@@ -740,7 +737,7 @@ WHERE
 	Ok(list)
 }
 
-pub(super) async fn get_public_key_data(app_id: impl Into<AppId>, group_id: impl Into<GroupId>) -> AppRes<UserPublicKeyDataEntity>
+pub async fn get_public_key_data(app_id: impl Into<AppId>, group_id: impl Into<GroupId>) -> AppRes<UserPublicKeyDataEntity>
 {
 	//language=SQL
 	let sql = r"
@@ -767,7 +764,7 @@ LIMIT 1";
 	}
 }
 
-pub(super) async fn get_first_level_children(
+pub async fn get_first_level_children(
 	app_id: impl Into<AppId>,
 	group_id: impl Into<GroupId>,
 	last_fetched_time: u128,
