@@ -163,7 +163,7 @@ async fn test_10_create_group()
 	let creator = USERS_TEST_STATE.get().unwrap().read().await;
 	let creator = &creator[0];
 
-	let group_input = TestGroup::prepare_create(&creator.user_data.user_keys[0].public_key).unwrap();
+	let group_input = TestGroup::prepare_create(&creator.user_data.user_keys[0].public_key, None, Default::default()).unwrap();
 
 	let url = get_url("api/v1/group/forced/".to_owned() + &creator.user_id);
 	let client = reqwest::Client::new();
@@ -195,7 +195,7 @@ async fn test_10_create_group()
 	let mut decrypted_group_keys = Vec::with_capacity(data.keys.len());
 
 	for key in data.keys {
-		decrypted_group_keys.push(TestGroup::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, key).unwrap());
+		decrypted_group_keys.push(TestGroup::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, key, None).unwrap());
 	}
 
 	GROUP_TEST_STATE
@@ -254,7 +254,7 @@ async fn test_10_delete_group()
 	}
 
 	//now create the group again for the other tests
-	let group_input = TestGroup::prepare_create(&creator.user_data.user_keys[0].public_key).unwrap();
+	let group_input = TestGroup::prepare_create(&creator.user_data.user_keys[0].public_key, None, Default::default()).unwrap();
 
 	let url = get_url("api/v1/group/forced/".to_owned() + &creator.user_id);
 	let client = reqwest::Client::new();
@@ -286,7 +286,7 @@ async fn test_10_delete_group()
 	let mut decrypted_group_keys = Vec::with_capacity(data.keys.len());
 
 	for key in data.keys {
-		decrypted_group_keys.push(TestGroup::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, key).unwrap());
+		decrypted_group_keys.push(TestGroup::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, key, None).unwrap());
 	}
 
 	group.group_id = out_1.group_id;
@@ -353,7 +353,7 @@ async fn test_13_create_child_group()
 	let group_public_key = &group.decrypted_group_keys[0].public_group_key;
 	let group_private_key = &group.decrypted_group_keys[0].private_group_key;
 
-	let group_input = TestGroup::prepare_create(group_public_key).unwrap();
+	let group_input = TestGroup::prepare_create(group_public_key, None, Default::default()).unwrap();
 
 	let url = get_url("api/v1/group/forced/".to_owned() + &creator.user_id + "/" + &group.group_id + "/child");
 	let client = reqwest::Client::new();
@@ -429,7 +429,7 @@ async fn test_15_create_connected_group()
 	let group_public_key = &group.decrypted_group_keys[0].public_group_key;
 	let group_private_key = &group.decrypted_group_keys[0].private_group_key;
 
-	let group_input = TestGroup::prepare_create(group_public_key).unwrap();
+	let group_input = TestGroup::prepare_create(group_public_key, None, Default::default()).unwrap();
 
 	let url = get_url("api/v1/group/forced/".to_owned() + &creator.user_id + "/" + &group.group_id + "/connected");
 	let client = reqwest::Client::new();
@@ -564,7 +564,7 @@ async fn test_user_force_reset()
 	//now decrypting keys should fail because the user has got new keys
 
 	for key in data.keys {
-		let error = TestGroup::decrypt_group_keys(&out.user_keys.first().unwrap().private_key, key);
+		let error = TestGroup::decrypt_group_keys(&out.user_keys.first().unwrap().private_key, key, None);
 
 		if let Err(_e) = error {
 		} else {

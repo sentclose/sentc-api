@@ -156,7 +156,12 @@ async fn test_01_create_groups()
 	//5. group. group 3 is connected as member to this group
 	let url = get_url("api/v1/group".to_owned() + "/" + &group_id_3 + "/connected");
 
-	let group_input = TestGroup::prepare_create(&group_3_data_for_creator[0].public_group_key).unwrap();
+	let group_input = TestGroup::prepare_create(
+		&group_3_data_for_creator[0].public_group_key,
+		None,
+		Default::default(),
+	)
+	.unwrap();
 
 	let client = reqwest::Client::new();
 	let res = client

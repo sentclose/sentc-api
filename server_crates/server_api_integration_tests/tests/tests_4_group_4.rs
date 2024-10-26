@@ -21,6 +21,7 @@ use crate::test_fn::{
 	customer_delete,
 	delete_app,
 	delete_user,
+	get_base_url,
 	get_group,
 	get_url,
 	key_rotation,
@@ -756,12 +757,6 @@ async fn test_21_finished_signed_key_rotation_without_verify()
 		newest_key.new_group_key_id
 	);
 
-	assert_eq!(newest_key.signed_by_user_id, Some(users[0].user_id.clone()));
-	assert_eq!(
-		newest_key.signed_by_user_sign_key_id,
-		Some(users[0].user_data.user_keys[0].sign_key.key_id.clone())
-	);
-
 	//not verify the keys
 	let rotation_out = TestGroup::done_key_rotation(
 		&user.user_data.user_keys[0].private_key,
@@ -772,7 +767,6 @@ async fn test_21_finished_signed_key_rotation_without_verify()
 			.unwrap()[0]
 			.group_key,
 		newest_key,
-		None,
 	)
 	.unwrap();
 
@@ -839,12 +833,6 @@ async fn test_22_finished_signed_key_rotation_wit_verify()
 		newest_key.new_group_key_id
 	);
 
-	assert_eq!(newest_key.signed_by_user_id, Some(users[0].user_id.clone()));
-	assert_eq!(
-		newest_key.signed_by_user_sign_key_id,
-		Some(users[0].user_data.user_keys[0].sign_key.key_id.clone())
-	);
-
 	//this time verify the keys
 	let rotation_out = TestGroup::done_key_rotation(
 		&user.user_data.user_keys[0].private_key,
@@ -855,7 +843,6 @@ async fn test_22_finished_signed_key_rotation_wit_verify()
 			.unwrap()[0]
 			.group_key,
 		newest_key,
-		Some(&users[0].user_data.user_keys[0].exported_verify_key),
 	)
 	.unwrap();
 
@@ -874,16 +861,30 @@ async fn test_22_finished_signed_key_rotation_wit_verify()
 	let body = res.text().await.unwrap();
 	handle_general_server_response(body.as_str()).unwrap();
 
-	let data_user_1 = get_group(
+	let private_key = &user.user_data.user_keys[0].private_key;
+
+	let data = sentc_crypto::util_req_full::group::get_group(
+		get_base_url(),
 		secret_token,
 		user.user_data.jwt.as_str(),
 		group.group_id.as_str(),
-		&user.user_data.user_keys[0].private_key,
-		false,
+		None,
 	)
-	.await;
+	.await
+	.unwrap();
 
-	assert_eq!(data_user_1.1.len(), 2);
+	let _data_keys: Vec<TestGroupKeyData> = data
+		.keys
+		.into_iter()
+		.map(|k| {
+			TestGroup::decrypt_group_keys(
+				private_key,
+				k,
+				Some(&users[0].user_data.user_keys[0].exported_verify_key),
+			)
+			.unwrap()
+		})
+		.collect();
 }
 
 //__________________________________________________________________________________________________

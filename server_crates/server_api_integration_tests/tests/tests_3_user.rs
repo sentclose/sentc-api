@@ -1278,7 +1278,7 @@ async fn test_27_done_key_rotation_for_other_device()
 
 	for key in out {
 		let key_id = key.new_group_key_id.clone();
-		let rotation_out = TestGroup::done_key_rotation(device_private_key, device_public_key, pre_group_key, key, None).unwrap();
+		let rotation_out = TestGroup::done_key_rotation(device_private_key, device_public_key, pre_group_key, key).unwrap();
 
 		//done for each key
 		let url = get_url("api/v1/user/user_keys/rotation/".to_owned() + key_id.as_str());
