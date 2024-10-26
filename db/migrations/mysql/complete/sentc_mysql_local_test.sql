@@ -1,14 +1,13 @@
 -- phpMyAdmin SQL Dump
--- version 4.9.5
+-- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 02. Aug 2023 um 20:37
--- Server-Version: 10.2.6-MariaDB-log
--- PHP-Version: 7.4.5
+-- Erstellungszeit: 26. Okt 2024 um 13:09
+-- Server-Version: 10.11.6-MariaDB-log
+-- PHP-Version: 8.3.2
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-SET AUTOCOMMIT = 0;
 START TRANSACTION;
 SET time_zone = "+00:00";
 
@@ -19,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Datenbank: `sentc`
+-- Datenbank: `sentc_dev`
 --
 
 -- --------------------------------------------------------
@@ -37,14 +36,13 @@ CREATE TABLE `sentc_app` (
   `hashed_public_token` varchar(100) NOT NULL,
   `hash_alg` text DEFAULT NULL,
   `time` bigint(20) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Daten für Tabelle `sentc_app`
 --
 
 INSERT INTO `sentc_app` (`id`, `owner_id`, `owner_type`, `identifier`, `hashed_secret_token`, `hashed_public_token`, `hash_alg`, `time`) VALUES
-('ecae27fb-d849-467d-9c58-49fca0d8430a', 'sentc_test', 0, 'test_app', 'QSCg8j7LNThPeyHj9Nqdi6m87/iDHqGCOnFnZxibeU8=', 'QNaYRBpRtvWY+uRzYe7HkDb8e2IVzXaFXCKC3hQ6i/0=', 'SHA256', 1662900015863),
 ('sentc_int', 'sentc_int', 0, '', 'cmzOt+BnyErJKsF2qNaiJ/YqsXJymnGQSdvJi5FpeOo=', 'b/t88y7h0zwqOXAtR/UqE4qsPL11PLFvo1e+8PNP8LU=', 'SHA256', 1659606752935);
 
 --
@@ -93,14 +91,13 @@ CREATE TABLE `sentc_app_group_options` (
   `app_id` varchar(36) NOT NULL,
   `max_key_rotation_month` int(11) NOT NULL,
   `min_rank_key_rotation` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Daten für Tabelle `sentc_app_group_options`
 --
 
 INSERT INTO `sentc_app_group_options` (`app_id`, `max_key_rotation_month`, `min_rank_key_rotation`) VALUES
-('ecae27fb-d849-467d-9c58-49fca0d8430a', 100, 4),
 ('sentc_int', 100, 4);
 
 -- --------------------------------------------------------
@@ -116,15 +113,14 @@ CREATE TABLE `sentc_app_jwt_keys` (
   `verify_key` text NOT NULL,
   `alg` text NOT NULL,
   `time` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='multiple per app';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='multiple per app';
 
 --
 -- Daten für Tabelle `sentc_app_jwt_keys`
 --
 
 INSERT INTO `sentc_app_jwt_keys` (`id`, `app_id`, `sign_key`, `verify_key`, `alg`, `time`) VALUES
-('174b531f-8814-42a2-94ab-3c17036183a5', 'sentc_int', 'eyJpZCI6Ijg2ZWFmZDliLWY0YzAtNDQwNS04M2YzLTk1ODdjZGU4NjdjOSIsInNpZ24iOm51bGx9AJplxfDnODBSHFsgtR8/C4o/T79CSWuDvCkAsljXyV3FZ1ttLdqWqqg4XOu0RDGIEBf7BXo06zKj+GptwSAI9ClrGdQOnVGCsAE0tCfk2p/rKFFQzeWdKb0sH1i7kB5iXph11fm0Yl6WJeUJytqAxgYfxu7scNOamBuX4LyC1AYkV5cH/DGBwmJ/0nqdaFa5cxOGJBlqoVBXkfPTY9idRBbeem32kj+cgVOUgo4+kcqbWN9lRKBDw/h0dqZX8EOFssPZw4x+pRnPzqTg6qu9Ied6kPjUw+zW0KRSESr4XZ8U8YJzimOYtuIGO1dkgxy47j6uoqsm0qnaCnyUkNVUcd3RU8m3xKNpYF7CiSPVhlNg1lFtew==', 'BFTKd1R3/nbdSMbVDlwKEEe6e19iJDnBFQhs42VPvxmtTp5RudxN1pY3vakthNUjKOamqAK2zNlgpA0zDkjVXhzSYR1057xsxKaJzR6BxXGYIKOBBVq7zFThtxx3KuWUUg==', 'ES384', 1659606752935),
-('ad68a7c1-e61c-46b5-a04d-8e64e0206df4', 'ecae27fb-d849-467d-9c58-49fca0d8430a', 'eyJpZCI6Ijg2ZWFmZDliLWY0YzAtNDQwNS04M2YzLTk1ODdjZGU4NjdjOSIsInNpZ24iOm51bGx9AHuV0TlfBkvccXMDptxHGx1Fo2uh/M1hQJwJf0mbebcG8j9yx82QgfIJ7/C9CsmPCZdT0gRsKp89fJ4ng+Y2qoan5qnY5hpSLKblE31J8DX+hvlwJ5I2EoHZk2uZFzX43XFLf21wDiLLUUkgYIV5oZez+B5b+f+IiF7/w8kmhbnEp56bmtWS9Y+OqK9hZRXOsQdBerSlRytzm9zmd6JWJU0pih8Y+CjkvbyIYF3yvj3VzQiyBOQcrnbLp5rqev8phLG1J7n2j0G1hpPzsCSyWl6LuqNwLvOnH5XmEGkroZyf8+h26ux1zs87FoJO7cComrK7Q0+vN4LuMc3CCc8a05n6Fvn0k5nBEJRDQgYXfjVceGZ4Lw==', 'BHtl2A69MsAwWCWyzvlhBB9Soq0La91gFFiTxPMITTBEVJ7meNpbMZlFW7V2PRQ6ydL4eXcOwe9uLpIJfY9wUkRyMwqCXVCOR/5jRHlnU/whAr3hc2F3BMn402oVAlKlaw==', 'ES384', 1662900015863);
+('174b531f-8814-42a2-94ab-3c17036183a5', 'sentc_int', 'eyJpZCI6Ijg2ZWFmZDliLWY0YzAtNDQwNS04M2YzLTk1ODdjZGU4NjdjOSIsInNpZ24iOm51bGx9AJplxfDnODBSHFsgtR8/C4o/T79CSWuDvCkAsljXyV3FZ1ttLdqWqqg4XOu0RDGIEBf7BXo06zKj+GptwSAI9ClrGdQOnVGCsAE0tCfk2p/rKFFQzeWdKb0sH1i7kB5iXph11fm0Yl6WJeUJytqAxgYfxu7scNOamBuX4LyC1AYkV5cH/DGBwmJ/0nqdaFa5cxOGJBlqoVBXkfPTY9idRBbeem32kj+cgVOUgo4+kcqbWN9lRKBDw/h0dqZX8EOFssPZw4x+pRnPzqTg6qu9Ied6kPjUw+zW0KRSESr4XZ8U8YJzimOYtuIGO1dkgxy47j6uoqsm0qnaCnyUkNVUcd3RU8m3xKNpYF7CiSPVhlNg1lFtew==', 'BFTKd1R3/nbdSMbVDlwKEEe6e19iJDnBFQhs42VPvxmtTp5RudxN1pY3vakthNUjKOamqAK2zNlgpA0zDkjVXhzSYR1057xsxKaJzR6BxXGYIKOBBVq7zFThtxx3KuWUUg==', 'ES384', 1659606752935);
 
 -- --------------------------------------------------------
 
@@ -182,14 +178,13 @@ CREATE TABLE `sentc_app_options` (
   `user_reset_otp` int(11) NOT NULL,
   `user_disable_otp` int(11) NOT NULL,
   `user_get_otp_recovery_keys` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='option: 0 = not allowed,  1 = public token, 2 = secret token';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='option: 0 = not allowed,  1 = public token, 2 = secret token';
 
 --
 -- Daten für Tabelle `sentc_app_options`
 --
 
 INSERT INTO `sentc_app_options` (`app_id`, `group_create`, `group_get`, `group_user_keys`, `group_user_update_check`, `group_invite`, `group_reject_invite`, `group_accept_invite`, `group_join_req`, `group_accept_join_req`, `group_reject_join_req`, `group_key_rotation`, `group_user_delete`, `group_change_rank`, `group_delete`, `group_leave`, `user_exists`, `user_register`, `user_delete`, `user_update`, `user_change_password`, `user_reset_password`, `user_prepare_login`, `user_done_login`, `user_public_data`, `user_refresh`, `key_register`, `key_get`, `group_auto_invite`, `group_list`, `file_register`, `file_part_upload`, `file_get`, `file_part_download`, `user_device_register`, `user_device_delete`, `user_device_list`, `group_invite_stop`, `user_key_update`, `file_delete`, `content`, `content_small`, `content_med`, `content_large`, `content_x_large`, `user_register_otp`, `user_reset_otp`, `user_disable_otp`, `user_get_otp_recovery_keys`) VALUES
-('ecae27fb-d849-467d-9c58-49fca0d8430a', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
 ('sentc_int', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
 -- --------------------------------------------------------
@@ -203,7 +198,7 @@ CREATE TABLE `sentc_captcha` (
   `app_id` varchar(36) NOT NULL,
   `solution` text NOT NULL,
   `time` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -220,7 +215,7 @@ CREATE TABLE `sentc_content` (
   `belongs_to_user` varchar(36) DEFAULT NULL,
   `creator` varchar(36) NOT NULL,
   `category` varchar(50) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -239,7 +234,7 @@ CREATE TABLE `sentc_customer` (
   `email_status` int(11) NOT NULL DEFAULT 1 COMMENT 'the status of the send email: 1 = normal, other value = error code',
   `email_error_msg` text DEFAULT NULL,
   `email_token` text NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Trigger `sentc_customer`
@@ -259,7 +254,7 @@ CREATE TABLE `sentc_customer_group` (
   `sentc_group_id` varchar(36) NOT NULL,
   `name` text DEFAULT NULL,
   `des` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Trigger `sentc_customer_group`
@@ -288,7 +283,7 @@ CREATE TABLE `sentc_file` (
   `delete_at` bigint(20) NOT NULL COMMENT '0 = not deleted, time when the file was deleted',
   `time` bigint(20) NOT NULL,
   `encrypted_key_alg` text NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Trigger `sentc_file`
@@ -313,14 +308,13 @@ CREATE TABLE `sentc_file_options` (
   `file_storage` int(11) NOT NULL COMMENT '0 = our backend; 1 = customer backend',
   `storage_url` text DEFAULT NULL COMMENT 'when file_storage != 0',
   `auth_token` varchar(50) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Daten für Tabelle `sentc_file_options`
 --
 
 INSERT INTO `sentc_file_options` (`app_id`, `file_storage`, `storage_url`, `auth_token`) VALUES
-('ecae27fb-d849-467d-9c58-49fca0d8430a', 0, NULL, NULL),
 ('sentc_int', -1, NULL, NULL);
 
 -- --------------------------------------------------------
@@ -336,7 +330,7 @@ CREATE TABLE `sentc_file_part` (
   `size` bigint(20) NOT NULL COMMENT 'only set when using our backend',
   `sequence` int(11) NOT NULL,
   `extern` tinyint(1) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -351,7 +345,7 @@ CREATE TABLE `sentc_file_session` (
   `created_at` bigint(20) NOT NULL,
   `expected_size` int(11) NOT NULL,
   `max_chunk_size` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -368,7 +362,7 @@ CREATE TABLE `sentc_group` (
   `is_connected_group` tinyint(1) NOT NULL,
   `invite` tinyint(1) NOT NULL,
   `time` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Trigger `sentc_group`
@@ -408,7 +402,7 @@ CREATE TABLE `sentc_group_hmac_keys` (
   `encrypted_hmac_alg` text NOT NULL,
   `encrypted_hmac_encryption_key_id` varchar(36) NOT NULL COMMENT 'the key id which encrypted this key',
   `time` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='the hmac keys are the keys for searchable encryption hashes.';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='the hmac keys are the keys for searchable encryption hashes.';
 
 -- --------------------------------------------------------
 
@@ -434,10 +428,10 @@ CREATE TABLE `sentc_group_keys` (
   `time` bigint(20) NOT NULL,
   `signed_by_user_id` varchar(36) DEFAULT NULL,
   `signed_by_user_sign_key_id` varchar(36) DEFAULT NULL,
-  `signed_by_user_sign_key_alg` text DEFAULT NULL,
+  `group_key_sig` text DEFAULT NULL,
   `public_key_sig` text DEFAULT NULL,
   `public_key_sig_key_id` varchar(36) DEFAULT NULL COMMENT 'the key id which was used to create the sig'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -453,7 +447,7 @@ CREATE TABLE `sentc_group_sortable_keys` (
   `encrypted_sortable_alg` text NOT NULL,
   `encrypted_sortable_encryption_key_id` varchar(36) NOT NULL COMMENT 'the key id which encrypted this key',
   `time` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -468,7 +462,7 @@ CREATE TABLE `sentc_group_user` (
   `rank` int(11) NOT NULL,
   `key_upload_session_id` varchar(36) DEFAULT NULL COMMENT 'this is used when there are many keys used in this group. then upload the keys via pagination. this is only used for accept join req',
   `type` tinyint(4) NOT NULL DEFAULT 0 COMMENT '0 = normal user, 1 = group from parent group, 2 = a group as member'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Trigger `sentc_group_user`
@@ -496,7 +490,7 @@ CREATE TABLE `sentc_group_user_invites_and_join_req` (
   `key_upload_session_id` varchar(36) DEFAULT NULL COMMENT 'if there are too many keys used in this group -> upload the keys via session. this is only used for invite req',
   `user_type` int(11) NOT NULL COMMENT '0 = normal user, 2 = group as member',
   `new_user_rank` int(11) NOT NULL COMMENT 'only for invite req.'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='the invite req from the group to an user';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='the invite req from the group to an user';
 
 -- --------------------------------------------------------
 
@@ -512,7 +506,7 @@ CREATE TABLE `sentc_group_user_keys` (
   `encrypted_alg` text NOT NULL COMMENT 'the alg from the public key',
   `encrypted_group_key_key_id` varchar(36) NOT NULL COMMENT 'the public key id, which encrypted the group key',
   `time` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='every key for one user to one group (m:n), multiple keys for user (via key rotation';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='every key for one user to one group (m:n), multiple keys for user (via key rotation';
 
 -- --------------------------------------------------------
 
@@ -527,7 +521,7 @@ CREATE TABLE `sentc_group_user_key_rotation` (
   `encrypted_ephemeral_key` text NOT NULL COMMENT 'encrypted by users public key on the server',
   `encrypted_eph_key_key_id` varchar(36) NOT NULL,
   `error` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='after a key rotation, before done key rotation';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='after a key rotation, before done key rotation';
 
 -- --------------------------------------------------------
 
@@ -538,7 +532,7 @@ CREATE TABLE `sentc_group_user_key_rotation` (
 CREATE TABLE `sentc_internally_db_version` (
   `version` varchar(36) NOT NULL,
   `time` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='for migration';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='for migration';
 
 -- --------------------------------------------------------
 
@@ -554,7 +548,7 @@ CREATE TABLE `sentc_sym_key_management` (
   `encrypted_key` text NOT NULL,
   `master_key_alg` text NOT NULL,
   `time` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Symmetric key created by the sdk';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Symmetric key created by the sdk';
 
 -- --------------------------------------------------------
 
@@ -569,7 +563,7 @@ CREATE TABLE `sentc_user` (
   `time` bigint(20) NOT NULL COMMENT 'registered at',
   `otp_secret` text DEFAULT NULL,
   `otp_alg` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Trigger `sentc_user`
@@ -595,7 +589,7 @@ CREATE TABLE `sentc_user_action_log` (
   `action_id` int(11) NOT NULL COMMENT '0 = done login; 1 = refresh token or init client',
   `app_id` varchar(36) NOT NULL,
   `amount` int(11) NOT NULL COMMENT 'when saving how many'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -622,7 +616,7 @@ CREATE TABLE `sentc_user_device` (
   `hashed_auth_key` text NOT NULL,
   `time` bigint(20) NOT NULL COMMENT 'active since',
   `token` varchar(100) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='multiple device per user';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='multiple device per user';
 
 --
 -- Trigger `sentc_user_device`
@@ -647,7 +641,7 @@ CREATE TABLE `sentc_user_device_challenge` (
   `device_id` varchar(36) NOT NULL,
   `app_id` varchar(36) NOT NULL,
   `time` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -661,7 +655,7 @@ CREATE TABLE `sentc_user_otp_recovery` (
   `token` text NOT NULL,
   `time` bigint(20) NOT NULL,
   `token_hash` varchar(100) NOT NULL COMMENT 'to search the token'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -674,7 +668,7 @@ CREATE TABLE `sentc_user_token` (
   `token` varchar(100) NOT NULL,
   `app_id` varchar(36) NOT NULL,
   `time` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -686,7 +680,7 @@ CREATE TABLE `test` (
   `id` varchar(36) NOT NULL,
   `name` text NOT NULL,
   `time` bigint(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Indizes der exportierten Tabellen
@@ -867,7 +861,7 @@ ALTER TABLE `sentc_user_device`
 -- Indizes für die Tabelle `sentc_user_device_challenge`
 --
 ALTER TABLE `sentc_user_device_challenge`
-  ADD PRIMARY KEY (`challenge`,`device_id`,`app_id`,`time`) USING BTREE;
+  ADD PRIMARY KEY (`challenge`,`device_id`,`app_id`,`time`);
 
 --
 -- Indizes für die Tabelle `sentc_user_otp_recovery`
