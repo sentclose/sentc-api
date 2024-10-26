@@ -1,4 +1,4 @@
-use rustgram_server_util::{take_or_err, DB};
+use rustgram_server_util::DB;
 use sentc_crypto_common::group::{GroupInviteReqList, GroupJoinReqList, GroupKeyServerOutput, GroupUserAccessBy, KeyRotationInput};
 use sentc_crypto_common::{EncryptionKeyPairId, GroupId, SignKeyPairId, SymKeyId, UserId};
 use serde::{Deserialize, Serialize};
@@ -110,7 +110,7 @@ impl Into<sentc_crypto_common::group::GroupSortableData> for GroupSortableData
 
 //__________________________________________________________________________________________________
 
-#[derive(Serialize)]
+#[derive(Serialize, DB)]
 pub struct GroupUserKeys
 {
 	pub key_pair_id: EncryptionKeyPairId,
@@ -122,7 +122,16 @@ pub struct GroupUserKeys
 	pub keypair_encrypt_alg: String,
 	pub user_public_key_id: EncryptionKeyPairId,
 	pub time: u128,
-	//this keys are only set for user group
+
+	//if user signed the new group key
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub signed_by_user_id: Option<UserId>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub signed_by_user_sign_key_id: Option<SignKeyPairId>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub group_key_sig: Option<String>,
+
+	//these keys are only set for user group
 	#[serde(skip_serializing_if = "Option::is_none")]
 	pub encrypted_sign_key: Option<String>,
 	#[serde(skip_serializing_if = "Option::is_none")]
@@ -151,6 +160,9 @@ impl Into<GroupKeyServerOutput> for GroupUserKeys
 			key_pair_id: self.key_pair_id,
 			user_public_key_id: self.user_public_key_id,
 			time: self.time,
+			signed_by_user_id: self.signed_by_user_id,
+			signed_by_user_sign_key_id: self.signed_by_user_sign_key_id,
+			group_key_sig: self.group_key_sig,
 			encrypted_sign_key: self.encrypted_sign_key,
 			verify_key: self.verify_key,
 			keypair_sign_alg: self.keypair_sign_alg,
@@ -158,66 +170,6 @@ impl Into<GroupKeyServerOutput> for GroupUserKeys
 			public_key_sig: self.public_key_sig,
 			public_key_sig_key_id: self.public_key_sig_key_id,
 		}
-	}
-}
-
-#[cfg(feature = "mysql")]
-impl rustgram_server_util::db::mysql_async_export::prelude::FromRow for GroupUserKeys
-{
-	fn from_row_opt(
-		mut row: rustgram_server_util::db::mysql_async_export::Row,
-	) -> Result<Self, rustgram_server_util::db::mysql_async_export::FromRowError>
-	where
-		Self: Sized,
-	{
-		let k_id = take_or_err!(row, 0, String);
-
-		Ok(Self {
-			key_pair_id: k_id.to_string(),
-			group_key_id: k_id.to_string(),
-			encrypted_group_key: take_or_err!(row, 1, String),
-			group_key_alg: take_or_err!(row, 2, String),
-			encrypted_private_group_key: take_or_err!(row, 3, String),
-			public_group_key: take_or_err!(row, 4, String),
-			keypair_encrypt_alg: take_or_err!(row, 5, String),
-			user_public_key_id: take_or_err!(row, 6, String),
-			time: take_or_err!(row, 7, u128),
-			encrypted_sign_key: rustgram_server_util::take_or_err_opt!(row, 8, String),
-			verify_key: rustgram_server_util::take_or_err_opt!(row, 9, String),
-			keypair_sign_alg: rustgram_server_util::take_or_err_opt!(row, 10, String),
-			keypair_sign_id: Some(k_id),
-			public_key_sig: rustgram_server_util::take_or_err_opt!(row, 11, String),
-			public_key_sig_key_id: rustgram_server_util::take_or_err_opt!(row, 12, String),
-		})
-	}
-}
-
-#[cfg(feature = "sqlite")]
-impl rustgram_server_util::db::FromSqliteRow for GroupUserKeys
-{
-	fn from_row_opt(row: &rustgram_server_util::db::rusqlite_export::Row) -> Result<Self, rustgram_server_util::db::FormSqliteRowError>
-	where
-		Self: Sized,
-	{
-		let k_id: String = take_or_err!(row, 0);
-
-		Ok(Self {
-			key_pair_id: k_id.to_string(),
-			group_key_id: k_id.to_string(),
-			encrypted_group_key: take_or_err!(row, 1),
-			group_key_alg: take_or_err!(row, 2),
-			encrypted_private_group_key: take_or_err!(row, 3),
-			public_group_key: take_or_err!(row, 4),
-			keypair_encrypt_alg: take_or_err!(row, 5),
-			user_public_key_id: take_or_err!(row, 6),
-			time: rustgram_server_util::take_or_err_u128!(row, 7),
-			encrypted_sign_key: take_or_err!(row, 8),
-			verify_key: take_or_err!(row, 9),
-			keypair_sign_alg: take_or_err!(row, 10),
-			keypair_sign_id: Some(k_id),
-			public_key_sig: take_or_err!(row, 11),
-			public_key_sig_key_id: take_or_err!(row, 12),
-		})
 	}
 }
 
@@ -276,13 +228,6 @@ pub struct GroupKeyUpdate
 	pub previous_group_key_id: SymKeyId,
 	pub ephemeral_alg: String,
 	pub time: u128,
-
-	#[serde(skip_serializing_if = "Option::is_none")]
-	pub signed_by_user_id: Option<UserId>,
-	#[serde(skip_serializing_if = "Option::is_none")]
-	pub signed_by_user_sign_key_id: Option<SignKeyPairId>,
-	#[serde(skip_serializing_if = "Option::is_none")]
-	pub signed_by_user_sign_key_alg: Option<String>,
 }
 
 impl Into<KeyRotationInput> for GroupKeyUpdate
@@ -298,10 +243,6 @@ impl Into<KeyRotationInput> for GroupKeyUpdate
 			encrypted_eph_key_key_id: self.encrypted_eph_key_key_id,
 			time: self.time,
 			new_group_key_id: self.new_group_key_id,
-
-			signed_by_user_id: self.signed_by_user_id,
-			signed_by_user_sign_key_id: self.signed_by_user_sign_key_id,
-			signed_by_user_sign_key_alg: self.signed_by_user_sign_key_alg,
 		}
 	}
 }

@@ -263,7 +263,7 @@ async fn test_10_create_a_connected_group_from_a_group()
 
 	let url = get_url("api/v1/group".to_owned() + "/" + group_1.group_id.as_str() + "/connected");
 
-	let group_input = TestGroup::prepare_create(group_1_public_key).unwrap();
+	let group_input = TestGroup::prepare_create(group_1_public_key, None, Default::default()).unwrap();
 
 	let client = reqwest::Client::new();
 	let res = client

@@ -491,14 +491,32 @@ pub async fn create_group(secret_token: &str, creator_public_key: &TestPublicKey
 {
 	match parent_group_id {
 		Some(i) => {
-			TestGroup::create_child_group(get_base_url(), secret_token, jwt, &i, 0, creator_public_key, None)
-				.await
-				.unwrap()
+			TestGroup::create_child_group(
+				get_base_url(),
+				secret_token,
+				jwt,
+				&i,
+				0,
+				creator_public_key,
+				None,
+				None,
+				Default::default(),
+			)
+			.await
+			.unwrap()
 		},
 		None => {
-			TestGroup::create(get_base_url(), secret_token, jwt, creator_public_key, None)
-				.await
-				.unwrap()
+			TestGroup::create(
+				get_base_url(),
+				secret_token,
+				jwt,
+				creator_public_key,
+				None,
+				None,
+				Default::default(),
+			)
+			.await
+			.unwrap()
 		},
 	}
 }
@@ -519,6 +537,8 @@ pub async fn create_child_group_from_group_as_member(
 		0,
 		creator_public_key,
 		Some(group_to_access),
+		None,
+		Default::default(),
 	)
 	.await
 	.unwrap()
@@ -565,7 +585,7 @@ pub async fn get_group(
 	let data_keys = data
 		.keys
 		.into_iter()
-		.map(|k| TestGroup::decrypt_group_keys(private_key, k).unwrap())
+		.map(|k| TestGroup::decrypt_group_keys(private_key, k, None).unwrap())
 		.collect();
 
 	assert_eq!(data.key_update, key_update);
@@ -604,7 +624,7 @@ pub async fn get_group_from_group_as_member(
 	let data_keys = data
 		.keys
 		.into_iter()
-		.map(|k| TestGroup::decrypt_group_keys(private_group_key, k).unwrap())
+		.map(|k| TestGroup::decrypt_group_keys(private_group_key, k, None).unwrap())
 		.collect();
 
 	(
@@ -875,7 +895,7 @@ pub async fn done_key_rotation(
 	for key in out {
 		let key_id = key.new_group_key_id.clone();
 
-		let rotation_out = TestGroup::done_key_rotation(private_key, public_key, pre_group_key, key, None).unwrap();
+		let rotation_out = TestGroup::done_key_rotation(private_key, public_key, pre_group_key, key).unwrap();
 
 		//done the key rotation to save the new key
 		let url = get_url("api/v1/group/".to_owned() + group_id + "/key_rotation/" + key_id.as_str());
@@ -916,7 +936,7 @@ pub async fn done_key_rotation(
 
 		let group_key_fetch = group::get_group_key_from_server_output(body.as_str()).unwrap();
 
-		new_keys.push(TestGroup::decrypt_group_keys(private_key, group_key_fetch).unwrap());
+		new_keys.push(TestGroup::decrypt_group_keys(private_key, group_key_fetch, None).unwrap());
 	}
 
 	new_keys

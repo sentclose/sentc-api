@@ -159,7 +159,7 @@ async fn test_10_create_group()
 	let creator = USERS_TEST_STATE.get().unwrap().read().await;
 	let creator = &creator[0];
 
-	let group_input = TestGroup::prepare_create(&creator.user_data.user_keys[0].public_key).unwrap();
+	let group_input = TestGroup::prepare_create(&creator.user_data.user_keys[0].public_key, None, Default::default()).unwrap();
 
 	let url = get_url("api/v1/group".to_owned());
 	let client = reqwest::Client::new();
@@ -221,7 +221,7 @@ async fn test_11_get_group_data()
 	let mut data_keys_arr = Vec::with_capacity(data.keys.len());
 
 	for key in data.keys {
-		data_keys_arr.push(TestGroup::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, key).unwrap());
+		data_keys_arr.push(TestGroup::decrypt_group_keys(&creator.user_data.user_keys[0].private_key, key, None).unwrap());
 	}
 
 	let hmac_keys = decrypt_group_hmac_keys(&data_keys_arr[0].group_key, data.hmac_keys);
@@ -1468,7 +1468,6 @@ async fn test_32_done_key_rotation_for_other_user()
 				.unwrap()[0]
 				.group_key,
 			key,
-			None,
 		)
 		.unwrap();
 
@@ -1518,7 +1517,7 @@ async fn test_32_done_key_rotation_for_other_user()
 	let body = res.text().await.unwrap();
 	let new_key = sentc_crypto::group::get_group_key_from_server_output(body.as_str()).unwrap();
 
-	let _decrypted_key = TestGroup::decrypt_group_keys(&user.user_data.user_keys[0].private_key, new_key).unwrap();
+	let _decrypted_key = TestGroup::decrypt_group_keys(&user.user_data.user_keys[0].private_key, new_key, None).unwrap();
 }
 
 #[tokio::test]
@@ -1554,7 +1553,7 @@ async fn test_33_get_key_with_pagination()
 	let mut group_keys = Vec::with_capacity(group_keys_fetch.len());
 
 	for group_keys_fetch in group_keys_fetch {
-		group_keys.push(TestGroup::decrypt_group_keys(&user.user_data.user_keys[0].private_key, group_keys_fetch).unwrap());
+		group_keys.push(TestGroup::decrypt_group_keys(&user.user_data.user_keys[0].private_key, group_keys_fetch, None).unwrap());
 	}
 
 	//normally use len() - 1 but this time we won't fake a pagination, so we don't use the last item
