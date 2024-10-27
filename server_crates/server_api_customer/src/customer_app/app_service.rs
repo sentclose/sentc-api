@@ -1,3 +1,4 @@
+use std::env;
 use std::future::Future;
 
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
@@ -14,6 +15,7 @@ use server_dashboard_common::app::{
 	AppRegisterInput,
 	AppRegisterOutput,
 	FILE_STORAGE_OWN,
+	FILE_STORAGE_SENTC,
 };
 use server_dashboard_common::customer::CustomerAppList;
 
@@ -94,7 +96,7 @@ pub async fn create_app(
 {
 	let (secret_token, public_token, hashed_secret_token, hashed_public_token, jwt_sign_key, jwt_verify_key, alg) = prepare_app_create(&input)?;
 
-	//3. create an new app (with new secret_token and public_token)
+	//3. create a new app (with new secret_token and public_token)
 	//	the str values are used because the real values are exported to the user
 	let (app_id, jwt_id) = app_model::create_app(
 		customer_id,
@@ -145,6 +147,19 @@ pub(super) fn check_file_options(input: &AppFileOptionsInput) -> AppRes<()>
 			ApiErrorCodes::AppAction,
 			"Wrong storage selected",
 		));
+	}
+
+	//get env if server owner block server storage
+	if input.file_storage == FILE_STORAGE_SENTC {
+		let server_storage_enabled = env::var("SERVER_STORAGE_ENABLED").unwrap_or_else(|_| "0".into());
+
+		if server_storage_enabled.as_str() != "1" && server_storage_enabled.as_str() != "true" {
+			return Err(ServerCoreError::new_msg(
+				400,
+				ApiErrorCodes::AppAction,
+				"Server file storage is blocked by the server admin. Use own storage instead.",
+			));
+		}
 	}
 
 	if input.file_storage == FILE_STORAGE_OWN && input.storage_url.is_none() {
