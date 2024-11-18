@@ -1,26 +1,25 @@
 [workspace]
 resolver = "2"
 members = [
-    # bin
-    "server_crates/bin/worker/worker_manual",
-    "server_crates/bin/worker/worker_cron",
-    "server_crates/bin/sentc_api_init",
-    "server_crates/bin/sentc_api_key_gen",
-    # bin for dev
-    "server_crates/bin/server_dev_bin/server_api_route_builder",
-    #"server_crates/bin/server_dev_bin/server_api_init",
-    #"server_crates/bin/server_dev_bin/dummy_server",
-    "server_crates/server_api_integration_tests",
-    # lib
-    "sdk-common",
-    "server_crates/server_api",
-    "server_crates/server_api_all",
-    "server_crates/server_api_common",
-    "server_crates/server_api_customer",
-    "server_crates/server_api_file",
-    "server_crates/server_dashboard_backend",
-    "server_crates/server_dashboard_common",
-    "server_crates/encrypted_at_rest_root"
+	# bin
+	"server_crates/bin/worker/worker_manual",
+	"server_crates/bin/worker/worker_cron",
+	"server_crates/bin/sentc_api_init",
+	"server_crates/bin/sentc_api_key_gen",
+	# bin for dev
+	"server_crates/bin/server_dev_bin/server_api_route_builder",
+	#"server_crates/bin/server_dev_bin/dummy_server",
+	"server_crates/server_api_integration_tests",
+	# lib
+	"sdk-common",
+	"server_crates/server_api",
+	"server_crates/server_api_all",
+	"server_crates/server_api_common",
+	"server_crates/server_api_customer",
+	"server_crates/server_api_file",
+	"server_crates/server_dashboard_backend",
+	"server_crates/server_dashboard_common",
+	"server_crates/encrypted_at_rest_root"
 ]
 
 [workspace.dependencies]
@@ -37,7 +36,7 @@ dotenv = "0.15.0"
 # for caching trait
 async-trait = "0.1.56"
 
-rustgram-server-util = { git = "https://gitlab.com/grammm/rustgram/rustgram-server-util.git", rev = "0a9db6fbcca35f386aa55e7cb64ad5671360d42e", default-features = false, features = ["derive_macro", "static_var"] }
+rustgram-server-util = { git = "https://gitlab.com/grammm/rustgram/rustgram-server-util.git", rev = "4aaa903c1eda8a2bde8cb7c0a15da95da45d8b37", default-features = false, features = ["derive_macro", "static_var"] }
 
 #_______________________________________________________________________________________________________________________
 
