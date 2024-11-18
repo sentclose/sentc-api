@@ -100,6 +100,7 @@ pub enum ApiErrorCodes
 	AppTokenWrongFormat,
 	AppNotFound,
 	AppAction,
+	AppDisabled,
 
 	GroupAccess,
 }
@@ -124,6 +125,7 @@ impl ServerErrorCodes for ApiErrorCodes
 			ApiErrorCodes::AppTokenWrongFormat => 201,
 			ApiErrorCodes::AppNotFound => 202,
 			ApiErrorCodes::AppAction => 203,
+			Self::AppDisabled => 204,
 
 			ApiErrorCodes::GroupAccess => 310,
 		}

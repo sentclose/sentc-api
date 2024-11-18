@@ -56,6 +56,7 @@ pub struct AppDataGeneral
 	pub hashed_secret_token: String,
 	pub hashed_public_token: String,
 	pub hash_alg: String,
+	pub disabled: Option<i32>,
 }
 
 //__________________________________________________________________________________________________
@@ -63,7 +64,7 @@ pub struct AppDataGeneral
 /**
 The key data for creating jwt for the app.
 
-When customer logged in in the dashboard, sentc internal keys are used.
+When customer logged in the dashboard, sentc internal keys are used.
 
 It is possible to have multiple valid jwt keys.
 
