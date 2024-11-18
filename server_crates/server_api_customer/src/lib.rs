@@ -3,6 +3,7 @@
 use rustgram::Router;
 use rustgram_server_util::error::ServerErrorCodes;
 
+mod captcha;
 pub mod customer;
 pub mod customer_app;
 mod email;
@@ -38,6 +39,11 @@ pub enum ApiErrorCodes
 
 	GroupAccess,
 	GroupUserRank,
+
+	CaptchaCreate,
+	CaptchaNotFound,
+	CaptchaTooOld,
+	CaptchaWrong,
 }
 
 impl ServerErrorCodes for ApiErrorCodes
@@ -59,6 +65,11 @@ impl ServerErrorCodes for ApiErrorCodes
 
 			ApiErrorCodes::GroupAccess => 310,
 			ApiErrorCodes::GroupUserRank => 301,
+
+			ApiErrorCodes::CaptchaCreate => 600,
+			ApiErrorCodes::CaptchaNotFound => 601,
+			ApiErrorCodes::CaptchaTooOld => 602,
+			ApiErrorCodes::CaptchaWrong => 603,
 		}
 	}
 }

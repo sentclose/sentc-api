@@ -49,14 +49,14 @@ use crate::customer::{customer_model, customer_util};
 #[cfg(feature = "send_mail")]
 use crate::customer::{send_mail, EmailTopic};
 use crate::customer_app::app_service;
-use crate::{email, ApiErrorCodes};
+use crate::{captcha, email, ApiErrorCodes};
 
 pub async fn customer_captcha(req: Request) -> JRes<CaptchaCreateOutput>
 {
 	//in extra controller fn because we need the internal app id
 	let app_data = get_app_data_from_req(&req)?;
 
-	let (id, png) = server_api_common::user::captcha::captcha(&app_data.app_data.app_id).await?;
+	let (id, png) = captcha::captcha(&app_data.app_data.app_id).await?;
 
 	echo(CaptchaCreateOutput {
 		captcha_id: id,
@@ -83,7 +83,7 @@ pub async fn register(mut req: Request) -> JRes<CustomerRegisterOutput>
 	let app_data = get_app_data_from_req(&req)?;
 
 	//check the captcha
-	server_api_common::user::captcha::validate_captcha(
+	captcha::validate_captcha(
 		&app_data.app_data.app_id,
 		register_data.captcha_input.captcha_id,
 		register_data.captcha_input.captcha_solution,
@@ -130,7 +130,7 @@ pub async fn done_register(mut req: Request) -> JRes<ServerSuccessOutput>
 {
 	//the first req is called from an email via get parameter but to the frontend dashboard.
 	//then the dashboard calls this route with an app token
-	//the customer must be logged in in the dashboard when sending this req
+	//the customer must be logged in the dashboard when sending this req
 
 	let body = get_raw_body(&mut req).await?;
 	let input: CustomerDoneRegistrationInput = bytes_to_json(&body)?;
@@ -324,8 +324,8 @@ pub async fn change_password(mut req: Request) -> JRes<ServerSuccessOutput>
 
 pub async fn prepare_reset_password(mut req: Request) -> JRes<ServerSuccessOutput>
 {
-	//create a token. this is send to the email. if no valid email -> no password reset!
-	//no jwt check because the user needs a pw to login to get a jwt
+	//create a token. this is sent to the email. if no valid email -> no password reset!
+	//no jwt check because the user needs a pw to log in to get a jwt
 
 	let body = get_raw_body(&mut req).await?;
 	let data: CustomerResetPasswordInput = bytes_to_json(&body)?;
@@ -333,7 +333,7 @@ pub async fn prepare_reset_password(mut req: Request) -> JRes<ServerSuccessOutpu
 	let app_data = get_app_data_from_req(&req)?;
 
 	//check the captcha
-	server_api_common::user::captcha::validate_captcha(
+	captcha::validate_captcha(
 		&app_data.app_data.app_id,
 		data.captcha_input.captcha_id,
 		data.captcha_input.captcha_solution,

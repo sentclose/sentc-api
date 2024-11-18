@@ -102,11 +102,6 @@ pub enum ApiErrorCodes
 	AppAction,
 
 	GroupAccess,
-
-	CaptchaCreate,
-	CaptchaNotFound,
-	CaptchaTooOld,
-	CaptchaWrong,
 }
 
 impl ServerErrorCodes for ApiErrorCodes
@@ -131,11 +126,6 @@ impl ServerErrorCodes for ApiErrorCodes
 			ApiErrorCodes::AppAction => 203,
 
 			ApiErrorCodes::GroupAccess => 310,
-
-			ApiErrorCodes::CaptchaCreate => 600,
-			ApiErrorCodes::CaptchaNotFound => 601,
-			ApiErrorCodes::CaptchaTooOld => 602,
-			ApiErrorCodes::CaptchaWrong => 603,
 		}
 	}
 }

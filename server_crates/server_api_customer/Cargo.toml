@@ -6,26 +6,28 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sentc-crypto-common = {path = "../../sdk-common" }
+sentc-crypto-common = { path = "../../sdk-common" }
 
-server_api = {path = "../server_api", default-features = false}
+server_api = { path = "../server_api", default-features = false }
 
-server_api_common = {path = "../server_api_common", default-features = false }
+server_api_common = { path = "../server_api_common", default-features = false }
 
-encrypted_at_rest_root = {path = "../encrypted_at_rest_root"}
+encrypted_at_rest_root = { path = "../encrypted_at_rest_root" }
 
-server_dashboard_common = {path = "../server_dashboard_common", default-features = false, features = ["server"]}
+server_dashboard_common = { path = "../server_dashboard_common", default-features = false, features = ["server"] }
 
-rustgram.workspace=true
-rustgram-server-util.workspace=true
+rustgram.workspace = true
+rustgram-server-util.workspace = true
 
-serde.workspace=true
+serde.workspace = true
 
-rand.workspace=true
+rand.workspace = true
 
-tokio.workspace=true
+tokio.workspace = true
 
-base64.workspace=true
+base64.workspace = true
+
+captcha = "0.0.9"
 
 #_______________________________________________________________________________________________________________________
 #send emails
@@ -37,8 +39,8 @@ regex = "1.6.0"
 
 [features]
 default = ["mysql"]
-mysql = ["rustgram-server-util/mysql","server_api_common/mysql","server_dashboard_common/mysql","server_api/mysql"]
-sqlite = ["rustgram-server-util/sqlite","server_api_common/sqlite","server_dashboard_common/sqlite","server_api/sqlite"]
+mysql = ["rustgram-server-util/mysql", "server_api_common/mysql", "server_dashboard_common/mysql", "server_api/mysql"]
+sqlite = ["rustgram-server-util/sqlite", "server_api_common/sqlite", "server_dashboard_common/sqlite", "server_api/sqlite"]
 
 # When enabled send the custumor resgistration mail
 send_mail = ["lettre"]
