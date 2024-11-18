@@ -33,9 +33,6 @@ rustgram = "0.2.1"
 # dotenv vars
 dotenv = "0.15.0"
 
-# for caching trait
-async-trait = "0.1.56"
-
 rustgram-server-util = { git = "https://gitlab.com/grammm/rustgram/rustgram-server-util.git", rev = "4aaa903c1eda8a2bde8cb7c0a15da95da45d8b37", default-features = false, features = ["derive_macro", "static_var"] }
 
 #_______________________________________________________________________________________________________________________

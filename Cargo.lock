@@ -3073,7 +3073,6 @@ name = "server_api_common"
 version = "0.1.0"
 dependencies = [
  "base64 0.13.1",
- "captcha",
  "dotenv",
  "encrypted_at_rest_root",
  "hyper",
@@ -3094,6 +3093,7 @@ name = "server_api_customer"
 version = "0.1.0"
 dependencies = [
  "base64 0.13.1",
+ "captcha",
  "encrypted_at_rest_root",
  "lettre",
  "rand",
