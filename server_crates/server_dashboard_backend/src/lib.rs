@@ -38,10 +38,7 @@ Load the static file from the static dir.
  */
 async fn read_file(req: Request) -> Response
 {
-	let mut file = match get_name_param_from_req(&req, "path") {
-		Ok(f) => f,
-		Err(_e) => "index.html",
-	};
+	let mut file = get_name_param_from_req(&req, "path").unwrap_or_else(|_e| "index.html");
 
 	if file.is_empty() || file == "/" {
 		file = "index.html"
@@ -114,10 +111,10 @@ async fn read_file(req: Request) -> Response
 		},
 		Err(_e) => {
 			//try index
-			match handler.get_part("index.html", Some("html")).await {
-				Ok(res) => res,
-				Err(e) => Into::<ServerCoreError>::into(e).into_response(),
-			}
+			handler
+				.get_part("index.html", Some("html"))
+				.await
+				.unwrap_or_else(|e| Into::<ServerCoreError>::into(e).into_response())
 		},
 	}
 }
