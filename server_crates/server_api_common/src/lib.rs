@@ -2,6 +2,7 @@
 
 use hyper::Body;
 use rustgram::{r, Request, Response, Router};
+use rustgram_server_util::cors_handler;
 use rustgram_server_util::error::{ServerErrorCodes, ServerErrorConstructor};
 
 pub mod customer_app;
@@ -59,25 +60,6 @@ pub async fn index_handler(_req: Request) -> Response
 		.status(hyper::StatusCode::MOVED_PERMANENTLY)
 		.header("Location", "/dashboard")
 		.header("Access-Control-Allow-Origin", "*")
-		.body(Body::from(""))
-		.unwrap()
-}
-
-pub async fn cors_handler(_req: Request) -> Response
-{
-	hyper::Response::builder()
-		.header("Content-Length", "0")
-		.header(
-			"Access-Control-Allow-Methods",
-			"GET, POST, PUT, DELETE, OPTIONS, PATCH",
-		)
-		.header("Access-Control-Max-Age", "86400")
-		.header("Access-Control-Allow-Origin", "*")
-		.header("Access-Control-Allow-Credentials", "true")
-		.header(
-			"Access-Control-Allow-Headers",
-			"x-sentc-app-token, x-sentc-group-access-id, Content-Type, Accept, Origin, Authorization",
-		)
 		.body(Body::from(""))
 		.unwrap()
 }
