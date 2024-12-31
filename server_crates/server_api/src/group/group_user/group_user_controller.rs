@@ -111,7 +111,7 @@ pub(crate) async fn check_invited_group<'a>(
 		NewUserType::Normal => Ok((get_name_param_from_req(req, "invited_user")?, "Group")),
 		NewUserType::Group => {
 			//only connected groups can have other groups as member
-			//check in the model if the group to invite a non connected group
+			//check in the model if the group to invite a non-connected group
 			if !group_data.group_data.is_connected_group {
 				return Err(ServerCoreError::new_msg(
 					400,
@@ -122,7 +122,7 @@ pub(crate) async fn check_invited_group<'a>(
 
 			let to_invite = get_name_param_from_req(req, "invited_group")?;
 
-			//get the int user type and if it is a group check if the group is a non connected group
+			//get the int user type and if it is a group check if the group is a non-connected group
 			// do it with the model because we don't get any infos about the group until now
 			let cg = group_user_service::check_is_connected_group(to_invite).await?;
 
@@ -141,7 +141,7 @@ pub(crate) async fn check_invited_group<'a>(
 
 pub fn invite_request(req: Request) -> impl Future<Output = JRes<GroupInviteServerOutput>>
 {
-	//no the accept invite, but the keys are prepared for the invited user
+	//no, the accept invite, but the keys are prepared for the invited user
 	//don't save this values in the group user keys table, but in the invite table
 
 	invite(req, NewUserType::Normal)
