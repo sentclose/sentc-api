@@ -8,7 +8,7 @@ use crate::group::group_entities::{InternalGroupData, InternalUserGroupData, Int
 use crate::group::GROUP_TYPE_NORMAL;
 use crate::ApiErrorCodes;
 
-pub(crate) async fn get_internal_group_data(app_id: impl Into<AppId>, group_id: impl Into<GroupId>) -> AppRes<InternalGroupData>
+pub async fn get_internal_group_data(app_id: impl Into<AppId>, group_id: impl Into<GroupId>) -> AppRes<InternalGroupData>
 {
 	//language=SQL
 	let sql = "SELECT id as group_id, app_id, parent, time, invite, is_connected_group FROM sentc_group WHERE app_id = ? AND id = ? AND type = ?";
@@ -17,10 +17,8 @@ pub(crate) async fn get_internal_group_data(app_id: impl Into<AppId>, group_id: 
 		.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::GroupAccess, "No access to this group"))
 }
 
-pub(crate) async fn get_user_from_parent_groups(
-	group_id: impl Into<GroupId>,
-	user_id: impl Into<UserId>,
-) -> AppRes<Option<InternalUserGroupDataFromParent>>
+pub async fn get_user_from_parent_groups(group_id: impl Into<GroupId>, user_id: impl Into<UserId>)
+	-> AppRes<Option<InternalUserGroupDataFromParent>>
 {
 	//search via recursion all parent ids for this group.
 	//https://www.mysqltutorial.org/mysql-adjacency-list-tree/
@@ -58,7 +56,7 @@ SELECT group_id, time, `rank` FROM sentc_group_user WHERE user_id = ? AND group_
 	query_first(sql, set_params!(user_id.into(), group_id.into())).await
 }
 
-pub(crate) async fn get_internal_group_user_data(group_id: impl Into<GroupId>, user_id: impl Into<UserId>) -> AppRes<Option<InternalUserGroupData>>
+pub async fn get_internal_group_user_data(group_id: impl Into<GroupId>, user_id: impl Into<UserId>) -> AppRes<Option<InternalUserGroupData>>
 {
 	//language=SQL
 	let sql = "SELECT user_id, time, `rank` FROM sentc_group_user WHERE group_id = ? AND user_id = ?";
