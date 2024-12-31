@@ -1,17 +1,14 @@
-use std::future::Future;
-
 use rustgram_server_util::cache;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::group::{GroupKeysForNewMember, GroupKeysForNewMemberServerInput, GroupNewMemberLightInput};
-use sentc_crypto_common::{AppId, GroupId, UserId};
+use sentc_crypto_common::{GroupId, UserId};
 use server_api_common::group::group_entities::InternalGroupDataComplete;
 use server_api_common::util::get_group_user_cache_key;
 
-use crate::group::group_entities::GroupInviteReq;
+pub use self::group_user_model::{check_is_connected_group, get_group_member, get_invite_req_to_user as get_invite_req};
 use crate::group::group_model;
 use crate::group::group_user::group_user_model;
-use crate::sentc_group_entities::GroupUserListItem;
 use crate::util::api_res::ApiErrorCodes;
 
 pub enum InsertNewUserType
@@ -24,31 +21,6 @@ pub enum NewUserType
 {
 	Normal,
 	Group,
-}
-
-pub fn get_group_member<'a>(
-	group_id: impl Into<GroupId> + 'a,
-	user_id: impl Into<UserId> + 'a,
-	last_fetched_time: u128,
-	last_user_id: impl Into<UserId> + 'a,
-) -> impl Future<Output = AppRes<Vec<GroupUserListItem>>>
-{
-	group_user_model::get_group_member(group_id, user_id, last_fetched_time, last_user_id)
-}
-
-pub fn get_invite_req<'a>(
-	app_id: impl Into<AppId> + 'a,
-	user_id: impl Into<UserId> + 'a,
-	last_fetched_time: u128,
-	last_id: impl Into<GroupId> + 'a,
-) -> impl Future<Output = AppRes<Vec<GroupInviteReq>>> + 'a
-{
-	group_user_model::get_invite_req_to_user(app_id, user_id, last_fetched_time, last_id)
-}
-
-pub fn check_is_connected_group<'a>(group_id: impl Into<GroupId> + 'a) -> impl Future<Output = AppRes<i32>> + 'a
-{
-	group_user_model::check_is_connected_group(group_id)
 }
 
 pub async fn invite_request_light(
@@ -333,11 +305,11 @@ pub async fn kick_user_from_group(group_data: &InternalGroupDataComplete, user_i
 }
 
 /**
-Update the user rank. The rank of a creator cannot changed.
+Update the user rank. The rank of a creator cannot be changed.
 
 When deleting the cache for this group, and the group got children then for all children the rank must be updated too.
 This is done because we use a reference to the parent group when we look for the user rank in the group mw.
-If this user is not in a parent group -> this wouldn't effect any groups
+If this user is not in a parent group -> this wouldn't affect any groups
  */
 pub async fn change_rank(group_data: &InternalGroupDataComplete, user_id: impl Into<UserId>, new_rank: i32) -> AppRes<()>
 {

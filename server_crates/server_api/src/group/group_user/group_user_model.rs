@@ -29,7 +29,7 @@ pub(super) async fn check_user_in_group_direct(group_id: impl Into<GroupId>, use
 	)
 }
 
-pub(super) async fn get_group_member(
+pub async fn get_group_member(
 	group_id: impl Into<GroupId>,
 	user_id: impl Into<UserId>,
 	last_fetched_time: u128,
@@ -209,7 +209,7 @@ pub(super) async fn invite_request(
 	Ok(session_id)
 }
 
-pub(super) async fn get_invite_req_to_user(
+pub async fn get_invite_req_to_user(
 	app_id: impl Into<AppId>,
 	user_id: impl Into<UserId>,
 	last_fetched_time: u128,
@@ -974,7 +974,7 @@ async fn group_accept_invite(app_id: impl Into<AppId>, group_id: impl Into<Group
 	Ok(())
 }
 
-pub(super) async fn check_is_connected_group(group_id: impl Into<GroupId>) -> AppRes<i32>
+pub async fn check_is_connected_group(group_id: impl Into<GroupId>) -> AppRes<i32>
 {
 	//language=SQL
 	let sql = "SELECT is_connected_group FROM sentc_group WHERE id = ?";
