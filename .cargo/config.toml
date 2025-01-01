@@ -1,0 +1,100 @@
+[alias]
+run-default = [
+	"run",
+	"--features=external_c_keys",
+]
+
+run-sqlite = [
+	"run",
+	"--features=sqlite,external_c_keys",
+	"--no-default-features",
+	"--target-dir=target_sqlite"
+]
+
+# route builder
+route-builder = [
+	"run",
+	"--package", "server_api_route_builder",
+	"--bin", "server_api_route_builder"
+]
+
+route-main = "route-builder main"
+route-file = "route-builder file"
+route-customer = "route-builder customer"
+
+# Tests
+
+test-default = [
+	"test",
+	"--test",
+	"*",
+	"--",
+	"--test-threads=1"
+]
+
+test-default-rec = [
+	"test",
+	"--features=rec_keys,mysql",
+	"--no-default-features",
+	"--test",
+	"*",
+	"--",
+	"--test-threads=1"
+]
+
+test-default-fips = [
+	"test",
+	"--features=fips_keys,mysql",
+	"--no-default-features",
+	"--test",
+	"*",
+	"--",
+	"--test-threads=1"
+]
+
+test-sqlite = [
+	"test",
+	"--features=sqlite,std_keys",
+	"--no-default-features",
+	"--target-dir=target_sqlite",
+	"--test",
+	"*",
+	"--",
+	"--test-threads=1"
+]
+
+test-sqlite-rec = [
+	"test",
+	"--features=sqlite,rec_keys",
+	"--no-default-features",
+	"--target-dir=target_sqlite",
+	"--test",
+	"*",
+	"--",
+	"--test-threads=1"
+]
+
+test-sqlite-fips = [
+	"test",
+	"--features=sqlite,fips_keys",
+	"--no-default-features",
+	"--target-dir=target_sqlite",
+	"--test",
+	"*",
+	"--",
+	"--test-threads=1"
+]
+
+# clippy
+
+clippy-default = [
+	"clippy",
+	"--features=external_c_keys"
+]
+
+clippy-sqlite = [
+	"clippy",
+	"--features=sqlite,external_c_keys",
+	"--no-default-features",
+	"--target-dir=target_sqlite"
+]
