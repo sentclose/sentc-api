@@ -11,6 +11,18 @@ run-sqlite = [
 	"--target-dir=target_sqlite"
 ]
 
+# prod
+
+prod-default = [
+	"run-default",
+	"--release"
+]
+
+prod-sqlite = [
+	"run-sqlite",
+	"--release"
+]
+
 # route builder
 route-builder = [
 	"run",
