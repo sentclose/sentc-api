@@ -33,6 +33,7 @@ routes:
                     - put: { p: "/delete", s: crate::user::delete_user }
                     - put: { p: "/reset_user", s: crate::user::reset_user }
                     - put: { p: "/disable_otp", s: crate::user::disable_otp_forced }
+                    - delete: { p: "/sessions", s: crate::user::delete_all_sessions }
 
                     - post: { p: "/login", s: crate::user::verify_login_forced }
                     - post: { p: "/login_light", s: crate::user::verify_login_light_forced }

@@ -16,6 +16,7 @@ use sentc_crypto_common::user::{
 	MasterKey,
 	RegisterServerOutput,
 	UserDeviceList,
+	UserForcedAction,
 	UserIdentifierAvailableServerInput,
 	UserIdentifierAvailableServerOutput,
 	UserInitServerOutput,
@@ -954,7 +955,7 @@ async fn test_22_refresh_jwt()
 }
 
 #[tokio::test]
-async fn test_23_user_normal_init()
+async fn test_23_1_user_normal_init()
 {
 	//no group invite here at this point
 
@@ -987,6 +988,54 @@ async fn test_23_user_normal_init()
 
 	//don't save the jwt because we need a fresh jwt
 	assert_eq!(out.invites.len(), 0);
+}
+
+#[tokio::test]
+async fn test_23_2_delete_all_device_sessions()
+{
+	//will delete only the refresh tokens but not invalid the jwt, this is done automatically
+
+	let user = &USER_TEST_STATE.get().unwrap().read().await;
+
+	let input = UserForcedAction {
+		user_identifier: user.username.clone(),
+	};
+
+	let url = get_url("api/v1/user/forced/sessions".to_owned());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.body(to_string(&input).unwrap())
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	handle_general_server_response(&body).unwrap();
+
+	//should not refresh the jwt because all refresh tokens are deleted
+	let jwt = &user.user_data.as_ref().unwrap().jwt;
+
+	let input = sentc_crypto::user::prepare_refresh_jwt(user.user_data.as_ref().unwrap().refresh_token.clone()).unwrap();
+
+	let url = get_url("api/v1/refresh".to_owned());
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header("x-sentc-app-token", &user.app_data.secret_token)
+		.header(AUTHORIZATION, auth_header(jwt))
+		.body(input)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out = ServerOutput::<DoneLoginLightServerOutput>::from_string(body.as_str()).unwrap();
+
+	assert!(!out.status);
 }
 
 #[tokio::test]

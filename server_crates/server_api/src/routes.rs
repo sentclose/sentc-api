@@ -80,6 +80,10 @@ pub(crate) fn routes(router: &mut Router)
 		"/api/v1/user/forced/disable_otp",
 		r(crate::user::disable_otp_forced).add(server_api_common::middleware::app_token::app_token_transform),
 	);
+	router.delete(
+		"/api/v1/user/forced/sessions",
+		r(crate::user::delete_all_sessions).add(server_api_common::middleware::app_token::app_token_transform),
+	);
 	router.post(
 		"/api/v1/user/forced/login",
 		r(crate::user::verify_login_forced).add(server_api_common::middleware::app_token::app_token_transform),
