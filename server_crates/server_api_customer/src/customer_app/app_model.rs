@@ -83,7 +83,7 @@ pub(super) async fn get_all_apps(
 	//language=SQL
 	let sql = r"
 SELECT * FROM (
-SELECT id, identifier, time, null as group_name
+SELECT id, identifier, time, null as group_name, disabled, disabled_ts
 FROM sentc_app 
 WHERE 
     owner_id = ? AND 
@@ -91,7 +91,7 @@ WHERE
 
 UNION 
 
-SELECT id, identifier, sentc_app.time, name as group_name 
+SELECT id, identifier, sentc_app.time, name as group_name, disabled, disabled_ts 
 FROM sentc_app, sentc_group_user, sentc_customer_group 
 WHERE
       owner_type = 1 AND
@@ -121,9 +121,7 @@ WHERE
 		(sql, set_params!(customer_id.clone(), customer_id,))
 	};
 
-	let list: Vec<CustomerAppList> = query_string(sql, params).await?;
-
-	Ok(list)
+	query_string(sql, params).await
 }
 
 pub(super) async fn get_all_apps_group(
@@ -134,7 +132,7 @@ pub(super) async fn get_all_apps_group(
 {
 	//language=SQL
 	let sql = r"
-SELECT id, identifier, sentc_app.time, name as group_name 
+SELECT id, identifier, sentc_app.time, name as group_name, disabled, disabled_ts 
 FROM sentc_app, sentc_customer_group 
 WHERE
       owner_type = 1 AND
@@ -159,18 +157,16 @@ WHERE
 		(sql, set_params!(group_id.into()))
 	};
 
-	let list: Vec<CustomerAppList> = query_string(sql, params).await?;
-
-	Ok(list)
+	query_string(sql, params).await
 }
 
 pub(super) async fn get_app_view(app_id: impl Into<AppId>, owner_type: i32) -> AppRes<CustomerAppList>
 {
-	//tanks to the app access middleware we know the owner type
+	//thanks to the app access middleware we know the owner type
 	let sql = if owner_type == CUSTOMER_OWNER_TYPE_GROUP {
 		//language=SQL
 		r"
-SELECT id, identifier, sentc_app.time, name as group_name 
+SELECT id, identifier, sentc_app.time, name as group_name, disabled, disabled_ts 
 FROM sentc_app, sentc_customer_group 
 WHERE
       owner_type = 1 AND
@@ -179,7 +175,7 @@ WHERE
 		"
 	} else {
 		//language=SQL
-		r"SELECT id, identifier, time, null as group_name FROM sentc_app WHERE id = ?"
+		r"SELECT id, identifier, time, null as group_name, disabled, disabled_ts FROM sentc_app WHERE id = ?"
 	};
 
 	query_first(sql, set_params!(app_id.into()))
@@ -234,7 +230,7 @@ pub(super) async fn create_app_with_id(
 ) -> AppRes<JwtKeyId>
 {
 	//in another fn to also create the sentc root app with a specific id
-	//for normal apps use the create app fn
+	//for normal apps use the creation app fn
 
 	let app_id = app_id.into();
 	let time = get_time()?;

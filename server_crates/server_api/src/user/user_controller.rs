@@ -441,7 +441,7 @@ pub(crate) async fn change_password(mut req: Request) -> JRes<ServerSuccessOutpu
 pub(crate) async fn reset_password(mut req: Request) -> JRes<ServerSuccessOutput>
 {
 	let body = get_raw_body(&mut req).await?;
-	let user = get_jwt_data_from_param(&req)?; //non fresh jwt here
+	let user = get_jwt_data_from_param(&req)?; //non-fresh jwt here
 	let app_data = get_app_data_from_req(&req)?;
 	let input: ResetPasswordData = bytes_to_json(&body)?;
 
@@ -623,6 +623,23 @@ pub(crate) async fn disable_otp_forced(mut req: Request) -> JRes<ServerSuccessOu
 	let jwt = prepare_user_forced_action(&app_data.app_data.app_id, user_identifier.user_identifier).await?;
 
 	user_service::disable_otp(&jwt).await?;
+
+	echo_success()
+}
+
+pub(crate) async fn delete_all_sessions(mut req: Request) -> JRes<ServerSuccessOutput>
+{
+	//will delete only the refresh tokens but not invalid the jwt, this is done automatically
+
+	let body = get_raw_body(&mut req).await?;
+	let user_identifier: UserForcedAction = bytes_to_json(&body)?;
+
+	let app_data = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(app_data, Endpoint::ForceServer)?;
+
+	let jwt = prepare_user_forced_action(&app_data.app_data.app_id, user_identifier.user_identifier).await?;
+
+	user_service::delete_all_sessions(&jwt, &app_data.app_data.app_id).await?;
 
 	echo_success()
 }

@@ -2,6 +2,7 @@
 
 use hyper::Body;
 use rustgram::{r, Request, Response, Router};
+use rustgram_server_util::cors_handler;
 use rustgram_server_util::error::{ServerErrorCodes, ServerErrorConstructor};
 
 pub mod customer_app;
@@ -63,25 +64,6 @@ pub async fn index_handler(_req: Request) -> Response
 		.unwrap()
 }
 
-pub async fn cors_handler(_req: Request) -> Response
-{
-	hyper::Response::builder()
-		.header("Content-Length", "0")
-		.header(
-			"Access-Control-Allow-Methods",
-			"GET, POST, PUT, DELETE, OPTIONS, PATCH",
-		)
-		.header("Access-Control-Max-Age", "86400")
-		.header("Access-Control-Allow-Origin", "*")
-		.header("Access-Control-Allow-Credentials", "true")
-		.header(
-			"Access-Control-Allow-Headers",
-			"x-sentc-app-token, x-sentc-group-access-id, Content-Type, Accept, Origin, Authorization",
-		)
-		.body(Body::from(""))
-		.unwrap()
-}
-
 #[derive(Debug)]
 pub enum ApiErrorCodes
 {
@@ -100,13 +82,9 @@ pub enum ApiErrorCodes
 	AppTokenWrongFormat,
 	AppNotFound,
 	AppAction,
+	AppDisabled,
 
 	GroupAccess,
-
-	CaptchaCreate,
-	CaptchaNotFound,
-	CaptchaTooOld,
-	CaptchaWrong,
 }
 
 impl ServerErrorCodes for ApiErrorCodes
@@ -129,13 +107,9 @@ impl ServerErrorCodes for ApiErrorCodes
 			ApiErrorCodes::AppTokenWrongFormat => 201,
 			ApiErrorCodes::AppNotFound => 202,
 			ApiErrorCodes::AppAction => 203,
+			Self::AppDisabled => 204,
 
 			ApiErrorCodes::GroupAccess => 310,
-
-			ApiErrorCodes::CaptchaCreate => 600,
-			ApiErrorCodes::CaptchaNotFound => 601,
-			ApiErrorCodes::CaptchaTooOld => 602,
-			ApiErrorCodes::CaptchaWrong => 603,
 		}
 	}
 }

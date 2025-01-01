@@ -101,6 +101,37 @@ pub async fn invite_auto_group_force(mut req: Request) -> JRes<GroupInviteServer
 	echo(out)
 }
 
+pub fn invite_group_to_group_from_server(req: Request) -> impl Future<Output = JRes<GroupInviteServerOutput>>
+{
+	invite_to_group_from_server(req, NewUserType::Group)
+}
+
+pub fn invite_user_to_group_from_server(req: Request) -> impl Future<Output = JRes<GroupInviteServerOutput>>
+{
+	invite_to_group_from_server(req, NewUserType::Normal)
+}
+
+async fn invite_to_group_from_server(mut req: Request, user_type: NewUserType) -> JRes<GroupInviteServerOutput>
+{
+	//just invite a user without jwt check and without group restriction check
+	let body = get_raw_body(&mut req).await?;
+
+	check_endpoint_with_req(&req, Endpoint::ForceServer)?;
+	let group_data = get_group_user_data_from_req(&req)?;
+	let to_invite = get_name_param_from_req(&req, "to_invite")?;
+
+	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
+
+	let session_id = group_user_service::invite_auto(group_data, input, to_invite, user_type).await?;
+
+	let out = GroupInviteServerOutput {
+		session_id,
+		message: "Was invited. Please wait until the user accepts the invite.".to_string(),
+	};
+
+	echo(out)
+}
+
 pub(crate) async fn check_invited_group<'a>(
 	req: &'a Request,
 	group_data: &InternalGroupDataComplete,
@@ -111,7 +142,7 @@ pub(crate) async fn check_invited_group<'a>(
 		NewUserType::Normal => Ok((get_name_param_from_req(req, "invited_user")?, "Group")),
 		NewUserType::Group => {
 			//only connected groups can have other groups as member
-			//check in the model if the group to invite a non connected group
+			//check in the model if the group to invite a non-connected group
 			if !group_data.group_data.is_connected_group {
 				return Err(ServerCoreError::new_msg(
 					400,
@@ -122,7 +153,7 @@ pub(crate) async fn check_invited_group<'a>(
 
 			let to_invite = get_name_param_from_req(req, "invited_group")?;
 
-			//get the int user type and if it is a group check if the group is a non connected group
+			//get the int user type and if it is a group check if the group is a non-connected group
 			// do it with the model because we don't get any infos about the group until now
 			let cg = group_user_service::check_is_connected_group(to_invite).await?;
 
@@ -141,7 +172,7 @@ pub(crate) async fn check_invited_group<'a>(
 
 pub fn invite_request(req: Request) -> impl Future<Output = JRes<GroupInviteServerOutput>>
 {
-	//no the accept invite, but the keys are prepared for the invited user
+	//no, the accept invite, but the keys are prepared for the invited user
 	//don't save this values in the group user keys table, but in the invite table
 
 	invite(req, NewUserType::Normal)
@@ -594,13 +625,23 @@ pub async fn leave_group(req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
-pub async fn kick_user_from_group(req: Request) -> JRes<ServerSuccessOutput>
+pub fn kick_user_from_group(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
 {
-	check_endpoint_with_req(&req, Endpoint::GroupUserDelete)?;
+	kick_user(req, Endpoint::GroupUserDelete, "user_id")
+}
+
+pub fn kick_user_from_group_forced(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
+{
+	kick_user(req, Endpoint::ForceServer, "user_to_kick")
+}
+
+async fn kick_user(req: Request, endpoint: Endpoint, req_param: &str) -> JRes<ServerSuccessOutput>
+{
+	check_endpoint_with_req(&req, endpoint)?;
 
 	let group_data = get_group_user_data_from_req(&req)?;
 
-	let user_id = get_name_param_from_req(&req, "user_id")?;
+	let user_id = get_name_param_from_req(&req, req_param)?;
 
 	group_user_service::kick_user_from_group(group_data, user_id).await?;
 

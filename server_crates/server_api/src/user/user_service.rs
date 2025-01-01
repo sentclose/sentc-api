@@ -2,7 +2,6 @@ use std::future::Future;
 
 use rand::RngCore;
 use rustgram_server_util::cache;
-use rustgram_server_util::db::StringEntity;
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::user::{
@@ -13,7 +12,6 @@ use sentc_crypto_common::user::{
 	OtpRegister,
 	RegisterData,
 	RegisterServerOutput,
-	ResetPasswordData,
 	UserDeviceDoneRegisterInput,
 	UserDeviceRegisterInput,
 	UserDeviceRegisterOutput,
@@ -22,7 +20,7 @@ use sentc_crypto_common::user::{
 	UserUpdateServerInput,
 	VerifyLoginInput,
 };
-use sentc_crypto_common::{AppId, DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, SymKeyId, UserId};
+use sentc_crypto_common::{AppId, DeviceId, GroupId, SymKeyId, UserId};
 use server_api_common::customer_app::app_entities::AppData;
 use server_api_common::group::group_entities::{InternalGroupData, InternalGroupDataComplete, InternalUserGroupData};
 use server_api_common::group::GROUP_TYPE_USER;
@@ -30,12 +28,22 @@ use server_api_common::user::jwt::create_jwt;
 use server_api_common::user::user_entity::UserJwtEntity;
 use server_api_common::util::{get_user_in_app_key, hash_token_to_string};
 
+pub use self::user_model::{
+	get_devices,
+	get_group_key_rotations_in_actual_month,
+	get_public_key_by_id,
+	get_public_key_data,
+	get_user_group_id,
+	get_verify_key_by_id,
+	reset_password,
+	save_user_action,
+};
 use crate::group::group_entities::GroupUserKeys;
 use crate::group::group_user_service::NewUserType;
 use crate::group::{group_service, group_user_service};
-use crate::sentc_user_entities::{LoginForcedOutput, UserPublicKeyDataEntity, UserVerifyKeyDataEntity, VerifyLoginOutput};
+use crate::sentc_user_entities::{LoginForcedOutput, VerifyLoginOutput};
 use crate::user::auth::auth_service::{auth_user, verify_login_forced_internally, verify_login_internally};
-use crate::user::user_entities::{UserDeviceList, UserInitEntity};
+use crate::user::user_entities::UserInitEntity;
 use crate::user::{otp, user_model};
 use crate::util::api_res::ApiErrorCodes;
 
@@ -77,32 +85,6 @@ impl UserAction
 			UserAction::KeyRotation => 6,
 		}
 	}
-}
-
-pub fn save_user_action<'a>(
-	app_id: impl Into<String> + 'a,
-	user_id: impl Into<String> + 'a,
-	action: UserAction,
-	amount: i64,
-) -> impl Future<Output = AppRes<()>> + 'a
-{
-	user_model::save_user_action(app_id, user_id, action, amount)
-}
-
-pub fn get_group_key_rotations_in_actual_month<'a>(
-	app_id: impl Into<AppId> + 'a,
-	group_id: impl Into<GroupId> + 'a,
-) -> impl Future<Output = AppRes<i32>> + 'a
-{
-	user_model::get_group_key_rotations_in_actual_month(app_id, group_id)
-}
-
-pub fn get_user_group_id<'a>(
-	app_id: impl Into<AppId> + 'a,
-	user_id: impl Into<UserId> + 'a,
-) -> impl Future<Output = AppRes<Option<StringEntity>>> + 'a
-{
-	user_model::get_user_group_id(app_id, user_id)
 }
 
 pub async fn exists(app_id: impl Into<AppId>, data: UserIdentifierAvailableServerInput) -> AppRes<UserIdentifierAvailableServerOutput>
@@ -341,35 +323,6 @@ pub fn get_user_key<'a>(
 }
 
 //__________________________________________________________________________________________________
-//public user fn
-
-pub fn get_public_key_by_id<'a>(
-	app_id: impl Into<AppId> + 'a,
-	user_id: impl Into<UserId> + 'a,
-	public_key_id: impl Into<EncryptionKeyPairId> + 'a,
-) -> impl Future<Output = AppRes<UserPublicKeyDataEntity>> + 'a
-{
-	user_model::get_public_key_by_id(app_id, user_id, public_key_id)
-}
-
-pub fn get_public_key_data<'a>(
-	app_id: impl Into<AppId> + 'a,
-	user_id: impl Into<UserId> + 'a,
-) -> impl Future<Output = AppRes<UserPublicKeyDataEntity>> + 'a
-{
-	user_model::get_public_key_data(app_id, user_id)
-}
-
-pub fn get_verify_key_by_id<'a>(
-	app_id: impl Into<AppId> + 'a,
-	user_id: impl Into<UserId> + 'a,
-	verify_key_id: impl Into<SignKeyPairId> + 'a,
-) -> impl Future<Output = AppRes<UserVerifyKeyDataEntity>> + 'a
-{
-	user_model::get_verify_key_by_id(app_id, user_id, verify_key_id)
-}
-
-//__________________________________________________________________________________________________
 // user fn with jwt
 
 pub async fn init_user(app_data: &AppData, device_id: &str, input: JwtRefreshInput) -> AppRes<UserInitEntity>
@@ -444,9 +397,7 @@ pub async fn delete(user: &UserJwtEntity, app_id: impl Into<AppId>) -> AppRes<()
 	cache::delete(&cache_key).await?;
 
 	//delete the user group
-	group_service::delete_user_group(app_id, group_id).await?;
-
-	Ok(())
+	group_service::delete_user_group(app_id, group_id).await
 }
 
 pub async fn delete_device(user: &UserJwtEntity, app_id: impl Into<AppId>, device_id: impl Into<DeviceId>) -> AppRes<()>
@@ -469,16 +420,6 @@ pub async fn delete_device(user: &UserJwtEntity, app_id: impl Into<AppId>, devic
 	group_user_service::leave_group(&internal_group_data(&app_id, &user.group_id, 4), None).await
 }
 
-pub fn get_devices<'a>(
-	app_id: impl Into<AppId> + 'a,
-	user_id: impl Into<UserId> + 'a,
-	last_fetched_time: u128,
-	last_fetched_id: impl Into<DeviceId> + 'a,
-) -> impl Future<Output = AppRes<Vec<UserDeviceList>>> + 'a
-{
-	user_model::get_devices(app_id, user_id, last_fetched_time, last_fetched_id)
-}
-
 pub async fn update(user: &UserJwtEntity, app_id: &str, update_input: UserUpdateServerInput) -> AppRes<()>
 {
 	let user_id = &user.id;
@@ -496,9 +437,7 @@ pub async fn update(user: &UserJwtEntity, app_id: &str, update_input: UserUpdate
 		));
 	}
 
-	user_model::update(user_id, &user.device_id, app_id, identifier).await?;
-
-	Ok(())
+	user_model::update(user_id, &user.device_id, app_id, identifier).await
 }
 
 pub async fn change_password(user: &UserJwtEntity, app_id: &str, input: ChangePasswordData) -> AppRes<()>
@@ -528,21 +467,20 @@ pub async fn change_password(user: &UserJwtEntity, app_id: &str, input: ChangePa
 
 	let old_hashed_auth_key = auth_user(app_id, device_identifier.as_str(), input.old_auth_key.to_string()).await?;
 
-	user_model::change_password(user_id, device_id, input, old_hashed_auth_key).await?;
-
-	Ok(())
+	user_model::change_password(user_id, device_id, input, old_hashed_auth_key).await
 }
 
-pub fn reset_password<'a>(
-	user_id: impl Into<UserId> + 'a,
-	device_id: impl Into<DeviceId> + 'a,
-	input: ResetPasswordData,
-) -> impl Future<Output = AppRes<()>> + 'a
+pub async fn delete_all_sessions(user: &UserJwtEntity, app_id: &str) -> AppRes<()>
 {
-	//no fresh jwt here because the user can't log in and get a fresh jwt without the password
-	//but still needs a valid jwt. jwt refresh is possible without a password!
+	if !user.fresh {
+		return Err(ServerCoreError::new_msg(
+			401,
+			ApiErrorCodes::WrongJwtAction,
+			"The jwt is not valid for this action",
+		));
+	}
 
-	user_model::reset_password(user_id, device_id, input)
+	user_model::delete_all_sessions(&user.id, app_id).await
 }
 
 //__________________________________________________________________________________________________
@@ -607,9 +545,7 @@ pub async fn disable_otp(user: &UserJwtEntity) -> AppRes<()>
 	user_model::delete_all_otp_token(user_id).await?;
 
 	//2. remove the secret
-	user_model::disable_otp(user_id).await?;
-
-	Ok(())
+	user_model::disable_otp(user_id).await
 }
 
 pub async fn get_otp_recovery_keys(user: &UserJwtEntity) -> AppRes<OtpRecoveryKeysOutput>

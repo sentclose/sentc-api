@@ -116,13 +116,21 @@ pub(crate) async fn get_app_data_from_id(id: impl Into<AppId>) -> AppRes<AppData
 {
 	//language=SQL
 	let sql = r"
-SELECT id as app_id, owner_id, owner_type, hashed_secret_token, hashed_public_token, hash_alg 
+SELECT id as app_id, owner_id, owner_type, hashed_secret_token, hashed_public_token, hash_alg, disabled 
 FROM sentc_app 
 WHERE id = ? LIMIT 1";
 
 	let app_data: AppDataGeneral = query_first(sql, set_params!(id.into()))
 		.await?
 		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::AppTokenNotFound, "App token not found"))?;
+
+	if app_data.disabled.is_some() {
+		return Err(ServerCoreError::new_msg(
+			401,
+			ApiErrorCodes::AppDisabled,
+			"App is disabled and can't be used",
+		));
+	}
 
 	get_app_data_private(app_data, AuthWithToken::Public).await
 }
@@ -138,13 +146,21 @@ pub(crate) async fn get_app_data(hashed_token: impl Into<String>) -> AppRes<AppD
 
 	//language=SQL
 	let sql = r"
-SELECT id as app_id, owner_id, owner_type, hashed_secret_token, hashed_public_token, hash_alg 
+SELECT id as app_id, owner_id, owner_type, hashed_secret_token, hashed_public_token, hash_alg, disabled
 FROM sentc_app 
 WHERE hashed_public_token = ? OR hashed_secret_token = ? LIMIT 1";
 
 	let app_data: AppDataGeneral = query_first(sql, set_params!(hashed_token.clone(), hashed_token.clone()))
 		.await?
 		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::AppTokenNotFound, "App token not found"))?;
+
+	if app_data.disabled.is_some() {
+		return Err(ServerCoreError::new_msg(
+			401,
+			ApiErrorCodes::AppDisabled,
+			"App is disabled and can't be used",
+		));
+	}
 
 	let auth_with_token = if hashed_token == app_data.hashed_public_token {
 		AuthWithToken::Public

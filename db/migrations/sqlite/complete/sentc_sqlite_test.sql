@@ -284,7 +284,9 @@ CREATE TABLE 'sentc_app' (
 	hashed_secret_token text,
 	hashed_public_token text,
 	hash_alg            text,
-	time                text
+	time                text,
+	disabled            INTEGER,
+	disabled_ts         text
 , 'owner_type' INTEGER);
 
 ----

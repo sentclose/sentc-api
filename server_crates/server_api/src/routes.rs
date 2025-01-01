@@ -80,6 +80,10 @@ pub(crate) fn routes(router: &mut Router)
 		"/api/v1/user/forced/disable_otp",
 		r(crate::user::disable_otp_forced).add(server_api_common::middleware::app_token::app_token_transform),
 	);
+	router.delete(
+		"/api/v1/user/forced/sessions",
+		r(crate::user::delete_all_sessions).add(server_api_common::middleware::app_token::app_token_transform),
+	);
 	router.post(
 		"/api/v1/user/forced/login",
 		r(crate::user::verify_login_forced).add(server_api_common::middleware::app_token::app_token_transform),
@@ -128,6 +132,41 @@ pub(crate) fn routes(router: &mut Router)
 	router.post(
 		"/api/v1/group/forced/:user_id/:group_id/connected/light",
 		r(crate::group::create_connected_group_from_group_light_force)
+			.add(server_api_common::middleware::group::group_force_transform)
+			.add(server_api_common::middleware::user_check_force::user_check_force_transform)
+			.add(server_api_common::middleware::app_token::app_token_transform),
+	);
+	router.delete(
+		"/api/v1/group/forced/:user_id/:group_id/kick/:user_to_kick",
+		r(crate::group::kick_user_from_group_forced)
+			.add(server_api_common::middleware::group::group_force_transform)
+			.add(server_api_common::middleware::user_check_force::user_check_force_transform)
+			.add(server_api_common::middleware::app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/group/forced/:user_id/:group_id/invite_auto/:to_invite",
+		r(crate::group::invite_user_to_group_from_server)
+			.add(server_api_common::middleware::group::group_force_transform)
+			.add(server_api_common::middleware::user_check_force::user_check_force_transform)
+			.add(server_api_common::middleware::app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/group/forced/:user_id/:group_id/invite_auto/:to_invite/light",
+		r(crate::group::invite_user_to_group_from_server_light)
+			.add(server_api_common::middleware::group::group_force_transform)
+			.add(server_api_common::middleware::user_check_force::user_check_force_transform)
+			.add(server_api_common::middleware::app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/group/forced/:user_id/:group_id/invite_auto/:to_invite/group",
+		r(crate::group::invite_group_to_group_from_server)
+			.add(server_api_common::middleware::group::group_force_transform)
+			.add(server_api_common::middleware::user_check_force::user_check_force_transform)
+			.add(server_api_common::middleware::app_token::app_token_transform),
+	);
+	router.post(
+		"/api/v1/group/forced/:user_id/:group_id/invite_auto/:to_invite/group_light",
+		r(crate::group::invite_group_to_group_from_server_light)
 			.add(server_api_common::middleware::group::group_force_transform)
 			.add(server_api_common::middleware::user_check_force::user_check_force_transform)
 			.add(server_api_common::middleware::app_token::app_token_transform),

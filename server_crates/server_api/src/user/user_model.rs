@@ -72,7 +72,7 @@ WHERE ut.app_id = ? AND
 	Ok(exists)
 }
 
-pub(super) async fn get_user_group_id(app_id: impl Into<AppId>, user_id: impl Into<UserId>) -> AppRes<Option<StringEntity>>
+pub async fn get_user_group_id(app_id: impl Into<AppId>, user_id: impl Into<UserId>) -> AppRes<Option<StringEntity>>
 {
 	//language=SQL
 	let sql = "SELECT user_group_id FROM sentc_user WHERE app_id = ? AND id = ?";
@@ -84,7 +84,7 @@ pub(super) async fn get_user_group_id(app_id: impl Into<AppId>, user_id: impl In
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn get_public_key_by_id(
+pub async fn get_public_key_by_id(
 	app_id: impl Into<AppId>,
 	user_id: impl Into<UserId>,
 	public_key_id: impl Into<EncryptionKeyPairId>,
@@ -119,7 +119,7 @@ WHERE
 /**
 Get just the public key data for this user
 */
-pub(super) async fn get_public_key_data(app_id: impl Into<AppId>, user_id: impl Into<UserId>) -> AppRes<UserPublicKeyDataEntity>
+pub async fn get_public_key_data(app_id: impl Into<AppId>, user_id: impl Into<UserId>) -> AppRes<UserPublicKeyDataEntity>
 {
 	//language=SQL
 	let sql = r"
@@ -148,7 +148,7 @@ LIMIT 1";
 	}
 }
 
-pub(super) async fn get_verify_key_by_id(
+pub async fn get_verify_key_by_id(
 	app_id: impl Into<AppId>,
 	user_id: impl Into<UserId>,
 	verify_key_id: impl Into<SignKeyPairId>,
@@ -470,8 +470,11 @@ WHERE
 	Ok(())
 }
 
-pub(super) async fn reset_password(user_id: impl Into<UserId>, device_id: impl Into<DeviceId>, data: ResetPasswordData) -> AppRes<()>
+pub async fn reset_password(user_id: impl Into<UserId>, device_id: impl Into<DeviceId>, data: ResetPasswordData) -> AppRes<()>
 {
+	//no fresh jwt here because the user can't log in and get a fresh jwt without the password
+	//but still needs a valid jwt. jwt refresh is possible without a password!
+
 	let device_id = device_id.into();
 
 	//reset only the actual device
@@ -523,7 +526,23 @@ WHERE
 	Ok(())
 }
 
-pub(super) async fn get_devices(
+pub(super) async fn delete_all_sessions(user_id: impl Into<UserId>, app_id: impl Into<AppId>) -> AppRes<()>
+{
+	//language=SQL
+	let sql = r"
+DELETE FROM sentc_user_token
+WHERE
+	app_id = ? AND 
+	device_id IN (
+		SELECT id
+		FROM sentc_user_device
+		WHERE user_id = ?
+)";
+
+	exec(sql, set_params!(app_id.into(), user_id.into())).await
+}
+
+pub async fn get_devices(
 	app_id: impl Into<AppId>,
 	user_id: impl Into<UserId>,
 	last_fetched_time: u128,
@@ -653,7 +672,7 @@ pub(super) fn get_otp_recovery_keys(user_id: impl Into<UserId>) -> impl Future<O
 
 //__________________________________________________________________________________________________
 
-pub(super) async fn save_user_action(app_id: impl Into<AppId>, user_id: impl Into<UserId>, action: UserAction, amount: i64) -> AppRes<()>
+pub async fn save_user_action(app_id: impl Into<AppId>, user_id: impl Into<UserId>, action: UserAction, amount: i64) -> AppRes<()>
 {
 	let time = get_time()?;
 
@@ -679,7 +698,7 @@ pub(super) async fn save_user_action(app_id: impl Into<AppId>, user_id: impl Int
 	Ok(())
 }
 
-pub(super) async fn get_group_key_rotations_in_actual_month(app_id: impl Into<AppId>, group_id: impl Into<GroupId>) -> AppRes<i32>
+pub async fn get_group_key_rotations_in_actual_month(app_id: impl Into<AppId>, group_id: impl Into<GroupId>) -> AppRes<i32>
 {
 	let begin = get_begin_of_month()?;
 

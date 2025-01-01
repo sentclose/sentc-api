@@ -33,6 +33,7 @@ routes:
                     - put: { p: "/delete", s: crate::user::delete_user }
                     - put: { p: "/reset_user", s: crate::user::reset_user }
                     - put: { p: "/disable_otp", s: crate::user::disable_otp_forced }
+                    - delete: { p: "/sessions", s: crate::user::delete_all_sessions }
 
                     - post: { p: "/login", s: crate::user::verify_login_forced }
                     - post: { p: "/login_light", s: crate::user::verify_login_light_forced }
@@ -58,6 +59,15 @@ routes:
                                 - post: { p: "/child/light", s: crate::group::create_child_group_light_force }
                                 - post: { p: "/connected", s: crate::group::create_connected_group_from_group_force }
                                 - post: { p: "/connected/light", s: crate::group::create_connected_group_from_group_light_force }
+                                - delete: { p: "/kick/:user_to_kick", s: crate::group::kick_user_from_group_forced }
+                                # force invite
+                                - group:
+                                    p: "/invite_auto/:to_invite"
+                                    gr:
+                                      - post: { p: "", s: crate::group::invite_user_to_group_from_server }
+                                      - post: { p: "/light", s: crate::group::invite_user_to_group_from_server_light }
+                                      - post: { p: "/group", s: crate::group::invite_group_to_group_from_server }
+                                      - post: { p: "/group_light", s: crate::group::invite_group_to_group_from_server_light }
               #_________________________________________________________________________________________________________
               # group with exp jwt mw -> the jwt can be exp for this routes
               - group:

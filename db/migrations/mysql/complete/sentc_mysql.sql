@@ -26,8 +26,10 @@ CREATE TABLE `sentc_app`
 	`identifier`          text         NOT NULL,
 	`hashed_secret_token` varchar(100) NOT NULL COMMENT 'only one per app, when updating the token -> delete the old',
 	`hashed_public_token` varchar(100) NOT NULL,
-	`hash_alg`            text       DEFAULT NULL,
-	`time`                bigint(20) DEFAULT NULL
+	`hash_alg`            text              DEFAULT NULL,
+	`time`                bigint(20)        DEFAULT NULL,
+	`disabled`            INT          NULL DEFAULT NULL,
+	`disabled_ts`         BIGINT       NULL DEFAULT NULL
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci;

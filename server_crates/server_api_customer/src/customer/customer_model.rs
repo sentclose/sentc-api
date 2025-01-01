@@ -1,8 +1,9 @@
+use rustgram_server_util::db::id_handling::create_id;
 use rustgram_server_util::db::{exec, get_in, query_first, query_string, I32Entity};
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
-use rustgram_server_util::{get_time, set_params, set_params_vec_outer};
-use sentc_crypto_common::{CustomerId, GroupId, UserId};
+use rustgram_server_util::{get_time, set_params, set_params_vec_outer, DB};
+use sentc_crypto_common::{AppId, CustomerId, GroupId, UserId};
 use server_api_common::group::group_entities::InternalUserGroupData;
 use server_dashboard_common::customer::{CustomerData, CustomerGroupCreateInput, CustomerGroupList, CustomerUpdateInput};
 
@@ -382,4 +383,54 @@ pub(super) async fn get_customers(customer: Vec<String>) -> AppRes<Vec<CustomerL
 	);
 
 	query_string(sql, set_params_vec_outer!(customer)).await
+}
+
+//__________________________________________________________________________________________________
+//captcha
+
+#[derive(DB)]
+pub struct CaptchaEntity
+{
+	pub solution: String,
+	pub time: u128,
+}
+
+impl CaptchaEntity
+{
+	pub(crate) async fn get_captcha_solution(id: impl Into<String>, app_id: impl Into<AppId>) -> AppRes<Option<Self>>
+	{
+		//language=SQL
+		let sql = "SELECT solution, time FROM sentc_captcha WHERE id = ? AND app_id = ?";
+
+		query_first(sql, set_params!(id.into(), app_id.into())).await
+	}
+}
+
+pub(crate) async fn save_captcha_solution(app_id: impl Into<AppId>, solution: String) -> AppRes<String>
+{
+	let time = get_time()?;
+	let captcha_id = create_id();
+
+	//language=SQL
+	let sql = "INSERT INTO sentc_captcha (id, app_id, solution, time) VALUES (?,?,?,?)";
+
+	exec(
+		sql,
+		set_params!(captcha_id.clone(), app_id.into(), solution, time.to_string()),
+	)
+	.await?;
+
+	Ok(captcha_id)
+}
+
+pub(crate) async fn delete_captcha(app_id: impl Into<AppId>, id: String) -> AppRes<()>
+{
+	//owned id because we got the id from the input
+
+	//language=SQL
+	let sql = "DELETE FROM sentc_captcha WHERE id = ? AND app_id = ?";
+
+	exec(sql, set_params!(id, app_id.into())).await?;
+
+	Ok(())
 }

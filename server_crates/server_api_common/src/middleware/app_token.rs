@@ -4,7 +4,7 @@ use std::sync::Arc;
 use rustgram::service::{IntoResponse, Service};
 use rustgram::{Request, Response};
 use rustgram_server_util::cache;
-use rustgram_server_util::cache::{CacheVariant, LONG_TTL};
+use rustgram_server_util::cache::{CacheVariant, DEFAULT_TTL, LONG_TTL};
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::input_helper::{bytes_to_json, json_to_string};
 use rustgram_server_util::res::AppRes;
@@ -102,7 +102,7 @@ async fn token_check(req: &mut Request) -> Result<(), ServerCoreError>
 				Ok(d) => d,
 				Err(e) => {
 					//save the wrong token in the cache
-					cache::add(key, json_to_string(&CacheVariant::<AppData>::None)?, LONG_TTL).await?;
+					cache::add(key, json_to_string(&CacheVariant::<AppData>::None)?, DEFAULT_TTL).await?;
 
 					return Err(e);
 				},
@@ -111,7 +111,7 @@ async fn token_check(req: &mut Request) -> Result<(), ServerCoreError>
 			let data = CacheVariant::Some(data);
 
 			//cache the info
-			cache::add(key, json_to_string(&data)?, LONG_TTL).await?;
+			cache::add(key, json_to_string(&data)?, DEFAULT_TTL).await?;
 
 			data
 		},
