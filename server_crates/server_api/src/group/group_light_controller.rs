@@ -30,7 +30,7 @@ pub async fn create_child_group_light(req: Request) -> JRes<GroupCreateOutput>
 	let parent_group_id = Some(group_data.group_data.id.to_string());
 	let user_rank = Some(group_data.user_data.rank);
 
-	//a connected group can also got children but these children will be a connected group too
+	//a connected group can also get children but these children will be a connected group too
 	let is_connected_group = group_data.group_data.is_connected_group;
 
 	create_group_light(req, parent_group_id, user_rank, None, is_connected_group).await
@@ -40,8 +40,8 @@ pub async fn create_connected_group_from_group_light(req: Request) -> JRes<Group
 {
 	/*
 	- A connected group is a group where other groups can join or can get invited, not only users.
-	- A connected group can also got children (which are marked as connected group too)
-	- A connected group cannot be created from a already connected group.
+	- A connected group can also get children (which are marked as connected group too)
+	- A connected group cannot be created from an already connected group.
 		Because the users of the one connected group cannot access the connected group.
 		So only non connected groups can create connected groups.
 
@@ -108,7 +108,7 @@ pub async fn create_child_group_light_force(req: Request) -> JRes<GroupCreateOut
 	let parent_group_id = Some(group_data.group_data.id.to_string());
 	let user_rank = Some(group_data.user_data.rank);
 
-	//a connected group can also got children but these children will be a connected group too
+	//a connected group can also get children but these children will be a connected group too
 	let is_connected_group = group_data.group_data.is_connected_group;
 
 	create_group_force_light(req, parent_group_id, user_rank, None, is_connected_group).await
@@ -166,7 +166,7 @@ async fn create_group_force_light(
 //__________________________________________________________________________________________________
 //user light
 //no re invite here because this is only used when the keys are broken and light got no keys
-//no normal join req. no keys are involved for the req, just for the accept
+//no normal join req. no keys are involved for the req, just for to accept
 
 pub fn invite_auto_light(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
 {
@@ -207,6 +207,34 @@ pub async fn invite_auto_group_force_light(mut req: Request) -> JRes<ServerSucce
 	let input: GroupNewMemberLightInput = bytes_to_json(&body)?;
 
 	group_user_service::invite_auto_light(group_data, input, to_invite, NewUserType::Group).await?;
+
+	echo_success()
+}
+
+pub fn invite_group_to_group_from_server_light(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
+{
+	invite_to_group_from_server(req, NewUserType::Group)
+}
+
+pub fn invite_user_to_group_from_server_light(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
+{
+	invite_to_group_from_server(req, NewUserType::Normal)
+}
+
+async fn invite_to_group_from_server(mut req: Request, user_type: NewUserType) -> JRes<ServerSuccessOutput>
+{
+	//invite a user from server without being a member in this group
+
+	let body = get_raw_body(&mut req).await?;
+
+	check_endpoint_with_req(&req, Endpoint::ForceServer)?;
+
+	let to_invite = get_name_param_from_req(&req, "to_invite")?;
+	let group_data = get_group_user_data_from_req(&req)?;
+
+	let input: GroupNewMemberLightInput = bytes_to_json(&body)?;
+
+	group_user_service::invite_auto_light(group_data, input, to_invite, user_type).await?;
 
 	echo_success()
 }

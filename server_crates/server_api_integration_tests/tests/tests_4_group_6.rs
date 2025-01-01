@@ -1,11 +1,13 @@
 //Force group fn
 
 use reqwest::header::AUTHORIZATION;
+use sentc_crypto::sdk_common::group::GroupInviteServerOutput;
 use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::SdkError;
 use sentc_crypto_common::group::{GroupCreateOutput, GroupLightServerData};
 use sentc_crypto_common::{GroupId, UserId};
+use sentc_crypto_light::sdk_common::group::GroupNewMemberLightInput;
 use sentc_crypto_light::UserDataInt as UserDataIntLight;
 use server_dashboard_common::app::AppRegisterOutput;
 use server_dashboard_common::customer::CustomerDoneLoginOutput;
@@ -121,7 +123,7 @@ async fn aaa_init_global_test()
 
 	let mut users = vec![];
 
-	for i in 0..1 {
+	for i in 0..2 {
 		let username = "hi1".to_string() + i.to_string().as_str();
 
 		let user_id = sentc_crypto_light::util_req_full::user::register(get_base_url(), secret_token_str, &username, user_pw)
@@ -490,6 +492,192 @@ async fn test_16_create_connected_group_light()
 	let body = res.text().await.unwrap();
 
 	let _out: GroupLightServerData = handle_server_response(&body).unwrap();
+}
+
+//user invite
+
+#[tokio::test]
+async fn test_17_force_user_invite()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+	let user = &users[1];
+
+	let mut group_keys_ref = vec![];
+
+	for decrypted_group_key in &group.decrypted_group_keys {
+		group_keys_ref.push(&decrypted_group_key.group_key);
+	}
+
+	let data = TestGroup::prepare_group_keys_for_new_member(
+		&user
+			.user_data
+			.user_keys
+			.first()
+			.unwrap()
+			.exported_public_key,
+		&group_keys_ref,
+		false,
+		None,
+	)
+	.unwrap();
+
+	let url = get_url(format!(
+		"api/v1/group/forced/{}/{}/invite_auto/{}",
+		&creator.user_id, &group.group_id, &user.user_id
+	));
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", secret_token)
+		.body(data)
+		.send()
+		.await
+		.unwrap();
+	let body = res.text().await.unwrap();
+
+	let out: GroupInviteServerOutput = handle_server_response(&body).unwrap();
+
+	assert_eq!(out.session_id, None);
+
+	let (data, _keys) = get_group(
+		secret_token,
+		&user.user_data.jwt,
+		&group.group_id,
+		&user.user_data.user_keys.first().unwrap().private_key,
+		false,
+	)
+	.await;
+
+	assert_eq!(data.rank, 4);
+}
+
+#[tokio::test]
+async fn test_18_force_kick_user()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+	let user = &users[1];
+
+	let url = get_url(format!(
+		"api/v1/group/forced/{}/{}/kick/{}",
+		&creator.user_id, &group.group_id, &user.user_id
+	));
+
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+	let body = res.text().await.unwrap();
+	handle_general_server_response(&body).unwrap();
+
+	//should not be able to fetch the group
+	let data = sentc_crypto::util_req_full::group::get_group(
+		get_base_url(),
+		secret_token,
+		&user.user_data.jwt,
+		&group.group_id,
+		None,
+	)
+	.await;
+
+	assert!(data.is_err());
+}
+
+#[tokio::test]
+async fn test_19_force_user_invite_light()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+
+	let group = GROUP_TEST_STATE_LIGHT.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE_LIGHT.get().unwrap().read().await;
+	let creator = &users[0];
+	let user = &users[1];
+
+	let url = get_url(format!(
+		"api/v1/group/forced/{}/{}/invite_auto/{}/light",
+		&creator.user_id, &group.group_id, &user.user_id
+	));
+
+	let client = reqwest::Client::new();
+	let res = client
+		.post(url)
+		.header("x-sentc-app-token", secret_token)
+		.body(
+			serde_json::to_string(&GroupNewMemberLightInput {
+				rank: None,
+			})
+			.unwrap(),
+		)
+		.send()
+		.await
+		.unwrap();
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(&body).unwrap();
+
+	let data = sentc_crypto_light::util_req_full::group::get_group_light(
+		get_base_url(),
+		secret_token,
+		&user.user_data.jwt,
+		&group.group_id,
+		None,
+	)
+	.await
+	.unwrap();
+
+	assert_eq!(data.rank, 4);
+}
+
+#[tokio::test]
+async fn test_20_force_user_group_kick_light()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+
+	let group = GROUP_TEST_STATE_LIGHT.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE_LIGHT.get().unwrap().read().await;
+	let creator = &users[0];
+	let user = &users[1];
+
+	let url = get_url(format!(
+		"api/v1/group/forced/{}/{}/kick/{}",
+		&creator.user_id, &group.group_id, &user.user_id
+	));
+
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+	let body = res.text().await.unwrap();
+	handle_general_server_response(&body).unwrap();
+
+	let data = sentc_crypto_light::util_req_full::group::get_group_light(
+		get_base_url(),
+		secret_token,
+		&user.user_data.jwt,
+		&group.group_id,
+		None,
+	)
+	.await;
+
+	assert!(data.is_err());
 }
 
 //__________________________________________________________________________________________________

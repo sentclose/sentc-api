@@ -101,6 +101,37 @@ pub async fn invite_auto_group_force(mut req: Request) -> JRes<GroupInviteServer
 	echo(out)
 }
 
+pub fn invite_group_to_group_from_server(req: Request) -> impl Future<Output = JRes<GroupInviteServerOutput>>
+{
+	invite_to_group_from_server(req, NewUserType::Group)
+}
+
+pub fn invite_user_to_group_from_server(req: Request) -> impl Future<Output = JRes<GroupInviteServerOutput>>
+{
+	invite_to_group_from_server(req, NewUserType::Normal)
+}
+
+async fn invite_to_group_from_server(mut req: Request, user_type: NewUserType) -> JRes<GroupInviteServerOutput>
+{
+	//just invite a user without jwt check and without group restriction check
+	let body = get_raw_body(&mut req).await?;
+
+	check_endpoint_with_req(&req, Endpoint::ForceServer)?;
+	let group_data = get_group_user_data_from_req(&req)?;
+	let to_invite = get_name_param_from_req(&req, "to_invite")?;
+
+	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
+
+	let session_id = group_user_service::invite_auto(group_data, input, to_invite, user_type).await?;
+
+	let out = GroupInviteServerOutput {
+		session_id,
+		message: "Was invited. Please wait until the user accepts the invite.".to_string(),
+	};
+
+	echo(out)
+}
+
 pub(crate) async fn check_invited_group<'a>(
 	req: &'a Request,
 	group_data: &InternalGroupDataComplete,
@@ -594,13 +625,23 @@ pub async fn leave_group(req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
-pub async fn kick_user_from_group(req: Request) -> JRes<ServerSuccessOutput>
+pub fn kick_user_from_group(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
 {
-	check_endpoint_with_req(&req, Endpoint::GroupUserDelete)?;
+	kick_user(req, Endpoint::GroupUserDelete, "user_id")
+}
+
+pub fn kick_user_from_group_forced(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
+{
+	kick_user(req, Endpoint::ForceServer, "user_to_kick")
+}
+
+async fn kick_user(req: Request, endpoint: Endpoint, req_param: &str) -> JRes<ServerSuccessOutput>
+{
+	check_endpoint_with_req(&req, endpoint)?;
 
 	let group_data = get_group_user_data_from_req(&req)?;
 
-	let user_id = get_name_param_from_req(&req, "user_id")?;
+	let user_id = get_name_param_from_req(&req, req_param)?;
 
 	group_user_service::kick_user_from_group(group_data, user_id).await?;
 
