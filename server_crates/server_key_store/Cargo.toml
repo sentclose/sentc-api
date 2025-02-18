@@ -1,0 +1,9 @@
+[package]
+name = "server_key_store"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio.workspace = true
+async-trait = "0.1.56"
+rustgram-server-util.workspace = true
