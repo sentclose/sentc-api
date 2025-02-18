@@ -40,7 +40,11 @@ pub async fn start(app_id: AppId, group_id: GroupId, key_id: SymKeyId, user_grou
 
 	//key rotation for parent group. check first if this is already done for parent group (like user)
 	if let Some(item) = group_key_rotation_model::get_parent_group_and_public_key(&group_id, &key_id).await? {
-		let user_keys = tokio::task::spawn_blocking(move || encrypt(&key_arc, vec![item]))
+		let mut vec = vec![item];
+
+		fetch_extern_public_key(&mut vec).await?;
+
+		let user_keys = tokio::task::spawn_blocking(move || encrypt(&key_arc, vec))
 			.await
 			.map_err(|e| {
 				ServerCoreError::new_msg_and_debug(
@@ -86,7 +90,7 @@ async fn loop_user(
 	loop {
 		let key_cap = key_arc.clone();
 
-		let users = match (&loop_type, user_group) {
+		let mut users = match (&loop_type, user_group) {
 			(LoopType::GroupAsMember, None) => {
 				//get the data for the group as member
 				group_key_rotation_model::get_group_as_member_public_key(group_id, key_id, last_time_fetched, &last_user_id).await?
@@ -116,6 +120,9 @@ async fn loop_user(
 		last_time_fetched = users[len - 1].time; //the last user is the oldest (order by time DESC)
 		last_user_id = users[len - 1].user_id.clone();
 
+		//check if public key is extern
+		fetch_extern_public_key(&mut users).await?;
+
 		//encrypt for each user
 		let user_keys = tokio::task::spawn_blocking(move || encrypt(&key_cap, users))
 			.await
@@ -138,6 +145,34 @@ async fn loop_user(
 	}
 
 	Ok(total_len)
+}
+
+async fn fetch_extern_public_key(users: &mut [UserGroupPublicKeyData]) -> AppRes<()>
+{
+	//check if public key is extern
+	let mut keys_to_fetch = vec![];
+
+	for user in users.iter() {
+		if user.public_key == "extern" {
+			keys_to_fetch.push(format!("pk_{}", user.public_key_id));
+		}
+	}
+
+	if keys_to_fetch.is_empty() {
+		return Ok(());
+	}
+
+	let mut fetched_keys = server_key_store::get_keys(&keys_to_fetch).await?;
+
+	for user in users {
+		if user.public_key == "extern" {
+			if let Some(fetched_key) = fetched_keys.remove(&format!("pk_{}", user.public_key_id)) {
+				user.public_key = fetched_key
+			}
+		}
+	}
+
+	Ok(())
 }
 
 fn encrypt(eph_key: &KeyRotationWorkerKey, users: Vec<UserGroupPublicKeyData>) -> Vec<UserEphKeyOut>

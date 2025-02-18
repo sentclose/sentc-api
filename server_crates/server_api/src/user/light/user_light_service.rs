@@ -1,6 +1,7 @@
 use rustgram_server_util::cache;
 use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::user::{
+	KeyDerivedData,
 	RegisterServerOutput,
 	UserDeviceDoneRegisterInputLight,
 	UserDeviceRegisterInput,
@@ -11,6 +12,7 @@ use sentc_crypto_common::{AppId, GroupId, UserId};
 use server_api_common::customer_app::app_entities::AppData;
 use server_api_common::group::GROUP_TYPE_USER;
 use server_api_common::util::{get_user_in_app_key, hash_token_to_string};
+use server_key_store::KeyStorage;
 
 use crate::group::{group_service, group_user_service};
 use crate::sentc_group_user_service::NewUserType;
@@ -26,10 +28,42 @@ pub async fn register_light(app_id: impl Into<AppId>, input: UserDeviceRegisterI
 
 	let identifier = hash_token_to_string(input.device_identifier.as_bytes())?;
 
-	let (user_id, device_id) = user_light_model::register_light(&app_id, identifier, input.master_key, input.derived).await?;
+	let derived = KeyDerivedData {
+		derived_alg: input.derived.derived_alg,
+		client_random_value: input.derived.client_random_value,
+		hashed_authentication_key: input.derived.hashed_authentication_key,
+		public_key: "extern".to_string(),
+		encrypted_private_key: "extern".to_string(),
+		keypair_encrypt_alg: input.derived.keypair_encrypt_alg,
+		verify_key: "extern".to_string(),
+		encrypted_sign_key: "extern".to_string(),
+		keypair_sign_alg: input.derived.keypair_sign_alg,
+	};
+
+	let (user_id, device_id) = user_light_model::register_light(&app_id, identifier, input.master_key, derived).await?;
+
+	server_key_store::upload_key(vec![
+		KeyStorage {
+			key: input.derived.public_key,
+			id: format!("pk_{device_id}"),
+		},
+		KeyStorage {
+			key: input.derived.encrypted_private_key,
+			id: format!("sk_{device_id}"),
+		},
+		KeyStorage {
+			key: input.derived.verify_key,
+			id: format!("vk_{device_id}"),
+		},
+		KeyStorage {
+			key: input.derived.encrypted_sign_key,
+			id: format!("sign_k_{device_id}"),
+		},
+	])
+	.await?;
 
 	//delete the user in app check cache from the jwt mw
-	//it can happened that a user id was used before which doesn't exists yet
+	//it can happen that a user id was used before which doesn't exist yet
 	let cache_key = get_user_in_app_key(&app_id, &user_id);
 	cache::delete(&cache_key).await?;
 

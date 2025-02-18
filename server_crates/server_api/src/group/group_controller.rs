@@ -36,7 +36,7 @@ pub async fn create_child_group(req: Request) -> JRes<GroupCreateOutput>
 	let parent_group_id = Some(group_data.group_data.id.to_string());
 	let user_rank = Some(group_data.user_data.rank);
 
-	//a connected group can also got children but these children will be a connected group too
+	//a connected group can also get children but these children will be a connected group too
 	let is_connected_group = group_data.group_data.is_connected_group;
 
 	create_group(req, parent_group_id, user_rank, None, is_connected_group).await
@@ -46,8 +46,8 @@ pub async fn create_connected_group_from_group(req: Request) -> JRes<GroupCreate
 {
 	/*
 	- A connected group is a group where other groups can join or can get invited, not only users.
-	- A connected group can also got children (which are marked as connected group too)
-	- A connected group cannot be created from a already connected group.
+	- A connected group can also get children (which are marked as connected group too)
+	- A connected group cannot be created from an already connected group.
 		Because the users of the one connected group cannot access the connected group.
 		So only non connected groups can create connected groups.
 
@@ -123,7 +123,7 @@ pub async fn create_child_group_force(req: Request) -> JRes<GroupCreateOutput>
 	let parent_group_id = Some(group_data.group_data.id.to_string());
 	let user_rank = Some(group_data.user_data.rank);
 
-	//a connected group can also got children but these children will be a connected group too
+	//a connected group can also get children but these children will be a connected group too
 	let is_connected_group = group_data.group_data.is_connected_group;
 
 	create_group_force(req, parent_group_id, user_rank, None, is_connected_group).await
@@ -323,7 +323,7 @@ pub async fn stop_invite(req: Request) -> JRes<ServerSuccessOutput>
 
 pub async fn get_public_key_data(req: Request) -> JRes<UserPublicKeyDataEntity>
 {
-	//called from outside of the group mw
+	//called from outside the group mw
 
 	let app_data = get_app_data_from_req(&req)?;
 
