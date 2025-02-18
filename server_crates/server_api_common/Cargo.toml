@@ -14,6 +14,8 @@ sentc-crypto-common = { path = "../../sdk-common" }
 
 server_dashboard_common = { path = "../server_dashboard_common", default-features = false, features = ["server"] }
 
+server_key_store = { path = "../server_key_store" }
+
 encrypted_at_rest_root = { path = "../encrypted_at_rest_root" }
 
 ring.workspace = true
