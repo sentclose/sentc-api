@@ -79,7 +79,7 @@ pub async fn delete_registered_file_part(req: Request) -> JRes<ServerSuccessOutp
 
 pub async fn register_file_part(req: Request) -> JRes<FilePartRegisterOutput>
 {
-	//this fn is called from another storage without a file and we give the file part id back, to name the other file
+	//this fn is called from another storage without a file, and we give the file part id back, to name the other file
 	let app = get_app_data_from_req(&req)?;
 	check_endpoint_with_app_options(app, Endpoint::ForceServer)?;
 
@@ -221,10 +221,9 @@ pub async fn get_parts(req: Request) -> JRes<Vec<FilePartListItem>>
 
 pub async fn download_part(req: Request) -> Response
 {
-	match download_part_internally(req).await {
-		Ok(res) => res,
-		Err(e) => e.into_response(),
-	}
+	download_part_internally(req)
+		.await
+		.unwrap_or_else(|e| e.into_response())
 }
 
 pub async fn download_part_internally(req: Request) -> AppRes<Response>

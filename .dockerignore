@@ -2,6 +2,8 @@
 /target_sqlite
 .idea/
 storage/
+storage_key/
+storage_key_dev/
 .run_config/
 db/sqlite/db_test.sqlite3
 

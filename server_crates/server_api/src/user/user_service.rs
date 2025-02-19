@@ -8,6 +8,7 @@ use sentc_crypto_common::user::{
 	ChangePasswordData,
 	DoneLoginLightServerOutput,
 	JwtRefreshInput,
+	KeyDerivedData,
 	OtpRecoveryKeysOutput,
 	OtpRegister,
 	RegisterData,
@@ -20,28 +21,20 @@ use sentc_crypto_common::user::{
 	UserUpdateServerInput,
 	VerifyLoginInput,
 };
-use sentc_crypto_common::{AppId, DeviceId, GroupId, SymKeyId, UserId};
+use sentc_crypto_common::{AppId, DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, SymKeyId, UserId};
 use server_api_common::customer_app::app_entities::AppData;
 use server_api_common::group::group_entities::{InternalGroupData, InternalGroupDataComplete, InternalUserGroupData};
 use server_api_common::group::GROUP_TYPE_USER;
 use server_api_common::user::jwt::create_jwt;
 use server_api_common::user::user_entity::UserJwtEntity;
 use server_api_common::util::{get_user_in_app_key, hash_token_to_string};
+use server_key_store::KeyStorage;
 
-pub use self::user_model::{
-	get_devices,
-	get_group_key_rotations_in_actual_month,
-	get_public_key_by_id,
-	get_public_key_data,
-	get_user_group_id,
-	get_verify_key_by_id,
-	reset_password,
-	save_user_action,
-};
+pub use self::user_model::{get_devices, get_group_key_rotations_in_actual_month, get_user_group_id, reset_password, save_user_action};
 use crate::group::group_entities::GroupUserKeys;
 use crate::group::group_user_service::NewUserType;
 use crate::group::{group_service, group_user_service};
-use crate::sentc_user_entities::{LoginForcedOutput, VerifyLoginOutput};
+use crate::sentc_user_entities::{LoginForcedOutput, UserPublicKeyDataEntity, UserVerifyKeyDataEntity, VerifyLoginOutput};
 use crate::user::auth::auth_service::{auth_user, verify_login_forced_internally, verify_login_internally};
 use crate::user::user_entities::UserInitEntity;
 use crate::user::{otp, user_model};
@@ -120,7 +113,41 @@ pub async fn register(app_id: impl Into<AppId>, register_input: RegisterData) ->
 
 	let identifier = hash_token_to_string(device_data.device_identifier.as_bytes())?;
 
-	let (user_id, device_id) = user_model::register(&app_id, identifier, device_data.master_key, device_data.derived).await?;
+	//mark the post quantum keys as external. the key fetch knows then to fetch the keys from the key store
+	//no need for the normal keys like aes
+	let derived = KeyDerivedData {
+		derived_alg: device_data.derived.derived_alg,
+		client_random_value: device_data.derived.client_random_value,
+		hashed_authentication_key: device_data.derived.hashed_authentication_key,
+		public_key: "extern".to_string(),
+		encrypted_private_key: "extern".to_string(),
+		keypair_encrypt_alg: device_data.derived.keypair_encrypt_alg,
+		verify_key: "extern".to_string(),
+		encrypted_sign_key: "extern".to_string(),
+		keypair_sign_alg: device_data.derived.keypair_sign_alg,
+	};
+
+	let (user_id, device_id) = user_model::register(&app_id, identifier, device_data.master_key, derived).await?;
+
+	server_key_store::upload_key(vec![
+		KeyStorage {
+			key: device_data.derived.public_key,
+			id: format!("pk_{device_id}"),
+		},
+		KeyStorage {
+			key: device_data.derived.encrypted_private_key,
+			id: format!("sk_{device_id}"),
+		},
+		KeyStorage {
+			key: device_data.derived.verify_key,
+			id: format!("vk_{device_id}"),
+		},
+		KeyStorage {
+			key: device_data.derived.encrypted_sign_key,
+			id: format!("sign_k_{device_id}"),
+		},
+	])
+	.await?;
 
 	//update creator public key id in group data (with the device id), this is needed to know what public key was used to encrypt the group key
 	group_data.creator_public_key_id = device_id.to_string();
@@ -188,7 +215,39 @@ pub async fn prepare_register_device(app_id: impl Into<AppId>, input: UserDevice
 
 	let token = create_refresh_token()?;
 
-	let device_id = user_model::register_device(app_id, identifier, input.master_key, input.derived, &token).await?;
+	let derived = KeyDerivedData {
+		derived_alg: input.derived.derived_alg,
+		client_random_value: input.derived.client_random_value,
+		hashed_authentication_key: input.derived.hashed_authentication_key,
+		public_key: "extern".to_string(),
+		encrypted_private_key: "extern".to_string(),
+		keypair_encrypt_alg: input.derived.keypair_encrypt_alg,
+		verify_key: "extern".to_string(),
+		encrypted_sign_key: "extern".to_string(),
+		keypair_sign_alg: input.derived.keypair_sign_alg,
+	};
+
+	let device_id = user_model::register_device(app_id, identifier, input.master_key, derived, &token).await?;
+
+	server_key_store::upload_key(vec![
+		KeyStorage {
+			key: input.derived.public_key,
+			id: format!("pk_{device_id}"),
+		},
+		KeyStorage {
+			key: input.derived.encrypted_private_key,
+			id: format!("sk_{device_id}"),
+		},
+		KeyStorage {
+			key: input.derived.verify_key,
+			id: format!("vk_{device_id}"),
+		},
+		KeyStorage {
+			key: input.derived.encrypted_sign_key,
+			id: format!("sign_k_{device_id}"),
+		},
+	])
+	.await?;
 
 	Ok(UserDeviceRegisterOutput {
 		device_id,
@@ -320,6 +379,84 @@ pub fn get_user_key<'a>(
 		&user.device_id, //call it with the device id to decrypt the keys
 		key_id,
 	)
+}
+
+pub(crate) async fn get_public_key_extern(out: &mut UserPublicKeyDataEntity) -> AppRes<()>
+{
+	let mut keys_to_fetch = vec![];
+
+	if out.public_key == "extern" {
+		keys_to_fetch.push(format!("pk_{}", out.public_key_id));
+	}
+
+	if let Some(sig) = out.public_key_sig.as_ref() {
+		if sig == "extern" {
+			keys_to_fetch.push(format!("sig_pk_{}", out.public_key_id));
+		}
+	}
+
+	if keys_to_fetch.is_empty() {
+		return Ok(());
+	}
+
+	let mut fetched_key = server_key_store::get_keys(&keys_to_fetch).await?;
+
+	if out.public_key == "extern" {
+		if let Some(fetched_key) = fetched_key.remove(&format!("pk_{}", out.public_key_id)) {
+			out.public_key = fetched_key;
+		}
+	}
+
+	if let Some(sig) = out.public_key_sig.as_ref() {
+		if sig == "extern" {
+			if let Some(fetched_key) = fetched_key.remove(&format!("sig_pk_{}", out.public_key_id)) {
+				out.public_key_sig = Some(fetched_key);
+			}
+		}
+	}
+
+	Ok(())
+}
+
+pub async fn get_public_key_by_id(
+	app_id: impl Into<AppId>,
+	user_id: impl Into<UserId>,
+	public_key_id: impl Into<EncryptionKeyPairId>,
+) -> AppRes<UserPublicKeyDataEntity>
+{
+	let mut out = user_model::get_public_key_by_id(app_id, user_id, public_key_id).await?;
+
+	get_public_key_extern(&mut out).await?;
+
+	Ok(out)
+}
+
+pub async fn get_public_key_data(app_id: impl Into<AppId>, user_id: impl Into<UserId>) -> AppRes<UserPublicKeyDataEntity>
+{
+	let mut out = user_model::get_public_key_data(app_id, user_id).await?;
+
+	get_public_key_extern(&mut out).await?;
+
+	Ok(out)
+}
+
+pub async fn get_verify_key_by_id(
+	app_id: impl Into<AppId>,
+	user_id: impl Into<UserId>,
+	verify_key_id: impl Into<SignKeyPairId>,
+) -> AppRes<UserVerifyKeyDataEntity>
+{
+	let mut out = user_model::get_verify_key_by_id(app_id, user_id, verify_key_id).await?;
+
+	if out.verify_key == "extern" {
+		let mut fetched_key = server_key_store::get_keys(&[format!("vk_{}", out.verify_key_id)]).await?;
+
+		if let Some(fetched_key) = fetched_key.remove(&format!("vk_{}", out.verify_key_id)) {
+			out.verify_key = fetched_key
+		}
+	}
+
+	Ok(out)
 }
 
 //__________________________________________________________________________________________________

@@ -19,7 +19,8 @@ members = [
 	"server_crates/server_api_file",
 	"server_crates/server_dashboard_backend",
 	"server_crates/server_dashboard_common",
-	"server_crates/encrypted_at_rest_root"
+	"server_crates/encrypted_at_rest_root",
+	"server_crates/server_key_store"
 ]
 
 [workspace.dependencies]

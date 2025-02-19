@@ -24,6 +24,7 @@ pub async fn start()
 	rustgram_server_util::file::init_storage().await;
 
 	encrypted_at_rest_root::init_crypto().await;
+	server_key_store::init_key_store().await;
 }
 
 /**

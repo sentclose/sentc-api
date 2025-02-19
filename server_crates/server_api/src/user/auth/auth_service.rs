@@ -33,9 +33,54 @@ pub(crate) async fn prepare_done_login(app_id: impl Into<AppId>, identifier: imp
 	let app_id = app_id.into();
 
 	//if correct -> fetch and return the user data
-	let device_keys = auth_model::get_done_login_data(&app_id, identifier)
+	let mut device_keys = auth_model::get_done_login_data(&app_id, identifier)
 		.await?
 		.ok_or_else(|| ServerCoreError::new_msg(401, ApiErrorCodes::Login, "Wrong username or password"))?;
+
+	//fetch the keys from key store
+	let mut keys_to_fetch = vec![];
+
+	if device_keys.public_key_string == "extern" {
+		keys_to_fetch.push(format!("pk_{}", device_keys.keypair_encrypt_id));
+	}
+
+	if device_keys.encrypted_private_key == "extern" {
+		keys_to_fetch.push(format!("sk_{}", device_keys.keypair_encrypt_id));
+	}
+
+	if device_keys.encrypted_sign_key == "extern" {
+		keys_to_fetch.push(format!("sign_k_{}", device_keys.keypair_sign_id));
+	}
+
+	if device_keys.verify_key_string == "extern" {
+		keys_to_fetch.push(format!("vk_{}", device_keys.keypair_sign_id));
+	}
+
+	let mut fetched_keys = server_key_store::get_keys(&keys_to_fetch).await?;
+
+	if device_keys.public_key_string == "extern" {
+		if let Some(fetched_key) = fetched_keys.remove(&format!("pk_{}", device_keys.keypair_encrypt_id)) {
+			device_keys.public_key_string = fetched_key
+		}
+	}
+
+	if device_keys.encrypted_private_key == "extern" {
+		if let Some(fetched_key) = fetched_keys.remove(&format!("sk_{}", device_keys.keypair_encrypt_id)) {
+			device_keys.encrypted_private_key = fetched_key
+		}
+	}
+
+	if device_keys.encrypted_sign_key == "extern" {
+		if let Some(fetched_key) = fetched_keys.remove(&format!("sign_k_{}", device_keys.keypair_sign_id)) {
+			device_keys.encrypted_sign_key = fetched_key
+		}
+	}
+
+	if device_keys.verify_key_string == "extern" {
+		if let Some(fetched_key) = fetched_keys.remove(&format!("vk_{}", device_keys.keypair_sign_id)) {
+			device_keys.verify_key_string = fetched_key
+		}
+	}
 
 	let challenge = create_refresh_token()?;
 

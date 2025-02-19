@@ -106,7 +106,7 @@ New keys from key update are fetched by the key update fn
 
 For child group: use the parent group id as user id.
 */
-pub async fn get_user_group_keys(
+pub(super) async fn get_user_group_keys(
 	app_id: impl Into<AppId>,
 	group_id: impl Into<GroupId>,
 	user_id: impl Into<UserId>,
@@ -169,7 +169,7 @@ WHERE
 	query_string(sql1, params).await
 }
 
-pub async fn get_user_group_key(
+pub(super) async fn get_user_group_key(
 	app_id: impl Into<AppId>,
 	group_id: impl Into<GroupId>,
 	user_id: impl Into<UserId>,
@@ -354,7 +354,7 @@ INSERT INTO sentc_group
 	Ok(group_id)
 }
 
-pub async fn create(
+pub(super) async fn create(
 	app_id: impl Into<AppId>,
 	user_id: impl Into<UserId>,
 	data: CreateData,
