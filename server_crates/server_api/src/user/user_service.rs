@@ -381,6 +381,43 @@ pub fn get_user_key<'a>(
 	)
 }
 
+pub(crate) async fn get_public_key_extern(out: &mut UserPublicKeyDataEntity) -> AppRes<()>
+{
+	let mut keys_to_fetch = vec![];
+
+	if out.public_key == "extern" {
+		keys_to_fetch.push(format!("pk_{}", out.public_key_id));
+	}
+
+	if let Some(sig) = out.public_key_sig.as_ref() {
+		if sig == "extern" {
+			keys_to_fetch.push(format!("sig_pk_{}", out.public_key_id));
+		}
+	}
+
+	if keys_to_fetch.is_empty() {
+		return Ok(());
+	}
+
+	let mut fetched_key = server_key_store::get_keys(&keys_to_fetch).await?;
+
+	if out.public_key == "extern" {
+		if let Some(fetched_key) = fetched_key.remove(&format!("pk_{}", out.public_key_id)) {
+			out.public_key = fetched_key;
+		}
+	}
+
+	if let Some(sig) = out.public_key_sig.as_ref() {
+		if sig == "extern" {
+			if let Some(fetched_key) = fetched_key.remove(&format!("sig_pk_{}", out.public_key_id)) {
+				out.public_key_sig = Some(fetched_key);
+			}
+		}
+	}
+
+	Ok(())
+}
+
 pub async fn get_public_key_by_id(
 	app_id: impl Into<AppId>,
 	user_id: impl Into<UserId>,
@@ -389,13 +426,7 @@ pub async fn get_public_key_by_id(
 {
 	let mut out = user_model::get_public_key_by_id(app_id, user_id, public_key_id).await?;
 
-	if out.public_key == "extern" {
-		let mut fetched_key = server_key_store::get_keys(&[format!("pk_{}", out.public_key_id)]).await?;
-
-		if let Some(fetched_key) = fetched_key.remove(&format!("pk_{}", out.public_key_id)) {
-			out.public_key = fetched_key
-		}
-	}
+	get_public_key_extern(&mut out).await?;
 
 	Ok(out)
 }
@@ -404,13 +435,7 @@ pub async fn get_public_key_data(app_id: impl Into<AppId>, user_id: impl Into<Us
 {
 	let mut out = user_model::get_public_key_data(app_id, user_id).await?;
 
-	if out.public_key == "extern" {
-		let mut fetched_key = server_key_store::get_keys(&[format!("pk_{}", out.public_key_id)]).await?;
-
-		if let Some(fetched_key) = fetched_key.remove(&format!("pk_{}", out.public_key_id)) {
-			out.public_key = fetched_key
-		}
-	}
+	get_public_key_extern(&mut out).await?;
 
 	Ok(out)
 }

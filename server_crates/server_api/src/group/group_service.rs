@@ -13,6 +13,7 @@ use crate::group::group_entities::GroupServerData;
 use crate::group::group_model;
 use crate::sentc_group_entities::GroupUserKeys;
 use crate::sentc_user_entities::UserPublicKeyDataEntity;
+use crate::sentc_user_service::get_public_key_extern;
 
 #[inline(always)]
 fn prepare_keys_for_extern_fetch(keys_to_fetch: &mut Vec<String>, key: &GroupUserKeys)
@@ -36,6 +37,18 @@ fn prepare_keys_for_extern_fetch(keys_to_fetch: &mut Vec<String>, key: &GroupUse
 
 		if verify_key == "extern" {
 			keys_to_fetch.push(format!("vk_{sign_key_id}"));
+		}
+	}
+
+	if let Some(sig) = key.public_key_sig.as_ref() {
+		if sig == "extern" {
+			keys_to_fetch.push(format!("sig_pk_{}", key.key_pair_id));
+		}
+	}
+
+	if let Some(sig) = key.group_key_sig.as_ref() {
+		if sig == "extern" {
+			keys_to_fetch.push(format!("sig_sym_{}", key.group_key_id));
 		}
 	}
 }
@@ -69,6 +82,22 @@ fn get_keys_from_extern_result(key: &mut GroupUserKeys, fetched_keys: &mut HashM
 		if verify_key == "extern" {
 			if let Some(fetched_key) = fetched_keys.remove(&format!("vk_{sign_key_id}")) {
 				key.verify_key = Some(fetched_key);
+			}
+		}
+	}
+
+	if let Some(sig) = key.public_key_sig.as_ref() {
+		if sig == "extern" {
+			if let Some(fetched_key) = fetched_keys.remove(&format!("sig_pk_{}", key.key_pair_id)) {
+				key.public_key_sig = Some(fetched_key);
+			}
+		}
+	}
+
+	if let Some(sig) = key.group_key_sig.as_ref() {
+		if sig == "extern" {
+			if let Some(fetched_key) = fetched_keys.remove(&format!("sig_sym_{}", key.group_key_id)) {
+				key.group_key_sig = Some(fetched_key);
 			}
 		}
 	}
@@ -144,6 +173,18 @@ pub async fn create_group(
 			(None, None, None, None)
 		};
 
+	let (public_key_sig_for_model, public_key_sig_for_storage) = if let Some(sig) = data.public_key_sig {
+		(Some("extern".to_string()), Some(sig))
+	} else {
+		(None, None)
+	};
+
+	let (group_key_sig_for_model, group_key_sig_for_storage) = if let Some(sig) = data.group_key_sig {
+		(Some("extern".to_string()), Some(sig))
+	} else {
+		(None, None)
+	};
+
 	let create_data = CreateData {
 		encrypted_group_key: data.encrypted_group_key,
 		group_key_alg: data.group_key_alg,
@@ -158,11 +199,11 @@ pub async fn create_group(
 		encrypted_sortable_alg: data.encrypted_sortable_alg,
 		signed_by_user_id: data.signed_by_user_id,
 		signed_by_user_sign_key_id: data.signed_by_user_sign_key_id,
-		group_key_sig: data.group_key_sig,
+		group_key_sig: group_key_sig_for_model,
 		encrypted_sign_key: encrypted_sign_key_for_model,
 		verify_key: verify_key_for_model,
 		keypair_sign_alg: data.keypair_sign_alg,
-		public_key_sig: data.public_key_sig,
+		public_key_sig: public_key_sig_for_model,
 	};
 
 	let (group_id, key_id) = group_model::create(
@@ -177,39 +218,43 @@ pub async fn create_group(
 	)
 	.await?;
 
-	let key_vec = if let (Some(sign_key), Some(verify_key)) = (encrypted_sign_key_for_storage, verify_key_for_storage) {
-		vec![
-			KeyStorage {
-				key: data.public_group_key,
-				id: format!("pk_{key_id}"),
-			},
-			KeyStorage {
-				key: data.encrypted_private_group_key,
-				id: format!("sk_{key_id}"),
-			},
-			KeyStorage {
-				key: verify_key,
-				id: format!("vk_{key_id}"),
-			},
-			KeyStorage {
-				key: sign_key,
-				id: format!("sign_k_{key_id}"),
-			},
-		]
-	} else {
-		vec![
-			KeyStorage {
-				key: data.public_group_key,
-				id: format!("pk_{key_id}"),
-			},
-			KeyStorage {
-				key: data.encrypted_private_group_key,
-				id: format!("sk_{key_id}"),
-			},
-		]
-	};
+	let mut keys_to_fetch = vec![
+		KeyStorage {
+			key: data.public_group_key,
+			id: format!("pk_{key_id}"),
+		},
+		KeyStorage {
+			key: data.encrypted_private_group_key,
+			id: format!("sk_{key_id}"),
+		},
+	];
 
-	server_key_store::upload_key(key_vec).await?;
+	if let (Some(sign_key), Some(verify_key)) = (encrypted_sign_key_for_storage, verify_key_for_storage) {
+		keys_to_fetch.push(KeyStorage {
+			key: verify_key,
+			id: format!("vk_{key_id}"),
+		});
+		keys_to_fetch.push(KeyStorage {
+			key: sign_key,
+			id: format!("sign_k_{key_id}"),
+		});
+	}
+
+	if let Some(sig) = public_key_sig_for_storage {
+		keys_to_fetch.push(KeyStorage {
+			key: sig,
+			id: format!("sig_pk_{key_id}"),
+		});
+	}
+
+	if let Some(sig) = group_key_sig_for_storage {
+		keys_to_fetch.push(KeyStorage {
+			key: sig,
+			id: format!("sig_sym_{key_id}"),
+		});
+	}
+
+	server_key_store::upload_key(keys_to_fetch).await?;
 
 	Ok((group_id, key_id))
 }
@@ -313,13 +358,7 @@ pub async fn get_public_key_data(app_id: impl Into<AppId>, group_id: impl Into<G
 {
 	let mut out = group_model::get_public_key_data(app_id, group_id).await?;
 
-	if out.public_key == "extern" {
-		let mut fetched_key = server_key_store::get_keys(&[format!("pk_{}", out.public_key_id)]).await?;
-
-		if let Some(fetched_key) = fetched_key.remove(&format!("pk_{}", out.public_key_id)) {
-			out.public_key = fetched_key
-		}
-	}
+	get_public_key_extern(&mut out).await?;
 
 	Ok(out)
 }
