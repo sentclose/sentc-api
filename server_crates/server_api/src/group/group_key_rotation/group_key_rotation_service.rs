@@ -30,6 +30,18 @@ pub async fn start_key_rotation(
 			(None, None, None, None)
 		};
 
+	let (public_key_sig_for_model, public_key_sig_for_storage) = if let Some(sig) = input.public_key_sig {
+		(Some("extern".to_string()), Some(sig))
+	} else {
+		(None, None)
+	};
+
+	let (group_key_sig_for_model, group_key_sig_for_storage) = if let Some(sig) = input.group_key_sig {
+		(Some("extern".to_string()), Some(sig))
+	} else {
+		(None, None)
+	};
+
 	let key_data = KeyRotationData {
 		encrypted_group_key_by_user: input.encrypted_group_key_by_user,
 		group_key_alg: input.group_key_alg,
@@ -44,48 +56,52 @@ pub async fn start_key_rotation(
 		invoker_public_key_id: input.invoker_public_key_id,
 		signed_by_user_id: input.signed_by_user_id,
 		signed_by_user_sign_key_id: input.signed_by_user_sign_key_id,
-		group_key_sig: input.group_key_sig,
+		group_key_sig: group_key_sig_for_model,
 		encrypted_sign_key: encrypted_sign_key_for_model,
 		verify_key: verify_key_for_model,
 		keypair_sign_alg: input.keypair_sign_alg,
-		public_key_sig: input.public_key_sig,
+		public_key_sig: public_key_sig_for_model,
 	};
 
 	let key_id = group_key_rotation_model::start_key_rotation(&app_id, &group_id, starter_id, key_data).await?;
 
-	let key_vec = if let (Some(sign_key), Some(verify_key)) = (encrypted_sign_key_for_storage, verify_key_for_storage) {
-		vec![
-			KeyStorage {
-				key: input.public_group_key,
-				id: format!("pk_{key_id}"),
-			},
-			KeyStorage {
-				key: input.encrypted_private_group_key,
-				id: format!("sk_{key_id}"),
-			},
-			KeyStorage {
-				key: verify_key,
-				id: format!("vk_{key_id}"),
-			},
-			KeyStorage {
-				key: sign_key,
-				id: format!("sign_k_{key_id}"),
-			},
-		]
-	} else {
-		vec![
-			KeyStorage {
-				key: input.public_group_key,
-				id: format!("pk_{key_id}"),
-			},
-			KeyStorage {
-				key: input.encrypted_private_group_key,
-				id: format!("sk_{key_id}"),
-			},
-		]
-	};
+	let mut keys_to_fetch = vec![
+		KeyStorage {
+			key: input.public_group_key,
+			id: format!("pk_{key_id}"),
+		},
+		KeyStorage {
+			key: input.encrypted_private_group_key,
+			id: format!("sk_{key_id}"),
+		},
+	];
 
-	server_key_store::upload_key(key_vec).await?;
+	if let (Some(sign_key), Some(verify_key)) = (encrypted_sign_key_for_storage, verify_key_for_storage) {
+		keys_to_fetch.push(KeyStorage {
+			key: verify_key,
+			id: format!("vk_{key_id}"),
+		});
+		keys_to_fetch.push(KeyStorage {
+			key: sign_key,
+			id: format!("sign_k_{key_id}"),
+		});
+	}
+
+	if let Some(sig) = public_key_sig_for_storage {
+		keys_to_fetch.push(KeyStorage {
+			key: sig,
+			id: format!("sig_pk_{key_id}"),
+		});
+	}
+
+	if let Some(sig) = group_key_sig_for_storage {
+		keys_to_fetch.push(KeyStorage {
+			key: sig,
+			id: format!("sig_sym_{key_id}"),
+		});
+	}
+
+	server_key_store::upload_key(keys_to_fetch).await?;
 
 	//don't wait for the response
 	tokio::task::spawn(group_key_rotation_worker::start(
