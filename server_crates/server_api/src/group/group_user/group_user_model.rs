@@ -324,8 +324,13 @@ pub(super) async fn accept_invite(group_id: impl Into<GroupId>, user_id: impl In
 	//insert the user into the user group table, the keys are already there from the start invite
 	let time = get_time()?;
 
+	#[cfg(feature = "mysql")]
 	//language=SQL
-	let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
+	let sql_in = "INSERT IGNORE INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
+
+	#[cfg(feature = "sqlite")]
+	let sql_in = "INSERT OR IGNORE INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
+
 	let params_in = set_params!(
 		user_id,
 		group_id,
@@ -472,8 +477,13 @@ pub(crate) async fn accept_join_req_light(group_id: impl Into<GroupId>, user_id:
 	let sql_del = "DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ?";
 	let params_del = set_params!(group_id.clone(), user_id.clone());
 
+	#[cfg(feature = "mysql")]
 	//language=SQL
-	let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
+	let sql_in = "INSERT IGNORE INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
+
+	#[cfg(feature = "sqlite")]
+	let sql_in = "INSERT OR IGNORE INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
+
 	let params_in = set_params!(
 		user_id.clone(),
 		group_id.clone(),
@@ -524,8 +534,13 @@ pub(super) async fn accept_join_req(
 		// the client will know if there are more keys than 100 and asks the server for a session
 		let session_id = create_id();
 
+		#[cfg(feature = "mysql")]
 		//language=SQL
-		let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, key_upload_session_id, type) VALUES (?,?,?,?,?,?)";
+		let sql_in = "INSERT IGNORE INTO sentc_group_user (user_id, group_id, time, `rank`, key_upload_session_id, type) VALUES (?,?,?,?,?,?)";
+
+		#[cfg(feature = "sqlite")]
+		let sql_in = "INSERT OR IGNORE INTO sentc_group_user (user_id, group_id, time, `rank`, key_upload_session_id, type) VALUES (?,?,?,?,?,?)";
+
 		let params_in = set_params!(
 			user_id.clone(),
 			group_id.clone(),
@@ -537,8 +552,13 @@ pub(super) async fn accept_join_req(
 
 		(sql_in, params_in, Some(session_id))
 	} else {
+		#[cfg(feature = "mysql")]
 		//language=SQL
-		let sql_in = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
+		let sql_in = "INSERT IGNORE INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
+
+		#[cfg(feature = "sqlite")]
+		let sql_in = "INSERT OR IGNORE INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
+
 		let params_in = set_params!(
 			user_id.clone(),
 			group_id.clone(),
