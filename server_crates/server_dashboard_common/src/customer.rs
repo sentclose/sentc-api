@@ -82,7 +82,6 @@ pub struct CustomerGroupCreateInput
 //__________________________________________________________________________________________________
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "server", derive(rustgram_server_util::DB))]
 pub struct CustomerAppList
 {
 	pub id: AppId,
@@ -91,6 +90,61 @@ pub struct CustomerAppList
 	pub group_name: Option<String>,
 	pub disabled: Option<i32>,
 	pub disabled_ts: Option<u128>,
+}
+
+#[cfg(feature = "server")]
+#[cfg(feature = "mysql")]
+impl rustgram_server_util::db::mysql_async_export::prelude::FromRow for CustomerAppList
+{
+	fn from_row_opt(
+		mut row: rustgram_server_util::db::mysql_async_export::Row,
+	) -> Result<Self, rustgram_server_util::db::mysql_async_export::FromRowError>
+	where
+		Self: Sized,
+	{
+		Ok(Self {
+			id: rustgram_server_util::take_or_err!(row, 0, String),
+			identifier: rustgram_server_util::take_or_err!(row, 1, String),
+			time: rustgram_server_util::take_or_err!(row, 2, u128),
+			group_name: rustgram_server_util::take_or_err_opt!(row, 3, String),
+			disabled: rustgram_server_util::take_or_err_opt!(row, 4, i32),
+			disabled_ts: rustgram_server_util::take_or_err_opt!(row, 5, u128),
+		})
+	}
+}
+
+#[cfg(feature = "server")]
+#[cfg(feature = "sqlite")]
+impl rustgram_server_util::db::FromSqliteRow for CustomerAppList
+{
+	fn from_row_opt(row: &rustgram_server_util::db::rusqlite_export::Row) -> Result<Self, rustgram_server_util::db::FormSqliteRowError>
+	where
+		Self: Sized,
+	{
+		let disabled_ts: Option<String> = rustgram_server_util::take_or_err!(row, 5);
+
+		let disabled_ts = if let Some(d) = disabled_ts {
+			match d.parse() {
+				Ok(v) => Some(v),
+				Err(e) => {
+					return Err(rustgram_server_util::db::FormSqliteRowError {
+						msg: format!("err in db fetch: {:?}", e),
+					})
+				},
+			}
+		} else {
+			None
+		};
+
+		Ok(Self {
+			id: rustgram_server_util::take_or_err!(row, 0),
+			identifier: rustgram_server_util::take_or_err!(row, 1),
+			time: rustgram_server_util::take_or_err_u128!(row, 2),
+			group_name: rustgram_server_util::take_or_err!(row, 3),
+			disabled: rustgram_server_util::take_or_err!(row, 4),
+			disabled_ts,
+		})
+	}
 }
 
 //__________________________________________________________________________________________________
