@@ -97,7 +97,7 @@ async fn prepare_invite(group_id: impl Into<GroupId>, invited_user: impl Into<Us
 		));
 	}
 
-	//check if there was already an invite to this user -> don't use insert ignore here because we would insert the keys again!
+	//check if there was already an invitation to this user -> don't use insert ignore here because we would insert the keys again!
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ? AND type = ?";
 	let invite_exists: Option<I32Entity> = query_first(sql, set_params!(group_id, invited_user, GROUP_INVITE_TYPE_INVITE_REQ)).await?;
@@ -130,8 +130,13 @@ pub(super) async fn invite_request_light(
 
 	let time = get_time()?;
 
+	#[cfg(feature = "mysql")]
 	//language=SQL
-	let sql = "INSERT INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, user_type, new_user_rank) VALUES (?,?,?,?,?,?)";
+	let sql = "INSERT IGNORE INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, user_type, new_user_rank) VALUES (?,?,?,?,?,?)";
+
+	#[cfg(feature = "sqlite")]
+	let sql =
+		"INSERT OR IGNORE INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, user_type, new_user_rank) VALUES (?,?,?,?,?,?)";
 
 	exec(
 		sql,
@@ -173,8 +178,14 @@ pub(super) async fn invite_request(
 		// the client will know if there are more keys than 100 and asks the server for a session
 		let session_id = create_id();
 
+		#[cfg(feature = "mysql")]
 		//language=SQL
-		let sql_in = "INSERT INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, key_upload_session_id, user_type, new_user_rank) VALUES (?,?,?,?,?,?,?)";
+		let sql_in = "INSERT IGNORE INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, key_upload_session_id, user_type, new_user_rank) VALUES (?,?,?,?,?,?,?)";
+
+		#[cfg(feature = "sqlite")]
+		let sql_in =
+			"INSERT OR IGNORE INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, key_upload_session_id, user_type, new_user_rank) VALUES (?,?,?,?,?,?,?)";
+
 		let params_in = set_params!(
 			invited_user.clone(),
 			group_id.clone(),
@@ -187,9 +198,15 @@ pub(super) async fn invite_request(
 
 		(sql_in, params_in, Some(session_id))
 	} else {
+		#[cfg(feature = "mysql")]
 		//language=SQL
 		let sql_in =
-			"INSERT INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, user_type, new_user_rank) VALUES (?,?,?,?,?,?)";
+			"INSERT IGNORE INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, user_type, new_user_rank) VALUES (?,?,?,?,?,?)";
+
+		#[cfg(feature = "sqlite")]
+		let sql_in =
+			"INSERT OR IGNORE INTO sentc_group_user_invites_and_join_req (user_id, group_id, type, time, user_type, new_user_rank) VALUES (?,?,?,?,?,?)";
+
 		let params_in = set_params!(
 			invited_user.clone(),
 			group_id.clone(),
@@ -230,7 +247,7 @@ WHERE
 		.to_string();
 
 	let (sql1, params) = if last_fetched_time > 0 {
-		//there is a last fetched time time -> set the last fetched time to the params list
+		//there is a last fetched time -> set the last fetched time to the params list
 		//order by time first -> then group id if multiple group ids got the same time
 		let sql = sql + " AND i.time <= ? AND (i.time < ? OR (i.time = ? AND group_id > ?)) ORDER BY i.time DESC, group_id LIMIT 50";
 		(
@@ -263,7 +280,7 @@ pub(super) async fn reject_invite(group_id: impl Into<GroupId>, user_id: impl In
 	let group_id = group_id.into();
 	let user_id = user_id.into();
 
-	//check if there is an invite (this is important, because we delete the user keys too)
+	//check if there is an invitation (this is important, because we delete the user keys too)
 	check_for_invite(&user_id, &group_id).await?;
 
 	//language=SQL
@@ -418,7 +435,7 @@ async fn prepare_accept_join_req(group_id: impl Into<GroupId>, user_id: impl Int
 
 	check_group_rank(admin_rank, 2)?;
 
-	//this check in important (see invite user req -> check if there is an invite). we would insert the keys even if the user is already member
+	//this check in important (see invite user req -> check if there is an invitation). we would insert the keys even if the user is already member
 	let check = check_user_in_group(&group_id, &user_id).await?;
 
 	if check {
@@ -613,7 +630,7 @@ WHERE
 		.to_string();
 
 	let (sql1, params) = if last_fetched_time > 0 {
-		//there is a last fetched time time -> set the last fetched time to the params list
+		//there is a last fetched time -> set the last fetched time to the params list
 		//order by time first -> then group id if multiple group ids got the same time
 		let sql = sql + " AND i.time <= ? AND (i.time < ? OR (i.time = ? AND group_id > ?)) ORDER BY i.time DESC, group_id LIMIT 50";
 		(
