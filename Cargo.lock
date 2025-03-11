@@ -4053,8 +4053,6 @@ dependencies = [
 name = "worker_cron"
 version = "0.1.0"
 dependencies = [
- "dotenv",
- "rustgram-server-util",
  "server_api_common",
  "server_api_customer",
  "server_api_file",
