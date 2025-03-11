@@ -27,14 +27,13 @@ members = [
 # server impl
 hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
-tokio-util = "0.7.2"
 
 rustgram = "0.2.1"
 
 # dotenv vars
 dotenv = "0.15.0"
 
-rustgram-server-util = { git = "https://gitlab.com/grammm/rustgram/rustgram-server-util.git", rev = "bf9eda2e5ed99bee50f122ce5c2050ec4aa7c1c4", default-features = false, features = ["derive_macro", "static_var"] }
+rustgram-server-util = { git = "https://gitlab.com/grammm/rustgram/rustgram-server-util.git", rev = "30f600a3b92d037c43bca8ebda2b63be0954adb6", default-features = false, features = ["derive_macro", "static_var"] }
 
 #_______________________________________________________________________________________________________________________
 
