@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:experimental
-FROM rust:1.75 as builder
+FROM rust:1.86 as builder
 
 RUN apt-get update -y && \
   apt-get install -y pkg-config libssl-dev llvm-dev libclang-dev clang cmake

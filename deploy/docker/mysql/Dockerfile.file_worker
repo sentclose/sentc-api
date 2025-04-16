@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:experimental
-FROM rust:1.75 as builder
+FROM rust:1.86 as builder
 
 WORKDIR /app
 COPY . .
