@@ -39,6 +39,7 @@ use crate::test_fn::{
 	delete_app,
 	delete_user,
 	done_key_rotation,
+	get_base_url,
 	get_group,
 	get_server_error_from_normal_res,
 	get_url,
@@ -1220,7 +1221,8 @@ async fn test_28_get_not_join_req_after_reject()
 #[tokio::test]
 async fn test_29_join_req_when_user_is_in_parent_group()
 {
-	//it should not make a join req from the creator of the parent group because he is in the parent as member
+	//it should not make a join req from the creator of the parent group because they are in the parent as member
+	let parent = GROUP_TEST_STATE.get().unwrap().read().await;
 	let group = CHILD_GROUP_TEST_STATE.get().unwrap().read().await;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
@@ -1237,52 +1239,50 @@ async fn test_29_join_req_when_user_is_in_parent_group()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	let invite = TestGroup::prepare_group_keys_for_new_member(
+	//test auto invite
+	let user_group_data_2 = add_user_by_invite(
+		secret_token,
+		&creator.user_data.jwt,
+		&group.group_id,
+		user_keys,
+		&creator.user_id,
+		&creator.user_data.jwt,
 		&creator.user_data.user_keys[0].exported_public_key,
-		&group_keys_ref,
-		false,
-		Some(2),
+		&creator.user_data.user_keys[0].private_key,
 	)
+	.await;
+
+	//access from the group directly
+	assert_eq!(user_group_data_2.0.access_by_parent_group, None);
+
+	//remove user from the group
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/leave");
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header(AUTHORIZATION, auth_header(&creator.user_data.jwt))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+	handle_general_server_response(body.as_str()).unwrap();
+
+	//test if still got access from the parent group
+	let data = sentc_crypto::util_req_full::group::get_group(
+		get_base_url(),
+		secret_token,
+		&creator.user_data.jwt,
+		group.group_id.as_str(),
+		None,
+	)
+	.await
 	.unwrap();
 
-	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/invite/" + creator.user_id.as_str());
-
-	let client = reqwest::Client::new();
-	let res = client
-		.put(url)
-		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
-		.header("x-sentc-app-token", secret_token)
-		.body(invite)
-		.send()
-		.await
-		.unwrap();
-
-	let body = res.text().await.unwrap();
-
-	let out = ServerOutput::<GroupAcceptJoinReqServerOutput>::from_string(body.as_str()).unwrap();
-
-	assert!(out.status);
-
-	//fetch the group invites
-	let url = get_url("api/v1/group/".to_owned() + "invite/0/none");
-
-	let client = reqwest::Client::new();
-	let res = client
-		.get(url)
-		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
-		.header("x-sentc-app-token", secret_token)
-		.send()
-		.await
-		.unwrap();
-
-	let body = res.text().await.unwrap();
-	let out = ServerOutput::<Vec<GroupInviteReqList>>::from_string(body.as_str()).unwrap();
-
-	let out = out.result.unwrap();
-
-	assert_eq!(out.len(), 1);
-	//should be the child group
-	assert_eq!(out[0].group_id.to_string(), group.group_id.to_string());
+	assert_eq!(data.access_by_parent_group, Some(parent.group_id.clone()))
 }
 
 #[tokio::test]
