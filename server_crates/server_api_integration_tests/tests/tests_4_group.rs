@@ -1218,7 +1218,7 @@ async fn test_28_get_not_join_req_after_reject()
 }
 
 #[tokio::test]
-async fn test_29_no_join_req_when_user_is_in_parent_group()
+async fn test_29_join_req_when_user_is_in_parent_group()
 {
 	//it should not make a join req from the creator of the parent group because he is in the parent as member
 	let group = CHILD_GROUP_TEST_STATE.get().unwrap().read().await;
@@ -1241,7 +1241,7 @@ async fn test_29_no_join_req_when_user_is_in_parent_group()
 		&creator.user_data.user_keys[0].exported_public_key,
 		&group_keys_ref,
 		false,
-		None,
+		Some(2),
 	)
 	.unwrap();
 
@@ -1261,7 +1261,28 @@ async fn test_29_no_join_req_when_user_is_in_parent_group()
 
 	let out = ServerOutput::<GroupAcceptJoinReqServerOutput>::from_string(body.as_str()).unwrap();
 
-	assert!(!out.status);
+	assert!(out.status);
+
+	//fetch the group invites
+	let url = get_url("api/v1/group/".to_owned() + "invite/0/none");
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header(AUTHORIZATION, auth_header(creator.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+	let out = ServerOutput::<Vec<GroupInviteReqList>>::from_string(body.as_str()).unwrap();
+
+	let out = out.result.unwrap();
+
+	assert_eq!(out.len(), 1);
+	//should be the child group
+	assert_eq!(out[0].group_id.to_string(), group.group_id.to_string());
 }
 
 #[tokio::test]

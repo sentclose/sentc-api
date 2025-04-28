@@ -937,17 +937,9 @@ async fn check_user_in_group(group_id: impl Into<GroupId>, user_id: impl Into<Us
 
 	let exists: Option<I32Entity> = query_first(sql, set_params!(user_id.clone(), group_id.clone())).await?;
 
-	if exists.is_some() {
-		return Ok(true);
-	}
+	//Do not check here is user is in parent group to let the user override the parent group rank in the child group but only for this child group.
 
-	//check if the user is in a parent group
-	let exists = server_api_common::group::get_user_from_parent_groups(group_id, user_id).await?;
-
-	match exists {
-		Some(_) => Ok(true),
-		None => Ok(false),
-	}
+	Ok(exists.is_some())
 }
 
 async fn check_for_invite(user_id: impl Into<UserId>, group_id: impl Into<GroupId>) -> AppRes<GroupUserInvitesAndJoinReq>
