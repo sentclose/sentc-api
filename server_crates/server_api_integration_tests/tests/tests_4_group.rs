@@ -214,7 +214,7 @@ async fn test_11_get_group_data()
 	assert!(out.status);
 	assert_eq!(out.err_code, None);
 
-	//check if result is there
+	//check if the result is there
 	let _out = out.result.unwrap();
 
 	let data = sentc_crypto::group::get_group_data(body.as_str()).unwrap();
@@ -304,7 +304,7 @@ async fn test_12_create_child_group()
 	let creator = USERS_TEST_STATE.get().unwrap().read().await;
 	let creator = &creator[0];
 
-	//use here the public group key for child group!
+	//use here the public group key for the child group!
 	let group_public_key = &group
 		.decrypted_group_keys
 		.get(creator.user_id.as_str())
@@ -343,7 +343,7 @@ async fn test_12_create_child_group()
 
 	child_group.group_id = child_id;
 
-	//don't delete the child group to test if parent group delete deletes all. delete the child
+	//don't delete the child group to test if the parent group delete deletes all. delete the child
 }
 
 #[tokio::test]
@@ -1013,7 +1013,7 @@ async fn test_25_sent_join_req_for_user()
 #[tokio::test]
 async fn test_26_send_join_req_aging()
 {
-	//this should not err because of insert ignore
+	//this should not err because of insert ignored
 
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let group = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -1059,7 +1059,7 @@ async fn test_26_send_join_req_aging()
 	let creator = &users[0];
 
 	//should still be this one join req
-	//get the first page
+	//gets the first page
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/join_req/" + "0/none");
 	let client = reqwest::Client::new();
 	let res = client
@@ -1254,6 +1254,7 @@ async fn test_29_join_req_when_user_is_in_parent_group()
 
 	//access from the group directly
 	assert_eq!(user_group_data_2.0.access_by_parent_group, None);
+	assert_eq!(user_group_data_2.0.rank, 4); //rank 4 even got rank 0 in parent
 
 	//remove user from the group
 	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/leave");
@@ -1282,7 +1283,8 @@ async fn test_29_join_req_when_user_is_in_parent_group()
 	.await
 	.unwrap();
 
-	assert_eq!(data.access_by_parent_group, Some(parent.group_id.clone()))
+	assert_eq!(data.access_by_parent_group, Some(parent.group_id.clone()));
+	assert_eq!(data.rank, 0); //back to parent group rank
 }
 
 #[tokio::test]
@@ -1577,7 +1579,7 @@ async fn test_33_get_key_with_pagination()
 		group_keys.push(TestGroup::decrypt_group_keys(&user.user_data.user_keys[0].private_key, group_keys_fetch, None).unwrap());
 	}
 
-	//normally use len() - 1 but this time we won't fake a pagination, so we don't use the last item
+	//normally use len() - 1 but this time we won't fake pagination, so we don't use the last item
 	let latest_fetched_id = group_keys[group_keys.len() - 2].group_key.key_id.as_str();
 	let last_fetched_time = group_keys[group_keys.len() - 2].time;
 
@@ -1882,7 +1884,7 @@ async fn test_39_key_rotation_in_child_group_by_parent()
 		.insert(user_for_child_group.user_id.to_string(), user_group_data_2.1);
 
 	//______________________________________________________________________________________________
-	//do key rotation in child group, triggered by parent group
+	//do key rotation in the child group, triggered by the parent group
 
 	let pre_group_key = &child_group
 		.decrypted_group_keys
@@ -2061,9 +2063,9 @@ async fn test_41_key_rotation_with_multiple_user_keys()
 		.decrypted_group_keys
 		.insert(user.user_id.to_string(), new_group_data.1);
 
-	//now get the key rotation for other user
+	//now get the key rotation for another user
 
-	//check if user needs a rotation
+	//check if the user needs a rotation
 	let _data_user = get_group(
 		secret_token,
 		jwt,
