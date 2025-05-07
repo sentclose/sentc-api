@@ -37,7 +37,7 @@ use crate::test_fn::{
 	customer_delete,
 	decrypt_group_hmac_keys,
 	delete_app,
-	delete_user,
+	delete_user_by_id,
 	done_key_rotation,
 	get_base_url,
 	get_group,
@@ -2218,7 +2218,7 @@ async fn zzz_clean_up()
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 
 	for user in users.iter() {
-		delete_user(secret_token, user.username.clone()).await;
+		delete_user_by_id(secret_token, &user.user_id).await;
 	}
 
 	let customer_jwt = &CUSTOMER_TEST_STATE.get().unwrap().read().await.verify.jwt;

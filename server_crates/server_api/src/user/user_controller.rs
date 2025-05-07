@@ -612,6 +612,37 @@ pub(crate) async fn delete_user(mut req: Request) -> JRes<ServerSuccessOutput>
 	echo_success()
 }
 
+pub(crate) async fn delete_user_by_id(req: Request) -> JRes<ServerSuccessOutput>
+{
+	let app_data = get_app_data_from_req(&req)?;
+	check_endpoint_with_app_options(app_data, Endpoint::ForceServer)?;
+
+	let user_id = get_name_param_from_req(&req, "user_id")?;
+
+	let group_id = user_service::get_user_group_id(&app_data.app_data.app_id, user_id).await?;
+
+	let group_id = if let Some(g) = group_id {
+		g.0
+	} else {
+		return Err(ServerCoreError::new_msg(
+			400,
+			ApiErrorCodes::UserNotFound,
+			"User not found",
+		));
+	};
+
+	let jwt = UserJwtEntity {
+		id: user_id.to_owned(),
+		device_id: Default::default(), //no device id needed to delete a user
+		group_id,
+		fresh: true, //must be a fresh jwt
+	};
+
+	user_service::delete(&jwt, &app_data.app_data.app_id).await?;
+
+	echo_success()
+}
+
 pub(crate) async fn disable_otp_forced(mut req: Request) -> JRes<ServerSuccessOutput>
 {
 	let body = get_raw_body(&mut req).await?;

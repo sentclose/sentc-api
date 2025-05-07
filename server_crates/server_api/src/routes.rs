@@ -72,6 +72,10 @@ pub(crate) fn routes(router: &mut Router)
 		"/api/v1/user/forced/delete",
 		r(crate::user::delete_user).add(server_api_common::middleware::app_token::app_token_transform),
 	);
+	router.delete(
+		"/api/v1/user/forced/delete/:user_id",
+		r(crate::user::delete_user_by_id).add(server_api_common::middleware::app_token::app_token_transform),
+	);
 	router.put(
 		"/api/v1/user/forced/reset_user",
 		r(crate::user::reset_user).add(server_api_common::middleware::app_token::app_token_transform),
