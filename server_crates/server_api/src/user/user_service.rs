@@ -529,7 +529,7 @@ pub async fn delete(user: &UserJwtEntity, app_id: impl Into<AppId>) -> AppRes<()
 
 	user_model::delete(user_id, &app_id).await?;
 
-	//delete the user in app check cache from the jwt mw
+	//delete the user in-app check cache from the jwt mw
 	let cache_key = get_user_in_app_key(&app_id, user_id);
 	cache::delete(&cache_key).await?;
 
