@@ -445,6 +445,24 @@ pub async fn delete_user(app_secret_token: &str, user_identifier: String)
 	handle_general_server_response(body.as_str()).unwrap();
 }
 
+pub async fn delete_user_by_id(app_secret_token: &str, user_id: &str)
+{
+	let url = get_url(format!("api/v1/user/forced/delete/{user_id}"));
+	let client = reqwest::Client::new();
+	let res = client
+		.delete(url)
+		.header("x-sentc-app-token", app_secret_token)
+		.send()
+		.await
+		.unwrap();
+
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = res.text().await.unwrap();
+
+	handle_general_server_response(body.as_str()).unwrap();
+}
+
 pub async fn login_user_light(public_token: &str, username: &str, pw: &str) -> sentc_crypto_light::UserDataInt
 {
 	let out = sentc_crypto_light::util_req_full::user::login(get_base_url(), public_token, username, pw)
