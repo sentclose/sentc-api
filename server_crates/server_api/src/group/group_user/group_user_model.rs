@@ -11,6 +11,7 @@ use crate::group::group_model::check_group_rank;
 use crate::group::group_user_service::{InsertNewUserType, NewUserType};
 use crate::sentc_group_entities::GroupUserInvitesAndJoinReq;
 use crate::util::api_res::ApiErrorCodes;
+use crate::util::delete_with_retry;
 
 pub(super) async fn check_user_in_group_direct(group_id: impl Into<GroupId>, user_id: impl Into<UserId>) -> AppRes<Option<i32>>
 {
@@ -97,7 +98,7 @@ async fn prepare_invite(group_id: impl Into<GroupId>, invited_user: impl Into<Us
 		));
 	}
 
-	//check if there was already an invitation to this user -> don't use insert ignore here because we would insert the keys again!
+	//check if there was already an invitation to this user -> don't use mysql insert ignore here because we would insert the keys again!
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ? AND type = ?";
 	let invite_exists: Option<I32Entity> = query_first(sql, set_params!(group_id, invited_user, GROUP_INVITE_TYPE_INVITE_REQ)).await?;
@@ -233,7 +234,7 @@ pub async fn get_invite_req_to_user(
 	last_id: impl Into<GroupId>,
 ) -> AppRes<Vec<GroupInviteReq>>
 {
-	//called from the user not the group
+	//called from the user, not the group
 
 	//language=SQL
 	let sql = "
@@ -287,7 +288,7 @@ pub(super) async fn reject_invite(group_id: impl Into<GroupId>, user_id: impl In
 	let sql = "DELETE FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ?";
 	let params_in = set_params!(group_id.clone(), user_id.clone());
 
-	//delete the keys from the users table -> no trigger in the db
+	//delete the keys from the user's table -> no trigger in the db
 
 	//language=SQL
 	let sql_keys = "DELETE FROM sentc_group_user_keys WHERE group_id = ? AND user_id = ?";
@@ -440,7 +441,7 @@ async fn prepare_accept_join_req(group_id: impl Into<GroupId>, user_id: impl Int
 
 	check_group_rank(admin_rank, 2)?;
 
-	//this check in important (see invite user req -> check if there is an invitation). we would insert the keys even if the user is already member
+	//this check in important (see invite user req -> check if there is an invitation). we would insert the keys even if the user is already a member
 	let check = check_user_in_group(&group_id, &user_id).await?;
 
 	if check {
@@ -621,7 +622,7 @@ WHERE group_id = ? AND type = ?"
 		(sql, set_params!(group_id.into(), GROUP_INVITE_TYPE_JOIN_REQ))
 	};
 
-	//fetch the user with public key in a separate req, when the user decided to accept a join req
+	//fetch the user with the public key in a separate req when the user decided to accept a join req
 	let join_req: Vec<GroupJoinReq> = query_string(sql, params).await?;
 
 	Ok(join_req)
@@ -779,9 +780,12 @@ pub(super) async fn kick_user_from_group(group_id: impl Into<GroupId>, user_id: 
 	//language=SQL
 	let sql = "DELETE FROM sentc_group_user WHERE group_id = ? AND user_id = ?";
 
-	exec(sql, set_params!(group_id, user_id)).await?;
-
-	Ok(())
+	delete_with_retry(
+		|| async { exec(sql, set_params!(group_id.clone(), user_id.clone())).await },
+		3,
+		100,
+	)
+	.await
 }
 
 //__________________________________________________________________________________________________
@@ -842,7 +846,7 @@ pub(super) async fn update_rank(group_id: impl Into<GroupId>, admin_rank: i32, c
 Where there are too many keys used in this group.
 
 Use session to upload the keys.
-this session is automatically created when doing invite req or accepting join req
+This session is automatically created when doing invite req or accepting join req
 */
 pub(super) async fn insert_user_keys_via_session(
 	group_id: impl Into<GroupId>,
@@ -896,7 +900,7 @@ async fn insert_user_keys(
 	let group_id = group_id.into();
 	let new_user_id = new_user_id.into();
 
-	//insert the keys in the right table -> delete the keys from this table when user not accept the invite!
+	//insert the keys in the right table -> delete the keys from this table when user not accepts the invite!
 	bulk_insert(
 		true,
 		"sentc_group_user_keys",
@@ -956,7 +960,7 @@ async fn check_for_invite(user_id: impl Into<UserId>, group_id: impl Into<GroupI
 }
 
 /**
-Used for leave group and change the own rank
+Used for leave group function and change the own rank
 */
 async fn check_for_only_one_admin(group_id: impl Into<GroupId>, user_id: impl Into<UserId>) -> AppRes<bool>
 {
@@ -966,7 +970,7 @@ async fn check_for_only_one_admin(group_id: impl Into<GroupId>, user_id: impl In
 
 	let admin_found: Option<I32Entity> = query_first(sql, set_params!(group_id.into(), user_id.into())).await?;
 
-	//if there are more admins -> then the user is not the only admin
+	//if there are more admins, then the user is not the only admin
 	match admin_found {
 		Some(_) => Ok(false),
 		None => Ok(true),
