@@ -580,7 +580,7 @@ CREATE INDEX app_hashed_secret_token_index
 ----
 -- structure for trigger  group_user_delete_key_rotation_keys on table sentc_group_user
 ----
-CREATE TRIGGER ' group_user_delete_key_rotation_keys' BEFORE DELETE ON "sentc_group_user" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_key_rotation WHERE user_id = OLD.user_id AND group_id = OLD.group_id; END;
+CREATE TRIGGER ' group_user_delete_key_rotation_keys' AFTER DELETE ON "sentc_group_user" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_key_rotation WHERE user_id = OLD.user_id AND group_id = OLD.group_id; END;
 
 ----
 -- structure for trigger group_user_delete_user_keys on table sentc_group_user

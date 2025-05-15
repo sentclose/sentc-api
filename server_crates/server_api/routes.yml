@@ -43,6 +43,7 @@ routes:
                   p: "/group/forced"
                   gr:
                     - delete: { p: "/:group_id", s: crate::group::delete_forced }
+                    - get: { p: "/:group_id/user/:user_id", s: crate::group::get_single_group_member }
                     - group:
                         p: "/:user_id"
                         mw:

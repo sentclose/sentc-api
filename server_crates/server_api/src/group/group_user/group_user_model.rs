@@ -1,6 +1,6 @@
 use rustgram_server_util::db::id_handling::create_id;
 use rustgram_server_util::db::{bulk_insert, exec, exec_transaction, query_first, query_string, I32Entity, I64Entity, StringEntity, TransactionData};
-use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::error::{server_err, ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::group::GroupKeysForNewMember;
@@ -68,6 +68,24 @@ WHERE
 	let list: Vec<GroupUserListItem> = query_string(sql, params).await?;
 
 	Ok(list)
+}
+
+pub async fn get_single_group_member(app_id: impl Into<AppId>, group_id: impl Into<GroupId>, user_id: impl Into<UserId>)
+	-> AppRes<GroupUserListItem>
+{
+	//language=SQL
+	let sql = r"
+SELECT user_id, `rank`, u.time, u.type
+FROM sentc_group_user u
+JOIN sentc_group g ON g.id = u.group_id
+WHERE 
+    user_id = ? AND 
+    group_id = ? AND 
+    app_id = ?";
+
+	query_first(sql, set_params!(user_id.into(), group_id.into(), app_id.into()))
+		.await?
+		.ok_or_else(|| server_err(400, ApiErrorCodes::GroupUserNotFound, "User is not in the group"))
 }
 
 //__________________________________________________________________________________________________

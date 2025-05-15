@@ -6,7 +6,7 @@ use sentc_crypto_common::{GroupId, UserId};
 use server_api_common::group::group_entities::InternalGroupDataComplete;
 use server_api_common::util::get_group_user_cache_key;
 
-pub use self::group_user_model::{check_is_connected_group, get_group_member, get_invite_req_to_user as get_invite_req};
+pub use self::group_user_model::{check_is_connected_group, get_group_member, get_invite_req_to_user as get_invite_req, get_single_group_member};
 use crate::group::group_model;
 use crate::group::group_user::group_user_model;
 use crate::util::api_res::ApiErrorCodes;

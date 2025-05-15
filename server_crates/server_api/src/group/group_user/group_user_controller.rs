@@ -45,6 +45,22 @@ pub async fn get_group_member(req: Request) -> JRes<Vec<GroupUserListItem>>
 	echo(list_fetch)
 }
 
+pub async fn get_single_group_member(req: Request) -> JRes<GroupUserListItem>
+{
+	//force direct request from server
+	check_endpoint_with_req(&req, Endpoint::ForceServer)?;
+
+	let app_data = get_app_data_from_req(&req)?;
+
+	let group_id = get_name_param_from_req(&req, "group_id")?;
+
+	let user_id = get_name_param_from_req(&req, "user_id")?;
+
+	let out = group_user_service::get_single_group_member(&app_data.app_data.app_id, group_id, user_id).await?;
+
+	echo(out)
+}
+
 //__________________________________________________________________________________________________
 
 pub fn invite_auto(req: Request) -> impl Future<Output = JRes<GroupInviteServerOutput>>
@@ -153,8 +169,8 @@ pub(crate) async fn check_invited_group<'a>(
 
 			let to_invite = get_name_param_from_req(req, "invited_group")?;
 
-			//get the int user type and if it is a group check if the group is a non-connected group
-			// do it with the model because we don't get any infos about the group until now
+			//get the int user type, and if it is a group, check if the group is a non-connected group
+			// do it with the model because we don't get any info about the group until now
 			let cg = group_user_service::check_is_connected_group(to_invite).await?;
 
 			if cg == 1 {
@@ -172,8 +188,8 @@ pub(crate) async fn check_invited_group<'a>(
 
 pub fn invite_request(req: Request) -> impl Future<Output = JRes<GroupInviteServerOutput>>
 {
-	//no, the accept invite, but the keys are prepared for the invited user
-	//don't save this values in the group user keys table, but in the invite table
+	//no, the acceptance invite, but the keys are prepared for the invited user
+	//don't save this value in the group user keys table, but in the invite table
 
 	invite(req, NewUserType::Normal)
 }
@@ -381,7 +397,7 @@ pub fn join_req(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
 
 pub fn join_req_as_group(req: Request) -> impl Future<Output = JRes<ServerSuccessOutput>>
 {
-	//doing join req from a group to another group to join it as member
+	//doing join req from a group to another group to join it as a member
 	join_req_pri(req, NewUserType::Group)
 }
 
@@ -396,7 +412,7 @@ async fn join_req_pri(req: Request, user_type: NewUserType) -> JRes<ServerSucces
 			//only high member can send join req
 			group_model::check_group_rank(group_data.user_data.rank, 1)?;
 
-			//check here if this group ia a connected group
+			//check here if this group is a connected group
 			//only normal groups can be a member in connected groups but not connected groups in another group
 			//check in the model if the group to join is a connected group
 			if group_data.group_data.is_connected_group {
@@ -548,7 +564,7 @@ pub async fn accept_join_req(mut req: Request) -> JRes<GroupAcceptJoinReqServerO
 		message: "The join request was accepted. The user is now a member of this group.".to_string(),
 	};
 
-	//delete user group cache. no need to delete the user group cache again for upload session,
+	//delete user group cache. no need to delete the user group cache again for the upload session,
 	// because after this fn the user is already registered
 	let key_user = get_group_user_cache_key(&group_data.group_data.app_id, &group_data.group_data.id, join_user);
 
