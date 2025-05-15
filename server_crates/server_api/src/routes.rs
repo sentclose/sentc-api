@@ -100,6 +100,10 @@ pub(crate) fn routes(router: &mut Router)
 		"/api/v1/group/forced/:group_id",
 		r(crate::group::delete_forced).add(server_api_common::middleware::app_token::app_token_transform),
 	);
+	router.get(
+		"/api/v1/group/forced/:group_id/user/:user_id",
+		r(crate::group::get_single_group_member).add(server_api_common::middleware::app_token::app_token_transform),
+	);
 	router.post(
 		"/api/v1/group/forced/:user_id",
 		r(crate::group::create_force)
