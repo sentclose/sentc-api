@@ -548,7 +548,7 @@ CREATE TABLE `sentc_group_user`
 --
 
 CREATE TRIGGER `group_user_delete_key_rotation_keys`
-	BEFORE DELETE
+	AFTER DELETE
 	ON `sentc_group_user`
 	FOR EACH ROW DELETE
 				 FROM sentc_group_user_key_rotation
