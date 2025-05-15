@@ -5,7 +5,7 @@ use sentc_crypto::sdk_common::group::GroupInviteServerOutput;
 use sentc_crypto::sdk_utils::error::SdkUtilError;
 use sentc_crypto::util::public::{handle_general_server_response, handle_server_response};
 use sentc_crypto::SdkError;
-use sentc_crypto_common::group::{GroupCreateOutput, GroupLightServerData};
+use sentc_crypto_common::group::{GroupCreateOutput, GroupLightServerData, GroupUserListItem};
 use sentc_crypto_common::{GroupId, UserId};
 use sentc_crypto_light::sdk_common::group::GroupNewMemberLightInput;
 use sentc_crypto_light::UserDataInt as UserDataIntLight;
@@ -558,6 +558,36 @@ async fn test_17_force_user_invite()
 }
 
 #[tokio::test]
+async fn test_17_z_force_check_user_in_group()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	//let creator = &users[0];
+	let user = &users[1];
+
+	let url = get_url(format!(
+		"api/v1/group/forced/{}/user/{}",
+		&group.group_id, &user.user_id
+	));
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+	let body = res.text().await.unwrap();
+
+	let out: GroupUserListItem = handle_server_response(&body).unwrap();
+
+	assert_eq!(out.user_id, user.user_id);
+}
+
+#[tokio::test]
 async fn test_18_force_kick_user()
 {
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
@@ -594,6 +624,36 @@ async fn test_18_force_kick_user()
 	.await;
 
 	assert!(data.is_err());
+}
+
+#[tokio::test]
+async fn test_18_z_force_check_user_in_group_after_kick()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+
+	let group = GROUP_TEST_STATE.get().unwrap().read().await;
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	//let creator = &users[0];
+	let user = &users[1];
+
+	let url = get_url(format!(
+		"api/v1/group/forced/{}/user/{}",
+		&group.group_id, &user.user_id
+	));
+
+	let client = reqwest::Client::new();
+	let res = client
+		.get(url)
+		.header("x-sentc-app-token", secret_token)
+		.send()
+		.await
+		.unwrap();
+	let body = res.text().await.unwrap();
+
+	let out: Result<GroupUserListItem, SdkError> = handle_server_response(&body);
+
+	assert!(out.is_err());
 }
 
 #[tokio::test]
