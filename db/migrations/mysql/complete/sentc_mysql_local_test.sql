@@ -523,16 +523,6 @@ CREATE TRIGGER `group_delete_sortable_keys`
 				 WHERE group_id = OLD.id
 $$
 DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `group_delete_user`
-	AFTER DELETE
-	ON `sentc_group`
-	FOR EACH ROW DELETE
-				 FROM sentc_group_user
-				 WHERE group_id = OLD.id
-$$
-DELIMITER ;
-
 -- --------------------------------------------------------
 
 --
@@ -620,30 +610,6 @@ CREATE TABLE `sentc_group_user`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci;
-
---
--- Trigger `sentc_group_user`
---
-DELIMITER $$
-CREATE TRIGGER `group_user_delete_key_rotation_keys`
-	AFTER DELETE
-	ON `sentc_group_user`
-	FOR EACH ROW DELETE
-				 FROM sentc_group_user_key_rotation
-				 WHERE user_id = OLD.user_id
-				   AND group_id = OLD.group_id
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `group_user_delete_user_keys`
-	AFTER DELETE
-	ON `sentc_group_user`
-	FOR EACH ROW DELETE
-				 FROM sentc_group_user_keys
-				 WHERE user_id = OLD.user_id
-				   AND group_id = OLD.group_id
-$$
-DELIMITER ;
 
 -- --------------------------------------------------------
 

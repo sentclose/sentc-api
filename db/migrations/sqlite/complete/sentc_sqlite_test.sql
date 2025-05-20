@@ -580,16 +580,6 @@ CREATE INDEX 'group_id' ON "sentc_group_sortable_keys" ("group_id" ASC, "app_id"
 CREATE INDEX 'search_token' ON "sentc_user_otp_recovery" ("user_id" ASC, "token_hash" ASC);
 
 ----
--- structure for trigger  group_user_delete_key_rotation_keys on table sentc_group_user
-----
-CREATE TRIGGER ' group_user_delete_key_rotation_keys' AFTER DELETE ON "sentc_group_user" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_key_rotation WHERE user_id = OLD.user_id AND group_id = OLD.group_id; END;
-
-----
--- structure for trigger group_user_delete_user_keys on table sentc_group_user
-----
-CREATE TRIGGER 'group_user_delete_user_keys' AFTER DELETE ON "sentc_group_user" FOR EACH ROW BEGIN DELETE FROM sentc_group_user_keys WHERE user_id = OLD.user_id AND group_id = OLD.group_id; END;
-
-----
 -- structure for trigger user_delete_user_device on table sentc_user
 ----
 CREATE TRIGGER 'user_delete_user_device' AFTER DELETE ON "sentc_user" FOR EACH ROW BEGIN DELETE FROM sentc_user_device WHERE user_id = OLD.id; END;
@@ -608,11 +598,6 @@ CREATE TRIGGER 'group_delete_invites' AFTER DELETE ON "sentc_group" FOR EACH ROW
 -- structure for trigger group_delete_keys on table sentc_group
 ----
 CREATE TRIGGER 'group_delete_keys' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_keys WHERE group_id = OLD.id; END;
-
-----
--- structure for trigger group_delete_user on table sentc_group
-----
-CREATE TRIGGER 'group_delete_user' AFTER DELETE ON "sentc_group" FOR EACH ROW BEGIN DELETE FROM sentc_group_user WHERE group_id = OLD.id; END;
 
 ----
 -- structure for trigger group_delete_hmac_keys on table sentc_group
