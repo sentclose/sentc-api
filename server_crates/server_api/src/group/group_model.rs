@@ -1,8 +1,8 @@
 use rustgram_server_util::db::id_handling::create_id;
 use rustgram_server_util::db::{
 	exec,
-	exec_string,
 	exec_transaction,
+	exec_transaction_string,
 	get_in,
 	query,
 	query_first,
@@ -10,10 +10,11 @@ use rustgram_server_util::db::{
 	I32Entity,
 	StringEntity,
 	TransactionData,
+	TransactionDataString,
 };
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
-use rustgram_server_util::{get_time, set_params, set_params_vec};
+use rustgram_server_util::{get_time, set_params, set_params_vec_outer};
 use sentc_crypto_common::group::CreateData;
 use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
 use server_api_common::group::{GROUP_TYPE_NORMAL, GROUP_TYPE_USER};
@@ -98,11 +99,11 @@ WHERE group_id = ? AND app_id = ?"
 }
 
 /**
-Get every other group keys with pagination.
+Get every other group key with pagination.
 
 These keys are normally cached in the client, so it should be fetched once for each client.
 
-New keys from key update are fetched by the key update fn
+The key update fn fetches new keys from the key update
 
 For child group: use the parent group id as user id.
 */
@@ -269,7 +270,7 @@ fn prepare_create(
 			// user type is group as member
 			(c, 2, true)
 		},
-		//when parent group is some then user rank must be some too,
+		//when the parent group is some, then user rank must be some too,
 		// because this is set by the controller and not the user.
 		_ => (user_id.into(), 0, false),
 	};
@@ -327,7 +328,7 @@ INSERT INTO sentc_group
 	);
 
 	//insert the creator => rank = 0
-	//handle parent group as the creator.
+	//handles parent group as the creator.
 
 	//language=SQL
 	let sql_group_user = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
@@ -508,7 +509,7 @@ VALUES (?,?,?,?,?,?,?)
 	);
 
 	//insert the creator => rank = 0
-	//handle parent group as the creator.
+	//handles parent group as the creator.
 
 	//language=SQL
 	let sql_group_user = "INSERT INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
@@ -577,7 +578,7 @@ VALUES (?,?,?,?,?,?,?)";
 
 pub async fn delete_user_group(app_id: impl Into<AppId>, group_id: impl Into<GroupId>) -> AppRes<()>
 {
-	//don't delete children because user group won't have children
+	//don't delete children because the user group won't have children
 
 	//language=SQL
 	let sql = r"
@@ -588,9 +589,30 @@ WHERE
     type = ? AND 
     id = ?";
 
-	exec(sql, set_params!(app_id.into(), GROUP_TYPE_USER, group_id.into())).await?;
+	let group_id = group_id.into();
 
-	Ok(())
+	exec_transaction(vec![
+		TransactionData {
+			sql,
+			params: set_params!(app_id.into(), GROUP_TYPE_USER, group_id.clone()),
+		},
+		TransactionData {
+			//language=SQL
+			sql: "DELETE FROM sentc_group_user WHERE group_id = ?",
+			params: set_params!(group_id.clone()),
+		},
+		TransactionData {
+			//language=SQL
+			sql: "DELETE FROM sentc_group_user_key_rotation WHERE group_id = ?",
+			params: set_params!(group_id.clone()),
+		},
+		TransactionData {
+			//language=SQL
+			sql: "DELETE FROM sentc_group_user_keys WHERE group_id = ?",
+			params: set_params!(group_id),
+		},
+	])
+	.await
 }
 
 pub(super) async fn delete(app_id: impl Into<AppId>, group_id: impl Into<GroupId>, user_rank: i32) -> AppRes<Vec<String>>
@@ -603,7 +625,29 @@ pub(super) async fn delete(app_id: impl Into<AppId>, group_id: impl Into<GroupId
 
 	//language=SQL
 	let sql = "DELETE FROM sentc_group WHERE id = ? AND app_id = ? AND type = ?";
-	exec(sql, set_params!(group_id.clone(), app_id.clone(), GROUP_TYPE_NORMAL)).await?;
+
+	exec_transaction(vec![
+		TransactionData {
+			sql,
+			params: set_params!(group_id.clone(), app_id.clone(), GROUP_TYPE_NORMAL),
+		},
+		TransactionData {
+			//language=SQL
+			sql: "DELETE FROM sentc_group_user WHERE group_id = ?",
+			params: set_params!(group_id.clone()),
+		},
+		TransactionData {
+			//language=SQL
+			sql: "DELETE FROM sentc_group_user_key_rotation WHERE group_id = ?",
+			params: set_params!(group_id.clone()),
+		},
+		TransactionData {
+			//language=SQL
+			sql: "DELETE FROM sentc_group_user_keys WHERE group_id = ?",
+			params: set_params!(group_id.clone()),
+		},
+	])
+	.await?;
 
 	//delete the children via recursion, can't delete them directly because sqlite don't support delete from multiple tables
 	//can't delete it via trigger because it is the same table
@@ -619,20 +663,30 @@ pub(super) async fn delete(app_id: impl Into<AppId>, group_id: impl Into<GroupId
 
 		let get_in = get_in(&children);
 
-		//language=SQLx
-		let sql_delete_child = format!("DELETE FROM sentc_group WHERE id IN ({})", get_in);
-
-		//set params with vec
-		exec_string(sql_delete_child, set_params_vec!(children)).await?;
+		exec_transaction_string(vec![
+			TransactionDataString {
+				//language=SQLx
+				sql: format!("DELETE FROM sentc_group WHERE id IN ({get_in})"),
+				params: set_params_vec_outer!(children_out.clone()),
+			},
+			TransactionDataString {
+				//language=SQLx
+				sql: format!("DELETE FROM sentc_group_user WHERE group_id IN ({get_in})"),
+				params: set_params_vec_outer!(children_out.clone()),
+			},
+			TransactionDataString {
+				//language=SQLx
+				sql: format!("DELETE FROM sentc_group_user_keys WHERE group_id IN ({get_in})"),
+				params: set_params_vec_outer!(children_out.clone()),
+			},
+			TransactionDataString {
+				//language=SQLx
+				sql: format!("DELETE FROM sentc_group_user_key_rotation WHERE group_id IN ({get_in})"),
+				params: set_params_vec_outer!(children_out.clone()),
+			},
+		])
+		.await?;
 	}
-
-	//delete the rest of the user group keys, this is the rest from user invite but this won't get deleted when group user gets deleted
-	//important: do this after to delete!
-
-	//language=SQL
-	let sql = "DELETE FROM sentc_group_user_keys WHERE group_id = ?";
-
-	exec(sql, set_params!(group_id)).await?;
 
 	Ok(children_out)
 }
@@ -654,7 +708,7 @@ pub(super) async fn stop_invite(app_id: impl Into<AppId>, group_id: impl Into<Gr
 }
 
 /**
-user here the cache from the mw
+User here the cache from the mw
 
 Then check if the rank fits
 */
