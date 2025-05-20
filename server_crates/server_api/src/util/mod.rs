@@ -1,6 +1,3 @@
-use std::future::Future;
-use std::time::Duration;
-
 use chrono::{Datelike, TimeZone, Utc};
 use rustgram_server_util::res::AppRes;
 
@@ -16,6 +13,9 @@ pub(crate) fn get_begin_of_month() -> AppRes<i64>
 	Ok(beginning_of_month.unwrap().timestamp_millis())
 }
 
+/*
+use std::future::Future;
+use std::time::Duration;
 use rand::Rng;
 use rustgram_server_util::error::ServerCoreError;
 use tokio::time::sleep;
@@ -48,7 +48,7 @@ where
 	}
 }
 
-/*
+
 async fn retry_on_deadlock<F, T, Fut>(mut f: F, max_retries: u32) -> Result<T, ServerCoreError>
 where
 	F: FnMut() -> Fut,

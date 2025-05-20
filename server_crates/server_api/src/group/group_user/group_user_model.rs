@@ -11,7 +11,6 @@ use crate::group::group_model::check_group_rank;
 use crate::group::group_user_service::{InsertNewUserType, NewUserType};
 use crate::sentc_group_entities::GroupUserInvitesAndJoinReq;
 use crate::util::api_res::ApiErrorCodes;
-use crate::util::delete_with_retry;
 
 pub(super) async fn check_user_in_group_direct(group_id: impl Into<GroupId>, user_id: impl Into<UserId>) -> AppRes<Option<i32>>
 {
@@ -743,13 +742,13 @@ pub(super) async fn user_leave_group(group_id: impl Into<GroupId>, user_id: impl
 		}
 	}
 
-	//language=SQL
-	let sql = "DELETE FROM sentc_group_user WHERE group_id = ? AND user_id = ? AND type NOT LIKE ?";
-
-	//only delete normal user or group as member
-	exec(sql, set_params!(group_id, user_id, 1)).await?;
-
-	Ok(())
+	delete_group_user(
+		group_id,
+		user_id,
+		//language=SQL
+		"DELETE FROM sentc_group_user WHERE group_id = ? AND user_id = ? AND type != 1",
+	)
+	.await
 }
 
 pub(super) async fn kick_user_from_group(group_id: impl Into<GroupId>, user_id: impl Into<UserId>, rank: i32) -> AppRes<()>
@@ -795,14 +794,33 @@ pub(super) async fn kick_user_from_group(group_id: impl Into<GroupId>, user_id: 
 		));
 	}
 
-	//language=SQL
-	let sql = "DELETE FROM sentc_group_user WHERE group_id = ? AND user_id = ?";
-
-	delete_with_retry(
-		|| async { exec(sql, set_params!(group_id.clone(), user_id.clone())).await },
-		3,
-		100,
+	delete_group_user(
+		group_id,
+		user_id,
+		//language=SQL
+		"DELETE FROM sentc_group_user WHERE group_id = ? AND user_id = ?",
 	)
+	.await
+}
+
+async fn delete_group_user(group_id: String, user_id: String, delete_user_sql: &'static str) -> AppRes<()>
+{
+	exec_transaction(vec![
+		TransactionData {
+			sql: delete_user_sql,
+			params: set_params!(group_id.clone(), user_id.clone()),
+		},
+		TransactionData {
+			//language=SQL
+			sql: "DELETE FROM sentc_group_user_key_rotation WHERE group_id = ? AND user_id = ?",
+			params: set_params!(group_id.clone(), user_id.clone()),
+		},
+		TransactionData {
+			//language=SQL
+			sql: "DELETE FROM sentc_group_user_keys WHERE group_id = ? AND user_id = ?",
+			params: set_params!(group_id, user_id),
+		},
+	])
 	.await
 }
 
