@@ -417,7 +417,7 @@ WHERE
 	user_id = ? AND app_id = ?"
 			.to_string();
 
-		let (sql, params) = if last_fetched_id == "" {
+		let (sql, params) = if last_fetched_id.is_empty() {
 			let sql = sql + " AND id > ? ORDER BY id LIMIT 50";
 			(sql, set_params!(app_id.into(), user_id.into(), last_fetched_id))
 		} else {
