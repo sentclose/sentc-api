@@ -14,7 +14,7 @@ use rustgram_server_util::db::{
 };
 use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
-use rustgram_server_util::{get_time, set_params, set_params_vec_outer};
+use rustgram_server_util::{get_time, set_params, set_params_vec_outer, DB};
 use sentc_crypto_common::group::CreateData;
 use sentc_crypto_common::{AppId, GroupId, SymKeyId, UserId};
 use server_api_common::group::{GROUP_TYPE_NORMAL, GROUP_TYPE_USER};
@@ -615,13 +615,59 @@ WHERE
 	.await
 }
 
-pub(super) async fn delete(app_id: impl Into<AppId>, group_id: impl Into<GroupId>, user_rank: i32) -> AppRes<Vec<String>>
+#[derive(DB)]
+pub(super) struct GroupForDelete
+{
+	pub key_pair_id: SymKeyId,
+	pub encrypted_private_group_key: String,
+	pub public_group_key: String,
+	pub encrypted_sign_key: Option<String>,
+	pub verify_key: Option<String>,
+	pub public_key_sig: Option<String>,
+	pub group_key_sig: Option<String>,
+}
+
+impl GroupForDelete
+{
+	pub(super) async fn get_group_keys_for_delete(app_id: impl Into<AppId>, group_id: impl Into<GroupId>) -> AppRes<Option<Self>>
+	{
+		//language=SQL
+		let sql = r"
+SELECT id AS key_pair_id, encrypted_private_key, public_key, encrypted_sign_key, verify_key, public_key_sig, group_key_sig 
+FROM sentc_group_keys 
+WHERE group_id = ? AND app_id = ?";
+
+		query_first(sql, set_params!(group_id.into(), app_id.into())).await
+	}
+
+	pub(super) async fn get_group_keys_for_batch_delete(app_id: impl Into<AppId>, mut children: Vec<String>) -> AppRes<Vec<Self>>
+	{
+		if children.is_empty() {
+			return Ok(Vec::new());
+		}
+
+		//for child group delete
+
+		let ins = get_in(&children);
+
+		//language=SQLx
+		let sql = format!(
+			r"
+SELECT id AS key_pair_id, encrypted_private_key, public_key, encrypted_sign_key, verify_key, public_key_sig, group_key_sig 
+FROM sentc_group_keys 
+WHERE group_id IN ({ins}) AND app_id = ?"
+		);
+
+		children.push(app_id.into());
+
+		query_string(sql, set_params_vec_outer!(children)).await
+	}
+}
+
+pub(super) async fn delete(app_id: impl Into<AppId>, group_id: impl Into<GroupId>) -> AppRes<Vec<String>>
 {
 	let group_id = group_id.into();
 	let app_id = app_id.into();
-
-	//check with app id to make sure the user is in the right group
-	check_group_rank(user_rank, 1)?;
 
 	//language=SQL
 	let sql = "DELETE FROM sentc_group WHERE id = ? AND app_id = ? AND type = ?";
@@ -660,35 +706,42 @@ pub(super) async fn delete(app_id: impl Into<AppId>, group_id: impl Into<GroupId
 		for child in &children {
 			children_out.push(child.0.to_string());
 		}
-
-		let get_in = get_in(&children);
-
-		exec_transaction_string(vec![
-			TransactionDataString {
-				//language=SQLx
-				sql: format!("DELETE FROM sentc_group WHERE id IN ({get_in})"),
-				params: set_params_vec_outer!(children_out.clone()),
-			},
-			TransactionDataString {
-				//language=SQLx
-				sql: format!("DELETE FROM sentc_group_user WHERE group_id IN ({get_in})"),
-				params: set_params_vec_outer!(children_out.clone()),
-			},
-			TransactionDataString {
-				//language=SQLx
-				sql: format!("DELETE FROM sentc_group_user_keys WHERE group_id IN ({get_in})"),
-				params: set_params_vec_outer!(children_out.clone()),
-			},
-			TransactionDataString {
-				//language=SQLx
-				sql: format!("DELETE FROM sentc_group_user_key_rotation WHERE group_id IN ({get_in})"),
-				params: set_params_vec_outer!(children_out.clone()),
-			},
-		])
-		.await?;
 	}
 
 	Ok(children_out)
+}
+
+pub(super) async fn delete_child_groups(children: Vec<String>) -> AppRes<()>
+{
+	if children.is_empty() {
+		return Ok(());
+	}
+
+	let get_in = get_in(&children);
+
+	exec_transaction_string(vec![
+		TransactionDataString {
+			//language=SQLx
+			sql: format!("DELETE FROM sentc_group WHERE id IN ({get_in})"),
+			params: set_params_vec_outer!(children.clone()),
+		},
+		TransactionDataString {
+			//language=SQLx
+			sql: format!("DELETE FROM sentc_group_user WHERE group_id IN ({get_in})"),
+			params: set_params_vec_outer!(children.clone()),
+		},
+		TransactionDataString {
+			//language=SQLx
+			sql: format!("DELETE FROM sentc_group_user_keys WHERE group_id IN ({get_in})"),
+			params: set_params_vec_outer!(children.clone()),
+		},
+		TransactionDataString {
+			//language=SQLx
+			sql: format!("DELETE FROM sentc_group_user_key_rotation WHERE group_id IN ({get_in})"),
+			params: set_params_vec_outer!(children),
+		},
+	])
+	.await
 }
 
 pub(super) async fn stop_invite(app_id: impl Into<AppId>, group_id: impl Into<GroupId>, user_rank: i32) -> AppRes<()>

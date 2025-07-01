@@ -8,9 +8,10 @@ use server_api_common::group::group_entities::InternalGroupDataComplete;
 use server_api_common::util::get_group_cache_key;
 use server_key_store::KeyStorage;
 
-pub use self::group_model::{create_light as create_group_light, delete_user_group, get_first_level_children, get_group_hmac, get_group_sortable};
+pub use self::group_model::{create_light as create_group_light, get_first_level_children, get_group_hmac, get_group_sortable};
 use crate::group::group_entities::GroupServerData;
 use crate::group::group_model;
+use crate::group::group_model::{check_group_rank, GroupForDelete};
 use crate::sentc_group_entities::GroupUserKeys;
 use crate::sentc_user_entities::UserPublicKeyDataEntity;
 use crate::sentc_user_service::get_public_key_extern;
@@ -259,15 +260,124 @@ pub async fn create_group(
 	Ok((group_id, key_id))
 }
 
+pub async fn delete_user_group(app_id: impl Into<AppId>, group_id: impl Into<GroupId>) -> AppRes<()>
+{
+	let group_id = group_id.into();
+	let app_id = app_id.into();
+
+	//delete the key store
+	let keys = GroupForDelete::get_group_keys_for_delete(&app_id, &group_id).await?;
+
+	let key_group = get_group_cache_key(&app_id, &group_id);
+	cache::delete(key_group.as_str()).await?;
+
+	group_model::delete_user_group(app_id, group_id).await?;
+
+	let mut keys_to_delete = vec![];
+
+	if let Some(key) = keys {
+		if let Some(vk) = key.verify_key {
+			if vk == "extern" {
+				keys_to_delete.push(format!("vk_{}", key.key_pair_id));
+			}
+		}
+
+		if let Some(sign) = key.encrypted_sign_key {
+			if sign == "extern" {
+				keys_to_delete.push(format!("sign_k_{}", key.key_pair_id));
+			}
+		}
+
+		if let Some(sig) = key.public_key_sig {
+			if sig == "extern" {
+				keys_to_delete.push(format!("sig_pk_{}", key.key_pair_id));
+			}
+		}
+
+		if let Some(sig) = key.group_key_sig {
+			if sig == "extern" {
+				keys_to_delete.push(format!("sig_sym_{}", key.key_pair_id));
+			}
+		}
+
+		if key.encrypted_private_group_key == "extern" {
+			keys_to_delete.push(format!("sk_{}", key.key_pair_id));
+		}
+
+		if key.public_group_key == "extern" {
+			keys_to_delete.push(format!("pk_{}", key.key_pair_id));
+		}
+	}
+
+	if !keys_to_delete.is_empty() {
+		server_key_store::delete_key(&keys_to_delete).await?;
+	}
+
+	Ok(())
+}
+
 pub async fn delete_group(app_id: &str, group_id: &str, user_rank: i32) -> AppRes<()>
 {
-	let children = group_model::delete(app_id, group_id, user_rank).await?;
+	check_group_rank(user_rank, 1)?;
+
+	//delete the key store
+	let keys = GroupForDelete::get_group_keys_for_delete(app_id, group_id).await?;
+
+	let children = group_model::delete(app_id, group_id).await?;
 
 	//children incl. the deleted group
-	server_api_common::file::delete_file_for_group(app_id, group_id, children).await?;
+	server_api_common::file::delete_file_for_group(app_id, group_id, children.clone()).await?;
 
 	let key_group = get_group_cache_key(app_id, group_id);
 	cache::delete(key_group.as_str()).await?;
+
+	let mut keys_of_child_group = GroupForDelete::get_group_keys_for_batch_delete(app_id, children.clone()).await?;
+
+	group_model::delete_child_groups(children).await?;
+
+	if let Some(k) = keys {
+		keys_of_child_group.push(k);
+	}
+
+	let mut keys_to_delete = vec![];
+
+	for key in keys_of_child_group {
+		if let Some(vk) = key.verify_key {
+			if vk == "extern" {
+				keys_to_delete.push(format!("vk_{}", key.key_pair_id));
+			}
+		}
+
+		if let Some(sign) = key.encrypted_sign_key {
+			if sign == "extern" {
+				keys_to_delete.push(format!("sign_k_{}", key.key_pair_id));
+			}
+		}
+
+		if let Some(sig) = key.public_key_sig {
+			if sig == "extern" {
+				keys_to_delete.push(format!("sig_pk_{}", key.key_pair_id));
+			}
+		}
+
+		if let Some(sig) = key.group_key_sig {
+			if sig == "extern" {
+				keys_to_delete.push(format!("sig_sym_{}", key.key_pair_id));
+			}
+		}
+
+		if key.encrypted_private_group_key == "extern" {
+			keys_to_delete.push(format!("sk_{}", key.key_pair_id));
+		}
+
+		if key.public_group_key == "extern" {
+			keys_to_delete.push(format!("pk_{}", key.key_pair_id));
+		}
+	}
+
+	if !keys_to_delete.is_empty() {
+		server_key_store::delete_key(&keys_to_delete).await?;
+	}
 
 	Ok(())
 }
@@ -339,7 +449,7 @@ fn extract_parent_and_access_by(group_data: &InternalGroupDataComplete) -> (Opti
 		&group_data.user_data.get_values_from_group_as_member,
 		&group_data.user_data.get_values_from_parent,
 	) {
-		//the user is in a group which is member in a parent group
+		//the user is in a group that is a member in a parent group
 		(Some(v_as_member), Some(v_as_parent)) => {
 			GroupUserAccessBy::GroupAsUserAsParent {
 				group_as_user: v_as_member.to_string(),
