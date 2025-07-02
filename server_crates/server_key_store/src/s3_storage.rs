@@ -15,11 +15,8 @@ pub(super) async fn init_s3_storage() -> Box<dyn KeyStore>
 {
 	let bucket_name = env::var("AWS_S3_BUCKET").unwrap();
 
-	let local = env::var("AWS_S3_LOCAL").unwrap_or("0".to_string());
-	if local == "1" {
-		let store = S3KeyStore::new_localstack(bucket_name, "http://localhost:4566")
-			.await
-			.unwrap();
+	if let Ok(url) = env::var("AWS_S3_LOCAL_URL") {
+		let store = S3KeyStore::new_localstack(bucket_name, &url).await.unwrap();
 
 		return Box::new(store);
 	}
