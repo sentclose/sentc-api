@@ -15,9 +15,9 @@ use rustgram_server_util::db::{
 	TransactionData,
 	TupleEntity,
 };
-use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::error::{server_err, ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
-use rustgram_server_util::{get_time, set_params};
+use rustgram_server_util::{get_time, set_params, DB};
 use sentc_crypto_common::user::{ChangePasswordData, KeyDerivedData, MasterKey, ResetPasswordData};
 use sentc_crypto_common::{AppId, DeviceId, EncryptionKeyPairId, GroupId, SignKeyPairId, UserId};
 
@@ -369,6 +369,65 @@ pub(super) async fn delete(user_id: impl Into<UserId>, app_id: impl Into<AppId>)
 	exec(sql, set_params!(user_id.into(), app_id.into())).await?;
 
 	Ok(())
+}
+
+#[derive(DB)]
+pub(super) struct DeviceForDelete
+{
+	pub device_id: DeviceId,
+	pub encrypted_private_key: String,
+	pub encrypted_sign_key: String,
+	pub verify_key: String,
+	pub public_key: String,
+}
+
+impl DeviceForDelete
+{
+	pub(super) async fn get_device_for_external_key_storage(
+		user_id: impl Into<UserId>,
+		app_id: impl Into<AppId>,
+		device_id: impl Into<DeviceId>,
+	) -> AppRes<Self>
+	{
+		//language=SQL
+		let sql = r"
+SELECT id,encrypted_private_key, encrypted_sign_key, verify_key, public_key
+FROM sentc_user_device 
+WHERE 
+	id = ? AND user_id = ? AND app_id = ?";
+
+		query_first(sql, set_params!(device_id.into(), user_id.into(), app_id.into()))
+			.await?
+			.ok_or_else(|| server_err(400, ApiErrorCodes::UserNotFound, "No keys to update"))
+	}
+
+	pub(super) async fn get_devices_for_external_storage(
+		user_id: impl Into<UserId>,
+		app_id: impl Into<AppId>,
+		last_fetched_id: impl Into<DeviceId>,
+	) -> AppRes<Vec<Self>>
+	{
+		let last_fetched_id = last_fetched_id.into();
+
+		//language=SQL
+		let sql = r"
+SELECT id,encrypted_private_key, encrypted_sign_key, verify_key, public_key
+FROM sentc_user_device 
+WHERE 
+	user_id = ? AND app_id = ?"
+			.to_string();
+
+		let (sql, params) = if last_fetched_id.is_empty() {
+			let sql = sql + " AND id > ? ORDER BY id LIMIT 50";
+			(sql, set_params!(app_id.into(), user_id.into(), last_fetched_id))
+		} else {
+			let sql = sql + " ORDER BY id LIMIT 50";
+
+			(sql, set_params!(app_id.into(), user_id.into(),))
+		};
+
+		query_string(sql, params).await
+	}
 }
 
 pub(super) async fn delete_device(user_id: impl Into<UserId>, app_id: impl Into<AppId>, device_id: impl Into<DeviceId>) -> AppRes<()>

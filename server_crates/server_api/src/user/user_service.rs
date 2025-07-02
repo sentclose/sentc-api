@@ -37,6 +37,7 @@ use crate::group::{group_service, group_user_service};
 use crate::sentc_user_entities::{LoginForcedOutput, UserPublicKeyDataEntity, UserVerifyKeyDataEntity, VerifyLoginOutput};
 use crate::user::auth::auth_service::{auth_user, verify_login_forced_internally, verify_login_internally};
 use crate::user::user_entities::UserInitEntity;
+use crate::user::user_model::DeviceForDelete;
 use crate::user::{otp, user_model};
 use crate::util::api_res::ApiErrorCodes;
 
@@ -527,6 +528,8 @@ pub async fn delete(user: &UserJwtEntity, app_id: impl Into<AppId>) -> AppRes<()
 	let user_id = &user.id;
 	let group_id = &user.group_id;
 
+	delete_user_external_devices(user_id, &app_id).await?;
+
 	user_model::delete(user_id, &app_id).await?;
 
 	//delete the user in-app check cache from the jwt mw
@@ -535,6 +538,55 @@ pub async fn delete(user: &UserJwtEntity, app_id: impl Into<AppId>) -> AppRes<()
 
 	//delete the user group
 	group_service::delete_user_group(app_id, group_id).await
+}
+
+async fn delete_user_external_devices(user_id: &str, app_id: &str) -> AppRes<()>
+{
+	let mut last_id = String::new();
+
+	loop {
+		let keys = DeviceForDelete::get_devices_for_external_storage(user_id, app_id, &last_id).await?;
+
+		if keys.is_empty() {
+			break;
+		}
+
+		//delete the external device keys
+		let mut keys_to_delete = vec![];
+
+		for key in &keys {
+			if key.public_key == "extern" {
+				keys_to_delete.push(format!("sk_{}", key.device_id));
+			}
+
+			if key.verify_key == "extern" {
+				keys_to_delete.push(format!("vk_{}", key.device_id));
+			}
+
+			if key.encrypted_private_key == "extern" {
+				keys_to_delete.push(format!("pk_{}", key.device_id));
+			}
+
+			if key.encrypted_sign_key == "extern" {
+				keys_to_delete.push(format!("sig_pk_{}", key.device_id));
+			}
+		}
+
+		if !keys_to_delete.is_empty() {
+			server_key_store::delete_key(&keys_to_delete).await?;
+		}
+
+		if keys.len() < 50 {
+			//No more keys to fetch
+			break;
+		}
+
+		if let Some(last) = keys.last() {
+			last_id = last.device_id.clone();
+		}
+	}
+
+	Ok(())
 }
 
 pub async fn delete_device(user: &UserJwtEntity, app_id: impl Into<AppId>, device_id: impl Into<DeviceId>) -> AppRes<()>
@@ -551,10 +603,38 @@ pub async fn delete_device(user: &UserJwtEntity, app_id: impl Into<AppId>, devic
 	}
 
 	let user_id = &user.id;
+	let device_id = device_id.into();
 
-	user_model::delete_device(user_id, &app_id, device_id).await?;
+	let keys = DeviceForDelete::get_device_for_external_key_storage(user_id, &app_id, &device_id).await?;
 
-	group_user_service::leave_group(&internal_group_data(&app_id, &user.group_id, 4), None).await
+	user_model::delete_device(user_id, &app_id, &device_id).await?;
+
+	group_user_service::leave_group(&internal_group_data(&app_id, &user.group_id, 4), None).await?;
+
+	//delete the external device keys
+	let mut keys_to_delete = vec![];
+
+	if keys.public_key == "extern" {
+		keys_to_delete.push(format!("sk_{device_id}"));
+	}
+
+	if keys.verify_key == "extern" {
+		keys_to_delete.push(format!("vk_{device_id}"));
+	}
+
+	if keys.encrypted_private_key == "extern" {
+		keys_to_delete.push(format!("pk_{device_id}"));
+	}
+
+	if keys.encrypted_sign_key == "extern" {
+		keys_to_delete.push(format!("sign_k_{device_id}"));
+	}
+
+	if !keys_to_delete.is_empty() {
+		server_key_store::delete_key(&keys_to_delete).await?;
+	}
+
+	Ok(())
 }
 
 pub async fn update(user: &UserJwtEntity, app_id: &str, update_input: UserUpdateServerInput) -> AppRes<()>

@@ -157,7 +157,9 @@ pub async fn get_captcha() -> CaptchaInput
 
 	//change the db path of sqlite
 	dotenv::from_filename("sentc.env").ok();
-	env::set_var("DB_PATH", env::var("DB_PATH_TEST").unwrap());
+	unsafe {
+		env::set_var("DB_PATH", env::var("DB_PATH_TEST").unwrap());
+	}
 
 	//language=SQL
 	let sql = "SELECT solution FROM sentc_captcha WHERE id = ?";

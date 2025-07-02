@@ -627,9 +627,11 @@ async fn test_16_reset_customer_password()
 
 	//change the db path of sqlite
 	dotenv::from_filename("sentc.env").ok();
-	env::set_var("DB_PATH", env::var("DB_PATH_TEST").unwrap());
+	unsafe {
+		env::set_var("DB_PATH", env::var("DB_PATH_TEST").unwrap());
+	}
 
-	//get the token -> in real app the token gets send by email.
+	//get the token -> in the real app the token gets send by email.
 	server_api_common::start().await;
 
 	//language=SQL

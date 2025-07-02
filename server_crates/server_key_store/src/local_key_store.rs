@@ -87,7 +87,7 @@ impl KeyStore for LocalKeyStore
 		Ok(())
 	}
 
-	async fn delete_key(&self, keys: &[&str]) -> AppRes<()>
+	async fn delete_key(&self, keys: &[String]) -> AppRes<()>
 	{
 		for key in keys {
 			let path = format!("{}/{}", self.path, key);
