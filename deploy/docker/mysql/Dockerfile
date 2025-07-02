@@ -8,7 +8,7 @@ WORKDIR /app
 COPY . .
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,sharing=private,target=/app/target \
-	cargo build --features=external_c_keys --release && \
+	cargo build --features=external_c_keys,s3_key_storage --release && \
     # Copy executable out of the cache so it is available in the final image.
     cp target/release/server_api_all ./server_api_all && \
     cp target/release/sentc_api_init ./sentc_api_init

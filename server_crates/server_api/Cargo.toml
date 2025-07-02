@@ -60,3 +60,5 @@ mysql = ["rustgram-server-util/mysql", "server_api_common/mysql"]
 sqlite = ["rustgram-server-util/sqlite", "server_api_common/sqlite"]
 
 external_c_keys = ["sentc-crypto-fips-keys", "sentc-crypto-rec-keys"]
+
+s3_key_storage = ["server_key_store/s3_key_storage"]

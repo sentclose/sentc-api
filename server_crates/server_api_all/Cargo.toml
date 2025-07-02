@@ -26,3 +26,5 @@ sqlite = ["rustgram-server-util/sqlite"]
 
 send_mail = ["server_api_customer/send_mail"]
 external_c_keys = ["server_api/external_c_keys"]
+
+s3_key_storage = ["server_api/s3_key_storage"]

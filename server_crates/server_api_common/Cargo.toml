@@ -37,3 +37,4 @@ dotenv.workspace = true
 default = ["mysql"]
 mysql = ["rustgram-server-util/mysql", "server_dashboard_common/mysql"]
 sqlite = ["rustgram-server-util/sqlite", "server_dashboard_common/sqlite"]
+s3_key_storage = ["server_key_store/s3_key_storage"]
