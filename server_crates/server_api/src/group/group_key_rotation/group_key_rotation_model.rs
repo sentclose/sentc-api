@@ -166,9 +166,23 @@ pub async fn done_key_rotation_for_user(
 
 	let time = get_time()?;
 
+	#[cfg(feature = "mysql")]
 	//language=SQL
 	let sql = r"
-INSERT INTO sentc_group_user_keys 
+INSERT IGNORE INTO sentc_group_user_keys 
+    (
+     k_id, 
+     user_id, 
+     group_id, 
+     encrypted_group_key, 
+     encrypted_alg, 
+     encrypted_group_key_key_id, 
+     time
+     ) VALUES (?,?,?,?,?,?,?)";
+
+	#[cfg(feature = "sqlite")]
+	let sql = r"
+INSERT OR IGNORE INTO sentc_group_user_keys 
     (
      k_id, 
      user_id, 
