@@ -115,6 +115,9 @@ async fn prepare_invite(group_id: impl Into<GroupId>, invited_user: impl Into<Us
 		));
 	}
 
+	/*
+	comment out because it can happen that the keys are not correctly inserted, and then there is no change to invite the user again.
+
 	//check if there was already an invitation to this user -> don't use mysql insert ignore here because we would insert the keys again!
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ? AND type = ?";
@@ -127,6 +130,8 @@ async fn prepare_invite(group_id: impl Into<GroupId>, invited_user: impl Into<Us
 			"User was already invited",
 		));
 	}
+
+	 */
 
 	Ok(user_type)
 }
