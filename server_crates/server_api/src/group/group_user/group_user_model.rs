@@ -946,8 +946,8 @@ async fn insert_user_keys(
 		true,
 		"sentc_group_user_keys",
 		&[
-			"user_id",
 			"k_id",
+			"user_id",
 			"group_id",
 			"encrypted_group_key",
 			"encrypted_group_key_key_id",
@@ -957,8 +957,8 @@ async fn insert_user_keys(
 		keys_for_new_user,
 		move |ob| {
 			set_params!(
-				new_user_id.clone(),
 				ob.key_id,
+				new_user_id.clone(),
 				group_id.clone(),
 				ob.encrypted_group_key,
 				ob.user_public_key_id,
