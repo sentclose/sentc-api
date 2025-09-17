@@ -5,6 +5,7 @@ use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::group::GroupKeysForNewMember;
 use sentc_crypto_common::{AppId, GroupId, UserId};
+use tokio::time::{sleep, Duration};
 
 use crate::group::group_entities::{GroupInviteReq, GroupJoinReq, GroupUserListItem, GROUP_INVITE_TYPE_INVITE_REQ, GROUP_INVITE_TYPE_JOIN_REQ};
 use crate::group::group_model::check_group_rank;
@@ -115,9 +116,6 @@ async fn prepare_invite(group_id: impl Into<GroupId>, invited_user: impl Into<Us
 		));
 	}
 
-	/*
-	comment out because it can happen that the keys are not correctly inserted, and then there is no change to invite the user again.
-
 	//check if there was already an invitation to this user -> don't use mysql insert ignore here because we would insert the keys again!
 	//language=SQL
 	let sql = "SELECT 1 FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ? AND type = ?";
@@ -130,8 +128,6 @@ async fn prepare_invite(group_id: impl Into<GroupId>, invited_user: impl Into<Us
 			"User was already invited",
 		));
 	}
-
-	 */
 
 	Ok(user_type)
 }
@@ -931,6 +927,9 @@ pub(super) async fn insert_user_keys_via_session(
 
 //__________________________________________________________________________________________________
 
+const MAX_RETRIES: u32 = 5;
+const INITIAL_RETRY_DELAY_MS: u64 = 100;
+
 async fn insert_user_keys(
 	group_id: impl Into<GroupId>,
 	new_user_id: impl Into<UserId>,
@@ -942,32 +941,53 @@ async fn insert_user_keys(
 	let new_user_id = new_user_id.into();
 
 	//insert the keys in the right table -> delete the keys from this table when user not accepts the invite!
-	bulk_insert(
-		true,
-		"sentc_group_user_keys",
-		&[
-			"k_id",
-			"user_id",
-			"group_id",
-			"encrypted_group_key",
-			"encrypted_group_key_key_id",
-			"encrypted_alg",
-			"time",
-		],
-		keys_for_new_user,
-		move |ob| {
-			set_params!(
-				ob.key_id,
-				new_user_id.clone(),
-				group_id.clone(),
-				ob.encrypted_group_key,
-				ob.user_public_key_id,
-				ob.encrypted_alg,
-				time.to_string()
-			)
-		},
-	)
-	.await?;
+
+	let mut retries = 0;
+	let mut delay = INITIAL_RETRY_DELAY_MS;
+
+	//because of the primary key constraint of two fields (k_id and user_id) we need to retry the insert.
+	//It can happen when the database is very busy we get a deadlock.
+	while retries < MAX_RETRIES {
+		match bulk_insert(
+			true,
+			"sentc_group_user_keys",
+			&[
+				"k_id",
+				"user_id",
+				"group_id",
+				"encrypted_group_key",
+				"encrypted_group_key_key_id",
+				"encrypted_alg",
+				"time",
+			],
+			keys_for_new_user.clone(),
+			|ob| {
+				set_params!(
+					ob.key_id,
+					new_user_id.clone(),
+					group_id.clone(),
+					ob.encrypted_group_key,
+					ob.user_public_key_id,
+					ob.encrypted_alg,
+					time.to_string()
+				)
+			},
+		)
+		.await
+		{
+			Ok(_) => break,
+			Err(_e) if retries < MAX_RETRIES - 1 => {
+				retries += 1;
+				sleep(Duration::from_millis(delay)).await;
+				delay *= 2;
+			},
+			Err(e) => {
+				println!("mysql retry error for insert_user_keys with user: {new_user_id}, and group: {group_id}");
+
+				return Err(e);
+			},
+		}
+	}
 
 	Ok(())
 }
