@@ -100,10 +100,7 @@ async fn prepare_invite(group_id: impl Into<GroupId>, invited_user: impl Into<Us
 	check_group_rank(admin_rank, 2)?;
 
 	//2. get the int user type. the connected group check is done in the controller and is ignored in the service
-	let user_type = match user_type {
-		NewUserType::Normal => 0,
-		NewUserType::Group => 2,
-	};
+	let user_type = user_type.get_user_type_for_db();
 
 	//3. check if the user is already in the group
 	let check = check_user_in_group(group_id.clone(), invited_user.clone()).await?;
@@ -168,9 +165,7 @@ pub(super) async fn invite_request_light(
 			new_user_rank
 		),
 	)
-	.await?;
-
-	Ok(())
+	.await
 }
 
 pub(super) async fn invite_request(
@@ -371,6 +366,100 @@ pub(super) async fn accept_invite(group_id: impl Into<GroupId>, user_id: impl In
 	.await?;
 
 	Ok(())
+}
+
+pub(super) async fn auto_invite(
+	group_id: impl Into<GroupId>,
+	invited_user: impl Into<UserId>,
+	keys_for_new_user: Vec<GroupKeysForNewMember>,
+	key_session: bool,
+	new_user_rank: i32,
+	admin_rank: i32,
+	user_type: NewUserType,
+) -> AppRes<Option<String>>
+{
+	//do it in a single function with direct db insert to minimize the risk of not inserting the user at all for heavily loaded servers
+
+	let group_id = group_id.into();
+	let invited_user = invited_user.into();
+
+	let user_type = prepare_invite(&group_id, &invited_user, admin_rank, user_type).await?;
+
+	//______________________________________________________________________________________________
+
+	//do not insert the user in the invite req but insert them directly in the user group table
+	//add the session id (if any) to the user table like for join req. because there is no insert into the invite table.
+
+	let time = get_time()?;
+
+	let session_id = if key_session && keys_for_new_user.len() == 100 {
+		//if there are more keys than 100 -> use a session,
+		// the client will know if there are more keys than 100 and asks the server for a session
+		Some(create_id())
+	} else {
+		None
+	};
+
+	#[cfg(feature = "mysql")]
+	//language=SQL
+	let sql = "INSERT IGNORE INTO sentc_group_user (user_id, group_id, time, `rank`, type, key_upload_session_id) VALUES (?,?,?,?,?,?)";
+
+	#[cfg(feature = "sqlite")]
+	let sql = "INSERT OR IGNORE INTO sentc_group_user (user_id, group_id, time, `rank`, type, key_upload_session_id) VALUES (?,?,?,?,?,?)";
+
+	exec(
+		sql,
+		set_params!(
+			invited_user.clone(),
+			group_id.clone(),
+			time.to_string(),
+			new_user_rank,
+			user_type,
+			session_id.clone(),
+		),
+	)
+	.await?;
+
+	insert_user_keys(group_id, invited_user, time, keys_for_new_user).await?;
+
+	Ok(session_id)
+}
+
+pub(super) async fn auto_invite_light(
+	group_id: impl Into<GroupId>,
+	invited_user: impl Into<UserId>,
+	new_user_rank: i32,
+	admin_rank: i32,
+	user_type: NewUserType,
+) -> AppRes<()>
+{
+	let group_id = group_id.into();
+	let invited_user = invited_user.into();
+
+	let user_type = prepare_invite(&group_id, &invited_user, admin_rank, user_type).await?;
+
+	//______________________________________________________________________________________________
+
+	let time = get_time()?;
+
+	#[cfg(feature = "mysql")]
+	//language=SQL
+	let sql = "INSERT IGNORE INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
+
+	#[cfg(feature = "sqlite")]
+	let sql = "INSERT OR IGNORE INTO sentc_group_user (user_id, group_id, time, `rank`, type) VALUES (?,?,?,?,?)";
+
+	exec(
+		sql,
+		set_params!(
+			invited_user.clone(),
+			group_id.clone(),
+			time.to_string(),
+			new_user_rank,
+			user_type,
+		),
+	)
+	.await
 }
 
 //__________________________________________________________________________________________________
@@ -945,7 +1034,7 @@ async fn insert_user_keys(
 	let mut retries = 0;
 	let mut delay = INITIAL_RETRY_DELAY_MS;
 
-	//because of the primary key constraint of two fields (k_id and user_id) we need to retry the insert.
+	//because of the primary key constraint of two fields (k_id and user_id), we need to retry the insert.
 	//It can happen when the database is very busy we get a deadlock.
 	while retries < MAX_RETRIES {
 		match bulk_insert(

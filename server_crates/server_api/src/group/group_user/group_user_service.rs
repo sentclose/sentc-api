@@ -1,5 +1,5 @@
 use rustgram_server_util::cache;
-use rustgram_server_util::error::{ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::error::{server_err, ServerCoreError, ServerErrorConstructor};
 use rustgram_server_util::res::AppRes;
 use sentc_crypto_common::group::{GroupKeysForNewMember, GroupKeysForNewMemberServerInput, GroupNewMemberLightInput};
 use sentc_crypto_common::{GroupId, UserId};
@@ -23,15 +23,30 @@ pub enum NewUserType
 	Group,
 }
 
-pub async fn invite_request_light(
-	group_data: &InternalGroupDataComplete,
-	input: GroupNewMemberLightInput,
-	invited_user: impl Into<UserId>,
-	user_type: NewUserType,
-) -> AppRes<()>
+impl NewUserType
+{
+	pub fn get_user_type_for_db(&self) -> i32
+	{
+		match self {
+			NewUserType::Normal => 0,
+			NewUserType::Group => 1,
+		}
+	}
+
+	pub fn get_from_db(numeric: i32) -> Self
+	{
+		if numeric == 0 {
+			NewUserType::Normal
+		} else {
+			NewUserType::Group
+		}
+	}
+}
+
+fn check_invite_req_to_user_light(group_data: &InternalGroupDataComplete, input: GroupNewMemberLightInput) -> AppRes<i32>
 {
 	if group_data.group_data.invite == 0 {
-		return Err(ServerCoreError::new_msg(
+		return Err(server_err(
 			400,
 			ApiErrorCodes::GroupInviteStop,
 			"No invites allowed for this group",
@@ -41,7 +56,7 @@ pub async fn invite_request_light(
 	let rank = input.rank.unwrap_or(4);
 
 	if rank < 1 {
-		return Err(ServerCoreError::new_msg(
+		return Err(server_err(
 			400,
 			ApiErrorCodes::GroupUserRank,
 			"User group rank got the wrong format",
@@ -49,12 +64,24 @@ pub async fn invite_request_light(
 	}
 
 	if rank < group_data.user_data.rank {
-		return Err(ServerCoreError::new_msg(
+		return Err(server_err(
 			400,
 			ApiErrorCodes::GroupUserRank,
 			"The set rank cannot be higher than your rank",
 		));
 	}
+
+	Ok(rank)
+}
+
+pub async fn invite_request_light(
+	group_data: &InternalGroupDataComplete,
+	input: GroupNewMemberLightInput,
+	invited_user: impl Into<UserId>,
+	user_type: NewUserType,
+) -> AppRes<()>
+{
+	let rank = check_invite_req_to_user_light(group_data, input)?;
 
 	group_user_model::invite_request_light(
 		&group_data.group_data.id,
@@ -68,8 +95,55 @@ pub async fn invite_request_light(
 	Ok(())
 }
 
+fn check_invite_req_to_user(group_data: &InternalGroupDataComplete, input: &GroupKeysForNewMemberServerInput) -> AppRes<i32>
+{
+	if input.keys.is_empty() {
+		return Err(server_err(
+			400,
+			ApiErrorCodes::GroupNoKeys,
+			"No group keys for the user",
+		));
+	}
+
+	if input.keys.len() > 100 {
+		return Err(server_err(
+			400,
+			ApiErrorCodes::GroupTooManyKeys,
+			"Too many group keys for the user. Split the keys and use pagination",
+		));
+	}
+
+	if group_data.group_data.invite == 0 {
+		return Err(server_err(
+			400,
+			ApiErrorCodes::GroupInviteStop,
+			"No invites allowed for this group",
+		));
+	}
+
+	let rank = input.rank.unwrap_or(4);
+
+	if rank < 1 {
+		return Err(server_err(
+			400,
+			ApiErrorCodes::GroupUserRank,
+			"User group rank got the wrong format",
+		));
+	}
+
+	if rank < group_data.user_data.rank {
+		return Err(server_err(
+			400,
+			ApiErrorCodes::GroupUserRank,
+			"The set rank cannot be higher than your rank",
+		));
+	}
+
+	Ok(rank)
+}
+
 /**
-# Group invite request to a non group member user
+# Group invite request to a non-group member user
 
 The invited user must accept the invite to join the group
 */
@@ -80,47 +154,7 @@ pub async fn invite_request(
 	user_type: NewUserType,
 ) -> AppRes<Option<String>>
 {
-	if input.keys.is_empty() {
-		return Err(ServerCoreError::new_msg(
-			400,
-			ApiErrorCodes::GroupNoKeys,
-			"No group keys for the user",
-		));
-	}
-
-	if input.keys.len() > 100 {
-		return Err(ServerCoreError::new_msg(
-			400,
-			ApiErrorCodes::GroupTooManyKeys,
-			"Too many group keys for the user. Split the keys and use pagination",
-		));
-	}
-
-	if group_data.group_data.invite == 0 {
-		return Err(ServerCoreError::new_msg(
-			400,
-			ApiErrorCodes::GroupInviteStop,
-			"No invites allowed for this group",
-		));
-	}
-
-	let rank = input.rank.unwrap_or(4);
-
-	if rank < 1 {
-		return Err(ServerCoreError::new_msg(
-			400,
-			ApiErrorCodes::GroupUserRank,
-			"User group rank got the wrong format",
-		));
-	}
-
-	if rank < group_data.user_data.rank {
-		return Err(ServerCoreError::new_msg(
-			400,
-			ApiErrorCodes::GroupUserRank,
-			"The set rank cannot be higher than your rank",
-		));
-	}
+	let rank = check_invite_req_to_user(group_data, &input)?;
 
 	let session_id = group_user_model::invite_request(
 		&group_data.group_data.id,
@@ -159,17 +193,32 @@ pub async fn invite_auto_light(
 {
 	let invited_user = invited_user.into();
 
-	invite_request_light(group_data, input, &invited_user, user_type).await?;
+	let rank = check_invite_req_to_user_light(group_data, input)?;
 
-	accept_invite(&group_data.group_data.app_id, &group_data.group_data.id, invited_user).await?;
+	group_user_model::auto_invite_light(
+		&group_data.group_data.id,
+		&invited_user,
+		rank,
+		group_data.user_data.rank,
+		user_type,
+	)
+	.await?;
+
+	//delete the cache here so the user can join the group
+	let key_user = get_group_user_cache_key(
+		&group_data.group_data.app_id,
+		&group_data.group_data.id,
+		&invited_user,
+	);
+	cache::delete(&key_user).await?;
 
 	Ok(())
 }
 
 /**
-# Invite a non group member user and accept the invite
+# Invite a non-group member user and accept the invite
 
-The first half is the same as invite_request but after accept the invite request without new request
+The first half is the same as invite_request but after accepting the invite request without a new request
 */
 pub async fn invite_auto(
 	group_data: &InternalGroupDataComplete,
@@ -180,9 +229,26 @@ pub async fn invite_auto(
 {
 	let invited_user = invited_user.into();
 
-	let session_id = invite_request(group_data, input, &invited_user, user_type).await?;
+	let rank = check_invite_req_to_user(group_data, &input)?;
 
-	accept_invite(&group_data.group_data.app_id, &group_data.group_data.id, invited_user).await?;
+	let session_id = group_user_model::auto_invite(
+		&group_data.group_data.id,
+		&invited_user,
+		input.keys,
+		input.key_session,
+		rank,
+		group_data.user_data.rank,
+		user_type,
+	)
+	.await?;
+
+	//delete the cache here so the user can join the group
+	let key_user = get_group_user_cache_key(
+		&group_data.group_data.app_id,
+		&group_data.group_data.id,
+		&invited_user,
+	);
+	cache::delete(&key_user).await?;
 
 	Ok(session_id)
 }
@@ -216,7 +282,7 @@ pub async fn insert_user_keys_via_session(
 }
 
 /**
-This fn can be used when there is an error with the user keys e.g. after a key rotation.
+This fn can be used when there is an error with the user keys, e.g., after a key rotation.
 
 The difference to auto invite is that the user must be already in the group and got the same rank etc. back.
 */
@@ -252,7 +318,7 @@ pub async fn re_invite_user(
 pub async fn leave_group(group_data: &InternalGroupDataComplete, real_user_id: Option<&str>) -> AppRes<()>
 {
 	if let (Some(g_a_m), Some(id)) = (&group_data.user_data.get_values_from_group_as_member, real_user_id) {
-		//if user got access by group as member -> check the rank of the user in the real group.
+		//if the user got access by group as member -> check the rank of the user in the real group.
 		// this is important because only group admins can leave a connected group
 
 		//do this check everytime with db look up
@@ -307,7 +373,7 @@ pub async fn kick_user_from_group(group_data: &InternalGroupDataComplete, user_i
 /**
 Update the user rank. The rank of a creator cannot be changed.
 
-When deleting the cache for this group, and the group got children then for all children the rank must be updated too.
+When deleting the cache for this group, and the group got children, then for all children the rank must be updated too.
 This is done because we use a reference to the parent group when we look for the user rank in the group mw.
 If this user is not in a parent group -> this wouldn't affect any groups
  */
