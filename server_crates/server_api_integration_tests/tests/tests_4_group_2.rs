@@ -473,19 +473,11 @@ async fn test_13_not_invite_connected_group_as_member()
 
 	let body = res.text().await.unwrap();
 
-	match handle_server_response::<GroupInviteServerOutput>(&body) {
-		Ok(_) => {
-			panic!("Should be an error");
-		},
-		Err(e) => {
-			match e {
-				SdkError::Util(SdkUtilError::ServerErr(s, _)) => {
-					assert_eq!(s, 319);
-				},
-				_ => panic!("Should be server error"),
-			}
-		},
-	}
+	let Err(SdkError::Util(SdkUtilError::ServerErr(s, _))) = handle_server_response::<GroupInviteServerOutput>(&body) else {
+		panic!("Should be server error")
+	};
+
+	assert_eq!(s, 319);
 }
 
 #[tokio::test]
