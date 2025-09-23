@@ -52,21 +52,21 @@ use crate::test_fn::{
 
 Use cases:
 
-1. user is direct group member (tested in group tests 1)
-2. user is member of a parent group (tested in group test 1)
-2.1 user is member of a parent group of a group which is parent of the selected group (parent -> parent -> child to access)
+1. user is a direct group member (tested in group tests 1)
+2. User is a member of a parent group (tested in group test 1)
+   2.1 user is a member of a parent group of a group which is parent of the selected group (parent -> parent -> child to access)
 
-3. user is direct member of a group which is member of the selected group
-4. user is member of a parent of a group which is member of the selected group
-5. user is direct member of a group which is member of a parent group of the selected group
-6. user is member of a parent group which child is member of a parent of the selected group
+3. user is a direct member of a group which is a member of the selected group
+4. A user is a member of a parent of a group, which is a member of the selected group
+5. A user is a direct member of a group, which is a member of a parent group of the selected group
+6. A user is a member of a parent group whose child is a member of a parent of the selected group
 
 ## Test also
 
-- create from group
+- Create from a group
 - invite / join
-- kick group from other group
-- leave as group from other group
+- kick group from another group
+- leave as a group from another group
 - key rotation
 */
 mod test_fn;
@@ -145,17 +145,17 @@ async fn aaa_init_global_test()
 }
 
 /**
-create groups:
-1. the group, to test direct access to a connected group
-2. the group, another group with direct access to a connected group
-3. a parent group and one child group which got access to a connected group
+Create groups:
+1. The group, to test direct access to a connected group
+2. The group, another group with direct access to a connected group
+3. A parent group and one child group which got access to a connected group
 
-create connected groups:
-1. the group to connect (created from group 0)
-2. a group to connect (but from user and connect it later), with a child (connect group 1 and 2)
+Create connected groups:
+1. The group to connect (created from group 0)
+2. A group to connect (but from the user and connect it later), with a child (connect group 1 and 2)
 
 At the end connect a child from one group to a parent for another group and
-check if user from one parent got access at the other parent
+check if user from one parent got access to the other parent
  */
 #[tokio::test]
 async fn test_01_create_groups()
@@ -190,8 +190,8 @@ async fn test_01_create_groups()
 	}
 
 	//create now the children:
-	// one for group 2 to test access from parent to connected group 1
-	//one for group 2 and connect later group 1 and 2 to test access via connected parent group
+	// one for group 2 to test access from parent to connected group 1,
+	//one for group 2 and connect later group 1 and 2 to test access via a connected parent group
 
 	let mut children = Vec::with_capacity(2);
 
@@ -315,7 +315,7 @@ async fn test_11_not_connect_normal_group_to_normal_group_by_invite()
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
 
-	//try to connected group 1 and group 2 (which are both normal groups).
+	//try to connect group 1 and group 2 (which are both normal groups).
 	//should fail
 
 	let creator_group_1 = &users[0];
@@ -327,7 +327,7 @@ async fn test_11_not_connect_normal_group_to_normal_group_by_invite()
 
 	let group_2 = &groups[0];
 
-	//get the public key of the group 2
+	//get the public key of group 2
 	let url = get_url("api/v1/group/".to_owned() + &group_2.group_id + "/public_key");
 
 	let client = reqwest::Client::new();
@@ -388,7 +388,7 @@ async fn test_12_not_connect_normal_group_to_normal_group_by_join()
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
 
-	//try to connected group 1 and group 2 (which are both normal groups).
+	//try to connect group 1 and group 2 (which are both normal groups).
 	//should fail
 
 	let group = &groups[1];
@@ -435,7 +435,7 @@ async fn test_13_not_invite_connected_group_as_member()
 	let con_group = &con_groups[0];
 
 	//now try to invite
-	//get the public key of the con group
+	//to get the public key of the con group
 	let url = get_url("api/v1/group/".to_owned() + &con_group.group_id + "/public_key");
 
 	let client = reqwest::Client::new();
@@ -623,7 +623,7 @@ async fn test_16_connected_child_group()
 #[tokio::test]
 async fn test_17_access_con_group_from_a_parent()
 {
-	//access the con group 1 from parent of child group 1
+	//access con group 1 from parent of child group 1
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let children = CHILD_GROUP_TEST_STATE.get().unwrap().read().await;
@@ -773,7 +773,7 @@ async fn test_19_rank_from_member_of_connected_group()
 async fn test_20_key_rotation()
 {
 	//do a key rotation in a connected group and check if group 1 and 2 got new keys
-	//this test is about to test the key rotation of group as member
+	//this test is about to test the key rotation of a group as member
 
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
@@ -808,7 +808,7 @@ async fn test_20_key_rotation()
 		.unwrap()[0]
 		.group_key;
 
-	//add user 5 as member of the connected group to check key rotation as a direct member
+	//add user 5 as a member of the connected group to check key rotation as a direct member
 	let direct_user = &users[4];
 
 	let user_keys = group_to_connect
@@ -841,6 +841,8 @@ async fn test_20_key_rotation()
 		Some(&group_1.group_id),
 	)
 	.await;
+
+	tokio::time::sleep(Duration::from_millis(200)).await;
 
 	//key rotation as direct member
 	let mut direct_member_data = get_group(
@@ -908,7 +910,7 @@ async fn test_20_key_rotation()
 async fn test_21_key_rotation_with_multiple_keys()
 {
 	/*
-	do a key rotation in group 1. then do a rotation in connected group
+	do a key rotation in group 1. then do a rotation in a connected group
 
 	later check if there is only one new key to rotate and not 2
 	(which would be the case if not only the newest key was used but all group keys)
@@ -949,6 +951,8 @@ async fn test_21_key_rotation_with_multiple_keys()
 
 	assert_eq!(keys.len(), 2);
 
+	tokio::time::sleep(Duration::from_millis(200)).await;
+
 	//just get the key rotation data (not done it) to check how many keys are in (should be just one)
 	key_rotation(
 		secret_token,
@@ -988,7 +992,7 @@ async fn test_21_key_rotation_with_multiple_keys()
 #[tokio::test]
 async fn test_22_kick_group_as_member()
 {
-	//kick group 2 from connected group (which we connected to the con group at test 15)
+	//kick group 2 from a connected group (which we connected to the con group at test 15)
 
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
@@ -1039,7 +1043,7 @@ async fn test_22_kick_group_as_member()
 #[tokio::test]
 async fn test_23_invite_another_group()
 {
-	//invite send from the group to connect to group 2
+	//invite sending from the group to connect to group 2
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -1063,7 +1067,7 @@ async fn test_23_invite_another_group()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	//fetch the public key data like user for a group which should connect to group
+	//fetch the public key data like user for a group which should connect to the group
 	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/public_key");
 
 	let client = reqwest::Client::new();
@@ -1124,7 +1128,7 @@ async fn test_23_invite_another_group()
 #[tokio::test]
 async fn test_24_reject_invite()
 {
-	//should be the same as normal invite
+	//should be the same as a normal invite
 	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
 	let users = USERS_TEST_STATE.get().unwrap().read().await;
 	let groups = GROUP_TEST_STATE.get().unwrap().read().await;
@@ -1202,7 +1206,7 @@ async fn test_25_accept_invite()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	//fetch the public key data like user for a group which should connect to group
+	//fetch the public key data like user for a group which should connect to the group
 	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/public_key");
 
 	let client = reqwest::Client::new();
@@ -1459,7 +1463,7 @@ async fn test_30_reject_join_req_from_group()
 	assert_eq!(list[0].user_id, group_to_invite.group_id);
 	assert_eq!(list[0].user_type, 2); //group as member not user
 
-	//now reject the join req, should work like normal user
+	//now reject the join req, should work like a normal user
 
 	let url = get_url("api/v1/group/".to_owned() + &group.group_id + "/join_req/" + &list[0].user_id);
 
@@ -1525,7 +1529,7 @@ async fn test_31_accept_join_req_from_group()
 		group_keys_ref.push(&decrypted_group_key.group_key);
 	}
 
-	//fetch the public key data like user for a group which should connect to group
+	//fetch the public key data like user for a group which should connect to the group
 	let url = get_url("api/v1/group/".to_owned() + &group_to_invite.group_id + "/public_key");
 
 	let client = reqwest::Client::new();
@@ -1569,7 +1573,7 @@ async fn test_31_accept_join_req_from_group()
 	)
 	.await;
 
-	//should be the lowest rank for joined member
+	//should be the lowest rank for a joined member
 	assert_eq!(data.0.rank, 4);
 }
 
@@ -1606,7 +1610,7 @@ async fn test_32_not_leave_groups_without_rights()
 	)
 	.await;
 
-	//now try to leave the group as member
+	//now try to leave the group as a member
 	let url = get_url("api/v1/group/".to_owned() + group_to_leave.group_id.as_str() + "/leave");
 	let client = reqwest::Client::new();
 	let res = client
