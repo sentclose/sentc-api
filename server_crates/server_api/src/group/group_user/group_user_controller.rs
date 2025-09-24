@@ -85,7 +85,7 @@ async fn auto_invite(mut req: Request, user_type: NewUserType) -> JRes<GroupInvi
 
 	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
 
-	let session_id = group_user_service::invite_auto(group_data, input, to_invite, user_type).await?;
+	let session_id = group_user_service::invite_auto(group_data, input, to_invite, user_type, false).await?;
 
 	let out = GroupInviteServerOutput {
 		session_id,
@@ -107,7 +107,7 @@ pub async fn invite_auto_group_force(mut req: Request) -> JRes<GroupInviteServer
 
 	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
 
-	let session_id = group_user_service::invite_auto(group_data, input, to_invite, NewUserType::Group).await?;
+	let session_id = group_user_service::invite_auto(group_data, input, to_invite, NewUserType::Group, false).await?;
 
 	let out = GroupInviteServerOutput {
 		session_id,
@@ -138,7 +138,7 @@ async fn invite_to_group_from_server(mut req: Request, user_type: NewUserType) -
 
 	let input: GroupKeysForNewMemberServerInput = bytes_to_json(&body)?;
 
-	let session_id = group_user_service::invite_auto(group_data, input, to_invite, user_type).await?;
+	let session_id = group_user_service::invite_auto(group_data, input, to_invite, user_type, false).await?;
 
 	let out = GroupInviteServerOutput {
 		session_id,
@@ -659,7 +659,7 @@ async fn kick_user(req: Request, endpoint: Endpoint, req_param: &str) -> JRes<Se
 
 	let user_id = get_name_param_from_req(&req, req_param)?;
 
-	group_user_service::kick_user_from_group(group_data, user_id).await?;
+	group_user_service::kick_user_from_group(group_data, user_id, false).await?;
 
 	echo_success()
 }

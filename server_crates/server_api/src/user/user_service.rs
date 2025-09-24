@@ -285,6 +285,7 @@ pub async fn done_register_device(
 		input.user_keys,
 		&device_id, //invite the new device
 		NewUserType::Normal,
+		false,
 	)
 	.await?;
 

@@ -589,7 +589,7 @@ pub async fn delete_group_user(req: Request) -> JRes<ServerSuccessOutput>
 
 	let user_to_kick = get_name_param_from_req(&req, "user_id")?;
 
-	sentc_group_user_service::kick_user_from_group(group_data, user_to_kick).await?;
+	sentc_group_user_service::kick_user_from_group(group_data, user_to_kick, false).await?;
 
 	echo_success()
 }

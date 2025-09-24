@@ -1,6 +1,6 @@
 use rustgram_server_util::db::id_handling::create_id;
 use rustgram_server_util::db::{bulk_insert, exec, exec_transaction, query_first, query_string, I32Entity, I64Entity, StringEntity, TransactionData};
-use rustgram_server_util::error::{server_err, ServerCoreError, ServerErrorConstructor};
+use rustgram_server_util::error::server_err;
 use rustgram_server_util::res::AppRes;
 use rustgram_server_util::{get_time, set_params};
 use sentc_crypto_common::group::GroupKeysForNewMember;
@@ -78,9 +78,9 @@ pub async fn get_single_group_member(app_id: impl Into<AppId>, group_id: impl In
 SELECT user_id, `rank`, u.time, u.type
 FROM sentc_group_user u
 JOIN sentc_group g ON g.id = u.group_id
-WHERE 
-    user_id = ? AND 
-    group_id = ? AND 
+WHERE
+    user_id = ? AND
+    group_id = ? AND
     app_id = ?";
 
 	query_first(sql, set_params!(user_id.into(), group_id.into(), app_id.into()))
@@ -106,7 +106,7 @@ async fn prepare_invite(group_id: impl Into<GroupId>, invited_user: impl Into<Us
 	let check = check_user_in_group(group_id.clone(), invited_user.clone()).await?;
 
 	if check {
-		return Err(ServerCoreError::new_msg(
+		return Err(server_err(
 			400,
 			ApiErrorCodes::GroupUserExists,
 			"Invited user is already in the group",
@@ -119,7 +119,7 @@ async fn prepare_invite(group_id: impl Into<GroupId>, invited_user: impl Into<Us
 	let invite_exists: Option<I32Entity> = query_first(sql, set_params!(group_id, invited_user, GROUP_INVITE_TYPE_INVITE_REQ)).await?;
 
 	if invite_exists.is_some() {
-		return Err(ServerCoreError::new_msg(
+		return Err(server_err(
 			200,
 			ApiErrorCodes::GroupUserExists,
 			"User was already invited",
@@ -251,11 +251,11 @@ pub async fn get_invite_req_to_user(
 
 	//language=SQL
 	let sql = "
-SELECT group_id, i.time 
-FROM sentc_group_user_invites_and_join_req i, sentc_group g 
-WHERE 
-    user_id = ? AND 
-    i.type = ? AND 
+SELECT group_id, i.time
+FROM sentc_group_user_invites_and_join_req i, sentc_group g
+WHERE
+    user_id = ? AND
+    i.type = ? AND
     app_id = ? AND
     group_id = id"
 		.to_string();
@@ -477,7 +477,7 @@ pub(super) async fn join_req(app_id: impl Into<AppId>, group_id: impl Into<Group
 			let cg = check_is_connected_group(&group_id).await?;
 
 			if cg != 1 {
-				return Err(ServerCoreError::new_msg(
+				return Err(server_err(
 					400,
 					ApiErrorCodes::GroupJoinAsConnectedGroup,
 					"Can't join a group when it is not a connected group",
@@ -491,7 +491,7 @@ pub(super) async fn join_req(app_id: impl Into<AppId>, group_id: impl Into<Group
 	let check = check_user_in_group(&group_id, &user_id).await?;
 
 	if check {
-		return Err(ServerCoreError::new_msg(
+		return Err(server_err(
 			400,
 			ApiErrorCodes::GroupUserExists,
 			"User is already in the group",
@@ -552,7 +552,7 @@ async fn prepare_accept_join_req(group_id: impl Into<GroupId>, user_id: impl Int
 	let check = check_user_in_group(&group_id, &user_id).await?;
 
 	if check {
-		return Err(ServerCoreError::new_msg(
+		return Err(server_err(
 			400,
 			ApiErrorCodes::GroupUserExists,
 			"Invited user is already in the group",
@@ -564,7 +564,7 @@ async fn prepare_accept_join_req(group_id: impl Into<GroupId>, user_id: impl Int
 	let sql = "SELECT user_type FROM sentc_group_user_invites_and_join_req WHERE group_id = ? AND user_id = ? AND type = ?";
 	let check: I32Entity = query_first(sql, set_params!(group_id, user_id, GROUP_INVITE_TYPE_JOIN_REQ))
 		.await?
-		.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::GroupJoinReqNotFound, "Join request not found"))?;
+		.ok_or_else(|| server_err(400, ApiErrorCodes::GroupJoinReqNotFound, "Join request not found"))?;
 
 	Ok(check.0)
 }
@@ -706,8 +706,8 @@ pub(super) async fn get_join_req(
 
 	//language=SQL
 	let sql = r"
-SELECT user_id, time, user_type 
-FROM sentc_group_user_invites_and_join_req 
+SELECT user_id, time, user_type
+FROM sentc_group_user_invites_and_join_req
 WHERE group_id = ? AND type = ?"
 		.to_string();
 
@@ -746,13 +746,13 @@ pub(super) async fn get_sent_join_req(
 
 	//language=SQL
 	let sql = r"
-SELECT group_id, i.time 
-FROM 
-    sentc_group_user_invites_and_join_req i, 
-    sentc_group g 
-WHERE  
-    user_id = ? AND 
-    i.type = ? AND 
+SELECT group_id, i.time
+FROM
+    sentc_group_user_invites_and_join_req i,
+    sentc_group g
+WHERE
+    user_id = ? AND
+    i.type = ? AND
     app_id = ? AND
     group_id = id"
 		.to_string();
@@ -797,11 +797,7 @@ pub(super) async fn delete_sent_join_req(app_id: impl Into<AppId>, user_id: impl
 	let check: Option<I64Entity> = query_first(sql, set_params!(app_id.into(), group_id.clone())).await?;
 
 	if check.is_none() {
-		return Err(ServerCoreError::new_msg(
-			400,
-			ApiErrorCodes::GroupAccess,
-			"Group not found",
-		));
+		return Err(server_err(400, ApiErrorCodes::GroupAccess, "Group not found"));
 	}
 
 	//language=SQL
@@ -824,7 +820,7 @@ pub(super) async fn user_leave_group(group_id: impl Into<GroupId>, user_id: impl
 		let only_admin = check_for_only_one_admin(group_id.clone(), user_id.clone()).await?;
 
 		if only_admin {
-			return Err(ServerCoreError::new_msg(
+			return Err(server_err(
 				400,
 				ApiErrorCodes::GroupOnlyOneAdmin,
 				"Can't leave the group, because no other admin found in the group. Please update the rank of another user to admin",
@@ -841,43 +837,38 @@ pub(super) async fn user_leave_group(group_id: impl Into<GroupId>, user_id: impl
 	.await
 }
 
-pub(super) async fn kick_user_from_group(group_id: impl Into<GroupId>, user_id: impl Into<UserId>, rank: i32) -> AppRes<()>
+pub(super) async fn kick_user_from_group(group_id: impl Into<GroupId>, user_id: impl Into<UserId>, rank: i32, re_invite: bool) -> AppRes<()>
 {
 	let group_id = group_id.into();
 	let user_id = user_id.into();
 
-	check_group_rank(rank, 2)?;
+	//let all users be re invited to the group.
+	let req_check_rank = if re_invite { 4 } else { 2 };
+
+	check_group_rank(rank, req_check_rank)?;
 
 	//check the rank of the member -> if it is the creator => don't kick
 
 	//language=SQL
 	let sql = "SELECT `rank` FROM sentc_group_user WHERE user_id = ? AND group_id = ?";
 
-	let check: Option<I32Entity> = query_first(sql, set_params!(user_id.clone(), group_id.clone())).await?;
+	let check = query_first::<I32Entity, _>(sql, set_params!(user_id.clone(), group_id.clone()))
+		.await?
+		.ok_or_else(|| server_err(400, ApiErrorCodes::GroupUserNotFound, "User not found in this group"))?
+		.0;
 
-	let check = match check {
-		Some(c) => c.0,
-		None => {
-			return Err(ServerCoreError::new_msg(
-				400,
-				ApiErrorCodes::GroupUserNotFound,
-				"User not found in this group",
-			))
-		},
-	};
-
-	if check == 0 {
+	if check == 0 && !re_invite {
 		//changed user is creator
-		return Err(ServerCoreError::new_msg(
+		return Err(server_err(
 			400,
 			ApiErrorCodes::GroupUserKick,
 			"Can't delete the group creator",
 		));
 	}
 
-	if check < rank {
+	if check < rank && !re_invite {
 		//changed user has a higher rank
-		return Err(ServerCoreError::new_msg(
+		return Err(server_err(
 			400,
 			ApiErrorCodes::GroupUserKickRank,
 			"Can't delete a higher rank.",
@@ -925,11 +916,7 @@ pub(super) async fn update_rank(group_id: impl Into<GroupId>, admin_rank: i32, c
 
 	//only one creator
 	if new_rank == 0 || new_rank > 4 {
-		return Err(ServerCoreError::new_msg(
-			400,
-			ApiErrorCodes::GroupUserRankUpdate,
-			"Wrong rank used",
-		));
+		return Err(server_err(400, ApiErrorCodes::GroupUserRankUpdate, "Wrong rank used"));
 	}
 
 	//check if this user wants to cache the rank of the creator and check if the user exists in this group
@@ -941,7 +928,7 @@ pub(super) async fn update_rank(group_id: impl Into<GroupId>, admin_rank: i32, c
 	let check = match check {
 		Some(c) => c.0,
 		None => {
-			return Err(ServerCoreError::new_msg(
+			return Err(server_err(
 				400,
 				ApiErrorCodes::GroupUserNotFound,
 				"User not found in this group",
@@ -951,7 +938,7 @@ pub(super) async fn update_rank(group_id: impl Into<GroupId>, admin_rank: i32, c
 
 	if check == 0 {
 		//changed user is creator
-		return Err(ServerCoreError::new_msg(
+		return Err(server_err(
 			400,
 			ApiErrorCodes::GroupUserRankUpdate,
 			"Can't change the rank of a group creator",
@@ -999,7 +986,7 @@ pub(super) async fn insert_user_keys_via_session(
 	let user_id = match user_id {
 		Some(id) => id.0,
 		None => {
-			return Err(ServerCoreError::new_msg(
+			return Err(server_err(
 				400,
 				ApiErrorCodes::GroupKeySession,
 				"No session found to upload the keys",
@@ -1106,7 +1093,7 @@ async fn check_for_invite(user_id: impl Into<UserId>, group_id: impl Into<GroupI
 		set_params!(user_id.into(), group_id.into(), GROUP_INVITE_TYPE_INVITE_REQ),
 	)
 	.await?
-	.ok_or_else(|| ServerCoreError::new_msg(400, ApiErrorCodes::GroupInviteNotFound, "No invite found"))
+	.ok_or_else(|| server_err(400, ApiErrorCodes::GroupInviteNotFound, "No invite found"))
 }
 
 /**
@@ -1138,20 +1125,14 @@ async fn group_accept_invite(app_id: impl Into<AppId>, group_id: impl Into<Group
 	match can_invite {
 		Some(ci) => {
 			if ci.0 == 0 {
-				return Err(ServerCoreError::new_msg(
+				return Err(server_err(
 					400,
 					ApiErrorCodes::GroupInviteStop,
 					"No invites allowed for this group",
 				));
 			}
 		},
-		None => {
-			return Err(ServerCoreError::new_msg(
-				400,
-				ApiErrorCodes::GroupAccess,
-				"Group not found",
-			))
-		},
+		None => return Err(server_err(400, ApiErrorCodes::GroupAccess, "Group not found")),
 	}
 
 	Ok(())
@@ -1166,7 +1147,7 @@ pub async fn check_is_connected_group(group_id: impl Into<GroupId>) -> AppRes<i3
 	if let Some(cg) = is_connected_group {
 		Ok(cg.0)
 	} else {
-		Err(ServerCoreError::new_msg(
+		Err(server_err(
 			400,
 			ApiErrorCodes::GroupAccess,
 			"Group to invite not found",

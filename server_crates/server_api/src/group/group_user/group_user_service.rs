@@ -95,7 +95,7 @@ pub async fn invite_request_light(
 	Ok(())
 }
 
-fn check_invite_req_to_user(group_data: &InternalGroupDataComplete, input: &GroupKeysForNewMemberServerInput) -> AppRes<i32>
+fn check_invite_req_to_user(group_data: &InternalGroupDataComplete, input: &GroupKeysForNewMemberServerInput, re_invite: bool) -> AppRes<i32>
 {
 	if input.keys.is_empty() {
 		return Err(server_err(
@@ -123,7 +123,7 @@ fn check_invite_req_to_user(group_data: &InternalGroupDataComplete, input: &Grou
 
 	let rank = input.rank.unwrap_or(4);
 
-	if rank < 1 {
+	if rank < 1 && !re_invite {
 		return Err(server_err(
 			400,
 			ApiErrorCodes::GroupUserRank,
@@ -131,7 +131,7 @@ fn check_invite_req_to_user(group_data: &InternalGroupDataComplete, input: &Grou
 		));
 	}
 
-	if rank < group_data.user_data.rank {
+	if rank < group_data.user_data.rank && !re_invite {
 		return Err(server_err(
 			400,
 			ApiErrorCodes::GroupUserRank,
@@ -154,7 +154,7 @@ pub async fn invite_request(
 	user_type: NewUserType,
 ) -> AppRes<Option<String>>
 {
-	let rank = check_invite_req_to_user(group_data, &input)?;
+	let rank = check_invite_req_to_user(group_data, &input, false)?;
 
 	let session_id = group_user_model::invite_request(
 		&group_data.group_data.id,
@@ -225,11 +225,12 @@ pub async fn invite_auto(
 	input: GroupKeysForNewMemberServerInput,
 	invited_user: impl Into<UserId>,
 	user_type: NewUserType,
+	re_invite: bool,
 ) -> AppRes<Option<String>>
 {
 	let invited_user = invited_user.into();
 
-	let rank = check_invite_req_to_user(group_data, &input)?;
+	let rank = check_invite_req_to_user(group_data, &input, re_invite)?;
 
 	let session_id = group_user_model::auto_invite(
 		&group_data.group_data.id,
@@ -307,12 +308,12 @@ pub async fn re_invite_user(
 		})?;
 
 	//kick user from the group
-	kick_user_from_group(group_data, &invited_user).await?;
+	kick_user_from_group(group_data, &invited_user, true).await?;
 
 	input.rank = Some(rank);
 
 	//and auto invite the user
-	invite_auto(group_data, input, invited_user, user_type).await
+	invite_auto(group_data, input, invited_user, user_type, true).await
 }
 
 pub async fn leave_group(group_data: &InternalGroupDataComplete, real_user_id: Option<&str>) -> AppRes<()>
@@ -357,7 +358,7 @@ pub async fn leave_group(group_data: &InternalGroupDataComplete, real_user_id: O
 	Ok(())
 }
 
-pub async fn kick_user_from_group(group_data: &InternalGroupDataComplete, user_id: impl Into<UserId>) -> AppRes<()>
+pub async fn kick_user_from_group(group_data: &InternalGroupDataComplete, user_id: impl Into<UserId>, re_invite: bool) -> AppRes<()>
 {
 	let user_id = user_id.into();
 
@@ -365,7 +366,13 @@ pub async fn kick_user_from_group(group_data: &InternalGroupDataComplete, user_i
 	let key_group = get_group_user_cache_key(&group_data.group_data.app_id, &group_data.group_data.id, &user_id);
 	cache::delete(&key_group).await?;
 
-	group_user_model::kick_user_from_group(&group_data.group_data.id, user_id, group_data.user_data.rank).await?;
+	group_user_model::kick_user_from_group(
+		&group_data.group_data.id,
+		user_id,
+		group_data.user_data.rank,
+		re_invite,
+	)
+	.await?;
 
 	Ok(())
 }
