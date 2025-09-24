@@ -663,6 +663,67 @@ async fn test_17_re_invite_user()
 	assert_eq!(data.rank, 2);
 }
 
+#[tokio::test]
+async fn test_18_re_invite_group_owner()
+{
+	let secret_token = &APP_TEST_STATE.get().unwrap().read().await.secret_token;
+	let group = &GROUP_TEST_STATE.get().unwrap().read().await[0];
+
+	let users = USERS_TEST_STATE.get().unwrap().read().await;
+	let creator = &users[0];
+
+	let user_to_invite = &users[2];
+
+	let mut group_keys_ref = vec![];
+
+	let user_keys = group
+		.decrypted_group_keys
+		.get(user_to_invite.user_id.as_str())
+		.unwrap();
+
+	for decrypted_group_key in user_keys {
+		group_keys_ref.push(&decrypted_group_key.group_key);
+	}
+
+	let invite = TestGroup::prepare_group_keys_for_new_member(
+		&creator.user_data.user_keys[0].exported_public_key,
+		&group_keys_ref,
+		false,
+		None, //rank gets ignored for re invite
+	)
+	.unwrap();
+
+	let url = get_url("api/v1/group/".to_owned() + group.group_id.as_str() + "/re_invite/" + creator.user_id.as_str());
+
+	let client = reqwest::Client::new();
+	let res = client
+		.put(url)
+		.header(AUTHORIZATION, auth_header(user_to_invite.user_data.jwt.as_str()))
+		.header("x-sentc-app-token", secret_token)
+		.body(invite)
+		.send()
+		.await
+		.unwrap();
+
+	let body = res.text().await.unwrap();
+
+	let out: GroupInviteServerOutput = handle_server_response(&body).unwrap();
+
+	assert_eq!(out.session_id, None);
+
+	//should still get the same rank
+	let (data, _) = get_group(
+		secret_token,
+		creator.user_data.jwt.as_str(),
+		group.group_id.as_str(),
+		&creator.user_data.user_keys[0].private_key,
+		false,
+	)
+	.await;
+
+	assert_eq!(data.rank, 0);
+}
+
 //__________________________________________________________________________________________________
 //signed key rotation
 
@@ -979,8 +1040,8 @@ async fn test_42_key_rotation_limit()
 	let invoker_private_key = &user.user_data.user_keys[0].private_key;
 
 	for _ in 0..2 {
-		// this way is not correct because the old pre group key is used for each rotation.
-		// this should be avoided in prod but for the test it is ok
+		// this way is not correct because the old pre-group key is used for each rotation.
+		// this should be avoided in prod, but for the test it is ok
 		let (_, _new_keys) = key_rotation(
 			secret_token,
 			user.user_data.jwt.as_str(),
